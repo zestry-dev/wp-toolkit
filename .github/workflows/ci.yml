@@ -1,0 +1,92 @@
+name: CI
+
+# Everything that decides whether this package is fit to publish, in one
+# place. Two things call it: a push or pull request against `main`, and the
+# Tag workflow, which refuses to create a tag until this has passed.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A dispatched tag run and an ordinary push run must not cancel each other,
+  # so the event is part of the group. Only redundant pull-request pushes are
+  # worth cancelling.
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          # Matches `config.platform.php` and the wp-env container, so a
+          # syntax error that only 8.1 rejects fails here rather than in a
+          # consumer's install.
+          php-version: '8.1'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      # Packagist takes the version from the tag, and a `version` key that
+      # disagrees makes it skip the tag entirely behind a warning only `-vvv`
+      # prints -- a release that looks successful and never appears.
+      - name: Check composer.json declares no version
+        run: |
+          if php -r 'exit(isset(json_decode(file_get_contents("composer.json"), true)["version"]) ? 0 : 1);'; then
+            echo '::error file=composer.json::composer.json must not declare a "version" field -- Packagist reads the version from the tag.'
+            exit 1
+          fi
+
+      - name: Lint
+        run: composer lint
+
+      - name: Check the docs are regenerated
+        run: composer docs:check
+
+      - name: Check the stubs
+        run: composer lint:stubs
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      # Started once and reused: the multisite run installs its own network
+      # into the same containers, exactly as it does locally.
+      - name: Start wp-env
+        run: npm run env:start
+
+      - name: PHPUnit — single site
+        run: npm run test:php:base
+
+      - name: PHPUnit — multisite
+        run: npm run test:php:ms:base
+
+      - name: Stop wp-env
+        if: always()
+        run: npm run env:stop

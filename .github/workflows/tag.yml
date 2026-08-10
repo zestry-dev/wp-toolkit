@@ -1,0 +1,105 @@
+name: Tag
+
+# Publishing, as one button. Actions cannot block a tag push -- a workflow
+# only runs once the ref already exists, and pre-receive hooks are Enterprise
+# Server only -- so the tag is not pushed by hand at all: this workflow runs
+# CI first and creates the tag only if it passed. A tag that exists is
+# therefore a tag that was green.
+#
+# Packagist's webhook does the rest. Nothing here talks to Packagist, and
+# nothing needs to: it is watching the repository for the tag.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, e.g. 0.9.1 or 1.0.0-beta.1 (the leading v is added for you)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tag
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check the version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+
+    steps:
+      - name: Refuse to tag anything but main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Releases are cut from main. This run was dispatched against ${GITHUB_REF}."
+          exit 1
+
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve and check the tag
+        id: resolve
+        # Read through the environment rather than interpolating `${{ }}`
+        # straight into the script: the input is arbitrary text, and inside a
+        # run block that is shell.
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          tag="v${VERSION#v}"
+
+          if ! printf '%s' "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$'; then
+            echo "::error::'${VERSION}' is not a version Composer accepts. Expected 0.9.1, or 1.0.0-beta.1 for a pre-release."
+            exit 1
+          fi
+
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "::error::${tag} already exists. A published version cannot be replaced -- pick the next one."
+            exit 1
+          fi
+
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "Will tag ${tag} at $(git rev-parse --short HEAD) once CI passes." >> "$GITHUB_STEP_SUMMARY"
+
+  verify:
+    name: Verify
+    needs: check
+    uses: ./.github/workflows/ci.yml
+
+  tag:
+    name: Create the tag
+    needs:
+      - check
+      - verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      # Lightweight, not annotated: an annotated tag carries a tagger
+      # identity, and there is no honest one to give it from a runner.
+      # Composer reads both the same way.
+      - name: Push the tag
+        env:
+          TAG: ${{ needs.check.outputs.tag }}
+        run: |
+          git tag "$TAG"
+          git push origin "$TAG"
+
+          {
+            echo "### Tagged \`${TAG}\`"
+            echo
+            echo "Packagist's webhook picks it up within a minute or so:"
+            echo "<https://packagist.org/packages/zestry-dev/wp-toolkit>"
+          } >> "$GITHUB_STEP_SUMMARY"
