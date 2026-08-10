@@ -12,7 +12,12 @@
     "wp-cli"
   ],
   "license": "GPL-3.0-or-later",
-  "authors": [],
+  "homepage": "https://github.com/zestry-dev/wp-toolkit",
+  "support": {
+    "issues": "https://github.com/zestry-dev/wp-toolkit/issues",
+    "source": "https://github.com/zestry-dev/wp-toolkit",
+    "docs": "https://github.com/zestry-dev/wp-toolkit/blob/main/docs/README.md"
+  },
   "require": {
     "php": ">=8.1"
   },

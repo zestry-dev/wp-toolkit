@@ -1,0 +1,34 @@
+# What `git archive` leaves out, which is what a consumer's
+# `vendor/zestry-dev/wp-toolkit/` ends up holding: GitHub builds the dist zip
+# Packagist serves from this file, so anything marked here is downloaded by
+# nobody.
+#
+# What must NOT be marked, because the commands read it from this package's own
+# root at runtime:
+#
+#   src/                 the copied source, `DevTools/stubs/`, `DevTools/registry.php`
+#   commands/            the `wp zestry` commands themselves, globbed by `describe`
+#   docs/rules.md        rendered verbatim into a consumer's AGENTS.md
+#   devtool.php          builds the DevTools Plugin instance
+#   devtool-autoload.php the `autoload.files` shim that requires it
+#   composer.json        read by Composer itself
+#
+# The rest of docs/ stays too: it is the published documentation, it costs
+# under a megabyte, and a per-file exception cannot be made once a directory is
+# ignored — git never descends into one.
+
+# No trailing slashes: unlike .gitignore, a `foo/` pattern here matches the
+# directory but not the files beneath it, so the subtree ships anyway.
+/.github            export-ignore
+/.vscode            export-ignore
+/bin                export-ignore
+/tests              export-ignore
+
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/.nvmrc             export-ignore
+/.wp-env.test.json  export-ignore
+/package-lock.json  export-ignore
+/package.json       export-ignore
+/phpcs.xml          export-ignore
+/phpunit.xml.dist   export-ignore
