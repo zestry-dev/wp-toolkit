@@ -1,0 +1,48 @@
+<?php
+/**
+ * {{name}} scheduled event.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\Cron\Schedule;
+
+return new class() extends Schedule {
+
+	// The hook is this file's name -- {plugin-slug}-{{name}}. Renaming the file
+	// schedules a new event and leaves the old one in WordPress's cron array,
+	// firing on time with nothing listening.
+
+	// How often this event repeats: a WordPress built-in ('hourly',
+	// 'twicedaily', 'daily') or a key from Cron::get_custom_interval_slug()
+	// for an interval registered via Cron::add_custom_interval() elsewhere.
+	public function recurrence(): string {
+		return '{{recurrence}}';
+	}
+
+	// Timestamp of this event's FIRST-EVER occurrence only -- every later
+	// occurrence falls at initial_run_at() + N * recurrence(), so anchor this
+	// to a specific time of day (e.g. next 6am) if that matters. Read only
+	// once: once the event is scheduled, changing this method has no effect
+	// on a site that already has an occurrence recorded.
+	public function initial_run_at(): int {
+		return \time();
+	}
+
+	// false (default): a transient lock skips this occurrence if the
+	// previous one is still running, since WP-Cron itself does not prevent
+	// the same hook firing twice at once. Return true only if run() is
+	// genuinely safe to execute concurrently with itself.
+	public function allow_concurrent_runs(): bool {
+		return false;
+	}
+
+	// The work to run. A thrown exception here is caught and logged by the
+	// Cron module -- it does not stop other due schedules in the same
+	// request, and does not affect this schedule's next occurrence.
+	public function run(): void {
+	}
+};

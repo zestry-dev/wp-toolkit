@@ -1,0 +1,105 @@
+<?php
+/**
+ * {{title}} post type.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\PostTypes\PostType;
+
+return new class() extends PostType {
+
+	// The post type name is this file's name -- {{name}}, with no plugin prefix
+	// (WordPress caps these at 20 characters). Renaming the file orphans every
+	// post already saved under the old name: they stay in the database and stop
+	// appearing anywhere.
+
+	// e.g. 'Book'. Used to build every label WordPress needs (Add New Book,
+	// Edit Book, ...) via get_default_labels().
+	public function singular_name(): string {
+		return '{{singular}}';
+	}
+
+	// e.g. 'Books'.
+	public function plural_name(): string {
+		return '{{plural}}';
+	}
+
+	// Empty array (default) means "just use the labels built from
+	// singular/plural above" -- it does NOT disable labels. Return specific
+	// keys here only to override or add to that default set, e.g.
+	// array( 'parent_item_colon' => __( 'Parent Book:', 'text-domain' ) ).
+	public function labels(): array {
+		return array();
+	}
+
+	// Which core editor features this post type has: 'title', 'editor',
+	// 'thumbnail', 'excerpt', 'custom-fields', etc.
+	public function supports(): array {
+		return array( 'title', 'editor' );
+	}
+
+	// A bundle: WordPress derives publicly_queryable, show_ui, show_in_menu,
+	// show_in_nav_menus, show_in_admin_bar and exclude_from_search from it.
+	public function is_public(): bool {
+		return true;
+	}
+
+	// Each argument in that bundle also has a method of its own --
+	// is_shown_in_ui(), is_shown_in_menu(), is_shown_in_nav_menus(),
+	// is_shown_in_admin_bar(), is_publicly_queryable() and
+	// is_excluded_from_search(). They are left out here because null (their
+	// default) means "derive from is_public()", which is usually right. Add
+	// the ones you need for a mix is_public() alone can't express -- most
+	// often a post type kept off the front end but still editable in the
+	// admin: is_public() false, is_shown_in_ui() true.
+	public function is_shown_in_ui(): ?bool {
+		return null;
+	}
+
+	// true = archive at the post type's own default slug; a string = custom
+	// archive slug; false = no archive page at all.
+	public function has_archive(): bool|string {
+		return true;
+	}
+
+	// false (default) = flat, like Posts. true = parent/child relationships
+	// allowed, like Pages.
+	public function is_hierarchical(): bool {
+		return false;
+	}
+
+	// Whether this post type is exposed via the REST API and usable in the
+	// block editor.
+	public function is_shown_in_rest(): bool {
+		return true;
+	}
+
+	// The base WordPress derives this post type's capabilities from
+	// (edit_{type}, delete_{type}s, ...). 'post' reuses the built-in Post
+	// capability set with no extra setup. A distinct name gets its own
+	// capability set, which then needs to be granted to a role explicitly --
+	// otherwise only an administrator can manage it.
+	public function capability_type(): string {
+		return 'post';
+	}
+
+	// Permalink structure for this post type's URLs, or false to disable pretty
+	// permalinks for it entirely. Takes WordPress's own `rewrite` keys.
+	public function rewrite(): array|false {
+		return array( 'slug' => $this->get_post_type() );
+	}
+
+	// Admin menu icon: a dashicon class name or a custom icon URL.
+	public function menu_icon(): string {
+		return 'dashicons-admin-post';
+	}
+
+	// null (default): WordPress's own default menu ordering.
+	public function menu_position(): ?int {
+		return null;
+	}
+};

@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "{{slug}}/{{name}}",
+	"title": "{{title}}",
+	"category": "widgets",
+	"icon": "block-default",
+	"description": "",
+	"textdomain": "{{slug}}",
+	"attributes": {
+		"title": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"supports": {
+		"html": false{{extra_supports}}
+	},
+	"editorScript": "file:./index.{{editor_extension}}",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css"{{extra_metadata}}
+}

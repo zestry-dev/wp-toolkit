@@ -1,0 +1,11 @@
+/**
+ * Styles for {{title}}.
+ *
+ * Imported from `index.ts`, which is what gets it built. The `assets` module
+ * registers it under the same handle as the script, so enqueuing the script
+ * brings it along -- there is no second name to remember.
+ */
+
+.{{slug}}-{{name}} {
+	// Your styles.
+}

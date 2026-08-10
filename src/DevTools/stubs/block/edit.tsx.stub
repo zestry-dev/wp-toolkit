@@ -1,0 +1,18 @@
+import { useBlockProps } from '@wordpress/block-editor';
+import type { BlockEditProps } from '@wordpress/blocks';
+import { __ } from '@wordpress/i18n';
+
+import type { {{pascal}}Attributes } from './index';
+
+// WordPress's own props type, so `setAttributes` and everything the editor passes
+// is typed the way the editor passes it. A hand-written shape here is what
+// `registerBlockType()` then refuses.
+type EditProps = BlockEditProps< {{pascal}}Attributes >;
+
+export default function Edit( { attributes }: EditProps ) {
+	return (
+		<div { ...useBlockProps() }>
+			{ attributes.title || __( '{{title}}', '{{slug}}' ) }
+		</div>
+	);
+}

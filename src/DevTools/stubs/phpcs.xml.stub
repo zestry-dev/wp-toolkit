@@ -1,0 +1,292 @@
+<?xml version="1.0"?>
+<ruleset name="{{title}} Coding Standards">
+	<description>
+		WordPress Coding Standards for {{title}}, matching the standard the
+		wp-toolkit source in {{root}}/ is written to.
+	</description>
+
+	<arg value="ps" />
+	<arg name="extensions" value="php" />
+
+	<!--
+		The whole plugin, rather than a list of directories. phpcs aborts with
+		"The file ... does not exist" on any <file> path that is not there yet,
+		so naming actions/, routes/, admin-pages/ and the rest up front would
+		break the moment you lint before creating one of them. Scoping to the
+		root instead means a directory is covered the day it appears, and this
+		file never needs editing.
+	-->
+	<file>.</file>
+
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/build/*</exclude-pattern>
+
+	<config name="text_domain" value="{{text_domain}}" />
+	<config name="minimum_wp_version" value="6.9" />
+
+
+	<!-- rules -->
+
+	<rule ref="WordPress-Core">
+		<exclude name="WordPress.PHP.YodaConditions.NotYoda" />
+		<exclude name="WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid" />
+		<!-- PSR-4 class files, not WordPress's hyphenated filenames. -->
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName" />
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase" />
+	</rule>
+
+	<rule ref="WordPress.WP.I18n" />
+
+	<rule ref="VariableAnalysis.CodeAnalysis.VariableAnalysis">
+		<properties>
+			<property name="allowUnusedParametersBeforeUsed" value="true" />
+			<!-- Almost everything you write here implements an abstract whose
+			signature you do not choose, so a parameter your implementation does not
+			need is normal rather than a smell: an ability reads `$this->id` and
+			never `$input['id']`, and a static block ignores the `$content` a
+			dynamic one renders. Unused *variables* are still reported, because
+			those are usually a real mistake. -->
+			<property name="allowUnusedFunctionParameters" value="true" />
+		</properties>
+	</rule>
+
+	<!-- A template is handed its variables by the Views service, through extract(),
+	which no static analysis can follow. The `@var` block at the top of a generated
+	view does not help: this sniff reads no docblocks at all. Left on, every view
+	reports every variable it was passed as undefined. Scoped to the views
+	directory, so the same mistake anywhere else is still caught. -->
+	<rule ref="VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable">
+		<exclude-pattern>*/views/*</exclude-pattern>
+	</rule>
+
+	<rule ref="Generic.CodeAnalysis.EmptyStatement" />
+
+	<!-- Every copied file opens with a `{Area}: {Subject}` header. Only the
+	Missing check is wanted here, not Squiz's @package/@author expectations. -->
+	<rule ref="Squiz.Commenting.FileComment">
+		<exclude name="Squiz.Commenting.FileComment.SpacingAfterOpen" />
+		<exclude name="Squiz.Commenting.FileComment.SpacingAfterComment" />
+		<exclude name="Squiz.Commenting.FileComment.MissingPackageTag" />
+		<exclude name="Squiz.Commenting.FileComment.PackageTagOrder" />
+		<exclude name="Squiz.Commenting.FileComment.MissingSubpackageTag" />
+		<exclude name="Squiz.Commenting.FileComment.SubpackageTagOrder" />
+		<exclude name="Squiz.Commenting.FileComment.MissingAuthorTag" />
+		<exclude name="Squiz.Commenting.FileComment.AuthorTagOrder" />
+		<exclude name="Squiz.Commenting.FileComment.MissingCopyrightTag" />
+		<exclude name="Squiz.Commenting.FileComment.CopyrightTagOrder" />
+		<exclude name="Squiz.Commenting.FileComment.IncorrectAuthor" />
+		<exclude name="Squiz.Commenting.FileComment.IncorrectCopyright" />
+	</rule>
+
+	<rule ref="SlevomatCodingStandard.Namespaces.UnusedUses">
+		<properties>
+			<!-- Types referenced only in docblock annotations count as used, so
+			an imported type can stay a `use` rather than being inlined. -->
+			<property name="searchAnnotations" value="true" />
+		</properties>
+	</rule>
+
+	<rule ref="SlevomatCodingStandard.Namespaces.FullyQualifiedGlobalFunctions" />
+	<rule ref="SlevomatCodingStandard.Functions.DisallowTrailingCommaInCall" />
+	<rule ref="SlevomatCodingStandard.Functions.DisallowTrailingCommaInDeclaration" />
+	<rule ref="SlevomatCodingStandard.Functions.DisallowArrowFunction" />
+
+	<!-- declare(strict_types=1) in every file, so native signatures are
+	enforced at call time rather than silently coerced. -->
+	<rule ref="SlevomatCodingStandard.TypeHints.DeclareStrictTypes">
+		<properties>
+			<property name="declareOnFirstLine" value="false" />
+			<property name="spacesCountAroundEqualsSign" value="0" />
+		</properties>
+		<!-- A view is a markup template that drops straight out of PHP into
+		HTML. It declares no types to be strict about, and the Views module
+		renders it rather than anything calling into it. -->
+		<exclude-pattern>*/views/*</exclude-pattern>
+	</rule>
+
+	<!-- Class member order: traits, constants, properties, constructor, magic
+	methods, then instance methods by visibility (public, protected, private),
+	with static methods grouped last. Slevomat requires every group to be
+	listed, so the final/abstract variants fold into their visibility bucket. -->
+	<rule ref="SlevomatCodingStandard.Classes.ClassStructure">
+		<properties>
+			<property name="groups" type="array">
+				<element value="uses" />
+				<element value="enum cases" />
+				<element value="public constants" />
+				<element value="protected constants" />
+				<element value="private constants" />
+				<element value="public static properties" />
+				<element value="protected static properties" />
+				<element value="private static properties" />
+				<element value="public properties" />
+				<element value="protected properties" />
+				<element value="private properties" />
+				<element value="constructor" />
+				<element value="static constructors" />
+				<element value="magic methods" />
+				<element value="public methods, public final methods, public abstract methods" />
+				<element
+					value="protected methods, protected final methods, protected abstract methods" />
+				<element value="private methods" />
+				<element
+					value="public static methods, public static final methods, public static abstract methods" />
+				<element
+					value="protected static methods, protected static final methods, protected static abstract methods" />
+				<element value="private static methods" />
+				<element value="destructor" />
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Blank lines at every block boundary, so a stray newline is something
+	`phpcbf` removes rather than something you argue about in review.
+	WordPress-Core already carries Squiz's SuperfluousWhitespace, but its
+	empty-line check only looks inside a function or closure; the class body,
+	the brace lines and the gaps between members all sit outside it. At most one
+	blank line after a class opening brace, none before the closing one, one
+	between members, none at the edges of a function or an `if` body. -->
+	<rule ref="SlevomatCodingStandard.Classes.EmptyLinesAroundClassBraces">
+		<!-- Requiring a line after the opening brace is excluded rather than
+		set, because an empty class body cannot satisfy that and "none before
+		the closing brace" at once, and phpcbf gives up on the file instead of
+		choosing. -->
+		<exclude name="SlevomatCodingStandard.Classes.EmptyLinesAroundClassBraces.NoEmptyLineAfterOpeningBrace" />
+		<properties>
+			<property name="linesCountAfterOpeningBrace" value="1" />
+			<property name="linesCountBeforeClosingBrace" value="0" />
+		</properties>
+	</rule>
+
+	<!-- ClassMemberSpacing returns early when two adjacent members are the same
+	kind, so on its own it only governs the transitions (last property to first
+	method); the per-kind sniffs cover method-after-method. -->
+	<rule ref="SlevomatCodingStandard.Classes.ClassMemberSpacing" />
+	<rule ref="SlevomatCodingStandard.Classes.MethodSpacing" />
+	<rule ref="SlevomatCodingStandard.Classes.PropertySpacing" />
+	<rule ref="SlevomatCodingStandard.Classes.ConstantSpacing" />
+	<rule ref="SlevomatCodingStandard.Classes.EnumCaseSpacing" />
+	<rule ref="SlevomatCodingStandard.Classes.TraitUseSpacing" />
+
+	<!-- Squiz.WhiteSpace.FunctionClosingBraceSpace is deliberately not here: it
+	hardcodes *requiring* a blank line before a closing brace, with no property
+	to turn that around. -->
+	<rule ref="SlevomatCodingStandard.Namespaces.NamespaceSpacing" />
+	<rule ref="SlevomatCodingStandard.Namespaces.UseSpacing" />
+	<rule ref="Squiz.WhiteSpace.FunctionOpeningBraceSpace" />
+	<rule ref="PSR2.Methods.FunctionClosingBrace" />
+	<rule ref="WordPress.WhiteSpace.ControlStructureSpacing">
+		<properties>
+			<property name="blank_line_check" value="true" />
+		</properties>
+	</rule>
+
+
+	<!-- Prepare SQL as close to the query as possible. -->
+	<rule ref="WordPress.DB.PreparedSQL" />
+	<rule ref="WordPress.DB.PreparedSQL.InterpolatedNotPrepared">
+		<type>warning</type>
+	</rule>
+	<rule ref="WordPress.DB.PreparedSQLPlaceholders" />
+
+	<rule ref="WordPress.Security.NonceVerification">
+		<type>warning</type>
+	</rule>
+	<rule ref="WordPress.Security.ValidatedSanitizedInput">
+		<type>warning</type>
+	</rule>
+
+	<rule ref="Generic.PHP.BacktickOperator">
+		<severity>7</severity>
+	</rule>
+	<rule ref="Squiz.PHP.Heredoc">
+		<severity>7</severity>
+	</rule>
+	<rule ref="Generic.PHP.DiscourageGoto.Found">
+		<type>error</type>
+		<severity>7</severity>
+		<message>The "goto" language construct should not be used.</message>
+	</rule>
+
+	<rule ref="WordPress.PHP.DevelopmentFunctions">
+		<type>warning</type>
+	</rule>
+
+	<rule ref="Generic.PHP.DisallowShortOpenTag" />
+	<rule ref="Generic.PHP.DisallowShortOpenTag.Found">
+		<severity>7</severity>
+	</rule>
+	<rule ref="Generic.PHP.DisallowShortOpenTag.EchoFound">
+		<severity>7</severity>
+	</rule>
+	<rule ref="Generic.PHP.DisallowAlternativePHPTags">
+		<severity>7</severity>
+	</rule>
+
+	<rule ref="WordPress.Security.PluginMenuSlug">
+		<severity>6</severity>
+	</rule>
+
+	<rule ref="WordPress.DB.RestrictedClasses">
+		<severity>7</severity>
+	</rule>
+	<rule ref="WordPress.DB.RestrictedFunctions">
+		<severity>7</severity>
+	</rule>
+
+	<!-- Prefer what WordPress does better. The three exclusions are the file
+	and JSON handling the copied toolkit source does directly. -->
+	<rule ref="WordPress.WP.AlternativeFunctions">
+		<type>error</type>
+		<exclude name="WordPress.WP.AlternativeFunctions.json_encode_json_encode" />
+		<exclude name="WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents" />
+		<exclude name="WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents" />
+	</rule>
+
+	<rule ref="Generic.PHP.ForbiddenFunctions">
+		<properties>
+			<property name="forbiddenFunctions" type="array">
+				<element key="move_uploaded_file" value="null" />
+				<element key="passthru" value="null" />
+				<element key="proc_open" value="null" />
+				<element key="create_function" value="null" />
+				<element key="eval" value="null" />
+				<element key="str_rot13" value="null" />
+			</property>
+		</properties>
+		<type>error</type>
+		<severity>7</severity>
+	</rule>
+
+	<rule ref="Squiz.PHP.DiscouragedFunctions">
+		<properties>
+			<property name="forbiddenFunctions" type="array">
+				<element key="set_time_limit" value="null" />
+				<element key="ini_set" value="null" />
+				<element key="ini_alter" value="null" />
+				<element key="dl" value="null" />
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.WP.DeprecatedClasses" />
+	<rule ref="WordPress.WP.DeprecatedFunctions" />
+	<rule ref="WordPress.WP.DeprecatedParameters" />
+	<rule ref="WordPress.DateTime.RestrictedFunctions" />
+
+	<rule ref="WordPress.WP.DiscouragedConstants">
+		<type>error</type>
+		<severity>7</severity>
+	</rule>
+	<rule ref="WordPress.WP.DiscouragedFunctions">
+		<severity>6</severity>
+	</rule>
+	<rule ref="WordPress.WP.DeprecatedParameterValues">
+		<severity>7</severity>
+	</rule>
+
+	<rule ref="Generic.Files.ByteOrderMark">
+		<severity>7</severity>
+	</rule>
+</ruleset>

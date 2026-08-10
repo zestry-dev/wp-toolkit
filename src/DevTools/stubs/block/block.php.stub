@@ -1,0 +1,71 @@
+<?php
+/**
+ * {{title}} block: server-side render.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\Blocks\Block;
+
+return new class() extends Block {
+
+	// Declare any module this block needs as a public typed property and the
+	// plugin injects it before render() runs -- no constructor, no get().
+	// Then render through it, e.g. `return $this->views->get( 'blocks/{{name}}',
+	// array( 'title' => $attributes['title'] ?? '' ) );`
+	//
+	// public Views $views;
+
+	/**
+	 * Return this block's front-end markup.
+	 *
+	 * Returns rather than echoes: anything echoed here lands ahead of the
+	 * block, outside its own output.
+	 *
+	 * @param array     $attributes Parsed and defaulted against block.json, so a
+	 *                              declared attribute is always present.
+	 * @param string    $content    This block's children, already rendered and
+	 *                              ready to place -- return it somewhere to wrap
+	 *                              them, ignore it to render without them.
+	 * @param \WP_Block $block      ->context for values an ancestor passes down,
+	 *                              ->inner_blocks to reach the children directly.
+	 * @return string The markup, which WordPress outputs unchanged.
+	 */
+	public function render( array $attributes, string $content, \WP_Block $block ): string {
+		return sprintf(
+			'<div %s>%s</div>',
+			get_block_wrapper_attributes(),
+			esc_html( $attributes['title'] ?? '' )
+		);
+	}
+
+	// Override to render this block's children yourself -- once per item in a
+	// loop, say, or wrapped individually. WordPress then leaves $content empty
+	// and $this->render_inner_blocks( $block ) produces them on demand.
+	public static function skips_inner_blocks(): bool {
+		return false;
+	}
+
+	/**
+	 * Enqueue a third-party dependency this block needs.
+	 *
+	 * Optional. Runs once, the first time this block renders on the page, so a
+	 * library (a slider, a charting script) loads only where the block is used.
+	 *
+	 * Register the handle at boot, from the plugin's own Assets initializer,
+	 * and enqueue it by name here: this runs mid-render, which is too late to
+	 * be declaring dependencies and versions.
+	 *
+	 * This block's own scripts and styles belong in block.json instead, which
+	 * WordPress both registers and enqueues wherever the block appears.
+	 *
+	 * @param \{{copied_namespace}}\Kernel\Plugin $plugin
+	 * @return void
+	 */
+	public static function enqueue_assets( \{{copied_namespace}}\Kernel\Plugin $plugin ): void {
+		// $plugin->get( Assets::class )->enqueue_script( 'slider' );
+	}
+};

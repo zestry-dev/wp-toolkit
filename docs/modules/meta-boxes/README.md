@@ -1,0 +1,247 @@
+<!--
+    Generated from src/Modules/MetaBoxes/MetaBoxes.php.
+    Do not edit by hand: run `composer docs` after changing the source.
+-->
+
+# MetaBoxes
+
+Discovers `meta-boxes/` &nbsp;·&nbsp; Each file returns [`MetaBox`](meta-box.md) &nbsp;·&nbsp; Dependencies [`path`](../../services/path/), [`fields`](../fields/)
+
+Puts panels on the post and comment edit screens, and owns the part that is easy to get wrong.
+
+A file in `meta-boxes/` returns a `MetaBox`. Its filename is the box's identifier, prefixed with your plugin slug: `meta-boxes/details.php` becomes `{plugin-slug}-details`.
+
+## What this exists for
+
+The markup is the easy half, and this module does not touch it. The save is the half worth owning, because `save_post` fires far more often than a user pressing Update, and every guard you would write by hand is a bug when omitted:
+
+- **An autosave carries none of your fields.** Reading them anyway stores
+empty values over what was there.
+- **A revision is saved as its own post.** Writing meta then attaches it to
+the revision rather than the post.
+- **Without a nonce, any page can submit that form on a user's behalf.**
+- **Without a capability check, anyone who can reach the screen can write.**
+
+All four are checked before your `save()` runs, and the nonce field is printed for you before your `render()` does.
+
+## The two screens that have boxes
+
+A box declares an `MetaBoxType` — `Post` or `Comment` — and those are the only two WordPress offers. Terms and users take custom fields through action hooks that emit table rows rather than panels, so they are not a meta-box concern at all; register their meta with `Fields` and render it on the term or profile form yourself.
+
+The comment screen has neither autosaves nor revisions, so a comment box is guarded by its nonce and capability alone.
+
+## The block editor
+
+The block editor still shows classic boxes, and a post type that excludes `editor` support has nothing else. But for a type using the block editor, the modern equivalent is a sidebar panel written in JavaScript against meta you registered with `Fields` — a box is not the only answer, just the one that needs no build step.
+
+[Adding it](#adding-it) &nbsp;·&nbsp; [A box](#a-box) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a MetaBox](#writing-a-metabox) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+
+## Adding it
+
+```bash
+wp zestry add module meta-boxes
+```
+
+> [!IMPORTANT]
+> **A module is built because `bootstrap.php` lists it.** `MetaBoxes` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+
+```php
+// bootstrap.php
+return array(
+    MetaBoxes::class,
+);
+```
+
+## A box
+
+```php
+// meta-boxes/details.php
+return new class extends MetaBox {
+
+    public function title(): string {
+        return __( 'Book details', 'acme-plugin' );
+    }
+
+    public function screens(): array {
+        return array( 'book' );
+    }
+
+    public function render( object $post ): void {
+        // your markup
+    }
+
+    public function save( object $post ): void {
+        // reached only on a real save, by a user allowed to make it
+    }
+};
+```
+
+## Changing the defaults
+
+Point it at a different directory
+
+```php
+MetaBoxes::class => static function ( MetaBoxes $boxes ): void {
+    $boxes->set_boxes_root( 'panels' );
+},
+```
+
+## Writing a MetaBox
+
+A file in `meta-boxes/` returns a [`MetaBox`](meta-box.md) instance, which `wp zestry make meta-box <name>` generates.
+
+## Related classes
+
+Shipped with this module, and written against directly:
+
+- [`Context`](context.md) — enum, where on the edit screen a box appears
+- [`MetaBoxType`](meta-box-type.md) — enum, what kind of screen a box appears on
+- [`Priority`](priority.md) — enum, where a box sits among the others sharing its context
+
+## Constants
+
+### `DEFAULT_BOXES_ROOT`
+
+```php
+const DEFAULT_BOXES_ROOT = 'meta-boxes';
+```
+
+Where boxes are discovered, relative to the plugin root.
+
+## You must implement
+
+This one method is abstract: a subclass that does not declare it will not load.
+
+### `on_boot()`
+
+What this module does on its own.
+
+```php
+abstract protected function on_boot(): void
+```
+
+Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
+
+**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
+
+`run_at_init()` is the way out of all three, and where anything a module registers belongs.
+
+## Methods you can use
+
+### `set_boxes_root( $root )`
+
+Read boxes from a different directory.
+
+```php
+public function set_boxes_root( string $root ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$root` — Directory relative to the plugin root |
+| **Return** | — |
+| **Throws** | — |
+
+Call this before the module boots — from its `bootstrap.php` entry. Naming a directory that does not exist is an error and throws at boot, where leaving the default alone and having no such directory simply means you have no boxes yet.
+
+<br>
+
+### `get_discovered_boxes()`
+
+Every discovered box, by screen type and then by identifier.
+
+```php
+public function get_discovered_boxes(): array
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | Screen type => identifier => instance |
+| **Throws** | `DiscoveryException` — When a directory named by set_boxes_root() does not exist, or a file returns the wrong value |
+
+<br>
+
+### `get_boxes_of( $type )`
+
+Every box belonging to one kind of screen, by identifier.
+
+```php
+public function get_boxes_of( MetaBoxType $type ): array
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$type` — The screen type |
+| **Return** | `array` |
+| **Throws** | `DiscoveryException` — When discovery fails |
+
+<br>
+
+### `get_box_id( $name )`
+
+The identifier a box file registers under.
+
+```php
+public function get_box_id( string $name ): string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$name` — The box's local name — its filename without `.php` |
+| **Return** | `string` |
+| **Throws** | — |
+
+Prefixed with the plugin slug, since a box's id becomes an element id on a screen every plugin can add panels to.
+
+<br>
+
+### `get_id_of( $box )`
+
+This box's identifier, from the file it was discovered in.
+
+```php
+public function get_id_of( MetaBox $box ): string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$box` — The instance to look up |
+| **Return** | `string` |
+| **Throws** | `InvalidArgumentException` — When the instance was not discovered by this module |
+
+<br>
+
+### `run_at_init( $callback )`
+
+Run a callback on `init`, or immediately if `init` has already fired.
+
+```php
+final public function run_at_init( callable $callback ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$callback` — What to run |
+| **Return** | — |
+| **Throws** | — |
+
+Almost everything a module registers — a post type, a block, a WP-CLI command — has to happen on `init`, and a plain `add_action( 'init', ... )` is a callback that never runs once `init` has passed. A module can be resolved on either side of it: `Plugin::run()` is synchronous, so an entry file that calls it at plugin load is ahead of `init`, while one that calls it from a later hook — or a `get()` during a request — is behind. This behaves the same either way, so a module never has to care which.
+
+The callback receives the module, matching the initializer signature, so a closure declared elsewhere needs no `use` to reach it:
+
+```php
+protected function on_boot(): void {
+    $this->run_at_init( function ( self $module ): void {
+        $module->register_widgets();
+    } );
+}
+```
+
+## See also
+
+- [`MetaBox`](meta-box.md) — what a file in `meta-boxes/` returns
+- [`path`](../../services/path/) — copied in alongside this one
+- [`fields`](../fields/) — copied in alongside this one
+- [`Module`](../module.md) — what every module inherits
+- [`wp zestry add module meta-boxes`](../../commands/add-module.md) — the command that copies it

@@ -1,0 +1,109 @@
+<?php
+/**
+ * {{name}} admin page.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\AdminPages\AdminPage;
+use {{copied_namespace}}\Modules\AdminPages\ParentMenu;
+use {{copied_namespace}}\Services\Request\Attributes\RequestArgument;
+
+// Rendering your own full-width UI rather than the usual WordPress "wrap"
+// layout? Swap AdminPage for ModernAdminPage above and below -- same class plus
+// a critical-CSS reset of wp-admin's padding and legacy chrome, so a custom
+// shell gets the full canvas without a layout shift while its stylesheet loads.
+return new class() extends AdminPage {
+
+	// The page slug is this file's name -- ?page={plugin-slug}-{{name}}.
+	// Renaming the file changes the URL, so every bookmark, link and redirect
+	// to the old one stops working.
+
+	// What this form takes, declared once. The value is checked against the type
+	// and bound before handle_submit() runs, so read $this->example rather than
+	// $_POST['example'] -- the same declaration a route, an ability and an AJAX
+	// action use. A default makes it optional; drop it to make it required.
+	#[RequestArgument( 'An example value.' )]
+	public string $example = '';
+
+	// Page title: shown in the browser tab and as the <h1> if render() uses it.
+	public function title(): string {
+		return '{{title}}';
+	}
+
+	// WP capability required to see and open this page -- enforced by the
+	// AdminPages module before render()/handle_submit() ever run.
+	public function capability(): string {
+		return 'manage_options';
+	}
+
+	// null (default): placed by folder structure (a file inside a folder
+	// nests under that folder's own page; otherwise it's top-level). Return a
+	// ParentMenu case (e.g. ParentMenu::Settings) to nest under a core
+	// WordPress menu instead, or a page slug (build a sibling's via
+	// $this->get_page_slug( 'other-file' )) to nest under that.
+	public function parent(): ParentMenu|string|null {
+		return null;
+	}
+
+	// null (default): WordPress's own default ordering among sibling menu items.
+	public function position(): ?int {
+		return null;
+	}
+
+	// Top-level menu icon only -- ignored entirely if parent() nests this
+	// page under something. A dashicon class name or an image URL.
+	public function icon(): string {
+		return 'dashicons-admin-generic';
+	}
+
+	// Enqueue this page's own CSS/JS here -- called only when this specific
+	// page is being displayed, not on every admin request.
+	public function enqueue_assets(): void {}
+
+	// Runs only after the module has verified the POST request's nonce and
+	// capability(), before render() would run in the same request.
+	//
+	// Redirect once you have saved, rather than falling through to render():
+	// without it the browser's current request is still the POST, so a refresh
+	// resubmits the form and your user gets "Confirm Form Resubmission" instead
+	// of their page -- and a second save. Redirecting turns the result into a
+	// plain GET, which is why the notice arrives as a query argument rather
+	// than as a property set here.
+	public function handle_submit(): void {
+		// Save $this->example. With `public Options $options;` declared above,
+		// that is $this->options->set( '{{name}}_example', $this->example );
+
+		\wp_safe_redirect( $this->get_page_url( null, array( 'updated' => '1' ) ) );
+		exit;
+	}
+
+	// Outputs the page's markup, wrapped in the admin container. Called on
+	// every GET view, and again after handle_submit() on a validated POST.
+	//
+	// The markup lives in views/admin-pages/{{name}}.php, generated alongside
+	// this file. The template gets exactly what is named here and nothing else
+	// of this page, so its inputs are readable without opening it. A form needs
+	// three of them; add your own alongside.
+	//
+	// Echoing markup from here works for something tiny, and stops working
+	// sooner than it looks: an admin page grows a table, then a notice, then a
+	// second form.
+	public function render(): void {
+		$this->view(
+			'admin-pages/{{name}}',
+			array(
+				'title'   => $this->title(),
+				'action'  => $this->get_page_url(),
+				'nonce'   => $this->get_nonce_action(),
+				// Set by the redirect in handle_submit(). Reading a query
+				// argument to decide what to show needs no nonce -- nothing is
+				// being acted on -- which is what the ignore says.
+				'updated' => isset( $_GET['updated'] ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			)
+		);
+	}
+};

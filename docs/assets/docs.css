@@ -1,0 +1,187 @@
+/**
+ * Stylesheet for the documentation, for a static site that does not exist yet.
+ *
+ * Nothing links this today. GitHub and GitLab strip <style>, style= and class=
+ * from rendered markdown, so it has no effect where the docs are actually read,
+ * and this repository ships no HTML renderer.
+ *
+ * It is kept because publishing docs/ as a site is a real option and this is a
+ * usable starting point for one -- but that site needs more than a stylesheet:
+ * the pages use GitHub alert blocks (`> [!NOTE]`), relative `.md` links that
+ * have to be rewritten to URLs, and fenced code with no token markup here to
+ * highlight. Reach for a static-site generator that already does all three
+ * rather than growing a renderer in PHP.
+ */
+
+:root {
+	--doc-text: #1f2328;
+	--doc-muted: #59636e;
+	--doc-line: #d1d9e0;
+	--doc-accent: #0969da;
+	--doc-surface: #f6f8fa;
+	--doc-code: #eff1f3;
+	--doc-max: 60rem;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--doc-text: #e6edf3;
+		--doc-muted: #9198a1;
+		--doc-line: #3d444d;
+		--doc-accent: #4493f8;
+		--doc-surface: #151b23;
+		--doc-code: #21262d;
+	}
+
+	body {
+		background: #0d1117;
+	}
+}
+
+body {
+	margin: 0 auto;
+	padding: 2.5rem 1.25rem 6rem;
+	max-width: var(--doc-max);
+	color: var(--doc-text);
+	font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+		Helvetica, Arial, sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	line-height: 1.25;
+	margin: 2rem 0 1rem;
+	font-weight: 600;
+}
+
+h1 {
+	font-size: 2rem;
+	padding-bottom: 0.3em;
+	border-bottom: 1px solid var(--doc-line);
+}
+
+h2 {
+	font-size: 1.5rem;
+	margin-top: 2.5rem;
+	padding-bottom: 0.3em;
+	border-bottom: 1px solid var(--doc-line);
+}
+
+h3 {
+	font-size: 1.15rem;
+}
+
+/* A method or constant heading: monospace, so it reads as an identifier. */
+h3 code,
+h4 code {
+	padding: 0;
+	background: none;
+	font-size: 1em;
+	color: var(--doc-accent);
+}
+
+a {
+	color: var(--doc-accent);
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+/*
+ * Tables fill the column and scroll rather than overflow, since a signature or
+ * a dependency list can be wider than the page on a narrow screen.
+ */
+table {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	overflow-x: auto;
+	border-collapse: collapse;
+	margin: 1.25rem 0;
+	border: 1px solid var(--doc-line);
+	border-radius: 6px;
+}
+
+th,
+td {
+	padding: 0.6rem 0.9rem;
+	text-align: left;
+	border-bottom: 1px solid var(--doc-line);
+}
+
+thead th {
+	background: var(--doc-surface);
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+/*
+ * A method's table labels its rows down the first column -- Parameters, Return,
+ * Throws -- against descriptions that run long. The label column takes only the
+ * width it needs, and both cells align to the top so a multi-line description
+ * does not float its label into the middle.
+ */
+td {
+	vertical-align: top;
+}
+
+td:first-child {
+	width: 1%;
+	white-space: nowrap;
+}
+
+tr:last-child td {
+	border-bottom: 0;
+}
+
+tbody tr:nth-child(even) {
+	background: color-mix(in srgb, var(--doc-surface) 55%, transparent);
+}
+
+code {
+	padding: 0.2em 0.4em;
+	background: var(--doc-code);
+	border-radius: 4px;
+	font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+	font-size: 0.875em;
+}
+
+pre {
+	padding: 1rem;
+	overflow-x: auto;
+	background: var(--doc-surface);
+	border: 1px solid var(--doc-line);
+	border-radius: 6px;
+	line-height: 1.45;
+}
+
+pre code {
+	padding: 0;
+	background: none;
+	font-size: 0.85rem;
+}
+
+blockquote {
+	margin: 1.25rem 0;
+	padding: 0.75rem 1rem;
+	color: var(--doc-muted);
+	border-left: 4px solid var(--doc-line);
+	background: color-mix(in srgb, var(--doc-surface) 60%, transparent);
+}
+
+/* The method jump list under a "Methods" heading. */
+h2 + p code,
+h3 + p code {
+	white-space: nowrap;
+}
+
+hr {
+	height: 1px;
+	margin: 2rem 0;
+	border: 0;
+	background: var(--doc-line);
+}

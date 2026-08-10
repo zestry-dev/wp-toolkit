@@ -1,0 +1,78 @@
+<?php
+/**
+ * {{name}} post meta field.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\Fields\Field;
+// use {{copied_namespace}}\Modules\Fields\MetaType;
+
+return new class() extends Field {
+
+	// The meta key is this file's name -- {{name}}. Post meta keys are shared
+	// across every plugin on a post, so name the file with a prefix when the
+	// field attaches to a post type you do not own.
+	//
+	// WordPress marks meta protected by a leading underscore in the key, so
+	// naming the file `_{{name}}.php` is one way to say it. This is the other,
+	// and it works for a key of any spelling: protected means no Custom Fields
+	// panel entry and no block able to bind to it. Who may *write* it is
+	// can_edit() below, either way.
+	//
+	// public function is_protected(): ?bool {
+	//     return true;
+	// }
+
+	// What this attaches to within its object type: post type names for post
+	// meta, taxonomy names for term meta. An empty list means every subtype.
+	public function subtypes(): array {
+		return array( 'post' );
+	}
+
+	// Post meta by default. Term, User and Comment are the others.
+	//
+	// public function object_type(): MetaType {
+	//     return MetaType::Term;
+	// }
+
+	// string, boolean, integer, number, array or object. An array or object
+	// shown in REST needs a schema; see is_shown_in_rest().
+	public function type(): string {
+		return 'string';
+	}
+
+	// Runs on every write, including through REST.
+	public function sanitize( mixed $value ): mixed {
+		return \sanitize_text_field( (string) $value );
+	}
+
+	// A field holds one value per post. For several, return 'array' from
+	// type() and store them in one row -- and if you need to FIND posts by
+	// one of the values, use a taxonomy instead, which is indexed.
+
+	// On by default, because the block editor reads and writes meta over
+	// REST -- a field kept out of it cannot be edited there. Turn it off for
+	// anything a reader of the post should not see.
+	//
+	// public function is_shown_in_rest(): bool|array {
+	//     return false;
+	// }
+
+	// Checked on top of the post's own edit permission, never instead of it.
+	//
+	// public function can_edit( int $post_id ): bool {
+	//     return \current_user_can( 'manage_options' );
+	// }
+
+	// Save the value with each revision, so it reverts with the post. The post
+	// type must support 'revisions' or the field does not register at all --
+	// a PostType here supports only title and editor by default.
+	//
+	// public function has_revisions(): bool {
+	//     return true;
+	// }
+};

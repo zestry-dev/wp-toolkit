@@ -1,0 +1,42 @@
+<?php
+/**
+ * {{name}} WP-CLI command.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\CLI\Command;
+
+return new class() extends Command {
+
+	// The command is this file's name -- wp {plugin-slug} {{name}}. Renaming
+	// the file renames the command, so a deploy script or a runbook calling the
+	// old one fails.
+
+	/**
+	 * {{title}}.
+	 *
+	 * Keep this docblock's ## OPTIONS/## EXAMPLES sections filled in --
+	 * WP-CLI parses them for this command's own `--help` output, so this is
+	 * not just a comment:
+	 *
+	 * ## OPTIONS
+	 *
+	 * <name>
+	 * : An example positional argument.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp {plugin-slug} {{name}} Alice
+	 *
+	 * @param array $args       Positional arguments -- e.g. [ $name ] for the example above.
+	 * @param array $assoc_args Named arguments supplied as --option=value.
+	 * @return void
+	 */
+	public function handle( array $args, array $assoc_args ): void {
+		$this->success( 'Done.' );
+	}
+};

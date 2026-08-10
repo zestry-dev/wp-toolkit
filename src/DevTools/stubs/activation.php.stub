@@ -1,0 +1,55 @@
+<?php
+
+/**
+ * {{class_name}} activation handler.
+ */
+
+declare( strict_types=1 );
+
+namespace {{class_namespace}};
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Kernel\Abstracts\ActivationHandler;
+
+class {{class_name}} extends ActivationHandler {
+
+	// Declare a public or protected typed property to have another service or
+	// module injected automatically, e.g.:
+	// public DB $db;
+
+	/**
+	 * Set this plugin up, for one site.
+	 *
+	 * Always called with one site active, so it never has to think about
+	 * networks. On a network activation it runs once per existing site, and
+	 * again for each site created afterwards.
+	 *
+	 * $network_wide is context, not instruction: use it to seed something once
+	 * rather than per site. The per-site work is the same either way.
+	 *
+	 * @param bool $network_wide Whether the plugin was activated network-wide.
+	 * @return void
+	 */
+	public function activate( bool $network_wide ): void {
+		// dbDelta( ... ) to create a table, seed a default option, flush
+		// rewrite rules after registering a post type.
+	}
+
+	/**
+	 * Wind back what activation started, for one site.
+	 *
+	 * Deactivation is not uninstallation. A plugin is deactivated to update it,
+	 * to debug a conflict, or by accident -- so undo what costs nothing to
+	 * rebuild, and leave the user's data alone:
+	 *
+	 *     wp_clear_scheduled_hook( 'my_plugin_daily' );   // yes
+	 *     // $wpdb->query( 'DROP TABLE ...' );            // no, an update would wipe it
+	 *
+	 * @param bool $network_wide Whether the plugin was deactivated network-wide.
+	 * @return void
+	 */
+	public function deactivate( bool $network_wide ): void {
+	}
+}

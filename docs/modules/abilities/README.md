@@ -1,0 +1,343 @@
+<!--
+    Generated from src/Modules/Abilities/Abilities.php.
+    Do not edit by hand: run `composer docs` after changing the source.
+-->
+
+# Abilities
+
+Discovers `abilities/` &nbsp;·&nbsp; Each file returns [`Ability`](ability.md) &nbsp;·&nbsp; Dependencies [`path`](../../services/path/), [`request`](../../services/request/)
+
+Publishes what your plugin can do, for the REST API and for AI agents.
+
+A file in `abilities/` returns an `Ability`, and its filename is the name it registers under: `create-order.php` becomes `{plugin-slug}/create-order`. Each one carries a description and JSON Schemas for its input and output — enough for something that has never seen your code to call it correctly.
+
+WordPress gives every public ability a REST endpoint at `wp-json/wp-abilities/v1/abilities/{ability}/run` for free. An MCP adapter installed on the site turns the same registration into a tool an AI agent can call, also for free: there is no protocol code to write on your side, which is the point of the API. Requires WordPress 6.9 or newer.
+
+> [!IMPORTANT]
+> **No adapter ships with WordPress, and you do not need one to be finished.** An ability is a registry entry first. WordPress serves the REST half itself, so that half is testable today; the MCP half is a separate plugin somebody installs, and whether one is present is a property of the site rather than of your code. Write and verify against REST, and an adapter picks the same registration up when it arrives.
+
+Three commands prove the REST half end to end, and are worth running once:
+
+```bash
+# Every ability registered on this site, yours among them.
+wp eval 'echo wp_json_encode( array_keys( wp_get_abilities() ) );'
+
+# And the endpoint, as a client sees it.
+curl -s "$(wp option get siteurl)/wp-json/wp-abilities/v1/abilities"
+
+# Running one. The arguments go under a single `input`, never at the top level.
+curl -s "$(wp option get siteurl)/wp-json/wp-abilities/v1/abilities/acme-plugin/list-orders/run?input[status]=open"
+```
+
+An ability missing from the first is not registered; one missing from the second is registered but not `Ability::is_public()`. The third is a `GET` because that ability reads; `Effect` decides both the method and whether `input` rides in the query string or the JSON body.
+
+Abilities are worth writing even when nothing external calls them yet. One ability is one operation, described once, reachable from a REST client, an agent, a WP-CLI command and your own PHP through `run()` — instead of the same operation written four times.
+
+[Adding it](#adding-it) &nbsp;·&nbsp; [An ability](#an-ability) &nbsp;·&nbsp; [Calling one from your own code](#calling-one-from-your-own-code) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing an Ability](#writing-an-ability) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+
+## Adding it
+
+```bash
+wp zestry add module abilities
+```
+
+> [!IMPORTANT]
+> **A module is built because `bootstrap.php` lists it.** `Abilities` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+
+```php
+// bootstrap.php
+return array(
+    Abilities::class,
+);
+```
+
+## An ability
+
+A typed property carrying a `RequestArgument` is both the input schema and the value: it is described once, validated by WordPress, and bound before your code runs. The property says the type, and whether it is required — one with no default has to be supplied.
+
+```php
+// abilities/publish-post.php
+return new class extends Ability {
+
+    public function label(): string {
+        return __( 'Publish a draft', 'acme-plugin' );
+    }
+
+    public function description(): string {
+        return __( 'Publishes a draft post immediately. Already-published posts are left alone.', 'acme-plugin' );
+    }
+
+    public function effect(): Effect {
+        return Effect::Update;
+    }
+
+    public function is_public(): bool {
+        return true;
+    }
+
+    #[RequestArgument( 'The draft to publish.' )]
+    public int $id;
+
+    public function permission_check( mixed $input ): bool {
+        return current_user_can( 'publish_post', $this->id );
+    }
+
+    public function handle( mixed $input ): mixed {
+        return array( 'published' => (bool) wp_publish_post( $this->id ) );
+    }
+};
+```
+
+## Calling one from your own code
+
+```php
+$result = $this->abilities->run( 'publish-post', array( 'id' => 42 ) );
+
+if ( is_wp_error( $result ) ) {
+    // Invalid input, no permission, or the ability said no.
+}
+```
+
+## Changing the defaults
+
+Group them, or read them from elsewhere
+
+```php
+Abilities::class => static function ( Abilities $abilities ): void {
+    $abilities->set_abilities_root( 'src/abilities' );
+
+    $abilities->add_categories(
+        array(
+            'acme-billing' => array(
+                'label'       => static fn (): string => __( 'Acme billing', 'acme-plugin' ),
+                'description' => static fn (): string => __( 'Invoices, refunds and payment methods.', 'acme-plugin' ),
+            ),
+        )
+    );
+},
+```
+
+## Writing an Ability
+
+A file in `abilities/` returns an [`Ability`](ability.md) instance, which `wp zestry make ability <name>` generates.
+
+## Related classes
+
+Shipped with this module, and written against directly:
+
+- [`Effect`](effect.md) — enum, what running an ability does to the site
+
+## Constants
+
+### `DEFAULT_ABILITIES_ROOT`
+
+```php
+const DEFAULT_ABILITIES_ROOT = 'abilities';
+```
+
+Where abilities are discovered, relative to the plugin root.
+
+## You must implement
+
+This one method is abstract: a subclass that does not declare it will not load.
+
+### `on_boot()`
+
+What this module does on its own.
+
+```php
+abstract protected function on_boot(): void
+```
+
+Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
+
+**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
+
+`run_at_init()` is the way out of all three, and where anything a module registers belongs.
+
+## Methods you can use
+
+### `set_abilities_root( $root )`
+
+Read abilities from a different directory.
+
+```php
+public function set_abilities_root( string $root ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$root` — Directory relative to the plugin root |
+| **Return** | — |
+| **Throws** | — |
+
+Call this before the module boots — from its `bootstrap.php` entry. Naming a directory that does not exist is an error and throws, where leaving the default alone and having no such directory simply means you have no abilities yet.
+
+<br>
+
+### `add_categories( $categories )`
+
+Declare ability categories of your own.
+
+```php
+public function add_categories( array $categories ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$categories` — Labels or configuration, keyed by slug |
+| **Return** | — |
+| **Throws** | `InvalidArgumentException` — When an entry is an array without a label |
+
+Every ability belongs to exactly one category, and WordPress refuses to register one whose category does not exist. You already have a category named after your plugin, registered for you and used by default — this is for splitting a larger plugin into groups a client can show separately, or for a category shared with another plugin of yours.
+
+Keyed by slug, the same shape `bootstrap.php` uses for modules. A plain string is the label, and an array carries a description alongside it:
+
+```php
+$abilities->add_categories(
+    array(
+        'acme-billing' => __( 'Acme billing', 'acme-plugin' ),
+        'acme-reports' => array(
+            'label'       => __( 'Acme reports', 'acme-plugin' ),
+            'description' => __( 'Reads sales figures. Changes nothing.', 'acme-plugin' ),
+        ),
+    )
+);
+
+// abilities/refund-order.php
+public function category(): string {
+    return 'acme-billing';
+}
+```
+
+The description is worth writing. A client listing categories shows it to decide which group to look in, so "Reads sales figures. Changes nothing." earns its place where the generated fallback does not.
+
+A slug is registered exactly as given and is not namespaced to the plugin: WordPress's own `site` and `user` are unprefixed, and an ability naming a category has to match it verbatim. So choose slugs distinctive enough not to collide — a category already registered by WordPress or another plugin is left as it is rather than replaced.
+
+Either value may be given as a callable returning the string, resolved when WordPress asks for its categories. That is the safe form for a `__()` call: an initializer runs while the plugin file loads, early enough that translating there reports `_load_textdomain_just_in_time`.
+
+<br>
+
+### `get_discovered_abilities()`
+
+Every discovered ability, keyed by its local name.
+
+```php
+public function get_discovered_abilities(): array
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | Wired instances keyed by local name |
+| **Throws** | `DiscoveryException` — When a directory named by set_abilities_root() does not exist, or a file returns the wrong value |
+
+<br>
+
+### `get_ability_name( $name )`
+
+The full name an ability file registers under.
+
+```php
+public function get_ability_name( string $name ): string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$name` — The ability's local name — its filename without `.php` |
+| **Return** | `string` |
+| **Throws** | — |
+
+Namespaced to the plugin, since abilities share one registry with every other plugin on the site, and joined with the `/` that registry expects. Both halves are read exactly as written, so `create-order.php` in a plugin slugged `acme-plugin` registers as `acme-plugin/create-order`.
+
+WordPress accepts only lowercase letters, digits and dashes in either half. A file whose name it would refuse is refused here first, when the ability is discovered — see `DiscoveryException::unregistrable_ability_name()`.
+
+<br>
+
+### `get_name_of( $ability )`
+
+This ability's full name, from the file it was discovered in.
+
+```php
+public function get_name_of( Ability $ability ): string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$ability` — The instance to look up |
+| **Return** | `string` |
+| **Throws** | `InvalidArgumentException` — When the instance was not discovered by this module |
+
+<br>
+
+### `get_category_slug()`
+
+The slug of the category registered for this plugin.
+
+```php
+public function get_category_slug(): string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | `string` |
+| **Throws** | — |
+
+Your plugin slug, in the form WordPress accepts. It is what `Ability::category()` returns unless an ability says otherwise, and it is registered only if at least one ability actually uses it.
+
+<br>
+
+### `run( $name, $input )`
+
+Run one of this plugin's abilities.
+
+```php
+public function run( string $name, mixed $input = null ): mixed
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$name` — The ability's local name<br>`$input` — Input matching the ability's schema |
+| **Return** | The ability's result, or a `WP_Error` |
+| **Throws** | `InvalidArgumentException` — When this plugin has no such ability |
+
+Takes the local name — the filename — and applies your namespace, so `run( 'publish-post', … )` calls `{plugin-slug}/publish-post`. Everything an outside caller gets happens here too: the input is validated against the schema, `Ability::permission_check()` is checked, and the result is validated on the way out.
+
+Returns whatever the ability returned, or a `WP_Error` for any of those three failing. That makes an ability the one implementation of an operation, called the same way from a CLI command, an admin page or a cron schedule as from an agent.
+
+<br>
+
+### `run_at_init( $callback )`
+
+Run a callback on `init`, or immediately if `init` has already fired.
+
+```php
+final public function run_at_init( callable $callback ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$callback` — What to run |
+| **Return** | — |
+| **Throws** | — |
+
+Almost everything a module registers — a post type, a block, a WP-CLI command — has to happen on `init`, and a plain `add_action( 'init', ... )` is a callback that never runs once `init` has passed. A module can be resolved on either side of it: `Plugin::run()` is synchronous, so an entry file that calls it at plugin load is ahead of `init`, while one that calls it from a later hook — or a `get()` during a request — is behind. This behaves the same either way, so a module never has to care which.
+
+The callback receives the module, matching the initializer signature, so a closure declared elsewhere needs no `use` to reach it:
+
+```php
+protected function on_boot(): void {
+    $this->run_at_init( function ( self $module ): void {
+        $module->register_widgets();
+    } );
+}
+```
+
+## See also
+
+- [`Ability`](ability.md) — what a file in `abilities/` returns
+- [`path`](../../services/path/) — copied in alongside this one
+- [`request`](../../services/request/) — copied in alongside this one
+- [`Module`](../module.md) — what every module inherits
+- [`wp zestry add module abilities`](../../commands/add-module.md) — the command that copies it

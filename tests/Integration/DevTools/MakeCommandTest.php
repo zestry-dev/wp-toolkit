@@ -1,0 +1,1098 @@
+<?php
+
+declare( strict_types=1 );
+
+namespace Zestry\WPToolkit\Tests\Integration\DevTools;
+
+use Zestry\WPToolkit\DevTools\RuntimePlugin;
+use Zestry\WPToolkit\Kernel\Plugin;
+use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
+use Zestry\WPToolkit\Tests\Support\TestCase;
+
+/**
+ * Shared `wp zestry make <type>` flow: name normalization, generic filesystem
+ * collision guards, and the overwrite prompt.
+ *
+ * Exercised through a concrete anonymous MakeCommand subclass rather than one
+ * of the real commands/make/*.php files, so these tests do not depend on
+ * their get_extra_values() prompts. Path resolves stub files against this
+ * package's own real src/DevTools/stubs/ (this repository doubles as the
+ * zestry-dev/wp-toolkit package root), while ConsumerPlugin's target plugin root
+ * is a throwaway directory under WP_PLUGIN_DIR, matching how
+ * ConsumerPluginTest exercises the same real-CWD requirement.
+ *
+ * @covers \Zestry\WPToolkit\DevTools\Abstracts\MakeCommand
+ */
+final class MakeCommandTest extends TestCase {
+
+	private string $target_plugin_dir = '';
+
+	public function set_up(): void {
+		parent::set_up();
+
+		$this->target_plugin_dir = untrailingslashit( WP_PLUGIN_DIR ) . '/zestry-make-test-' . uniqid();
+		mkdir( $this->target_plugin_dir, 0777, true );
+
+		file_put_contents(
+			$this->target_plugin_dir . '/zestry.json',
+			json_encode(
+				array(
+					'namespace'   => 'Acme\\Plugin',
+					'root'        => 'lib',
+					'text_domain' => 'acme-plugin',
+				),
+				JSON_PRETTY_PRINT
+			)
+		);
+
+		/*
+		 * Reaching `wp zestry make` at all means WordPress loaded this plugin and
+		 * its entry file ran. Some generators need the slug, which nothing on
+		 * disk records -- it is the entry file's second constructor argument --
+		 * so a fixture without a running plugin is a plugin that has none.
+		 */
+		$this->publish_running_plugin( 'acme-plugin' );
+	}
+
+	public function tear_down(): void {
+		unset( $GLOBALS[ RuntimePlugin::REGISTRY ] );
+		$this->remove_dir( $this->target_plugin_dir );
+		parent::tear_down();
+	}
+
+
+
+
+	/**
+	 * A destination that refuses a name outright gets the name it accepts, and the
+	 * command says so -- an ability name is matched against `^[a-z0-9-]+$`, so the
+	 * file as typed would throw at boot instead of registering.
+	 *
+	 * @return void
+	 */
+	public function test_a_constrained_type_writes_the_name_its_destination_accepts(): void {
+		$this->run_make( array( 'create_order' ), array(), 'ability' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/abilities/create-order.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/abilities/create_order.php' );
+
+		$warning = \WP_CLI::last( 'warning' );
+		$this->assertNotNull( $warning, 'Respelling the name is said out loud.' );
+		$this->assertStringContainsString( 'create-order', (string) $warning[0] );
+		$this->assertStringContainsString( 'create_order', (string) $warning[0] );
+		$this->assertStringContainsString( 'a-z0-9-', (string) $warning[0], 'And the reason is given.' );
+	}
+
+	/**
+	 * A page slug lands in `?page=`, so a name a URL would have to encode is
+	 * canonicalised rather than written and refused at discovery.
+	 *
+	 * @return void
+	 */
+	public function test_a_page_name_a_url_could_not_carry_is_canonicalised(): void {
+		$this->run_make( array( 'Monthly Report' ), array(), 'page' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/admin-pages/monthly-report.php' );
+		$this->assertNotNull( \WP_CLI::last( 'warning' ) );
+	}
+
+	/**
+	 * The other side of the line. A `post_type`, a taxonomy and a `meta_key` are
+	 * database columns that appear in REST responses, so all three are written
+	 * exactly as given and nothing is said -- an underscore is the WordPress
+	 * spelling for these, and hyphenating one would rename the column.
+	 *
+	 * All three are asserted because all three are the rule: the type that keeps
+	 * its name is the type with no `normalize_name()`, which is a thing a later
+	 * change adds by being helpful.
+	 *
+	 * @dataProvider data_shaped_names
+	 *
+	 * @param string $type      The `make` type.
+	 * @param string $stub      Its key in run_make()'s stub map.
+	 * @param string $name      The name as typed.
+	 * @param string $directory Where the file lands.
+	 * @return void
+	 */
+	public function test_a_data_shaped_name_is_written_exactly_as_given( string $type, string $stub, string $name, string $directory ): void {
+		$this->run_make( array( $name ), array( 'singular' => 'Thing', 'plural' => 'Things' ), $stub );
+
+		$this->assertFileExists(
+			$this->target_plugin_dir . '/' . $directory . '/' . $name . '.php',
+			\sprintf( '`make %s %s` kept the name it was given.', $type, $name )
+		);
+		$this->assertNull( \WP_CLI::last( 'warning' ), 'Nothing was respelled, so nothing is warned about.' );
+	}
+
+	/**
+	 * The three `make` types whose name is a database column.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: string, 3: string}>
+	 */
+	public function data_shaped_names(): array {
+		return array(
+			'a meta key'   => array( 'field', 'field', 'acme_rating', 'fields' ),
+			'a post type'  => array( 'post-type', 'post-type.php.stub', 'acme_book', 'post-types' ),
+			'a taxonomy'   => array( 'taxonomy', 'taxonomy.php.stub', 'acme_genre', 'taxonomies' ),
+		);
+	}
+
+	/**
+	 * A class name is not a thing to hyphenate, and PSR-4 maps it to the file
+	 * verbatim -- so `RequestLog` has to stay `RequestLog`.
+	 */
+	public function test_does_not_normalize_a_class_name(): void {
+		$this->run_make( array( 'RequestLog' ), array(), 'module.php.stub' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Modules/RequestLog.php' );
+		$this->assertStringContainsString(
+			'class RequestLog extends Module',
+			(string) file_get_contents( $this->target_plugin_dir . '/lib/Modules/RequestLog.php' )
+		);
+	}
+
+
+	/**
+	 * A block is the plugin's own only if its namespace matches the one the
+	 * module derives -- and the module derives it from the plugin **slug**.
+	 *
+	 * This took the text domain, which is a different thing that every example
+	 * in the docs happens to make equal. Where they differ the block registers,
+	 * the editor works, and the front end renders nothing: `Blocks::owns()` does
+	 * not recognise it, and the field naming its PHP is looked for under a key
+	 * nothing wrote.
+	 */
+	public function test_block_namespace_comes_from_the_slug_not_the_text_domain(): void {
+		$this->write_text_domain( 'something-else' );
+
+		$this->run_make( array( 'card' ), array( 'dynamic' => true, 'view' => 'none' ), 'block' );
+
+		$json = (string) file_get_contents( $this->target_plugin_dir . '/src/blocks/card/block.json' );
+
+		$this->assertStringContainsString( '"acme-plugin/card"', $json );
+		$this->assertStringNotContainsString( 'something-else/card', $json );
+		$this->assertStringContainsString( '"acme-plugin-php"', $json );
+	}
+
+	/**
+	 * `zestry.json` records no slug, so a plugin that is not running falls back to
+	 * its directory name -- which is what `Plugin` itself defaults to.
+	 */
+	public function test_block_namespace_falls_back_to_the_directory_name(): void {
+		$this->write_text_domain( 'something-else' );
+		unset( $GLOBALS[ RuntimePlugin::REGISTRY ] );
+
+		$this->run_make( array( 'card' ), array( 'dynamic' => false, 'view' => 'none' ), 'block' );
+
+		// Normalised the same way the module normalises a slug: WordPress
+		// validates a block name against /^[a-z0-9-]+\/[a-z0-9-]+$/, and this
+		// directory's name carries a dot.
+		$expected = (string) preg_replace( '/[^a-z0-9-]/', '', str_replace( '_', '-', strtolower( basename( $this->target_plugin_dir ) ) ) );
+
+		$this->assertStringContainsString(
+			'"' . $expected . '/card"',
+			(string) file_get_contents( $this->target_plugin_dir . '/src/blocks/card/block.json' )
+		);
+	}
+
+	/**
+	 * Stand in for a plugin WordPress has loaded, which is the only thing that
+	 * knows the slug: zestry.json does not record one.
+	 *
+	 * @param string $slug The slug its entry file passed.
+	 * @return void
+	 */
+	private function publish_running_plugin( string $slug ): void {
+		$GLOBALS[ RuntimePlugin::REGISTRY ][ $this->target_plugin_dir ] = new Plugin(
+			$this->target_plugin_dir . '/acme-plugin.php',
+			$slug
+		);
+	}
+
+	/**
+	 * @param string $text_domain What zestry.json should record.
+	 * @return void
+	 */
+	private function write_text_domain( string $text_domain ): void {
+		file_put_contents(
+			$this->target_plugin_dir . '/zestry.json',
+			(string) json_encode(
+				array(
+					'namespace'   => 'Acme\\Plugin',
+					'root'        => 'lib',
+					'text_domain' => $text_domain,
+				)
+			)
+		);
+	}
+
+	public function test_creates_a_file_from_the_stub(): void {
+		$this->run_make( array( 'send-welcome-email' ) );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/actions/send-welcome-email.php' );
+		$this->assertStringContainsString(
+			'use Acme\\Plugin\\Core\\Modules\\Ajax\\AjaxAction;',
+			(string) file_get_contents( $this->target_plugin_dir . '/actions/send-welcome-email.php' )
+		);
+	}
+
+	public function test_strips_a_trailing_php_extension_from_the_name(): void {
+		$this->run_make( array( 'send-welcome-email.php' ) );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/actions/send-welcome-email.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/actions/send-welcome-email.php.php' );
+	}
+
+	public function test_refuses_to_write_when_the_destination_is_already_a_directory(): void {
+		mkdir( $this->target_plugin_dir . '/actions/send-welcome-email.php', 0777, true );
+
+		$this->run_make( array( 'send-welcome-email' ) );
+
+		$this->assertNotNull( \WP_CLI::last( 'error' ) );
+		$this->assertStringContainsString( 'directory already exists', (string) \WP_CLI::last( 'error' )[0] );
+	}
+
+	public function test_refuses_to_write_when_a_parent_path_segment_is_already_a_file(): void {
+		// A real filesystem conflict shared by every type: wp_mkdir_p() cannot
+		// create "actions/leaf" as a directory when "actions/leaf" already
+		// exists as a plain file.
+		mkdir( $this->target_plugin_dir . '/actions', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/actions/leaf', '<?php' );
+
+		$this->run_make( array( 'send-welcome-email' ), array( 'dir' => 'actions/leaf' ) );
+
+		$this->assertNotNull( \WP_CLI::last( 'error' ) );
+		$this->assertStringContainsString( 'already exists as a file', (string) \WP_CLI::last( 'error' )[0] );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/actions/leaf/send-welcome-email.php' );
+	}
+
+	public function test_dir_flag_overrides_the_default_directory(): void {
+		$this->run_make( array( 'send-welcome-email' ), array( 'dir' => 'custom-actions' ) );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/custom-actions/send-welcome-email.php' );
+	}
+
+	public function test_command_type_refuses_a_name_already_claimed_as_a_leaf_command(): void {
+		// commands/test-1.php already registers a leaf command; "test-1/test-2"
+		// would ask CLI to also treat "test-1" as a namespace, which WP-CLI's
+		// own Subcommand::can_have_subcommands() refuses (see CliTest).
+		mkdir( $this->target_plugin_dir . '/commands', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/commands/test-1.php', '<?php' );
+
+		$this->run_make( array( 'test-1/test-2' ), array(), 'command.php.stub' );
+
+		$this->assertNotNull( \WP_CLI::last( 'error' ) );
+		$this->assertStringContainsString( 'already registered as a command', (string) \WP_CLI::last( 'error' )[0] );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/commands/test-1/test-2.php' );
+	}
+
+	public function test_command_type_refuses_a_name_already_claimed_as_a_namespace(): void {
+		// commands/test-1/ already holds command files under that namespace;
+		// "test-1" alone would ask CLI to also register it as a leaf command.
+		mkdir( $this->target_plugin_dir . '/commands/test-1', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/commands/test-1/test-2.php', '<?php' );
+
+		$this->run_make( array( 'test-1' ), array(), 'command.php.stub' );
+
+		$this->assertNotNull( \WP_CLI::last( 'error' ) );
+		$this->assertStringContainsString( 'already exists as a command namespace', (string) \WP_CLI::last( 'error' )[0] );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/commands/test-1.php' );
+	}
+
+	public function test_post_type_type_writes_a_post_type_file_with_singular_and_plural_names(): void {
+		$this->run_make( array( 'book' ), array( 'singular' => 'Book', 'plural' => 'Books' ), 'post-type.php.stub' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/post-types/book.php' );
+
+		$contents = (string) file_get_contents( $this->target_plugin_dir . '/post-types/book.php' );
+		$this->assertStringContainsString( "return 'Book';", $contents );
+		$this->assertStringContainsString( "return 'Books';", $contents );
+		$this->assertStringContainsString( 'use Acme\\Plugin\\Core\\Modules\\PostTypes\\PostType;', $contents );
+	}
+
+	public function test_post_type_type_defaults_singular_to_the_title_cased_name(): void {
+		$this->run_make( array( 'book' ), array( 'plural' => 'Books' ), 'post-type.php.stub' );
+
+		$contents = (string) file_get_contents( $this->target_plugin_dir . '/post-types/book.php' );
+		$this->assertStringContainsString( "return 'Book';", $contents );
+	}
+
+	public function test_taxonomy_type_writes_a_taxonomy_file_with_names_and_object_type(): void {
+		$this->run_make(
+			array( 'genre' ),
+			array( 'singular' => 'Genre', 'plural' => 'Genres', 'object-type' => 'book' ),
+			'taxonomy.php.stub'
+		);
+
+		$this->assertFileExists( $this->target_plugin_dir . '/taxonomies/genre.php' );
+
+		$contents = (string) file_get_contents( $this->target_plugin_dir . '/taxonomies/genre.php' );
+		$this->assertStringContainsString( "return 'Genre';", $contents );
+		$this->assertStringContainsString( "return 'Genres';", $contents );
+		$this->assertStringContainsString( "array( 'book' )", $contents );
+		$this->assertStringContainsString( 'use Acme\\Plugin\\Core\\Modules\\PostTypes\\Taxonomy;', $contents );
+	}
+
+	public function test_module_type_writes_into_the_zestry_config_root_modules_directory(): void {
+		$this->run_make( array( 'RequestLog' ), array(), 'module.php.stub' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Modules/RequestLog.php' );
+
+		$contents = (string) file_get_contents( $this->target_plugin_dir . '/lib/Modules/RequestLog.php' );
+		$this->assertStringContainsString( 'namespace Acme\\Plugin\\Modules;', $contents );
+		$this->assertStringContainsString( 'class RequestLog extends Module', $contents );
+	}
+
+	/**
+	 * A plain module is discovered by nothing, so generating one has to declare
+	 * it -- otherwise the file exists and is reachable by nothing.
+	 */
+	public function test_module_type_declares_itself_in_bootstrap(): void {
+		file_put_contents( $this->target_plugin_dir . '/bootstrap.php', "<?php\n\nreturn array(\n);\n" );
+
+		$this->run_make( array( 'RequestLog' ), array(), 'module.php.stub' );
+
+		$bootstrap = (string) file_get_contents( $this->target_plugin_dir . '/bootstrap.php' );
+
+		$this->assertStringContainsString(
+			'RequestLog::class,',
+			$bootstrap,
+			'Declared, but not autoloaded: the generated class binds no hooks.'
+		);
+	}
+
+	/**
+	 * A stub can be edited into something PHP refuses to compile, and every
+	 * assertion about the file's text still passes. The command compiles what
+	 * it wrote, so whoever ran it hears about it rather than the next request.
+	 *
+	 * The stub is swapped for a broken one and put back, since the defect being
+	 * guarded against is precisely a stub that stops parsing -- a fixture would
+	 * test the checker against something the command never renders.
+	 */
+	public function test_a_generated_file_that_does_not_parse_is_reported(): void {
+		$this->with_broken_module_stub(
+			function (): void {
+				$this->run_make( array( 'RequestLog' ), array(), 'module.php.stub' );
+
+				// $calls is a flat list of [ method, ...args ] tuples.
+				$warnings = implode(
+					' ',
+					array_map(
+						static function ( array $call ): string {
+							return (string) ( $call[1] ?? '' );
+						},
+						array_filter(
+							\WP_CLI::$calls,
+							static function ( array $call ): bool {
+								return 'warning' === $call[0];
+							}
+						)
+					)
+				);
+
+				$this->assertStringContainsString( 'does not parse', $warnings );
+				$this->assertStringContainsString( 'Namespace declaration', $warnings );
+			}
+		);
+	}
+
+	/**
+	 * Autoloading a file that will not compile takes the site down on the next
+	 * request, so the entry records why it is off rather than just being off.
+	 */
+	public function test_an_unparseable_module_is_not_declared_at_all(): void {
+		file_put_contents( $this->target_plugin_dir . '/bootstrap.php', "<?php\n\nreturn array(\n);\n" );
+
+		$this->with_broken_module_stub(
+			function (): void {
+				$this->run_make( array( 'RequestLog' ), array(), 'module.php.stub' );
+
+				$bootstrap = (string) file_get_contents( $this->target_plugin_dir . '/bootstrap.php' );
+
+				// Not declared at all: a file that does not compile must not be
+				// built on every request, and there is no longer a flag to
+				// declare-but-not-build it with. The message says what to do.
+				$this->assertStringNotContainsString( 'RequestLog', $bootstrap );
+				$logged = array_map(
+					static function ( array $call ): string {
+						return (string) ( $call[1] ?? '' );
+					},
+					array_filter(
+						\WP_CLI::$calls,
+						static function ( array $call ): bool {
+							return 'log' === $call[0];
+						}
+					)
+				);
+
+				$this->assertStringContainsString( 'does not parse yet', implode( "\n", $logged ) );
+			}
+		);
+	}
+
+	/**
+	 * Run a callback with the module stub temporarily unparseable, restoring it
+	 * however the callback ends.
+	 *
+	 * The breakage is the real one: an `ABSPATH` guard above the `namespace`,
+	 * which PHP accepts as tokens and rejects as a program.
+	 *
+	 * @param callable(): void $callback What to run while the stub is broken.
+	 * @return void
+	 */
+	private function with_broken_module_stub( callable $callback ): void {
+		$stub     = dirname( __DIR__, 3 ) . '/src/DevTools/stubs/module.php.stub';
+		$original = (string) file_get_contents( $stub );
+
+		file_put_contents(
+			$stub,
+			str_replace(
+				"namespace {{class_namespace}};\n\n// Loaded by WordPress, never requested directly.\n\\defined( 'ABSPATH' ) || exit;",
+				"// Loaded by WordPress, never requested directly.\n\\defined( 'ABSPATH' ) || exit;\n\nnamespace {{class_namespace}};",
+				$original
+			)
+		);
+
+		try {
+			$callback();
+		} finally {
+			file_put_contents( $stub, $original );
+		}
+	}
+
+	/**
+	 * The generated file has to be loadable, not merely written.
+	 *
+	 * Asserting on its text cannot catch a file PHP refuses to parse: the stub
+	 * once put the ABSPATH guard above the namespace, which is a hard fatal on
+	 * every generated module, and every assertion about its contents still
+	 * passed.
+	 */
+	public function test_module_type_generates_parseable_php(): void {
+		$this->run_make( array( 'RequestLog' ), array(), 'module.php.stub' );
+
+		$file = $this->target_plugin_dir . '/lib/Modules/RequestLog.php';
+
+		$this->assertFileExists( $file );
+
+		$output = array();
+		$status = 0;
+		exec( 'php -l ' . escapeshellarg( $file ) . ' 2>&1', $output, $status );
+
+		$this->assertSame( 0, $status, implode( "\n", $output ) );
+	}
+
+	/**
+	 * PHP requires the namespace to be the first statement after `declare`, so
+	 * the guard has to follow it rather than precede it.
+	 */
+	public function test_module_type_declares_its_namespace_before_the_guard(): void {
+		$this->run_make( array( 'RequestLog' ), array(), 'module.php.stub' );
+
+		$source = (string) file_get_contents( $this->target_plugin_dir . '/lib/Modules/RequestLog.php' );
+
+		$this->assertLessThan(
+			strpos( $source, "defined( 'ABSPATH' )" ),
+			strpos( $source, 'namespace Acme\\Plugin\\Modules;' )
+		);
+	}
+
+	/**
+	 * The directory and the namespace come from the same name, so the two
+	 * cannot disagree the way a separate --dir let them.
+	 */
+	public function test_module_type_nests_by_qualifying_the_name(): void {
+		file_put_contents( $this->target_plugin_dir . '/bootstrap.php', "<?php\n\nreturn array(\n);\n" );
+
+		$this->run_make( array( 'Services/Mailer' ), array(), 'module.php.stub' );
+
+		$file = $this->target_plugin_dir . '/lib/Modules/Services/Mailer.php';
+
+		$this->assertFileExists( $file );
+
+		$source = (string) file_get_contents( $file );
+
+		$this->assertStringContainsString( 'namespace Acme\\Plugin\\Modules\\Services;', $source );
+		$this->assertStringContainsString( 'class Mailer extends Module {', $source );
+
+		$output = array();
+		$status = 0;
+		exec( 'php -l ' . escapeshellarg( $file ) . ' 2>&1', $output, $status );
+		$this->assertSame( 0, $status, implode( "\n", $output ) );
+
+		// Declared under the namespace it actually declares, not a flattened one.
+		$this->assertStringContainsString(
+			'use Acme\\Plugin\\Modules\\Services\\Mailer;',
+			(string) file_get_contents( $this->target_plugin_dir . '/bootstrap.php' )
+		);
+	}
+
+	/**
+	 * A module is found by its namespace, and PSR-4 ties that to one directory,
+	 * so moving the file without moving the namespace produced a class nothing
+	 * could autoload -- and an unresolvable reference in bootstrap.php.
+	 */
+	public function test_module_type_refuses_a_custom_dir(): void {
+		$this->run_make( array( 'RequestLog' ), array( 'dir' => 'custom/Modules' ), 'module.php.stub' );
+
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/custom/Modules/RequestLog.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/lib/Modules/RequestLog.php' );
+		$this->assertStringContainsString( 'does not take --dir', (string) ( \WP_CLI::last( 'error' )[0] ?? '' ) );
+	}
+
+	/**
+	 * `@wordpress/scripts` decides entry points three mutually exclusive ways,
+	 * so a plugin with a block has no supported way to build a script of its
+	 * own. This is the convention the generated build config adds.
+	 */
+	public function test_entry_type_writes_a_script_and_its_stylesheet(): void {
+		$this->run_make( array( 'settings' ), array(), 'entry' );
+
+		$dir = $this->target_plugin_dir . '/src/entries/settings';
+
+		$this->assertFileExists( $dir . '/index.ts' );
+		$this->assertFileExists( $dir . '/style.scss' );
+	}
+
+	/**
+	 * The stylesheet is built because the script imports it, and registered
+	 * under the same handle -- so dropping the import loses it silently.
+	 */
+	public function test_entry_type_imports_its_own_stylesheet(): void {
+		$this->run_make( array( 'settings' ), array(), 'entry' );
+
+		$source = (string) file_get_contents( $this->target_plugin_dir . '/src/entries/settings/index.ts' );
+
+		$this->assertStringContainsString( "import './style.scss';", $source );
+		$this->assertStringContainsString( "enqueue_script( 'settings' )", $source );
+	}
+
+	public function test_entry_type_declares_nothing_for_a_classic_script(): void {
+		$this->run_make( array( 'settings' ), array(), 'entry' );
+
+		// A `package.json` is how an entry says it is a module; a classic script
+		// is the default, and a file saying so would be noise in every plugin.
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/src/entries/settings/package.json' );
+	}
+
+	public function test_entry_type_module_declares_its_kind(): void {
+		$this->run_make( array( 'cart' ), array( 'kind' => 'module' ), 'entry' );
+
+		$manifest = (array) json_decode(
+			(string) file_get_contents( $this->target_plugin_dir . '/src/entries/cart/package.json' ),
+			true
+		);
+
+		$this->assertSame( 'module', $manifest['wordpress']['kind'] );
+	}
+
+	/**
+	 * A shared package is the other multi-file type: a stub directory rather
+	 * than a single stub file, written into `src/` alongside the rest of the
+	 * plugin's JavaScript.
+	 */
+	public function test_shared_type_writes_a_workspace_directory(): void {
+		$this->run_make( array( 'formatting' ), array( 'kind' => 'script' ), 'shared' );
+
+		$dir = $this->target_plugin_dir . '/src/shared/formatting';
+
+		$this->assertFileExists( $dir . '/package.json' );
+		$this->assertFileExists( $dir . '/index.ts' );
+	}
+
+	/**
+	 * The scope is the text domain, not the directory the plugin happens to be
+	 * installed in. Unlike a block namespace, which has to match what the module
+	 * derives from the plugin slug, nothing compares this against anything: the
+	 * build writes the handle into every importer's own `.asset.php`.
+	 */
+	public function test_shared_type_scopes_the_name_to_the_text_domain(): void {
+		$this->run_make( array( 'formatting' ), array( 'kind' => 'script' ), 'shared' );
+
+		$manifest = $this->read_shared_manifest( 'formatting' );
+
+		$this->assertSame( '@acme-plugin/formatting', $manifest['name'] );
+		$this->assertSame( 'index.ts', $manifest['main'] );
+	}
+
+	/**
+	 * A script package is reached by handle and by global, and the build
+	 * configuration reads both straight out of this block -- so a wrong one here
+	 * is a dependency WordPress never resolves.
+	 */
+	public function test_shared_type_script_declares_a_handle_and_a_global(): void {
+		$this->run_make( array( 'formatting' ), array( 'kind' => 'script' ), 'shared' );
+
+		$manifest = $this->read_shared_manifest( 'formatting' );
+
+		$this->assertSame( 'script', $manifest['wordpress']['kind'] );
+		$this->assertSame( 'acme-plugin-formatting', $manifest['wordpress']['handle'] );
+		$this->assertSame( array( 'acmePlugin', 'formatting' ), $manifest['wordpress']['global'] );
+	}
+
+	/**
+	 * A module is registered under its npm name, so it needs neither -- and
+	 * declaring a global it never exposes would be a lie the build cannot catch.
+	 */
+	public function test_shared_type_module_declares_neither_handle_nor_global(): void {
+		$this->run_make( array( 'runtime' ), array( 'kind' => 'module' ), 'shared' );
+
+		$manifest = $this->read_shared_manifest( 'runtime' );
+
+		$this->assertSame( array( 'kind' => 'module' ), $manifest['wordpress'] );
+	}
+
+	/**
+	 * The generated source is what the consumer edits first, so it has to import
+	 * under the same name the manifest publishes.
+	 */
+	public function test_shared_type_source_imports_under_the_published_name(): void {
+		$this->run_make( array( 'formatting' ), array( 'kind' => 'script' ), 'shared' );
+
+		$source = (string) file_get_contents( $this->target_plugin_dir . '/src/shared/formatting/index.ts' );
+
+		$this->assertStringContainsString( "import { greet } from '@acme-plugin/formatting';", $source );
+		$this->assertStringContainsString( 'export function greet(): string', $source );
+	}
+
+	public function test_view_type_writes_a_template(): void {
+		$this->run_make( array( 'receipt' ), array(), 'view' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/views/receipt.php' );
+	}
+
+	/**
+	 * A view name is what the caller asks for, and those nest -- so a slash in
+	 * the name is a directory, created on the way.
+	 */
+	public function test_view_type_nests_a_name_with_a_slash(): void {
+		$this->run_make( array( 'emails/receipt' ), array(), 'view' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/views/emails/receipt.php' );
+	}
+
+	public function test_view_type_documents_the_scope_it_renders_in(): void {
+		$this->run_make( array( 'receipt' ), array(), 'view' );
+
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/receipt.php' );
+
+		$this->assertStringContainsString( '@var \Acme\Plugin\Core\Services\Views $this', $view );
+	}
+
+	/**
+	 * An admin page is mostly a form, and markup assembled by concatenation
+	 * stops being reviewable long before it stops growing -- so the template is
+	 * generated alongside the class rather than left to be noticed later.
+	 */
+	public function test_page_type_writes_the_template_it_renders(): void {
+		$this->run_make( array( 'settings' ), array(), 'page' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/admin-pages/settings.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
+	}
+
+	public function test_page_type_renders_through_the_generated_template(): void {
+		$this->run_make( array( 'settings' ), array(), 'page' );
+
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
+
+		$this->assertStringContainsString( "\$this->view(\n\t\t\t'admin-pages/settings',", $page );
+		$this->assertStringNotContainsString( "echo '<div class=\"wrap\">", $page );
+	}
+
+	/**
+	 * A form needs the page's nonce and its own URL, and the template gets them
+	 * as strings the `render()` call names -- not by being handed the page.
+	 */
+	public function test_page_type_template_can_render_a_form(): void {
+		$this->run_make( array( 'settings' ), array(), 'page' );
+
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
+
+		$this->assertStringContainsString( 'wp_nonce_field( $nonce )', $view );
+		$this->assertStringContainsString( 'esc_url( $action )', $view );
+		$this->assertStringNotContainsString( '$page', $view, 'The page itself is not in template scope.' );
+
+		// Named at the call site, which is what makes the template's inputs
+		// readable without opening it. Matched without the alignment padding,
+		// which shifts whenever a longer key joins the array.
+		$this->assertMatchesRegularExpression( "/'nonce'\s+=> \\\$this->get_nonce_action\(\)/", $page );
+		$this->assertMatchesRegularExpression( "/'action'\s+=> \\\$this->get_page_url\(\)/", $page );
+	}
+
+	/**
+	 * The commonest task in WordPress admin, given a shape.
+	 *
+	 * Without the redirect the browser's current request is still the POST, so
+	 * a refresh resubmits and saves twice. Whatever the first person writes
+	 * here becomes the plugin's pattern, so the generated default has to be the
+	 * one worth copying.
+	 */
+	public function test_page_type_redirects_after_a_save(): void {
+		$this->run_make( array( 'settings' ), array(), 'page' );
+
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
+
+		$this->assertStringContainsString( 'wp_safe_redirect(', $page );
+		$this->assertStringContainsString( "array( 'updated' => '1' )", $page );
+		$this->assertStringContainsString( 'exit;', $page );
+
+		// The generated page declares what it takes rather than reaching into
+		// $_POST -- code teaches louder than the comment above it, and this is the
+		// shape a consumer copies for their second field.
+		$this->assertStringContainsString( "#[RequestArgument( 'An example value.' )]", $page );
+		$this->assertStringContainsString( 'public string $example', $page );
+		$this->assertStringNotContainsString(
+			'sanitize_text_field( \wp_unslash( $_POST',
+			$page,
+			'The declaration does the unslashing and the checking, so the page does neither by hand.'
+		);
+	}
+
+	/**
+	 * The other half of it. A redirect with nothing to show for it reads as the
+	 * save having been lost.
+	 */
+	public function test_page_type_template_shows_the_saved_notice(): void {
+		$this->run_make( array( 'settings' ), array(), 'page' );
+
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
+
+		$this->assertMatchesRegularExpression( "/'updated'\s+=> isset\( \\\$_GET\['updated'\] \)/", $page );
+		$this->assertStringContainsString( 'if ( $updated )', $view );
+		$this->assertStringContainsString( 'notice-success', $view );
+		$this->assertStringContainsString( '@var bool   $updated', $view );
+	}
+
+	/**
+	 * A template is included rather than called, so nothing tells an editor what
+	 * is in scope unless the template says so.
+	 */
+	public function test_page_type_template_documents_its_scope(): void {
+		$this->run_make( array( 'settings' ), array(), 'page' );
+
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
+
+		$this->assertStringContainsString( '@var \Acme\Plugin\Core\Services\Views $this', $view );
+		$this->assertStringContainsString( '@var string $title', $view );
+	}
+
+	public function test_page_type_no_view_writes_only_the_class(): void {
+		$this->run_make( array( 'ping' ), array( 'view' => false ), 'page' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/admin-pages/ping.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/views/admin-pages/ping.php' );
+	}
+
+	public function test_page_type_honours_a_custom_views_root(): void {
+		$this->run_make( array( 'settings' ), array( 'views-dir' => 'templates' ), 'page' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/templates/admin-pages/settings.php' );
+	}
+
+	/**
+	 * Regenerating a page must not discard markup someone has written.
+	 */
+	public function test_page_type_leaves_an_existing_template_alone(): void {
+		mkdir( $this->target_plugin_dir . '/views/admin-pages', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php', '<?php // mine' );
+
+		$this->run_make( array( 'settings' ), array( 'yes' => true ), 'page' );
+
+		$this->assertSame(
+			'<?php // mine',
+			(string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' )
+		);
+	}
+
+	/**
+	 * The stub for `block` is a directory rather than a single file, so this
+	 * covers the whole multi-file path: what a static block writes, what each
+	 * flag adds, and that no block.json field ever names a file that is absent.
+	 */
+	public function test_block_type_writes_a_static_block_directory(): void {
+		$this->run_make( array( 'hero' ), array( 'dynamic' => false, 'view' => 'none' ), 'block' );
+
+		$dir = $this->target_plugin_dir . '/src/blocks/hero';
+
+		$this->assertFileExists( $dir . '/block.json' );
+		$this->assertFileExists( $dir . '/index.tsx' );
+		$this->assertFileExists( $dir . '/edit.tsx' );
+		$this->assertFileExists( $dir . '/style.css' );
+		$this->assertFileExists( $dir . '/editor.css' );
+
+		$this->assertFileDoesNotExist( $dir . '/block.php', 'A static block has no PHP.' );
+		$this->assertFileDoesNotExist( $dir . '/view.ts', 'No front-end script was asked for.' );
+	}
+
+	/**
+	 * A static block has no PHP, so its `save` is the front end: what it returns
+	 * is written into the post content and served as-is.
+	 */
+	public function test_block_type_static_saves_its_own_markup(): void {
+		$this->run_make( array( 'hero' ), array( 'dynamic' => false, 'view' => 'none' ), 'block' );
+
+		$index = (string) file_get_contents( $this->target_plugin_dir . '/src/blocks/hero/index.tsx' );
+
+		$this->assertStringContainsString( 'save:', $index, 'A block registered without a save loses its markup.' );
+		$this->assertStringContainsString( 'useBlockProps.save()', $index );
+		$this->assertStringContainsString( "import { useBlockProps } from '@wordpress/block-editor';", $index );
+		$this->assertStringNotContainsString( 'InnerBlocks', $index, 'A static block does not save inner blocks.' );
+	}
+
+	/**
+	 * A dynamic block's markup comes from PHP, so its `save` persists only the
+	 * inner blocks -- which is what reaches render() as $content.
+	 */
+	public function test_block_type_dynamic_saves_only_its_inner_blocks(): void {
+		$this->run_make( array( 'hero' ), array( 'dynamic' => true, 'view' => 'none' ), 'block' );
+
+		$index = (string) file_get_contents( $this->target_plugin_dir . '/src/blocks/hero/index.tsx' );
+
+		$this->assertStringContainsString( 'save: () => <InnerBlocks.Content />', $index );
+		$this->assertStringContainsString( "import { InnerBlocks } from '@wordpress/block-editor';", $index );
+	}
+
+	public function test_block_type_names_the_block_after_the_text_domain(): void {
+		$this->run_make( array( 'hero' ), array( 'dynamic' => false, 'view' => 'none' ), 'block' );
+
+		$metadata = json_decode(
+			(string) file_get_contents( $this->target_plugin_dir . '/src/blocks/hero/block.json' ),
+			true
+		);
+
+		$this->assertSame( 'acme-plugin/hero', $metadata['name'] );
+		$this->assertSame( 'Hero', $metadata['title'] );
+		$this->assertSame( 'file:./index.tsx', $metadata['editorScript'] );
+	}
+
+	/**
+	 * WordPress validates a block name against /^[a-z0-9-]+\/[a-z0-9-]+$/, which
+	 * a text domain need not satisfy -- and the Blocks module decides a block is
+	 * the plugin's own by that namespace, so the two have to agree.
+	 */
+	public function test_block_type_normalizes_a_text_domain_into_a_valid_namespace(): void {
+		file_put_contents(
+			$this->target_plugin_dir . '/zestry.json',
+			(string) json_encode(
+				array(
+					'namespace'   => 'Acme\\Plugin',
+					'root'        => 'lib',
+					'text_domain' => 'Acme_Plugin',
+				)
+			)
+		);
+
+		$this->run_make( array( 'hero' ), array( 'dynamic' => false, 'view' => 'none' ), 'block' );
+
+		$metadata = json_decode(
+			(string) file_get_contents( $this->target_plugin_dir . '/src/blocks/hero/block.json' ),
+			true
+		);
+
+		$this->assertSame( 'acme-plugin/hero', $metadata['name'] );
+		$this->assertMatchesRegularExpression( '/^[a-z0-9-]+\/[a-z0-9-]+$/', $metadata['name'] );
+	}
+
+	public function test_block_type_dynamic_flag_adds_the_render_file_and_its_field(): void {
+		$this->run_make( array( 'hero' ), array( 'dynamic' => true, 'view' => 'none' ), 'block' );
+
+		$dir = $this->target_plugin_dir . '/src/blocks/hero';
+
+		$this->assertFileExists( $dir . '/block.php' );
+
+		$metadata = json_decode( (string) file_get_contents( $dir . '/block.json' ), true );
+		$this->assertSame( 'file:./block.php', $metadata['supports']['acme-plugin-php'] );
+		$this->assertArrayNotHasKey(
+			'acme-plugin-php',
+			$metadata,
+			'Not at the root: the official schema sets additionalProperties:false there.'
+		);
+
+		$contents = (string) file_get_contents( $dir . '/block.php' );
+		$this->assertStringContainsString( 'use Acme\\Plugin\\Core\\Modules\\Blocks\\Block;', $contents );
+	}
+
+	/**
+	 * The two view modes are distinguishable by one grep, and getting them
+	 * crossed is silent at every point a developer checks: the command reports
+	 * success, the build compiles, the block registers and renders, and the
+	 * front-end script is simply never on the page. `wp-interactivity` is a
+	 * script module id, so a classic script naming it as a dependency is one
+	 * WordPress refuses to enqueue at all.
+	 */
+	public function test_block_type_view_script_imports_no_script_modules(): void {
+		$this->run_make( array( 'toggle' ), array( 'dynamic' => false, 'view' => 'script' ), 'block' );
+
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/src/blocks/toggle/view.ts' );
+
+		// The import, not the name: the stub explains in prose why it does not
+		// import this, and what breaks a build is the statement.
+		$this->assertStringNotContainsString( "from '@wordpress/interactivity'", $view );
+		$this->assertStringNotContainsString( 'getContext', $view );
+		$this->assertStringNotContainsString( 'store(', $view );
+		$this->assertStringContainsString( '.wp-block-acme-plugin-toggle', $view );
+	}
+
+	public function test_block_type_view_module_adds_an_interactivity_script(): void {
+		$this->run_make( array( 'toggle' ), array( 'dynamic' => false, 'view' => 'module' ), 'block' );
+
+		$dir = $this->target_plugin_dir . '/src/blocks/toggle';
+
+		$this->assertFileExists( $dir . '/view.ts' );
+
+		$metadata = json_decode( (string) file_get_contents( $dir . '/block.json' ), true );
+		$this->assertSame( 'file:./view.ts', $metadata['viewScriptModule'] );
+		$this->assertTrue( $metadata['supports']['interactivity'] );
+		$this->assertArrayNotHasKey( 'viewScript', $metadata );
+
+		$this->assertStringContainsString(
+			"store( 'acme-plugin/toggle'",
+			(string) file_get_contents( $dir . '/view.ts' ),
+			'The store namespace must match the block name.'
+		);
+	}
+
+	public function test_block_type_view_script_uses_the_classic_script_field(): void {
+		$this->run_make( array( 'toggle' ), array( 'dynamic' => false, 'view' => 'script' ), 'block' );
+
+		$metadata = json_decode(
+			(string) file_get_contents( $this->target_plugin_dir . '/src/blocks/toggle/block.json' ),
+			true
+		);
+
+		$this->assertSame( 'file:./view.ts', $metadata['viewScript'] );
+		$this->assertArrayNotHasKey( 'viewScriptModule', $metadata );
+
+		// A classic script gets no `supports.interactivity`: that capability is
+		// what makes WordPress load the module runtime, which this cannot use.
+		$this->assertArrayNotHasKey( 'interactivity', $metadata['supports'] );
+	}
+
+	public function test_block_type_js_flag_generates_javascript(): void {
+		$this->run_make( array( 'hero' ), array( 'dynamic' => false, 'view' => 'module', 'js' => true ), 'block' );
+
+		$dir = $this->target_plugin_dir . '/src/blocks/hero';
+
+		$this->assertFileExists( $dir . '/index.js' );
+		$this->assertFileExists( $dir . '/edit.js' );
+		$this->assertFileExists( $dir . '/view.js' );
+		$this->assertFileDoesNotExist( $dir . '/index.tsx' );
+
+		$metadata = json_decode( (string) file_get_contents( $dir . '/block.json' ), true );
+		$this->assertSame( 'file:./index.js', $metadata['editorScript'] );
+		$this->assertSame( 'file:./view.js', $metadata['viewScriptModule'] );
+	}
+
+	/**
+	 * Every file block.json points at must exist, whichever flags were given:
+	 * WordPress registers a handle for a missing one without any warning, so a
+	 * mismatch here would be invisible until someone looked for the asset.
+	 */
+	public function test_block_type_never_declares_a_file_it_did_not_write(): void {
+		foreach ( array( 'none', 'script', 'module' ) as $view ) {
+			foreach ( array( true, false ) as $dynamic ) {
+				$name = 'b-' . $view . '-' . ( $dynamic ? 'dyn' : 'static' );
+
+				$this->run_make( array( $name ), array( 'dynamic' => $dynamic, 'view' => $view ), 'block' );
+
+				$dir      = $this->target_plugin_dir . '/src/blocks/' . $name;
+				$metadata = json_decode( (string) file_get_contents( $dir . '/block.json' ), true );
+
+				foreach ( array( 'editorScript', 'viewScript', 'viewScriptModule', 'acme-plugin-php' ) as $field ) {
+					if ( ! isset( $metadata[ $field ] ) ) {
+						continue;
+					}
+
+					$this->assertFileExists(
+						$dir . '/' . str_replace( 'file:./', '', $metadata[ $field ] ),
+						sprintf( '%s names %s, which must exist.', $name, $field )
+					);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Read one generated shared package's manifest.
+	 *
+	 * @param string $name The package's local name.
+	 * @return array<string, mixed>
+	 */
+	private function read_shared_manifest( string $name ): array {
+		return (array) json_decode(
+			(string) file_get_contents( $this->target_plugin_dir . '/src/shared/' . $name . '/package.json' ),
+			true
+		);
+	}
+
+	/**
+	 * Build a concrete MakeCommand subclass, wire it, and invoke handle() with
+	 * the CWD inside the throwaway target plugin directory.
+	 *
+	 * @param array  $args
+	 * @param array  $assoc_args
+	 * @param string $stub Stub filename identifying which type to exercise:
+	 *                     'action.php.stub' (default) uses an anonymous
+	 *                     action-like subclass; any stub named in
+	 *                     STUB_TO_MAKE_FILE requires the real commands/make/*.php
+	 *                     file instead, to exercise its own get_extra_values()
+	 *                     prompts and/or collision override.
+	 * @return MakeCommand The invoked command, for callers that need it.
+	 */
+	private function run_make( array $args, array $assoc_args = array(), string $stub = 'action.php.stub' ): MakeCommand {
+		\WP_CLI::reset();
+
+		$package_plugin = new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-make-test' );
+
+		$stub_to_make_file = array(
+			'command.php.stub'   => 'command.php',
+			'post-type.php.stub' => 'post-type.php',
+			'taxonomy.php.stub'  => 'taxonomy.php',
+			'module.php.stub'    => 'module.php',
+			'block'              => 'block.php',
+			'page'               => 'page.php',
+			'view'               => 'view.php',
+			'shared'             => 'shared.php',
+			'entry'              => 'entry.php',
+			'field'              => 'field.php',
+			'ability'            => 'ability.php',
+		);
+
+		$command = isset( $stub_to_make_file[ $stub ] )
+			? require dirname( __DIR__, 3 ) . '/commands/make/' . $stub_to_make_file[ $stub ]
+			: new class extends MakeCommand {
+				public function handle( array $args, array $assoc_args ): void {
+					parent::handle( $args, $assoc_args );
+				}
+
+				protected function get_stub(): string {
+					return 'action.php.stub';
+				}
+
+				protected function get_default_dir( array $config ): string { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
+					return 'actions';
+				}
+
+				protected static function get_type(): string {
+					return 'action';
+				}
+			};
+
+		$package_plugin->wire( $command );
+
+		$previous_cwd = (string) getcwd();
+		chdir( $this->target_plugin_dir );
+
+		try {
+			$command->handle( $args, $assoc_args );
+		} finally {
+			chdir( $previous_cwd );
+		}
+
+		return $command;
+	}
+}

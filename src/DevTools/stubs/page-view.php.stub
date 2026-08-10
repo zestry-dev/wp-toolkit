@@ -1,0 +1,57 @@
+<?php
+/**
+ * Markup for the {{title}} admin page.
+ *
+ * Rendered by admin-pages/{{name}}.php. Every variable here is one that file
+ * passed -- nothing else of the page is in scope, so this template's inputs are
+ * exactly what its render() call names.
+ *
+ * Escape on output, in the right context: esc_html() for text, esc_attr() for an
+ * attribute, esc_url() for a URL.
+ *
+ * `$this` is the Views service, so a subview is
+ * `$this->render( 'admin-pages/-fields', array( ... ) )`. The `@var` below is
+ * what makes an editor complete it -- a template is included, not called, so
+ * nothing else tells your editor what `$this` is here.
+ *
+ * @var \{{copied_namespace}}\Services\Views $this
+ * @var string $title   The page title.
+ * @var string $action  Where this page's form posts to.
+ * @var string $nonce   The nonce action scoping it.
+ * @var bool   $updated Whether this is the redirect that follows a save.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by the Views service, never requested directly.
+defined( 'ABSPATH' ) || exit;
+
+?>
+<div class="wrap">
+	<h1><?php echo esc_html( $title ); ?></h1>
+
+	<?php if ( $updated ) : ?>
+		<?php // The page reached by handle_submit()'s redirect. Saying so here ?>
+		<?php // rather than in the page class keeps the markup in one file. ?>
+		<div class="notice notice-success is-dismissible">
+			<p><?php esc_html_e( 'Saved.', '{{text_domain}}' ); ?></p>
+		</div>
+	<?php endif; ?>
+
+	<form method="post" action="<?php echo esc_url( $action ); ?>">
+		<?php wp_nonce_field( $nonce ); ?>
+
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row">
+					<label for="{{name}}-example"><?php esc_html_e( 'Example', '{{text_domain}}' ); ?></label>
+				</th>
+				<td>
+					<input type="text" name="example" id="{{name}}-example" class="regular-text" value="" />
+				</td>
+			</tr>
+		</table>
+
+		<?php submit_button(); ?>
+	</form>
+</div>

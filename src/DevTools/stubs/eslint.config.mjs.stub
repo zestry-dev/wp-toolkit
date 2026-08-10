@@ -1,0 +1,33 @@
+/**
+ * ESLint configuration.
+ *
+ * Flat config (`eslint.config.mjs`), which is the only format ESLint 9+
+ * reads -- a `.eslintrc.json` is ignored entirely by the version
+ * `@wordpress/scripts` bundles. `.mjs` rather than `.js` so this stays ESM
+ * whatever `"type"` package.json declares.
+ */
+
+import wordpress from '@wordpress/eslint-plugin';
+
+export default [
+	{
+		ignores: [ 'build/**', 'vendor/**', 'node_modules/**' ],
+	},
+	...wordpress.configs.recommended,
+	{
+		rules: {
+			/*
+			 * The recommended preset turns this on but names no domain, which
+			 * only catches a missing one. Naming yours is what catches a wrong
+			 * one -- a call left on another plugin's domain, or on `default`,
+			 * silently ships untranslatable. With exactly one domain allowed
+			 * the rule can also autofix, so `--fix` corrects the call rather
+			 * than only reporting it.
+			 */
+			'@wordpress/i18n-text-domain': [
+				'error',
+				{ allowedTextDomain: '{{text_domain}}' },
+			],
+		},
+	},
+];

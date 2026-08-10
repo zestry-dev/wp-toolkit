@@ -1,0 +1,23 @@
+import { registerBlockType } from '@wordpress/blocks';
+{{save_import}}
+import metadata from './block.json';
+import Edit from './edit';
+import './style.css';
+import './editor.css';
+
+export interface {{pascal}}Attributes {
+	title: string;
+	// `BlockEditProps< T >` constrains T to `Record< string, unknown >`, which an
+	// interface satisfies only with an index signature.
+	[ key: string ]: unknown;
+}
+
+// The name comes from block.json rather than being repeated here, so the two
+// can never disagree. `...metadata` carries the rest of it: `@types/wordpress__blocks`
+// predates block.json and asks for `title`, `category` and `attributes` in this
+// object, and spreading them satisfies that without writing them twice.
+registerBlockType< {{pascal}}Attributes >( metadata.name, {
+	...metadata,
+	edit: Edit,
+{{save}}
+} );

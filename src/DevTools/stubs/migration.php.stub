@@ -1,0 +1,48 @@
+<?php
+/**
+ * {{title}}.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\Migrations\Migration;
+
+return new class() extends Migration {
+
+	// This file's name is the migration's identity, description and all. Rename
+	// it and this becomes a migration your sites have never run, so the next
+	// run runs it again -- harmless for a dbDelta, not for a backfill.
+	// `wp {plugin-slug} migrations run` refuses when it spots that, but only
+	// once it has already happened somewhere.
+
+	// Runs at most once, ever, per site -- recorded as run immediately after
+	// this returns without throwing, and never called again. Throwing leaves
+	// it unrecorded, so it retries next time (any side effects before the
+	// throw are NOT rolled back automatically). There is no down(): write a
+	// new migration to undo a mistake, don't reverse this one in place.
+	//
+	// $this->db_delta( "CREATE TABLE {$this->get_table( 'books' )} (
+	//     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	//     title VARCHAR(255) NOT NULL,
+	//     PRIMARY KEY  (id)
+	// ) {$this->get_charset_collate()};" );
+	//
+	// $this->get_table( 'books' ) -> the plugin-namespaced table name
+	// ({$wpdb->prefix}{plugin_slug}_books), with the slug normalised for SQL.
+	// Always name a table this way rather than composing it: a hyphen is legal
+	// in a plugin slug and illegal in an unquoted SQL identifier, and db_delta()
+	// reports success either way.
+	//
+	// db_delta() has its own strict formatting rules this does not relax (two
+	// spaces before PRIMARY KEY, each KEY on its own line). It does verify that
+	// a table it reported creating really exists, and throws if not, so a failed
+	// migration stays unrecorded and is retried.
+	//
+	// For anything db_delta() can't express -- a data backfill, an index it
+	// can't parse, a one-off UPDATE -- use $wpdb directly instead.
+	public function up(): void {
+	}
+};

@@ -1,0 +1,71 @@
+<?php
+/**
+ * {{name}} meta box.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\MetaBoxes\MetaBox;
+// use {{copied_namespace}}\Modules\MetaBoxes\Context;
+// use {{copied_namespace}}\Modules\MetaBoxes\MetaBoxType;
+// use {{copied_namespace}}\Modules\MetaBoxes\Priority;
+
+return new class() extends MetaBox {
+
+	// The box id is this file's name -- {plugin-slug}-{{name}}. WordPress
+	// stores each user's collapsed and hidden preferences against that id, so
+	// renaming the file quietly resets them for everyone.
+
+	// Declare a public typed property to have a service or module injected,
+	// e.g. the Fields module to read and write registered post meta:
+	// public Fields $fields;
+
+	public function title(): string {
+		return '{{title}}';
+	}
+
+	// The post types this panel appears on. Defaults to the built-in 'post',
+	// and a comment box needs none -- there is only one comment screen.
+	public function screens(): array {
+		return array( 'post' );
+	}
+
+	// Post or Comment -- the only two screens WordPress renders boxes on.
+	//
+	// public function object_type(): MetaBoxType {
+	//     return MetaBoxType::Comment;
+	// }
+
+	// Your markup. Everything you print is yours to escape -- esc_attr() for a
+	// value in an attribute, esc_html() for one in text. The nonce field is
+	// already printed before this runs.
+	public function render( object $post ): void {
+		\printf(
+			'<input type="text" name="{{name}}" value="%s" class="widefat">',
+			\esc_attr( (string) \get_post_meta( $post->ID, '{{name}}', true ) )
+		);
+	}
+
+	// Meta keys this form submits, named after your fields/ files. Each one
+	// present in the request is read, unslashed and written through the Fields
+	// module, so its validate() and sanitize() apply.
+	//
+	// public function fields(): array {
+	//     return array( '{{name}}' );
+	// }
+
+	// Reached only on a real save: past autosave, past revisions, with a valid
+	// nonce and a user allowed to edit this post. Runs after the keys above are
+	// stored, so this is for anything that list cannot express.
+	public function save( object $post ): void {
+	}
+
+	// Which column, and where in it. Both are closed sets: a box registered
+	// under anything else is registered and then never drawn.
+	//
+	// public function context(): Context   { return Context::Side; }
+	// public function priority(): Priority { return Priority::High; }
+};

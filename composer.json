@@ -1,0 +1,69 @@
+{
+  "name": "zestry-dev/wp-toolkit",
+  "description": "A toolkit for building WordPress plugins where a file in a directory is a feature: a per-plugin service container plus opt-in modules for CLI commands, admin pages, REST routes, post types, cron, blocks, migrations and more, copied into your plugin under your own namespace.",
+  "type": "library",
+  "keywords": [
+    "wordpress",
+    "wordpress-plugin",
+    "toolkit",
+    "dependency-injection",
+    "modules",
+    "ajax",
+    "wp-cli"
+  ],
+  "license": "GPL-3.0-or-later",
+  "authors": [],
+  "require": {
+    "php": ">=8.1"
+  },
+  "require-dev": {
+    "wp-cli/wp-cli": "^2.12",
+    "wp-coding-standards/wpcs": "^3.1",
+    "sirbrillig/phpcs-variable-analysis": "^2.11",
+    "slevomat/coding-standard": "^8.15",
+    "phpunit/phpunit": "^9.6",
+    "yoast/wp-test-utils": "^1.2",
+    "yoast/phpunit-polyfills": "^1.1",
+    "symfony/property-info": "^6.4",
+    "symfony/serializer": "^6.4",
+    "phpdocumentor/reflection-docblock": "^5.3",
+    "symfony/property-access": "^6.4"
+  },
+  "suggest": {
+    "wp-cli/wp-cli": "Required only to use the CLI module (commands run under WP-CLI)."
+  },
+  "autoload": {
+    "psr-4": {
+      "Zestry\\WPToolkit\\": "src/"
+    },
+    "files": [
+      "devtool-autoload.php"
+    ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Zestry\\WPToolkit\\Tests\\": "tests/"
+    }
+  },
+  "config": {
+    "autoloader-suffix": "ZestryWPToolkit",
+    "platform": {
+      "php": "8.1"
+    },
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  },
+  "scripts": {
+    "lint": "phpcs --standard=phpcs.xml",
+    "lint:fix": "phpcbf --standard=phpcs.xml",
+    "test": "phpunit",
+    "test:coverage": "phpunit --coverage-html build/coverage",
+    "docs:generate": "php bin/generate-docs.php",
+    "docs:check": "php bin/generate-docs.php && git diff --exit-code --stat docs/",
+    "lint:stubs": "php bin/check-stubs.php",
+    "docs": [
+      "@docs:generate"
+    ]
+  }
+}

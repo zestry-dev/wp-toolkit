@@ -1,0 +1,9 @@
+/**
+ * {{title}} block: styles for the editor only.
+ *
+ * Bundled into index.css, which block.json's "editorStyle" field points at,
+ * so these never reach the front end.
+ */
+.wp-block-{{slug}}-{{name}} {
+	/* Styles here apply only inside the editor. */
+}

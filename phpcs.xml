@@ -1,0 +1,324 @@
+<?xml version="1.0"?>
+<ruleset name="Zestry WP Toolkit Coding Standards">
+	<description>
+		WordPress Coding Standards for the Zestry WP Toolkit plugin toolkit.
+	</description>
+
+	<arg value="ps" />
+	<arg name="extensions" value="php" />
+
+	<!-- The shippable toolkit, the devtool commands, and the tooling that
+	     generates its docs. `commands/` is real shipped code that CLI walks at
+	     runtime, so it is held to the same standard as `src/`. -->
+	<file>./src</file>
+	<file>./bin</file>
+	<file>./commands</file>
+
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+
+	<config name="text_domain" value="zestry-toolkit" />
+
+	<!-- Minimum supported WP version for the WordPress version-aware sniffs. -->
+	<config name="minimum_wp_version" value="6.9" />
+
+
+	<!-- rules -->
+
+	<rule ref="WordPress-Core">
+		<exclude name="WordPress.PHP.YodaConditions.NotYoda" />
+		<exclude name="WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid" />
+		<!-- The toolkit uses PSR-4 class files, not WP hyphenated filenames. -->
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName" />
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase" />
+	</rule>
+	<rule ref="WordPress.WP.I18n" />
+	<rule ref="VariableAnalysis.CodeAnalysis.VariableAnalysis">
+		<properties>
+			<property name="allowUnusedParametersBeforeUsed" value="true" />
+			<!-- Nearly every method here implements an abstract whose signature it
+			does not choose, so a parameter an implementation does not need is normal
+			rather than a smell. This replaces 44 inline ignores that each said so
+			one at a time. Unused *variables* are still reported, because those are
+			usually a real mistake. -->
+			<property name="allowUnusedFunctionParameters" value="true" />
+		</properties>
+	</rule>
+	<rule ref="Generic.CodeAnalysis.EmptyStatement" />
+
+	<!-- Every file in src/ opens with a `{Area}: {Subject}` header. WordPress-Core
+	does not ship this sniff, so it is referenced explicitly; only the Missing
+	check is wanted, not Squiz's @package/@author/spacing expectations. -->
+	<rule ref="Squiz.Commenting.FileComment">
+		<!-- Squiz wants the header immediately after `<?php`; this codebase puts a
+		blank line between them, consistently across all 48 files. -->
+		<exclude name="Squiz.Commenting.FileComment.SpacingAfterOpen" />
+		<exclude name="Squiz.Commenting.FileComment.SpacingAfterComment" />
+		<exclude name="Squiz.Commenting.FileComment.MissingPackageTag" />
+		<exclude name="Squiz.Commenting.FileComment.PackageTagOrder" />
+		<exclude name="Squiz.Commenting.FileComment.MissingSubpackageTag" />
+		<exclude name="Squiz.Commenting.FileComment.SubpackageTagOrder" />
+		<exclude name="Squiz.Commenting.FileComment.MissingAuthorTag" />
+		<exclude name="Squiz.Commenting.FileComment.AuthorTagOrder" />
+		<exclude name="Squiz.Commenting.FileComment.MissingCopyrightTag" />
+		<exclude name="Squiz.Commenting.FileComment.CopyrightTagOrder" />
+		<exclude name="Squiz.Commenting.FileComment.IncorrectAuthor" />
+		<exclude name="Squiz.Commenting.FileComment.IncorrectCopyright" />
+	</rule>
+
+	<rule ref="SlevomatCodingStandard.Namespaces.UnusedUses">
+		<properties>
+			<!-- Count types referenced only in docblock annotations (e.g. @throws,
+			@param, @return) as used, so imported types can stay `use` imports rather
+			than being fully qualified inline. -->
+			<property name="searchAnnotations" value="true" />
+		</properties>
+	</rule>
+	<rule ref="SlevomatCodingStandard.Namespaces.FullyQualifiedGlobalFunctions" />
+	<rule ref="SlevomatCodingStandard.Functions.DisallowTrailingCommaInCall" />
+	<rule ref="SlevomatCodingStandard.Functions.DisallowTrailingCommaInDeclaration" />
+	<rule ref="SlevomatCodingStandard.Functions.DisallowArrowFunction" />
+
+	<!-- Require declare(strict_types=1) in every file so the native signatures are
+	enforced at call time rather than silently coerced. -->
+	<rule ref="SlevomatCodingStandard.TypeHints.DeclareStrictTypes">
+		<properties>
+			<property name="declareOnFirstLine" value="false" />
+			<property name="spacesCountAroundEqualsSign" value="0" />
+		</properties>
+	</rule>
+
+	<!-- Order class members: traits, constants, properties, constructor, magic
+	methods, then instance methods grouped by visibility (public before protected
+	before private), with all static methods grouped last. Slevomat requires every
+	group to be listed, so grouped elements below fold the final/abstract variants
+	into their visibility bucket. -->
+	<rule ref="SlevomatCodingStandard.Classes.ClassStructure">
+		<properties>
+			<property name="groups" type="array">
+				<element value="uses" />
+				<element value="enum cases" />
+				<element value="public constants" />
+				<element value="protected constants" />
+				<element value="private constants" />
+				<element value="public static properties" />
+				<element value="protected static properties" />
+				<element value="private static properties" />
+				<element value="public properties" />
+				<element value="protected properties" />
+				<element value="private properties" />
+				<element value="constructor" />
+				<element value="static constructors" />
+				<element value="magic methods" />
+				<element value="public methods, public final methods, public abstract methods" />
+				<element
+					value="protected methods, protected final methods, protected abstract methods" />
+				<element value="private methods" />
+				<element
+					value="public static methods, public static final methods, public static abstract methods" />
+				<element
+					value="protected static methods, protected static final methods, protected static abstract methods" />
+				<element value="private static methods" />
+				<element value="destructor" />
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Blank lines at every block boundary, so a stray newline is a lint error
+	rather than a matter of taste. WordPress-Core already carries Squiz's
+	SuperfluousWhitespace, but its EmptyLines check is guarded on being inside a
+	function or closure; the class body, the brace lines and the gaps between
+	members all sit outside it, which is where a stray newline survived. Every
+	count below is what the tree already does, so the rules pin the convention
+	rather than impose one. -->
+	<rule ref="SlevomatCodingStandard.Classes.EmptyLinesAroundClassBraces">
+		<!-- Only the extra ones: requiring a blank line after the opening brace
+		contradicts allowing none before the closing one for an empty class body
+		(the exceptions, NoInject), which phpcbf cannot resolve and gives up on. -->
+		<exclude name="SlevomatCodingStandard.Classes.EmptyLinesAroundClassBraces.NoEmptyLineAfterOpeningBrace" />
+		<properties>
+			<property name="linesCountAfterOpeningBrace" value="1" />
+			<property name="linesCountBeforeClosingBrace" value="0" />
+		</properties>
+	</rule>
+
+	<!-- One blank line between members. ClassMemberSpacing returns early when
+	two adjacent members are the same kind, so on its own it only governs the
+	transitions (last constant to first property, last property to first
+	method); the per-kind sniffs are what cover method-after-method. -->
+	<rule ref="SlevomatCodingStandard.Classes.ClassMemberSpacing" />
+	<rule ref="SlevomatCodingStandard.Classes.MethodSpacing" />
+	<rule ref="SlevomatCodingStandard.Classes.PropertySpacing" />
+	<rule ref="SlevomatCodingStandard.Classes.ConstantSpacing" />
+	<rule ref="SlevomatCodingStandard.Classes.EnumCaseSpacing" />
+	<rule ref="SlevomatCodingStandard.Classes.TraitUseSpacing" />
+
+	<!-- The same for the file header, and for a function or control structure
+	body. Squiz.WhiteSpace.FunctionClosingBraceSpace is deliberately not here:
+	it hardcodes *requiring* a blank line before a closing brace, with no
+	property to turn that around, which would have inserted 930 of them. -->
+	<rule ref="SlevomatCodingStandard.Namespaces.NamespaceSpacing" />
+	<rule ref="SlevomatCodingStandard.Namespaces.UseSpacing" />
+	<rule ref="Squiz.WhiteSpace.FunctionOpeningBraceSpace" />
+	<rule ref="PSR2.Methods.FunctionClosingBrace" />
+	<rule ref="WordPress.WhiteSpace.ControlStructureSpacing">
+		<properties>
+			<property name="blank_line_check" value="true" />
+		</properties>
+	</rule>
+
+
+	<!-- All SQL queries should be prepared as close to the time of querying the database as
+	possible. -->
+	<rule ref="WordPress.DB.PreparedSQL" />
+	<rule ref="WordPress.DB.PreparedSQL.InterpolatedNotPrepared">
+		<type>warning</type>
+	</rule>
+
+	<!-- Verify that placeholders in prepared queries are used correctly. -->
+	<rule ref="WordPress.DB.PreparedSQLPlaceholders" />
+
+	<!-- Nonces. These are triggered on any GET/POST access items. -->
+	<rule ref="WordPress.Security.NonceVerification">
+		<type>warning</type>
+	</rule>
+
+	<!-- Sanitized Input rules -->
+	<rule ref="WordPress.Security.ValidatedSanitizedInput">
+		<type>warning</type>
+	</rule>
+
+	<!-- Prohibit the use of the backtick operator. -->
+	<rule ref="Generic.PHP.BacktickOperator">
+		<severity>7</severity>
+	</rule>
+
+	<!-- Prohibit the use of HEREDOC or NOWDOC. -->
+	<rule ref="Squiz.PHP.Heredoc">
+		<severity>7</severity>
+	</rule>
+
+	<!-- Prohibit the use of the `goto` PHP language construct. -->
+	<rule ref="Generic.PHP.DiscourageGoto.Found">
+		<type>error</type>
+		<severity>7</severity>
+		<message>The "goto" language construct should not be used.</message>
+	</rule>
+
+	<!-- Check for error logs / development functions in the plugin. -->
+	<rule ref="WordPress.PHP.DevelopmentFunctions">
+		<type>warning</type>
+	</rule>
+
+	<!-- No PHP short open tags allowed. -->
+	<rule ref="Generic.PHP.DisallowShortOpenTag" />
+	<rule ref="Generic.PHP.DisallowShortOpenTag.Found">
+		<severity>7</severity>
+	</rule>
+	<rule ref="Generic.PHP.DisallowShortOpenTag.EchoFound">
+		<severity>7</severity>
+	</rule>
+
+	<!-- Alternative PHP open tags not allowed. -->
+	<rule ref="Generic.PHP.DisallowAlternativePHPTags">
+		<severity>7</severity>
+	</rule>
+
+	<!-- Prevent path disclosure when using add_theme_page(). -->
+	<rule ref="WordPress.Security.PluginMenuSlug">
+		<severity>6</severity>
+	</rule>
+
+	<!-- If querying the database directly, do it correctly via the WP abstraction layer. -->
+	<rule ref="WordPress.DB.RestrictedClasses">
+		<severity>7</severity>
+	</rule>
+	<rule ref="WordPress.DB.RestrictedFunctions">
+		<severity>7</severity>
+	</rule>
+
+	<!-- Check for code WP does better. -->
+	<rule ref="WordPress.WP.AlternativeFunctions">
+		<type>error</type>
+		<exclude name="WordPress.WP.AlternativeFunctions.json_encode_json_encode" />
+		<exclude name="WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents" />
+		<exclude name="WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents" />
+	</rule>
+
+	<!-- bin/ is a CLI build script, run by `composer docs` outside WordPress
+	entirely: WP_Filesystem does not exist there, so the sniffs steering file
+	operations towards it have nothing to steer towards. The short ternary and
+	`$class` parameter name are likewise house style for these scripts, not the
+	shippable toolkit. -->
+	<rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_fwrite">
+		<exclude-pattern>*/bin/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_mkdir">
+		<exclude-pattern>*/bin/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_rmdir">
+		<exclude-pattern>*/bin/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.AlternativeFunctions.unlink_unlink">
+		<exclude-pattern>*/bin/*</exclude-pattern>
+	</rule>
+	<rule ref="Universal.Operators.DisallowShortTernary.Found">
+		<exclude-pattern>*/bin/*</exclude-pattern>
+	</rule>
+	<rule ref="Universal.NamingConventions.NoReservedKeywordParameterNames.classFound">
+		<exclude-pattern>*/bin/*</exclude-pattern>
+	</rule>
+
+	<rule ref="Generic.PHP.ForbiddenFunctions">
+		<properties>
+			<property name="forbiddenFunctions" type="array">
+				<element key="move_uploaded_file" value="null" />
+				<element key="passthru" value="null" />
+				<element key="proc_open" value="null" />
+				<element key="create_function" value="null" />
+				<element key="eval" value="null" />
+				<element key="str_rot13" value="null" />
+			</property>
+		</properties>
+		<type>error</type>
+		<severity>7</severity>
+	</rule>
+
+	<rule ref="Squiz.PHP.DiscouragedFunctions">
+		<properties>
+			<property name="forbiddenFunctions" type="array">
+				<element key="set_time_limit" value="null" />
+				<element key="ini_set" value="null" />
+				<element key="ini_alter" value="null" />
+				<element key="dl" value="null" />
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Check for use of deprecated WordPress classes, functions and function parameters. -->
+	<rule ref="WordPress.WP.DeprecatedClasses" />
+	<rule ref="WordPress.WP.DeprecatedFunctions" />
+	<rule ref="WordPress.WP.DeprecatedParameters" />
+	<rule ref="WordPress.DateTime.RestrictedFunctions" />
+
+	<!-- Check for deprecated WordPress constants. -->
+	<rule ref="WordPress.WP.DiscouragedConstants">
+		<type>error</type>
+		<severity>7</severity>
+	</rule>
+
+	<!-- Check for discouraged WordPress functions. -->
+	<rule ref="WordPress.WP.DiscouragedFunctions">
+		<severity>6</severity>
+	</rule>
+
+	<!-- Deprecated parameter values in WP functions. -->
+	<rule ref="WordPress.WP.DeprecatedParameterValues">
+		<severity>7</severity>
+	</rule>
+
+	<!-- No ByteOrderMark allowed. -->
+	<rule ref="Generic.Files.ByteOrderMark">
+		<severity>7</severity>
+	</rule>
+
+</ruleset>

@@ -1,0 +1,51 @@
+<?php
+
+/**
+ * What this plugin uses, and how each is configured.
+ *
+ * `wp zestry add <name>` appends to this file, so a module works as soon as it is
+ * copied. The entry file reads it with `$plugin->bootstrap()`.
+ *
+ * An entry is a class name, optionally with an initializer as its value:
+ *
+ *     Cron::class,                                    // no configuration
+ *     Cron::class => function ( Cron $cron ): void {  // configured
+ *         $cron->set_schedules_root( 'jobs' );
+ *     },
+ *
+ * The initializer runs when the class is first built, before a module boots:
+ * the place to call a `set_*_root()` or anything else it needs. Everything
+ * works without one, so add it only to change a default. See a module's own
+ * page for what it accepts.
+ *
+ * This file is modules only, and listing one is what builds it. A module acts
+ * on its own -- it binds a hook, registers a post type, walks a directory -- so
+ * it has to be built for any of that to happen. Leave one out and its
+ * `on_boot()` never runs, with no error to say so; `wp zestry doctor` catches that.
+ *
+ * A service does not belong here. It is built the moment something asks for it
+ * -- a `$plugin->get()`, or another class declaring a property of its type --
+ * so listing it would only build it sooner than it needed to be. One that takes
+ * configuration gets it from `$plugin->configure()` in your entry file.
+ *
+ * Because every entry means the same thing, reading this file compiles none of
+ * the classes it names: they load when the plugin builds them.
+ *
+ * An entry file that runs the plugin as it loads runs an initializer before
+ * `init`, where a `__()` loads the text domain early enough that WordPress
+ * reports `_load_textdomain_just_in_time` on every request. Anything needing
+ * that later point goes in `run_at_init()`, which every module has:
+ *
+ *     Blocks::class => function ( Blocks $blocks ): void {
+ *         $blocks->run_at_init( function ( Blocks $module ): void {
+ *             $module->add_categories( [ 'reports' => __( 'Reports', 'my-plugin' ) ] );
+ *         } );
+ *     },
+ */
+
+declare( strict_types=1 );
+
+// Loaded by the plugin, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+return array();

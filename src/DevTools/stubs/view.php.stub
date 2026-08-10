@@ -1,0 +1,34 @@
+<?php
+/**
+ * {{title}}
+ *
+ * Rendered with `$views->render( '{{name}}', array( ... ) )`, or from an admin
+ * page with `$this->view( '{{name}}', array( ... ) )`.
+ *
+ * That name is this file's path under `views/`, so renaming the file breaks
+ * every call naming the old one -- and a view is resolved by string, which no
+ * editor checks for you.
+ *
+ * Every variable here is one that call passed, and nothing else is in scope --
+ * so this template's inputs are exactly what its caller names. Declare them
+ * below as you add them and your editor completes them, since a template is
+ * included rather than called and nothing else tells it what is here.
+ *
+ * `$this` is the Views service, so a subview is
+ * `$this->render( '{{name}}-row', array( ... ) )`.
+ *
+ * Escape on output, in the right context: esc_html() for text, esc_attr() for
+ * an attribute, esc_url() for a URL.
+ *
+ * @var \{{copied_namespace}}\Services\Views $this
+ */
+
+declare( strict_types=1 );
+
+// Loaded by the Views service, never requested directly.
+defined( 'ABSPATH' ) || exit;
+
+?>
+<div>
+	<!-- Your markup. -->
+</div>

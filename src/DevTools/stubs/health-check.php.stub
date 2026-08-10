@@ -1,0 +1,48 @@
+<?php
+/**
+ * {{name}} health check.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\SiteHealth\HealthCheck;
+// use {{copied_namespace}}\Modules\SiteHealth\BadgeColor;
+
+return new class() extends HealthCheck {
+
+	// The test id is this file's name -- {plugin-slug}-{{name}}. Renaming the
+	// file registers a different test, so a filter or mu-plugin that removed
+	// the old one silently stops removing anything.
+
+	// The name shown for this check on the Site Health screen.
+	public function label(): string {
+		return '{{title}}';
+	}
+
+	// The check itself. Return good(), recommended() or critical() -- each
+	// takes a sentence explaining what it found, and optionally some HTML
+	// linking to wherever the problem is fixed.
+	//
+	// This runs on the Site Health screen and on the weekly cron behind it,
+	// so keep it quick and free of side effects. Anything a Module or Service
+	// can be injected into this can too: declare a typed public property and
+	// read real state rather than guessing.
+	public function run(): array {
+		return $this->good( 'Everything looks fine.' );
+	}
+
+	// Which category this check is filed under, and the colour beside it.
+	// Defaults to your plugin's name, which groups your checks together.
+	// Override to use one of WordPress's own, e.g. 'Performance'.
+	//
+	// public function badge_label(): string {
+	//     return 'Performance';
+	// }
+	//
+	// public function badge_color(): BadgeColor {
+	//     return BadgeColor::Purple;
+	// }
+};

@@ -1,0 +1,10 @@
+/**
+ * {{title}} block: styles for both the front end and the editor.
+ *
+ * Named style.css deliberately -- wp-scripts bundles this one file to
+ * style-index.css, which is what block.json's "style" field points at.
+ * Anything else imported bundles to index.css, the editor-only stylesheet.
+ */
+.wp-block-{{slug}}-{{name}} {
+	/* Styles here apply wherever the block renders. */
+}

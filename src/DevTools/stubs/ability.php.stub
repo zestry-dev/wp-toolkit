@@ -1,0 +1,104 @@
+<?php
+/**
+ * {{name}} ability.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\Abilities\Ability;
+use {{copied_namespace}}\Services\Request\Attributes\RequestArgument;
+use {{copied_namespace}}\Modules\Abilities\Effect;
+
+return new class() extends Ability {
+
+	// The ability's name is this file's name -- {plugin-slug}/{{name}}. Rename
+	// the file and this is a different ability: an agent's saved tool call, and
+	// any run( '...' ) of your own, stop finding it.
+
+	// Each input, described once. The property says the type and whether it is
+	// required -- no default means required -- and the value is bound before
+	// the methods below run, so read $this->id, not $input['id'].
+	//
+	// Say as much as you can in `schema:` rather than in a validate callback:
+	// a rule in the schema is one the caller can satisfy before calling.
+	//
+	// #[RequestArgument( 'How to sort.', schema: array( 'enum' => array( 'date', 'title' ) ) )]
+	// public string $order_by = 'date';
+	#[RequestArgument( 'Which one to act on.' )]
+	public int $id;
+
+	// A short name, shown wherever abilities are listed.
+	public function label(): string {
+		return '{{title}}';
+	}
+
+	// The whole brief an AI agent gets for deciding whether to call this. Say
+	// what it does, what it does not do, and anything a reader would guess
+	// wrong from the label alone.
+	public function description(): string {
+		return 'Describe what this does, and what it deliberately does not.';
+	}
+
+	// What running this does to the site. WordPress turns it into the HTTP
+	// method the REST endpoint demands, so an inaccurate answer here is a 405
+	// for whoever calls you: Read -> GET, Create and Update -> POST,
+	// Delete -> DELETE.
+	public function effect(): Effect {
+		return Effect::Read;
+	}
+
+	// Whether anything outside your own PHP may call this. Registering an
+	// ability is useful either way -- run() reaches it from your own code --
+	// and true is what puts it on the REST API and offers it to an MCP adapter.
+	//
+	// Turn it on once permission_check() below is right for a stranger:
+	// WordPress's run endpoint has no authentication of its own, so that check
+	// is the only thing between an anonymous request and handle().
+	public function is_public(): bool {
+		return false;
+	}
+
+	// What this returns. Validated after handle(), so a result that does not
+	// match is an error rather than something the caller has to guess at.
+	public function output_schema(): array {
+		return array(
+			'type'       => 'object',
+			'properties' => array(
+				'ok' => array(
+					'type'        => 'boolean',
+					'description' => 'Whether it worked.',
+				),
+			),
+		);
+	}
+
+	// The gate, checked on every way in -- REST, MCP and your own PHP. Returns
+	// a plain bool: WordPress replaces a refusal with a message of its own, so
+	// that a check cannot leak why it said no.
+	public function permission_check( mixed $input ): bool {
+		return \current_user_can( 'edit_posts' );
+	}
+
+	// Reached only once the input validated and the check above passed. Return
+	// a WP_Error for a failure the caller should see; its message is what they
+	// read.
+	public function handle( mixed $input ): mixed {
+		return array( 'ok' => true );
+	}
+
+	// Anything a Module or Service can be injected into this can too: declare
+	// a typed public property, above, and do the real work.
+	//
+	// public Options $options;
+
+	// File this under a category other than your plugin's own -- one of
+	// WordPress's ('site', 'user'), or one you declared with
+	// $abilities->add_categories() in bootstrap.php.
+	//
+	// public function category(): string {
+	//     return 'site';
+	// }
+};

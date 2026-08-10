@@ -1,0 +1,18 @@
+{
+  "cSpell.words": [
+    "absint",
+    "autoloading",
+    "Bootable",
+    "nonced",
+    "unslash",
+    "wpdb",
+    "wpnonce",
+    "zestry"
+  ],
+  "intelephense.environment.includePaths": [
+    "../../../wp-admin",
+    "../../../wp-includes",
+    "./vendor/.wp-tests/wordpress-tests-lib"
+  ],
+  "intelephense.format.braces": "k&r"
+}

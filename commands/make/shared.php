@@ -1,0 +1,199 @@
+<?php
+
+/**
+ * Devtool command: `wp zestry make shared <name>`.
+ */
+
+declare( strict_types=1 );
+
+use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
+
+return new class() extends MakeCommand {
+
+	/**
+	 * The resolved `--kind` value, once resolved.
+	 *
+	 * @var string|null
+	 */
+	private ?string $kind = null;
+
+	/**
+	 * Generate a shared JavaScript package.
+	 *
+	 * Writes an npm workspace under `src/shared/`, imported by name from
+	 * anywhere in the plugin — an admin entry, a block, another shared package:
+	 *
+	 *     import { greet } from '@acme-plugin/formatting';
+	 *
+	 * Nothing that imports it bundles a copy. The generated `webpack.config.js`
+	 * reads the `wordpress` block in the package's own `package.json`, builds it
+	 * once into `build/shared/`, and makes every importer declare it as a
+	 * dependency instead — the same treatment `@wordpress/element` already gets.
+	 *
+	 * The scope is your plugin slug, which is what `assets` registers the built
+	 * package under, so the import and the handle cannot disagree. A package name
+	 * is an npm one and takes no capitals or spaces, so a name holding either is
+	 * written as the one npm accepts and the command says what it wrote.
+	 *
+	 * Run `npm install` afterwards: npm is what links the new directory into
+	 * `node_modules/`, and until it has, the import resolves to nothing.
+	 *
+	 * Add the `assets` module to register what the build produces:
+	 * `wp zestry add module assets`.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <name>
+	 * : The package's name, in kebab-case, e.g. `formatting`.
+	 *
+	 * [--kind=<kind>]
+	 * : How WordPress loads it. `script` registers a handle other scripts depend
+	 * on, and works everywhere. `module` registers an ES module, which needs
+	 * WordPress 6.5 or newer and importers that are modules themselves. Asked for
+	 * when omitted.
+	 * ---
+	 * options:
+	 *   - script
+	 *   - module
+	 * ---
+	 *
+	 * [--dir=<dir>]
+	 * : Write somewhere other than `src/shared/`, relative to the plugin root.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     # A package other scripts depend on by handle.
+	 *     $ wp zestry make shared formatting --kind=script
+	 *     Success: Created src/shared/formatting (2 files)
+	 *
+	 *     # An ES module, imported by name at run time.
+	 *     $ wp zestry make shared runtime --kind=module
+	 *     Success: Created src/shared/runtime (2 files)
+	 *
+	 * @param array $args
+	 * @param array $assoc_args
+	 * @return void
+	 */
+	public function handle( array $args, array $assoc_args ): void {
+		parent::handle( $args, $assoc_args );
+	}
+
+	/**
+	 * Values the two stubs need beyond the name.
+	 *
+	 * @param string $name       The package's local name.
+	 * @param array  $assoc_args WP-CLI's named arguments.
+	 * @return array<string, string>
+	 */
+	protected function get_extra_values( string $name, array $assoc_args ): array {
+		$slug = $this->get_scope();
+		$kind = $this->resolve_kind( $assoc_args );
+
+		$wordpress = 'script' === $kind
+			? sprintf(
+				"{\n\t\t\"kind\": \"script\",\n\t\t\"handle\": \"%s-%s\",\n\t\t\"global\": [\n\t\t\t\"%s\",\n\t\t\t\"%s\"\n\t\t]\n\t}",
+				$slug,
+				$name,
+				$this->stub_renderer->to_camel( $slug ),
+				$this->stub_renderer->to_camel( $name )
+			)
+			: "{\n\t\t\"kind\": \"module\"\n\t}";
+
+		$loading = 'script' === $kind
+			? sprintf( 'WordPress loads it as the `%s-%s` script handle.', $slug, $name )
+			: sprintf( 'WordPress loads it as the `@%s/%s` module.', $slug, $name );
+
+		return array(
+			'slug'            => $slug,
+			'export_name'     => 'greet',
+			'wordpress_block' => $wordpress,
+			'loading_note'    => $loading,
+		);
+	}
+
+	/**
+	 * A package is a directory, not a file, so the `.php` default does not apply.
+	 *
+	 * @param string $dir  The resolved destination directory.
+	 * @param string $name The local name given on the command line.
+	 * @return string
+	 */
+	protected function get_destination_path( string $dir, string $name ): string {
+		return trim( $dir, '/\\' ) . '/' . $name;
+	}
+
+	protected function get_stub(): string {
+		return 'shared';
+	}
+
+	/**
+	 * The name WordPress will accept, which is not always the one given.
+	 *
+	 * @param string $name The local name given on the command line.
+	 * @return string
+	 */
+	protected function normalize_name( string $name ): string {
+		return $this->stub_renderer->to_slug( $name );
+	}
+
+	/**
+	 * @return string
+	 */
+	protected function get_name_constraint(): string {
+		return 'a shared package is an npm workspace, and an npm package name takes no capitals or spaces.';
+	}
+
+	protected function get_default_dir( array $config ): string {
+		return 'src/shared';
+	}
+
+	/**
+	 * The npm scope this plugin's shared packages sit under.
+	 *
+	 * The plugin's own slug, which is what `Assets` registers a built package
+	 * under at runtime -- so a scope built here and a handle built there agree.
+	 * `wp zestry make block` takes a block namespace from the same place, and
+	 * `add module assets` writes the build configuration from it, so all three
+	 * agree without any of them reading the others.
+	 *
+	 * Not the text domain: that names a translation catalogue, and is free to
+	 * differ from the slug.
+	 *
+	 * @return string
+	 */
+	private function get_scope(): string {
+		return $this->stub_renderer->to_slug(
+			$this->runtime->get_slug_or_default( $this->consumer_plugin->get_plugin_root() )
+		);
+	}
+
+	/**
+	 * How WordPress should load this package, asking when `--kind` was not given.
+	 *
+	 * @param array<string, mixed> $assoc_args WP-CLI's named arguments.
+	 * @return string
+	 */
+	private function resolve_kind( array $assoc_args ): string {
+		if ( null !== $this->kind ) {
+			return $this->kind;
+		}
+
+		$given = $assoc_args['kind'] ?? null;
+
+		if ( 'script' === $given || 'module' === $given ) {
+			$this->kind = $given;
+
+			return $this->kind;
+		}
+
+		$this->kind = $this->confirm( 'Load it as an ES module? (script handle otherwise)', false )
+			? 'module'
+			: 'script';
+
+		return $this->kind;
+	}
+
+	protected static function get_type(): string {
+		return 'shared';
+	}
+};

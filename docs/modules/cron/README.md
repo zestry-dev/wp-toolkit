@@ -1,0 +1,300 @@
+<!--
+    Generated from src/Modules/Cron/Cron.php.
+    Do not edit by hand: run `composer docs` after changing the source.
+-->
+
+# Cron
+
+Discovers `schedules/` &nbsp;·&nbsp; Each file returns [`Schedule`](schedule.md) &nbsp;·&nbsp; Dependencies [`path`](../../services/path/)
+
+Discovers plugin WP-Cron schedules and keeps them registered.
+
+A schedules directory contains PHP files, one per recurring event. Each file returns a `Schedule` instance; a file named `cleanup-logs.php` registers under the hook `{plugin-slug}-cleanup-logs` (see `get_schedule_slug()`). The module binds that hook to the schedule's `run()` on every request, since WP-Cron dispatches through a fresh request with no memory of any other. It calls `wp_schedule_event()` only when the event is not already scheduled, so re-running discovery on every `init` never stacks duplicates.
+
+> [!WARNING]
+> **WP-Cron has no background process.** An event fires only when some ordinary page load notices it is due. On a low-traffic site it may fire late, or never. For anything time-sensitive, disable the pseudo-cron with `define( 'DISABLE_WP_CRON', true );` and drive it from a real crontab running `wp cron event run --due-now`.
+
+`wp cron event list` and `wp cron schedule list` show what this module has scheduled, under the hook names `get_schedule_slug()` produces. Both are built into WP-CLI, so this module adds no commands of its own.
+
+Changing `recurrence()` in a later release does take effect: every request compares the scheduled recurrence against what the method now returns and re-schedules the event when they differ. `initial_run_at()` is read only when an occurrence is actually created — on first registration, and again on the re-schedule a changed `recurrence()` forces. Change it on its own and nothing moves on a site that already has the event.
+
+[Adding it](#adding-it) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Schedule](#writing-a-schedule) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+
+## Adding it
+
+```bash
+wp zestry add module cron
+```
+
+> [!IMPORTANT]
+> **A module is built because `bootstrap.php` lists it.** `Cron` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+
+```php
+// bootstrap.php
+return array(
+    Cron::class,
+);
+```
+
+## Changing the defaults
+
+Register an initializer to point the module at a non-default directory, or to declare a custom interval schedules can then ask for by name.
+
+```php
+// bootstrap.php
+return array(
+    Cron::class => static function ( Cron $cron ): void {
+        $cron->set_schedules_root( 'cron/schedules' );
+        $cron->add_custom_interval( 'every_15_minutes', 15 * MINUTE_IN_SECONDS, 'Every 15 Minutes' );
+    },
+);
+```
+
+## Writing a Schedule
+
+A file in `schedules/` returns a [`Schedule`](schedule.md) instance, which `wp zestry make schedule <name>` generates.
+
+## Constants
+
+### `DEFAULT_SCHEDULES_ROOT`
+
+```php
+const DEFAULT_SCHEDULES_ROOT = 'schedules';
+```
+
+Default plugin-relative directory of schedule files.
+
+## You must implement
+
+This one method is abstract: a subclass that does not declare it will not load.
+
+### `on_boot()`
+
+What this module does on its own.
+
+```php
+abstract protected function on_boot(): void
+```
+
+Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
+
+**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
+
+`run_at_init()` is the way out of all three, and where anything a module registers belongs.
+
+## Methods you can use
+
+### `set_schedules_root( $schedules_root )`
+
+Set the plugin-relative directory that contains schedule files.
+
+```php
+public function set_schedules_root( string $schedules_root ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$schedules_root` — Plugin-relative directory of schedule files |
+| **Return** | — |
+| **Throws** | `DiscoveryException` — When the directory named here does not exist at boot, or a file beneath it returns something other than a Schedule instance |
+
+Call this from the module initializer before the plugin boots the module to override the default `schedules` directory.
+
+Naming a directory is what makes its absence fatal. Discovery runs at `init` on every request, and if the directory you name here is not there it throws a `DiscoveryException` then — so a typo in your initializer takes the site down rather than scheduling nothing and leaving you to wonder why your events never fire. The *default* `schedules` directory being absent is deliberately not an error: a plugin that has not written its first schedule yet should still boot.
+
+<br>
+
+### `add_custom_interval( $name, $seconds, $display )`
+
+Register a custom WP-Cron interval.
+
+```php
+public function add_custom_interval( string $name, int $seconds, string $display ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$name` — Local interval name, e.g. 'every_15_minutes'<br>`$seconds` — Seconds between occurrences<br>`$display` — Human-readable label shown in wp-admin |
+| **Return** | — |
+| **Throws** | — |
+
+WordPress has no built-in interval shorter than `'daily'` besides `'hourly'`/`'twicedaily'` — anything else must be added to the `cron_schedules` filter before `wp_schedule_event()` will accept it. Call this from the module initializer, then reference it from a schedule's `recurrence()` via `get_custom_interval_slug()`, so the name a schedule refers to can never drift out of sync with what was actually registered here.
+
+<br>
+
+### `get_custom_interval_slug( $name )`
+
+Build the globally namespaced custom interval slug.
+
+```php
+public function get_custom_interval_slug( string $name ): string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$name` — The local interval name |
+| **Return** | The namespaced interval slug |
+| **Throws** | — |
+
+<br>
+
+### `get_schedule_slug( $name )`
+
+Build the globally namespaced WordPress cron hook.
+
+```php
+public function get_schedule_slug( string $name ): string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$name` — The local schedule name |
+| **Return** | The namespaced hook name |
+| **Throws** | — |
+
+<br>
+
+### `schedule( $name )`
+
+Ensure a discovered schedule is scheduled with WP-Cron.
+
+```php
+public function schedule( string $name ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$name` — The local schedule name (its filename without `.php`) |
+| **Return** | — |
+| **Throws** | `InvalidArgumentException` — When no schedule file matches $name, or its recurrence is not registered<br>`DiscoveryException` — When the file returns something other than a Schedule instance |
+
+Loads the schedule the same way discovery does, then applies the same already-scheduled/recurrence-drift check register_schedules() applies to every file it discovers — useful to re-arm a schedule that was previously cleared, without waiting for the next full discovery pass.
+
+<br>
+
+### `run_now( $name )`
+
+Run a schedule's work immediately, bypassing WP-Cron entirely.
+
+```php
+public function run_now( string $name ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$name` — The local schedule name (its filename without `.php`) |
+| **Return** | — |
+| **Throws** | `InvalidArgumentException` — When no schedule file matches $name<br>`DiscoveryException` — When the file returns something other than a Schedule instance |
+
+Loads and wires the schedule the same way discovery does, then calls its run() synchronously in the current request — the same concurrency lock and error handling that a real cron dispatch gets still applies.
+
+<br>
+
+### `unschedule_all()`
+
+Clear every discovered schedule's WP-Cron events.
+
+```php
+public function unschedule_all(): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | — |
+| **Throws** | `DiscoveryException` — When a schedules directory named by set_schedules_root() does not exist, or a file returns something other than a Schedule instance |
+
+Exposed for a consuming plugin's own ActivationHandler subclass to call from deactivate() — Cron does not implement ActivationHandler itself, so nothing clears scheduled events automatically; a plugin that schedules events is responsible for unscheduling them.
+
+Clearing runs over the schedules discovery finds, so it fails the same way discovery does on a broken schedules directory.
+
+<br>
+
+### `get_orphaned_events()`
+
+Every event this plugin has scheduled that no schedule file registers.
+
+```php
+public function get_orphaned_events(): array
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | Hook name => the timestamp it next fires, earliest first |
+| **Throws** | `DiscoveryException` — When a schedules directory named by set_schedules_root() does not exist, or a file returns something other than a Schedule instance |
+
+A schedule's hook is its filename — `schedules/sync.php` is `{slug}-sync` — so renaming the file schedules a new event and abandons the old one. Nothing cleans it up: booting only schedules what discovery finds, and `unschedule_all()` clears the same set, so an event whose file is gone is in neither list. WordPress keeps firing it, on time, forever, with nothing listening.
+
+Reporting rather than pruning, and never called automatically, for the reason `Migrations` never triggers itself: a `{slug}-` event this module did not create is indistinguishable from one it did. A plugin is free to `wp_schedule_event()` under its own prefix by hand, and deleting that because no file claims it would be this module destroying something it does not own. `unschedule_orphaned()` does the clearing, when a consumer decides.
+
+Every occurrence of a hook is one orphan, so a hook due several times reports once, at the first.
+
+<br>
+
+### `unschedule_orphaned()`
+
+Clear every event `get_orphaned_events()` reports, and say which.
+
+```php
+public function unschedule_orphaned(): array
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | The hooks cleared, in the order they would next have fired |
+| **Throws** | `DiscoveryException` — When a schedules directory named by set_schedules_root() does not exist, or a file returns something other than a Schedule instance |
+
+A separate call, and never made by this module: a `{slug}-` event this module did not create is indistinguishable from one it did, so clearing automatically could delete an event you scheduled by hand. Run it from wherever you decide — a deploy step, a reviewed admin action, an activation handler — once you have looked at the list.
+
+<br>
+
+### `get_slug_of( $schedule )`
+
+This schedule's hook name, from the file it was discovered in.
+
+```php
+public function get_slug_of( Schedule $schedule ): string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$schedule` — The instance to look up |
+| **Return** | The `{plugin-slug}-{name}` hook it is scheduled under |
+| **Throws** | `InvalidArgumentException` — When the instance was not discovered by this module |
+
+<br>
+
+### `run_at_init( $callback )`
+
+Run a callback on `init`, or immediately if `init` has already fired.
+
+```php
+final public function run_at_init( callable $callback ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$callback` — What to run |
+| **Return** | — |
+| **Throws** | — |
+
+Almost everything a module registers — a post type, a block, a WP-CLI command — has to happen on `init`, and a plain `add_action( 'init', ... )` is a callback that never runs once `init` has passed. A module can be resolved on either side of it: `Plugin::run()` is synchronous, so an entry file that calls it at plugin load is ahead of `init`, while one that calls it from a later hook — or a `get()` during a request — is behind. This behaves the same either way, so a module never has to care which.
+
+The callback receives the module, matching the initializer signature, so a closure declared elsewhere needs no `use` to reach it:
+
+```php
+protected function on_boot(): void {
+    $this->run_at_init( function ( self $module ): void {
+        $module->register_widgets();
+    } );
+}
+```
+
+## See also
+
+- [`Schedule`](schedule.md) — what a file in `schedules/` returns
+- [`path`](../../services/path/) — copied in alongside this one
+- [`Module`](../module.md) — what every module inherits
+- [`wp zestry add module cron`](../../commands/add-module.md) — the command that copies it

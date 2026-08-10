@@ -1,0 +1,66 @@
+<?php
+/**
+ * {{method_upper}} {{pattern}}
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\RestApi\Route;
+use {{copied_namespace}}\Modules\RestApi\RestRoute;
+// use {{copied_namespace}}\Services\Request\Attributes\RequestArgument;
+
+return Route::{{method}}(
+	'{{version}}',
+	'{{pattern}}',
+	new class() extends RestRoute {
+
+		// A {token} in the pattern above (or a query-string/body parameter of the
+		// same name) binds onto a typed property instead of being pulled out of
+		// $request by hand. The property states the type and, by having no
+		// default, that it is required; `schema:` states anything else JSON Schema
+		// can express, which a client can read before calling. Uncomment to use:
+		//
+		// #[RequestArgument( 'The widget to return.', schema: array( 'minimum' => 1 ) )]
+		// public int $id;
+		//
+		// `validate:` is for what the schema cannot say -- that a row exists, that
+		// a slug is free:
+		//
+		// #[RequestArgument( 'The widget to return.', validate: array( self::class, 'is_known' ) )]
+		// public int $id;
+		//
+		// public static function is_known( $value ): bool {
+		//     return null !== acme_find_widget( $value );
+		// }
+
+		// Authorization check, run before handle(). Return false or a WP_Error
+		// to reject the request. Replace 'manage_options' with whatever
+		// capability (optionally scoped to a specific resource, e.g.
+		// current_user_can( 'edit_post', $post_id )) this route actually
+		// requires -- or `return true;` to make it deliberately public, which
+		// for a REST route means callable by anyone on the internet, including
+		// logged-out visitors.
+		public function permission_check( WP_REST_Request $request ): bool|\WP_Error {
+			return \current_user_can( 'manage_options' );
+		}
+
+		// Runs only after permission_check() passes and any #[RequestArgument]
+		// properties above have been validated/bound (read them as $this->id,
+		// not $request->get_param( 'id' )).
+		public function handle( WP_REST_Request $request ): WP_REST_Response {
+			return new WP_REST_Response( array() );
+		}
+
+		// Describes the shape of the response handle() returns, as a JSON
+		// Schema array -- unrelated to #[RequestArgument]'s request-side validation
+		// above. null means "publish no schema" -- return it explicitly, the
+		// same way permission_check() has to; a non-null array becomes
+		// discoverable via an OPTIONS request, same as core's own REST routes.
+		public function schema(): ?array {
+			return null;
+		}
+	}
+);

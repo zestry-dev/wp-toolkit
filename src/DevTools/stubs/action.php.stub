@@ -1,0 +1,71 @@
+<?php
+/**
+ * {{name}} AJAX action.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\Ajax\AjaxAction;
+// use {{copied_namespace}}\Services\Request\Attributes\RequestArgument;
+
+return new class() extends AjaxAction {
+
+	// The action is this file's name -- {plugin-slug}-{{name}}. That is the
+	// `action` your JavaScript posts, so renaming the file leaves every caller
+	// still sending the old one answered with WordPress's bare `0`.
+
+	// What this action takes, declared once. The value is checked against the
+	// type, unslashed, and bound before the methods below run -- so read
+	// $this->post_id rather than $_POST['post_id']. Uncomment to use:
+	//
+	// #[RequestArgument( 'Which post to act on.' )]
+	// public int $post_id;
+
+
+	// Authorization check, run before the nonce check and before handle().
+	// Return false to reject the request with a 403 -- a nonce proves the
+	// request was intended, not that the user is permitted, so both checks
+	// run independently. Replace 'manage_options' with whatever capability
+	// (optionally scoped to a specific resource, e.g. current_user_can(
+	// 'edit_post', $post_id )) this action actually requires.
+	public function capability_check(): bool {
+		return \current_user_can( 'manage_options' );
+	}
+
+	// false (default): only logged-in users may call this action at all --
+	// wp_ajax_nopriv_ requests are rejected with a 403 before capability_check()
+	// even runs. Return true only for an endpoint meant for logged-out
+	// visitors, and if you do: a nonce provides NO protection for it (WordPress
+	// mints anonymous nonces under user id 0, effectively shared by every
+	// logged-out visitor), so treat every request to it as hostile input.
+	public function allow_not_privileged(): bool {
+		return false;
+	}
+
+	// Optional value that scopes this action's nonce to a specific resource
+	// (e.g. return a post ID) so the nonce cannot be reused for a different
+	// one. null scopes the nonce to just the action name. Whatever is
+	// returned here must also be passed when creating the nonce via
+	// $ajax->create_action_nonce( $action_name, $context ).
+	public function get_nonce_context(): string|int|null {
+		return null;
+	}
+
+	// true (default): the request must carry a valid nonce (verified after
+	// capability_check(), before handle()) or it is rejected with a 403.
+	// Nonces protect logged-in users against CSRF; they do nothing for a
+	// nopriv-allowed endpoint (see allow_not_privileged()) -- return false
+	// only for a deliberately nonce-free endpoint such as a public webhook.
+	public function is_nonce_required(): bool {
+		return true;
+	}
+
+	// Runs only once both checks above pass. Send a response with
+	// wp_send_json_success()/wp_send_json_error() -- both end the request.
+	public function handle(): void {
+		\wp_send_json_success();
+	}
+};

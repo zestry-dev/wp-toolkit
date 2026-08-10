@@ -1,0 +1,81 @@
+<?php
+/**
+ * {{title}} taxonomy.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\PostTypes\Taxonomy;
+
+return new class() extends Taxonomy {
+
+	// The taxonomy name is this file's name -- {{name}}, with no plugin prefix
+	// (WordPress caps these at 32 characters). Renaming the file orphans every
+	// term already assigned under the old name.
+
+	// e.g. 'Genre'. Used to build every label WordPress needs.
+	public function singular_name(): string {
+		return '{{singular}}';
+	}
+
+	// e.g. 'Genres'.
+	public function plural_name(): string {
+		return '{{plural}}';
+	}
+
+	// Post type name(s) this taxonomy attaches to -- a name discovered from
+	// this same plugin's post-types/ directory, or any other already
+	// registered post type (including WordPress's own built-in 'post').
+	public function object_types(): array {
+		return array( '{{object_type}}' );
+	}
+
+	// Empty array (default) means "just use the labels built from
+	// singular/plural above" -- it does NOT disable labels. If
+	// is_hierarchical() is true, add 'parent_item'/'parent_item_colon' here,
+	// since those are deliberately left out of the generated defaults
+	// (matching WordPress core's own behavior for a non-hierarchical taxonomy).
+	public function labels(): array {
+		return array();
+	}
+
+	// false (default) = flat, comma-separated tag input, like Tags. true =
+	// parent/child terms with a checkbox-tree UI, like Categories.
+	public function is_hierarchical(): bool {
+		return false;
+	}
+
+	// Whether this taxonomy is exposed via the REST API and usable in the
+	// block editor.
+	public function is_shown_in_rest(): bool {
+		return true;
+	}
+
+	// A bundle: WordPress derives publicly_queryable, show_ui, show_in_menu,
+	// show_in_nav_menus, show_tagcloud and show_in_quick_edit from it.
+	public function is_public(): bool {
+		return true;
+	}
+
+	// Each argument in that bundle also has a method of its own --
+	// is_shown_in_ui(), is_shown_in_menu(), is_shown_in_nav_menus(),
+	// is_publicly_queryable(), is_shown_in_tagcloud() and
+	// is_shown_in_quick_edit(). They are left out here because null (their
+	// default) means "derive from is_public()", which is usually right. Add
+	// the ones you need for a mix is_public() alone can't express -- most
+	// often a taxonomy kept off the front end but still editable in the
+	// admin: is_public() false, is_shown_in_ui() true.
+	public function is_shown_in_ui(): ?bool {
+		return null;
+	}
+
+	// Permalink structure for this taxonomy's term archive URLs (e.g.
+	// /genre/sci-fi/), or false to disable pretty permalinks for it entirely.
+	// Takes WordPress's own `rewrite` keys.
+	public function rewrite(): array|false {
+		return array( 'slug' => $this->get_taxonomy() );
+	}
+};

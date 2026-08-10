@@ -1,0 +1,14 @@
+/**
+ * @{{slug}}/{{name}}
+ *
+ * Shared code, built once and depended on by name. Import it from anywhere in
+ * this plugin -- an admin entry, a block, another shared package:
+ *
+ *     import { {{export_name}} } from '@{{slug}}/{{name}}';
+ *
+ * Nothing that imports this bundles a copy of it. {{loading_note}}
+ */
+
+export function {{export_name}}(): string {
+	return '@{{slug}}/{{name}}';
+}

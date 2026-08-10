@@ -1,0 +1,17 @@
+import { store, getContext } from '@wordpress/interactivity';
+
+interface Context {
+	isOpen: boolean;
+}
+
+// The namespace must match block.json's name and the data-wp-interactive
+// attribute render.php emits -- all three are generated from the same value,
+// so they agree unless one is edited by hand.
+store( '{{slug}}/{{name}}', {
+	actions: {
+		toggle() {
+			const context = getContext< Context >();
+			context.isOpen = ! context.isOpen;
+		},
+	},
+} );

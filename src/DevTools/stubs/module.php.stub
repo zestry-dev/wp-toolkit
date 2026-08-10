@@ -1,0 +1,56 @@
+<?php
+
+/**
+ * {{class_name}} module.
+ */
+
+declare( strict_types=1 );
+
+namespace {{class_namespace}};
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Kernel\Abstracts\Module;
+
+class {{class_name}} extends Module {
+
+	// Declare a public or protected typed property to have another service or
+	// module injected automatically, e.g.:
+	// public Path $path;
+
+	/*
+	 * A module is built with no arguments -- the constructor is final -- so
+	 * anything this needs comes in through a `set_*()` called from its entry in
+	 * bootstrap.php, whose value is the initializer:
+	 *
+	 *     public function set_api_key( string $key ): void { ... }
+	 *
+	 *     // bootstrap.php
+	 *     {{class_name}}::class => static function ( {{class_name}} $module ): void {
+	 *         $module->set_api_key( 'abc123' );
+	 *     },
+	 *
+	 * A class that wants constructor arguments is a value object, not a module.
+	 * Make it a plain class; if it also needs the plugin, have it implement
+	 * PluginAware, `use WithPlugin`, and pass it through
+	 * `$this->get_plugin()->wire( $object )`.
+	 */
+
+	/**
+	 * What this module does on its own.
+	 *
+	 * Runs once, when the plugin builds this module -- which is what being
+	 * listed in bootstrap.php causes. Bind hooks, register
+	 * things, walk a directory: anything that has to happen without being
+	 * called.
+	 *
+	 * Nothing to do here? Then this is a service, not a module: run
+	 * `wp zestry make service {{class_name}}` instead and delete this file.
+	 *
+	 * @return void
+	 */
+	protected function on_boot(): void {
+		// add_shortcode( 'example', array( $this, 'render' ) );
+	}
+}

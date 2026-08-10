@@ -1,0 +1,35 @@
+/**
+ * Front-end behaviour for the {{title}} block.
+ *
+ * A classic script. WordPress enqueues it on any page this block appears on,
+ * and it runs against the markup the block rendered.
+ *
+ * It deliberately imports nothing from `@wordpress/interactivity`: that is a
+ * script *module*, and a classic script cannot depend on one -- WordPress drops
+ * the whole script rather than loading it, which looks like your code never
+ * running. Generate with `--view=module` to use the Interactivity API instead.
+ */
+
+const SELECTOR = '.wp-block-{{slug}}-{{name}}';
+
+function start() {
+	document.querySelectorAll( SELECTOR ).forEach( ( block ) => {
+		// Your block's front-end behaviour. `block` is the element
+		// useBlockProps() rendered around your markup.
+		block.addEventListener( 'click', () => {
+			block.classList.toggle( 'is-open' );
+		} );
+	} );
+}
+
+/*
+ * The script is registered in the footer, so the markup is usually already
+ * there -- but a theme or a plugin can move it, and waiting for an event that
+ * has fired means never running at all. Asking the document which it is covers
+ * both.
+ */
+if ( document.readyState === 'loading' ) {
+	document.addEventListener( 'DOMContentLoaded', start );
+} else {
+	start();
+}

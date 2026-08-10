@@ -1,0 +1,30 @@
+/**
+ * {{title}}
+ *
+ * An entry of this plugin's own. The build compiles it to
+ * `build/entries/{{name}}`, and the `assets` module registers it on `init` --
+ * so loading it anywhere in PHP is one call, with no registration first:
+ *
+ *     $this->assets->enqueue_script( '{{name}}' );
+ *
+ * Whatever this file imports comes with it, including the stylesheet beside it.
+ * Import a shared package by name and it is declared as a dependency rather
+ * than copied in: `import { greet } from '@{{slug}}/formatting';`
+ */
+
+import './style.scss';
+
+function start(): void {
+	// Your code. This runs wherever you enqueued the handle above.
+}
+
+/*
+ * The script is registered in the footer, so the markup is usually already
+ * there -- but a page can move it, and waiting for an event that has fired
+ * means never running at all. Asking the document which it is covers both.
+ */
+if ( 'loading' === document.readyState ) {
+	document.addEventListener( 'DOMContentLoaded', start );
+} else {
+	start();
+}

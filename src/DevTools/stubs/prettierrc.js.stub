@@ -1,0 +1,18 @@
+/**
+ * Prettier configuration.
+ *
+ * Re-exports WordPress's own formatting rules, so this file stays a one-liner
+ * and tracks the package rather than duplicating its options. Spread it to
+ * override one:
+ *
+ *     module.exports = {
+ *         ...require( '@wordpress/prettier-config' ),
+ *         useTabs: false,
+ *     };
+ *
+ * `module.exports` means this file is CommonJS. If package.json ever declares
+ * `"type": "module"`, rename this to `.prettierrc.cjs` -- Node reads a plain
+ * `.js` as ESM under that setting, and Prettier then fails to load it.
+ */
+
+module.exports = require( '@wordpress/prettier-config' );
