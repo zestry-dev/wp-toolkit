@@ -115,6 +115,28 @@ final class ToolingTest extends TestCase {
 		$this->assertTrue( $package_json['private'] );
 	}
 
+	/**
+	 * `prettier` has to resolve to the WordPress fork, and only an npm alias
+	 * says so.
+	 *
+	 * Plain prettier fails two ways. `wp-scripts format` refuses it outright --
+	 * "Incompatible version of Prettier was found in your project" -- and the
+	 * `@wordpress/prettier-config` written beside it peers on `prettier >=3`,
+	 * so it loads happily and formats to something that is not the WordPress
+	 * style, with nothing said at all.
+	 *
+	 * @return void
+	 */
+	public function test_prettier_is_installed_as_the_wordpress_fork(): void {
+		$added = $this->tooling->add_npm_dev_dependencies( $this->plugin_dir, Tooling::PRETTIER_PACKAGES );
+
+		$dependencies = $this->read_json( 'package.json' )['devDependencies'];
+
+		$this->assertSame( 'npm:wp-prettier@^3.0.3', $dependencies['prettier'] );
+		$this->assertSame( '*', $dependencies['@wordpress/prettier-config'], 'The rest stay unversioned.' );
+		$this->assertSame( array( 'prettier', '@wordpress/prettier-config' ), $added, 'Reported by name, not by specifier.' );
+	}
+
 	public function test_keeps_an_existing_npm_dependency_constraint(): void {
 		$this->write_json( 'package.json', array( 'devDependencies' => array( 'eslint' => '^8.0.0' ) ) );
 

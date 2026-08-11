@@ -30,6 +30,10 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * than pinned. The pin belongs in the consumer's own lock file, which is
  * written the first time they install; baking a range in here would freeze
  * their tooling to whatever was current when this toolkit was released.
+ *
+ * One exception, and it is not a pin: `prettier` is installed as an npm alias
+ * of `wp-prettier`, and an alias has to name a range. See
+ * {@see PRETTIER_PACKAGES} for what plain prettier does instead.
  */
 class Tooling extends Service {
 
@@ -61,10 +65,34 @@ class Tooling extends Service {
 	/**
 	 * npm packages the generated `.prettierrc` resolves.
 	 *
-	 * @var array<int, string>
+	 * @var array<int|string, string>
 	 */
 	public const PRETTIER_PACKAGES = array(
-		'prettier',
+		/*
+		 * The WordPress fork, under the name everything looks for. Plain
+		 * prettier fails two ways, and only the first one says so:
+		 * `wp-scripts format` refuses to run against it -- "Incompatible
+		 * version of Prettier was found in your project".
+		 *
+		 * The quiet one is worse. `@wordpress/prettier-config` peers on
+		 * `prettier >=3`, so it loads either way -- and then decides what to
+		 * configure by reading the installed package's *name*:
+		 *
+		 *     const isWPPrettier = prettierPackage.name === 'wp-prettier';
+		 *     const customOptions = isWPPrettier ? { parenSpacing: true } : {};
+		 *
+		 * `parenSpacing` exists only in the fork, and it is what puts the
+		 * spaces in `( $collection )`. With plain prettier it is dropped, the
+		 * config still loads, and every correctly formatted file in the plugin
+		 * is reported as wrong by `prettier/prettier` -- "Replace
+		 * ` collection: Collection ` with `collection: Collection`".
+		 *
+		 * Versioned where the rest are not, and the pin is not the point: an
+		 * alias has to name a range, and this is the one `@wordpress/scripts`
+		 * asks for, so npm resolves the two to a single copy rather than
+		 * installing a second beside it.
+		 */
+		'prettier' => 'npm:wp-prettier@^3.0.3',
 		'@wordpress/prettier-config',
 	);
 
@@ -317,8 +345,15 @@ class Tooling extends Service {
 	 * JavaScript linter is unusable without one and refusing to write it would
 	 * leave the consumer with a config file nothing can run.
 	 *
-	 * @param string        $plugin_root Absolute path to the consuming plugin's root.
-	 * @param array<string> $packages    Package names.
+	 * A bare entry is added unversioned, which is the rule: the pin belongs in
+	 * the consumer's lock file. An entry keyed by name carries its own
+	 * specifier, for the one thing a range is not optional for -- an npm alias,
+	 * where the specifier says which package the name resolves to rather than
+	 * which version of it. Integer key means "no specifier", the same shape
+	 * `bootstrap.php` uses for an entry with no configuration.
+	 *
+	 * @param string                $plugin_root Absolute path to the consuming plugin's root.
+	 * @param array<int|string, string> $packages Package names, or name => specifier.
 	 * @return string[] The packages actually added.
 	 * @throws \RuntimeException When package.json cannot be written.
 	 */
@@ -327,12 +362,15 @@ class Tooling extends Service {
 
 		$added = array();
 
-		foreach ( $packages as $package ) {
+		foreach ( $packages as $key => $value ) {
+			$package   = \is_int( $key ) ? $value : $key;
+			$specifier = \is_int( $key ) ? '*' : $value;
+
 			if ( isset( $package_json['dependencies'][ $package ] ) || isset( $package_json['devDependencies'][ $package ] ) ) {
 				continue;
 			}
 
-			$package_json['devDependencies'][ $package ] = '*';
+			$package_json['devDependencies'][ $package ] = $specifier;
 			$added[]                                     = $package;
 		}
 
