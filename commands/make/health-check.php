@@ -44,16 +44,16 @@ return new class() extends MakeCommand {
 		parent::handle( $args, $assoc_args );
 	}
 
+	public function get_base_class(): ?string {
+		return 'Modules\SiteHealth\HealthCheck';
+	}
+
 	protected function get_stub(): string {
 		return 'health-check.php.stub';
 	}
 
 	protected function get_default_dir( array $config ): string {
 		return 'health-checks';
-	}
-
-	protected function get_base_class(): ?string {
-		return 'Modules\SiteHealth\HealthCheck';
 	}
 
 	protected static function get_type(): string {

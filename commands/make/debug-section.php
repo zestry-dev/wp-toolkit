@@ -44,16 +44,16 @@ return new class() extends MakeCommand {
 		parent::handle( $args, $assoc_args );
 	}
 
+	public function get_base_class(): ?string {
+		return 'Modules\SiteHealth\DebugSection';
+	}
+
 	protected function get_stub(): string {
 		return 'debug-section.php.stub';
 	}
 
 	protected function get_default_dir( array $config ): string {
 		return 'debug-sections';
-	}
-
-	protected function get_base_class(): ?string {
-		return 'Modules\SiteHealth\DebugSection';
 	}
 
 	protected static function get_type(): string {

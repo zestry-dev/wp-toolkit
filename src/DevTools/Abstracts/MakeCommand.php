@@ -172,7 +172,10 @@ abstract class MakeCommand extends Command {
 
 		$values = \array_merge( $values, $this->get_extra_values( $name, $assoc_args ) );
 
-		$extends = $this->get_flag( $assoc_args, 'extends', null );
+		// Before --extends, which resolves against the base this may install.
+		$this->ensure_base_installed( $namespace );
+
+		$extends = $this->takes_shared_extends() ? $this->get_flag( $assoc_args, 'extends', null ) : null;
 		$parent  = null;
 
 		if ( null !== $extends ) {
@@ -290,7 +293,7 @@ abstract class MakeCommand extends Command {
 	 *
 	 * @return string|null
 	 */
-	protected function get_base_class(): ?string {
+	public function get_base_class(): ?string {
 		return null;
 	}
 
@@ -602,6 +605,154 @@ abstract class MakeCommand extends Command {
 
 			$directory = $parent;
 		}
+	}
+
+	/**
+	 * Whether `--extends` is this command's to interpret, or the base's.
+	 *
+	 * True everywhere but `abstract`, which takes the same flag to mean
+	 * something of its own: a discovered file extends its type's base or a
+	 * subclass of it, while an abstract may extend anything and writes a named
+	 * class rather than the shared anonymous one. Answering false is what leaves
+	 * the flag alone for {@see get_extra_values()} to read.
+	 *
+	 * @return bool
+	 */
+	protected function takes_shared_extends(): bool {
+		return true;
+	}
+
+	/**
+	 * Make sure the module whose base class this file will extend is here.
+	 *
+	 * A generated file names its base in a `use` line, and nothing before this
+	 * checked that the class had ever been copied in. `make page` in a plugin
+	 * that never ran `add module admin-pages` therefore wrote a file importing
+	 * three classes that do not exist -- and said nothing, because PHP imports
+	 * are lazy, so it parses, lints clean, and lands in a directory no module is
+	 * walking. It does nothing at all until someone happens to add the module.
+	 *
+	 * Offered rather than done: `--yes` answers it, which is how the same flag
+	 * already answers the overwrite prompt, so an unattended run installs what
+	 * the file needs instead of writing something inert.
+	 *
+	 * @param string $root The plugin's namespace root.
+	 * @return void
+	 */
+	private function ensure_base_installed( string $root ): void {
+		$base = $this->get_base_class();
+
+		if ( null === $base ) {
+			return;
+		}
+
+		$class = Copier::get_target_namespace( $root ) . '\\' . $base;
+
+		if ( \class_exists( $class ) ) {
+			return;
+		}
+
+		$module = $this->get_module_providing( $base );
+
+		if ( null === $module ) {
+			$this->warning(
+				\sprintf( 'This plugin has no %s, so nothing will discover the file about to be written.', $class )
+			);
+
+			return;
+		}
+
+		$confirmed = $this->confirm(
+			\sprintf(
+				'This plugin has no %s, so nothing would discover the file about to be written. Add the "%s" module first?',
+				$class,
+				$module
+			),
+			false
+		);
+
+		if ( ! $confirmed ) {
+			// The class is named again rather than left in the prompt above: a
+			// prompt is answered and scrolls away, and this is the line someone
+			// comes back to when the file turns out to do nothing.
+			$this->warning(
+				\sprintf(
+					'Writing it anyway, but this plugin has no %s. Run `wp zestry add module %s` before it can do anything.',
+					$class,
+					$module
+				)
+			);
+
+			return;
+		}
+
+		$this->add_module( $module );
+	}
+
+	/**
+	 * The registry name of the module that owns a base class.
+	 *
+	 * Matched on the namespace the two share -- `Modules\Fields\Field` is the
+	 * base and `Modules\Fields\Fields` is the module, so `Modules\Fields`
+	 * answers for both. Asking the registry rather than keeping a second map
+	 * means a module that moves takes its answer with it.
+	 *
+	 * @param string $base The base class, relative to the copied namespace.
+	 * @return string|null The module's registry name, or null when nothing owns it.
+	 */
+	private function get_module_providing( string $base ): ?string {
+		$registry = Copier::flatten_registry(
+			require $this->path->get_plugin_path( 'src/DevTools/registry.php' )
+		);
+
+		$wanted = $this->get_declaring_namespace( $base );
+
+		foreach ( $registry as $name => $entry ) {
+			if ( 'modules' !== ( $entry['section'] ?? '' ) ) {
+				continue;
+			}
+
+			if ( $this->get_declaring_namespace( Copier::get_relative_class( $entry['source'] ) ) === $wanted ) {
+				return $name;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Everything before a class name's last segment.
+	 *
+	 * @param string $class_name The class name.
+	 * @return string
+	 */
+	private function get_declaring_namespace( string $class_name ): string {
+		$position = \strrpos( $class_name, '\\' );
+
+		return false === $position ? '' : \substr( $class_name, 0, $position );
+	}
+
+	/**
+	 * Run `wp zestry add module <name>` from inside this command.
+	 *
+	 * The real command rather than a copy of what it does: it resolves the
+	 * module's dependencies, rewrites every namespace, declares it in
+	 * bootstrap.php and records the hashes `update` later reads. Reimplementing
+	 * any of that here would be a second thing to keep true.
+	 *
+	 * @param string $module The module's registry name.
+	 * @return void
+	 */
+	private function add_module( string $module ): void {
+		$command = require $this->path->get_plugin_path( 'commands/add/module.php' );
+
+		$this->get_plugin()->wire( $command );
+
+		// Answered rather than asked: the question that got us here has already
+		// been answered, and asking it again per dependency is not a second
+		// decision.
+		$command->set_arguments( array( $module ), array( 'yes' => true ) );
+		$command->handle( array( $module ), array( 'yes' => true ) );
 	}
 
 	/**

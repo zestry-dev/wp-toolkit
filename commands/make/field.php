@@ -47,16 +47,16 @@ return new class() extends MakeCommand {
 		parent::handle( $args, $assoc_args );
 	}
 
+	public function get_base_class(): ?string {
+		return 'Modules\Fields\Field';
+	}
+
 	protected function get_stub(): string {
 		return 'field.php.stub';
 	}
 
 	protected function get_default_dir( array $config ): string {
 		return 'fields';
-	}
-
-	protected function get_base_class(): ?string {
-		return 'Modules\Fields\Field';
 	}
 
 	protected static function get_type(): string {

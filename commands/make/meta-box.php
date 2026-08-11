@@ -44,16 +44,16 @@ return new class() extends MakeCommand {
 		parent::handle( $args, $assoc_args );
 	}
 
+	public function get_base_class(): ?string {
+		return 'Modules\MetaBoxes\MetaBox';
+	}
+
 	protected function get_stub(): string {
 		return 'meta-box.php.stub';
 	}
 
 	protected function get_default_dir( array $config ): string {
 		return 'meta-boxes';
-	}
-
-	protected function get_base_class(): ?string {
-		return 'Modules\MetaBoxes\MetaBox';
 	}
 
 	protected static function get_type(): string {

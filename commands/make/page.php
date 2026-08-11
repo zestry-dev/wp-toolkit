@@ -99,6 +99,10 @@ return new class() extends MakeCommand {
 		parent::handle( $args, $assoc_args );
 	}
 
+	public function get_base_class(): ?string {
+		return 'Modules\AdminPages\AdminPage';
+	}
+
 	/**
 	 * Write the template the generated page renders.
 	 *
@@ -193,10 +197,6 @@ return new class() extends MakeCommand {
 
 	protected function get_default_dir( array $config ): string {
 		return 'admin-pages';
-	}
-
-	protected function get_base_class(): ?string {
-		return 'Modules\AdminPages\AdminPage';
 	}
 
 	protected static function get_type(): string {

@@ -65,6 +65,10 @@ return new class() extends MakeCommand {
 		parent::handle( $args, $assoc_args );
 	}
 
+	public function get_base_class(): ?string {
+		return 'Modules\Cron\Schedule';
+	}
+
 	protected function get_extra_values( string $name, array $assoc_args ): array {
 		return array(
 			'recurrence' => $this->get_flag( $assoc_args, 'recurrence', 'daily' ),
@@ -77,10 +81,6 @@ return new class() extends MakeCommand {
 
 	protected function get_default_dir( array $config ): string {
 		return 'schedules';
-	}
-
-	protected function get_base_class(): ?string {
-		return 'Modules\Cron\Schedule';
 	}
 
 	protected static function get_type(): string {

@@ -75,6 +75,10 @@ return new class() extends MakeCommand {
 		parent::handle( $args, $assoc_args );
 	}
 
+	public function get_base_class(): ?string {
+		return 'Modules\PostTypes\PostType';
+	}
+
 	/**
 	 * Derive the singular/plural display names for the stub's placeholders.
 	 *
@@ -101,10 +105,6 @@ return new class() extends MakeCommand {
 
 	protected function get_default_dir( array $config ): string {
 		return 'post-types';
-	}
-
-	protected function get_base_class(): ?string {
-		return 'Modules\PostTypes\PostType';
 	}
 
 	protected static function get_type(): string {

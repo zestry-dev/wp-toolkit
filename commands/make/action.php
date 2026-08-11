@@ -58,16 +58,16 @@ return new class() extends MakeCommand {
 		parent::handle( $args, $assoc_args );
 	}
 
+	public function get_base_class(): ?string {
+		return 'Modules\Ajax\AjaxAction';
+	}
+
 	protected function get_stub(): string {
 		return 'action.php.stub';
 	}
 
 	protected function get_default_dir( array $config ): string {
 		return 'actions';
-	}
-
-	protected function get_base_class(): ?string {
-		return 'Modules\Ajax\AjaxAction';
 	}
 
 	protected static function get_type(): string {

@@ -61,6 +61,10 @@ return new class() extends MakeCommand {
 		parent::handle( $args, $assoc_args );
 	}
 
+	public function get_base_class(): ?string {
+		return 'Modules\Migrations\Migration';
+	}
+
 	/**
 	 * Prefix the filename with the current timestamp so migrations sort and
 	 * run in generation order.
@@ -84,10 +88,6 @@ return new class() extends MakeCommand {
 
 	protected function get_default_dir( array $config ): string {
 		return 'migrations';
-	}
-
-	protected function get_base_class(): ?string {
-		return 'Modules\Migrations\Migration';
 	}
 
 	protected static function get_type(): string {

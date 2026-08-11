@@ -62,6 +62,10 @@ return new class() extends MakeCommand {
 		parent::handle( $args, $assoc_args );
 	}
 
+	public function get_base_class(): ?string {
+		return 'Modules\CLI\Command';
+	}
+
 	protected function get_stub(): string {
 		return 'command.php.stub';
 	}
@@ -118,10 +122,6 @@ return new class() extends MakeCommand {
 					. 'namespace and cannot also be used as a command name.'
 			);
 		}
-	}
-
-	protected function get_base_class(): ?string {
-		return 'Modules\CLI\Command';
 	}
 
 	protected static function get_type(): string {

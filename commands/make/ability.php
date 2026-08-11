@@ -58,6 +58,10 @@ return new class() extends MakeCommand {
 		parent::handle( $args, $assoc_args );
 	}
 
+	public function get_base_class(): ?string {
+		return 'Modules\Abilities\Ability';
+	}
+
 	protected function get_stub(): string {
 		return 'ability.php.stub';
 	}
@@ -81,10 +85,6 @@ return new class() extends MakeCommand {
 
 	protected function get_default_dir( array $config ): string {
 		return 'abilities';
-	}
-
-	protected function get_base_class(): ?string {
-		return 'Modules\Abilities\Ability';
 	}
 
 	protected static function get_type(): string {

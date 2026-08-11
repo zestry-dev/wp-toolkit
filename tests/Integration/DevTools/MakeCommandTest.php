@@ -81,11 +81,11 @@ final class MakeCommandTest extends TestCase {
 		$this->assertFileExists( $this->target_plugin_dir . '/abilities/create-order.php' );
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/abilities/create_order.php' );
 
-		$warning = \WP_CLI::last( 'warning' );
-		$this->assertNotNull( $warning, 'Respelling the name is said out loud.' );
-		$this->assertStringContainsString( 'create-order', (string) $warning[0] );
-		$this->assertStringContainsString( 'create_order', (string) $warning[0] );
-		$this->assertStringContainsString( 'a-z0-9-', (string) $warning[0], 'And the reason is given.' );
+		$warnings = $this->warnings();
+
+		$this->assertStringContainsString( 'create-order', $warnings, 'Respelling the name is said out loud.' );
+		$this->assertStringContainsString( 'create_order', $warnings );
+		$this->assertStringContainsString( 'a-z0-9-', $warnings, 'And the reason is given.' );
 	}
 
 	/**
@@ -126,7 +126,13 @@ final class MakeCommandTest extends TestCase {
 			$this->target_plugin_dir . '/' . $directory . '/' . $name . '.php',
 			\sprintf( '`make %s %s` kept the name it was given.', $type, $name )
 		);
-		$this->assertNull( \WP_CLI::last( 'warning' ), 'Nothing was respelled, so nothing is warned about.' );
+		// Narrowed to respelling. The fixture has no copied source, so the
+		// missing-base warning fires here too and is a different subject.
+		$this->assertStringNotContainsString(
+			'Writing "',
+			$this->warnings(),
+			'Nothing was respelled, so nothing is warned about that.'
+		);
 	}
 
 	/**
@@ -1169,6 +1175,49 @@ final class MakeCommandTest extends TestCase {
 	}
 
 	/**
+	 * The file a generated one imports has to be here, and nothing checked.
+	 *
+	 * `make page` before `add module admin-pages` wrote a file importing three
+	 * classes that do not exist and said nothing: PHP imports are lazy, so it
+	 * parses, lints clean, lands in a directory no module is walking, and does
+	 * nothing at all until someone happens to add the module.
+	 *
+	 * @return void
+	 */
+	public function test_a_missing_base_module_is_offered_and_warned_about(): void {
+		$this->run_make( array( 'reports' ), array(), 'page' );
+
+		$warnings = $this->warnings();
+
+		$this->assertStringContainsString( 'Acme\\Plugin\\Core\\Modules\\AdminPages\\AdminPage', $warnings );
+		$this->assertStringContainsString( 'add module admin-pages', $warnings, 'And what to run.' );
+		$this->assertFileExists(
+			$this->target_plugin_dir . '/admin-pages/reports.php',
+			'Declining writes the file anyway -- the warning is the point, not a refusal.'
+		);
+	}
+
+	/**
+	 * `--yes` is an answer, not a default, so an unattended run installs what the
+	 * file needs rather than writing something inert.
+	 *
+	 * @return void
+	 */
+	public function test_yes_installs_the_missing_base_module(): void {
+		$this->run_make( array( 'reports' ), array( 'yes' => true ), 'page' );
+
+		$this->assertFileExists(
+			$this->target_plugin_dir . '/lib/Core/Modules/AdminPages/AdminPage.php',
+			'The module was copied in, by the real `add` command.'
+		);
+		$this->assertFileExists(
+			$this->target_plugin_dir . '/lib/Core/Services/Request/Request.php',
+			'Along with the dependencies the registry resolves for it.'
+		);
+		$this->assertFileExists( $this->target_plugin_dir . '/admin-pages/reports.php' );
+	}
+
+	/**
 	 * A plugin that never added the module has no base class for the generated
 	 * file to extend, and saying "does not extend" would be true and useless --
 	 * the class it does not extend is one this plugin has never had.
@@ -1223,6 +1272,94 @@ final class MakeCommandTest extends TestCase {
 
 		$this->assertStringContainsString( 'extends Field', $written );
 		$this->assertStringContainsString( 'public function subtypes(): array {', $written );
+	}
+
+	/**
+	 * `--for` names a make type, so nobody has to type the `Core` segment --
+	 * which the toolkit deliberately keeps in one place of its own.
+	 *
+	 * @return void
+	 */
+	public function test_make_abstract_for_a_type_extends_that_types_base(): void {
+		$this->run_make( array( 'EntityField' ), array( 'for' => 'field' ), 'abstract' );
+
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/lib/Abstracts/EntityField.php' );
+
+		$this->assertStringContainsString( 'namespace Acme\\Plugin\\Abstracts;', $written );
+		$this->assertStringContainsString( 'use Acme\\Plugin\\Core\\Modules\\Fields\\Field;', $written );
+		$this->assertStringContainsString( 'abstract class EntityField extends Field {', $written );
+	}
+
+	/**
+	 * Neither flag is a plain abstract class -- useful for something shared that
+	 * is not a discovered file at all.
+	 *
+	 * @return void
+	 */
+	public function test_make_abstract_without_a_parent_extends_nothing(): void {
+		$this->run_make( array( 'Importer' ), array(), 'abstract' );
+
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/lib/Abstracts/Importer.php' );
+
+		$this->assertStringContainsString( 'abstract class Importer {', $written );
+		$this->assertStringNotContainsString( ' extends ', $written );
+		$this->assertStringNotContainsString( "\nuse ", $written, 'Nothing to import either.' );
+	}
+
+	/**
+	 * The second abstract layered onto the first, through the same resolution
+	 * every other type's --extends uses.
+	 *
+	 * @return void
+	 */
+	public function test_make_abstract_can_extend_one_of_your_own(): void {
+		$this->use_fixture_namespace();
+
+		$this->run_make( array( 'CuratedField' ), array( 'extends' => 'EntityField' ), 'abstract' );
+
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/lib/Abstracts/CuratedField.php' );
+
+		$this->assertStringContainsString( 'use ' . self::FIXTURE_NAMESPACE . '\\Abstracts\\EntityField;', $written );
+		$this->assertStringContainsString( 'abstract class CuratedField extends EntityField {', $written );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_make_abstract_refuses_both_flags_at_once(): void {
+		$this->run_make( array( 'EntityField' ), array( 'for' => 'field', 'extends' => 'Whatever' ), 'abstract' );
+
+		$this->assertStringContainsString( 'not both', $this->last_error() );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_make_abstract_refuses_a_type_that_does_not_exist(): void {
+		$this->run_make( array( 'EntityField' ), array( 'for' => 'nonsense' ), 'abstract' );
+
+		$this->assertStringContainsString( 'no `make nonsense`', $this->last_error() );
+	}
+
+	/**
+	 * Every `warning()` the command made, joined.
+	 *
+	 * More than one subject can be warned about in a single run -- a respelled
+	 * name and a base class this plugin has not installed are both worth saying
+	 * -- so a test asserting on one of them must not depend on it being last.
+	 *
+	 * @return string
+	 */
+	private function warnings(): string {
+		$messages = array();
+
+		foreach ( \WP_CLI::$calls as $call ) {
+			if ( 'warning' === $call[0] ) {
+				$messages[] = (string) ( $call[1] ?? '' );
+			}
+		}
+
+		return implode( "\n", $messages );
 	}
 
 	/**
@@ -1305,6 +1442,7 @@ final class MakeCommandTest extends TestCase {
 			'entry'              => 'entry.php',
 			'field'              => 'field.php',
 			'ability'            => 'ability.php',
+			'abstract'           => 'abstract.php',
 		);
 
 		$command = isset( $stub_to_make_file[ $stub ] )
@@ -1333,6 +1471,11 @@ final class MakeCommandTest extends TestCase {
 		chdir( $this->target_plugin_dir );
 
 		try {
+			// Both, in this order, because that is what the CLI module's own
+			// dispatcher does -- and confirm() reads --yes off the recorded
+			// arguments rather than off handle()'s parameter, so a harness that
+			// skips this tests every prompt as though it had been declined.
+			$command->set_arguments( $args, $assoc_args );
 			$command->handle( $args, $assoc_args );
 		} finally {
 			chdir( $previous_cwd );

@@ -23,6 +23,7 @@ been initialized — see [Getting started](../getting-started.md).
 ## Generate your own code
 
 - [`wp zestry make ability`](make-ability.md) — Generate an ability.
+- [`wp zestry make abstract`](make-abstract.md) — Generate an intermediate abstract of your own.
 - [`wp zestry make action`](make-action.md) — Generate a new AJAX action.
 - [`wp zestry make activation`](make-activation.md) — Generate an activation handler.
 - [`wp zestry make block`](make-block.md) — Generate a new editor block.

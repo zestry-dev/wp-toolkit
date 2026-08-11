@@ -19,7 +19,7 @@ For the absolutes alone, with the tables and the caveats stripped out, see [Rule
 |---|---|---|
 | `wp zestry init` | `lib/Core/Kernel/` | `Acme\Plugin\Core\Kernel\Plugin` |
 | `wp zestry add module ajax`, `wp zestry add service path` | `lib/Core/Modules/Ajax/`, `lib/Core/Services/Path.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax`, `Acme\Plugin\Core\Services\Path` |
-| `wp zestry make module`, `wp zestry make service` | `lib/Modules/Shortcode.php`, `lib/Services/Cache.php` | `Acme\Plugin\Modules\Shortcode`, `Acme\Plugin\Services\Cache` |
+| `wp zestry make module`, `wp zestry make service`, `wp zestry make abstract` | `lib/Modules/Shortcode.php`, `lib/Services/Cache.php`, `lib/Abstracts/EntityField.php` | `Acme\Plugin\Modules\Shortcode`, `Acme\Plugin\Services\Cache`, `Acme\Plugin\Abstracts\EntityField` |
 | you, anywhere else under `lib/` | `lib/Data/LineItem.php` | `Acme\Plugin\Data\LineItem` |
 
 **A plain class needs no generator and no directory of ours.** The one PSR-4 entry `init` writes maps your whole source root, so any class under it autoloads from its namespace — a DTO, a value object, a helper. `Modules/` and `Services/` are where the two generators write, not a rule about what may exist.
@@ -164,7 +164,7 @@ Run from inside your plugin's directory, with the plugin active.
 | [`wp zestry init`](commands/init.md) | Copies the kernel; writes `zestry.json`, `zestry.lock.json`, `bootstrap.php`, the PSR-4 entry, `.gitignore`, the linter configs and `AGENTS.md`. `--no-phpcs`, `--no-eslint`, `--no-prettier`, `--no-agents`, `--yes` |
 | [`wp zestry add module <name>...`](commands/add-module.md) | Copies modules and their dependencies; declares each in `bootstrap.php`. Skips what is already there. `--yes` |
 | [`wp zestry add service <name>...`](commands/add-service.md) | Copies services and their dependencies. Declares nothing. `--yes` |
-| [`wp zestry make <type> <name>`](commands/) | Generates one file from a stub — see the 20 types below. `--yes`, plus `--dir=` on every type but `module` and `service`, and `--extends=` on every type that generates a class |
+| [`wp zestry make <type> <name>`](commands/) | Generates one file from a stub — see the 21 types below. `--yes`, plus `--dir=` on every type but `module`, `service` and `abstract`, and `--extends=` on every type that generates a class -- `abstract` also takes `--for=<type>` |
 | [`wp zestry describe`](commands/describe.md) | Reports what this plugin has: each module installed, declared, the directory it reads and the base class a file there returns. `--format`, `--kind`, `--installed` |
 | [`wp zestry doctor`](commands/doctor.md) | Reports the wiring mistakes that raise no error — chiefly a module on disk that nothing declares. `--format=report\|csv\|json\|yaml` |
 | [`wp zestry update`](commands/update.md) | Re-copies everything under `lib/Core/` from the installed toolkit, keeping files you edited. `--dry-run`, `--force`, `--yes` |
@@ -201,7 +201,7 @@ Each type writes one file into the directory its module discovers, so the genera
 The last three land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zestry update`](commands/update.md) may replace. `module` and `service` are the two types with no `--dir=` at all, for the same reason.
 
 <!-- zestry:include generator="prompting-generators" -->
-**5 of the 20 generators ask for what you leave out** — [`block`](commands/make-block.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops; `--yes` answers each with its documented default without reading input. The other 15 never prompt.
+**5 of the 21 generators ask for what you leave out** — [`block`](commands/make-block.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops; `--yes` answers each with its documented default without reading input. The other 16 never prompt.
 <!-- /zestry:include -->
 
 `make module` and `make activation` are the only generators that also write to `bootstrap.php`, since being listed is the only thing that builds a module. `make service` declares nothing: a service is built the moment something asks for it, so an entry naming one would only build it sooner than needed.
