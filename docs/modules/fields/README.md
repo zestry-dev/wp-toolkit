@@ -19,7 +19,9 @@ That costs you one thing — querying. `meta_query` matches a single row's value
 
 ## Reading and writing
 
-`get()`, `has()`, `set()` and `delete()` work on **the fields this plugin declares**, and refuse anything else. That refusal is the point: a mistyped key handed to `get_post_meta()` returns `''`, which looks exactly like a field nobody has filled in.
+`get()`, `has()`, `set()` and `delete()` work on **the fields this plugin registers**, and refuse anything else — a key no file declares, and a key whose file switched itself off. That refusal is the point: a mistyped key handed to `get_post_meta()` returns `''`, which looks exactly like a field nobody has filled in.
+
+To list what a plugin declares rather than what it registers — a settings screen showing which features are available to switch on — use `get_all_fields()` or `get_fields_of()`, which include the switched-off ones.
 
 They are not a general post-meta helper: reading meta needs to know whether the key holds one value or many, and only a registration says.
 
@@ -145,6 +147,8 @@ public function get_discovered_fields(): array
 
 Nested because a meta key is unique only within an object type. Use `get_fields_of()` when you know which type you want.
 
+Everything the directory declares, including a field whose `is_enabled()` returns false — so a screen offering to switch features on can list the ones currently switched off. Only `register_fields()` acts on the answer, and the value accessors refuse a key belonging to a field that is switched off.
+
 <br>
 
 ### `get_key_of( $field )`
@@ -243,7 +247,7 @@ Removing something that was never there is not an error.
 
 ### `get_all_fields()`
 
-Every discovered field, flattened, for iterating over all of them.
+Every declared field, flattened, for iterating over all of them.
 
 ```php
 public function get_all_fields(): array
@@ -254,6 +258,8 @@ public function get_all_fields(): array
 | **Parameters** | — |
 | **Return** | Meta key => instance. A key shared by two object types appears once; use `get_fields_of()` to tell them apart |
 | **Throws** | `DiscoveryException` — When discovery fails |
+
+Includes the switched-off ones — this is enumeration, and that is what it is for. Ask an instance's `is_enabled()` to tell them apart.
 
 <br>
 
@@ -271,6 +277,8 @@ public function get_fields_of( MetaType $type ): array
 | **Return** | `array` |
 | **Throws** | `DiscoveryException` — When discovery fails |
 
+Includes the switched-off ones, on the same terms as `get_all_fields()`.
+
 <br>
 
 ### `get_field( $key, $type )`
@@ -285,7 +293,9 @@ public function get_field( string $key, MetaType $type = MetaType::Post ): Field
 |---|---|
 | **Parameters** | `$key` — The meta key<br>`$type` — The object type it belongs to. Post meta by default |
 | **Return** | `Field` |
-| **Throws** | `InvalidArgumentException` — When no field of that type declares that key |
+| **Throws** | `InvalidArgumentException` — When no field of that type declares that key, or the field that does is switched off |
+
+A field that switched itself off is refused too, with its own message: its meta was never registered, so reading it would hand back `''` and writing it would store a value nothing knows the shape of — the two failures this method exists to prevent. Enumerate with `get_fields_of()` when you want everything declared.
 
 <br>
 

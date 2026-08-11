@@ -360,6 +360,30 @@ final class PostTypesTest extends TestCase {
 		);
 	}
 
+	/**
+	 * Discovery is public, so an instance can be handed out and then handed back.
+	 * That only works if the directory is walked once: `require` runs the file
+	 * again every time, returning an equal object that is not the same one, and
+	 * get_post_type_of() compares by identity.
+	 *
+	 * @return void
+	 */
+	public function test_discovery_hands_back_the_same_instances(): void {
+		$this->write_post_type(
+			'book',
+			"public function singular_name(): string { return 'Book'; }\n"
+				. 'public function plural_name(): string { return \'Books\'; }'
+		);
+
+		$module = $this->boot_post_types_with_roots();
+
+		$first  = $module->get_discovered_post_types();
+		$second = $module->get_discovered_post_types();
+
+		$this->assertSame( $first['book'], $second['book'], 'Walked once, so the same object comes back.' );
+		$this->assertSame( 'book', $module->get_post_type_of( $first['book'] ), 'And the reverse lookup recognises it.' );
+	}
+
 	public function test_a_post_type_file_returning_the_wrong_type_throws(): void {
 		mkdir( $this->plugin_dir . '/taxonomies', 0777, true );
 		$this->write_plugin_file( 'post-types/bad-type.php', "<?php\nreturn 42;\n" );

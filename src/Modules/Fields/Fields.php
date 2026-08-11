@@ -41,9 +41,15 @@ use Zestry\WPToolkit\Services\Path;
  * ## Reading and writing
  *
  * {@see get()}, {@see has()}, {@see set()} and {@see delete()} work on **the
- * fields this plugin declares**, and refuse anything else. That
- * refusal is the point: a mistyped key handed to `get_post_meta()` returns `''`,
- * which looks exactly like a field nobody has filled in.
+ * fields this plugin registers**, and refuse anything else — a key no file
+ * declares, and a key whose file switched itself off. That refusal is the
+ * point: a mistyped key handed to `get_post_meta()` returns `''`, which looks
+ * exactly like a field nobody has filled in.
+ *
+ * To list what a plugin declares rather than what it registers — a settings
+ * screen showing which features are available to switch on — use
+ * {@see get_all_fields()} or {@see get_fields_of()}, which include the
+ * switched-off ones.
  *
  * They are not a general post-meta helper: reading meta needs to know whether
  * the key holds one value or many, and only a registration says.
@@ -145,6 +151,12 @@ class Fields extends Module {
 	 * Nested because a meta key is unique only within an object type. Use
 	 * {@see get_fields_of()} when you know which type you want.
 	 *
+	 * Everything the directory declares, including a field whose `is_enabled()`
+	 * returns false — so a screen offering to switch features on can list the
+	 * ones currently switched off. Only {@see register_fields()} acts on the
+	 * answer, and the value accessors refuse a key belonging to a field that is
+	 * switched off.
+	 *
 	 * @return array<string, array<string, Field>> Object type => meta key => instance.
 	 * @throws DiscoveryException When a directory named by set_fields_root() does not exist, or a file returns the wrong value.
 	 */
@@ -162,7 +174,7 @@ class Fields extends Module {
 				// would leave the other registered but unreachable.
 				throw new DiscoveryException(
 					\sprintf(
-						'Both %1$s.php and another file declare the %2$s meta key "%3$s". One key, one file.',
+						'Both %1$s.php and another file declare the %2$s meta key "%3$s". One key, one file -- switching one of them off does not settle which owns the key.',
 						$file,
 						$type,
 						$key
@@ -292,7 +304,10 @@ class Fields extends Module {
 	}
 
 	/**
-	 * Every discovered field, flattened, for iterating over all of them.
+	 * Every declared field, flattened, for iterating over all of them.
+	 *
+	 * Includes the switched-off ones — this is enumeration, and that is what it
+	 * is for. Ask an instance's `is_enabled()` to tell them apart.
 	 *
 	 * @return array<string, Field> Meta key => instance. A key shared by two
 	 *                              object types appears once; use
@@ -308,6 +323,9 @@ class Fields extends Module {
 	/**
 	 * Every field of one object type, by meta key.
 	 *
+	 * Includes the switched-off ones, on the same terms as
+	 * {@see get_all_fields()}.
+	 *
 	 * @param MetaType $type The object type.
 	 * @return array<string, Field>
 	 * @throws DiscoveryException When discovery fails.
@@ -319,10 +337,16 @@ class Fields extends Module {
 	/**
 	 * The field declaring a key, within an object type.
 	 *
+	 * A field that switched itself off is refused too, with its own message: its
+	 * meta was never registered, so reading it would hand back `''` and writing
+	 * it would store a value nothing knows the shape of — the two failures this
+	 * method exists to prevent. Enumerate with {@see get_fields_of()} when you
+	 * want everything declared.
+	 *
 	 * @param string   $key  The meta key.
 	 * @param MetaType $type The object type it belongs to. Post meta by default.
 	 * @return Field
-	 * @throws \InvalidArgumentException When no field of that type declares that key.
+	 * @throws \InvalidArgumentException When no field of that type declares that key, or the field that does is switched off.
 	 */
 	public function get_field( string $key, MetaType $type = MetaType::Post ): Field {
 		$fields = $this->get_fields_of( $type );
@@ -334,6 +358,16 @@ class Fields extends Module {
 					$type->value,
 					$key,
 					array() === $fields ? 'none' : \implode( ', ', \array_keys( $fields ) )
+				)
+			);
+		}
+
+		if ( ! $fields[ $key ]->is_enabled() ) {
+			throw new \InvalidArgumentException(
+				\sprintf(
+					'The %1$s field "%2$s" is declared but switched off, so its meta is not registered and reading or writing it would not do what you mean. Check is_enabled() on the file that declares it.',
+					$type->value,
+					$key
 				)
 			);
 		}
@@ -357,6 +391,13 @@ class Fields extends Module {
 		$this->filter_protected_meta();
 
 		foreach ( $this->get_all_fields() as $key => $field ) {
+			// Declared but switched off. Discovery lists it either way; this is
+			// where it stops short of a registration, so nothing about it
+			// reaches REST or the block editor.
+			if ( ! $field->is_enabled() ) {
+				continue;
+			}
+
 			$type     = $field->object_type()->value;
 			$subtypes = $field->subtypes();
 
@@ -435,7 +476,9 @@ class Fields extends Module {
 
 		$field = $this->get_fields_of( $type )[ $meta_key ] ?? null;
 
-		if ( null === $field ) {
+		// Nothing this plugin governs -- and a field that switched itself off
+		// registered no meta, so a write to that key is someone else's.
+		if ( null === $field || ! $field->is_enabled() ) {
 			return $check;
 		}
 
@@ -486,13 +529,11 @@ class Fields extends Module {
 		// A meta key is the `meta_key` column, and appears in your REST responses.
 		// The filename is the default key, exactly as written.
 		foreach ( $this->walk_folder( $root_dir, array( 'php' ), 1 ) as $file ) {
+			// Wired inside, so is_enabled() can read an injected service whenever
+			// it is asked. Every file is kept, switched on or off: what a field
+			// declares is readable, and what it *registers* is decided in
+			// register_fields().
 			$instance = $this->wire_field_file( $root_dir . '/' . $file );
-
-			// Wired first, so is_enabled() can read an injected service. A field
-			// switched off registers no meta, so nothing about it reaches REST.
-			if ( ! $instance->is_enabled() ) {
-				continue;
-			}
 
 			$instances[ \basename( $file, '.php' ) ] = $instance;
 		}
@@ -553,6 +594,13 @@ class Fields extends Module {
 		$decided = array();
 
 		foreach ( $this->get_all_fields() as $key => $field ) {
+			// A field that registers nothing has no business deciding whether a
+			// key it does not own is protected -- this filter answers for every
+			// key on the site.
+			if ( ! $field->is_enabled() ) {
+				continue;
+			}
+
 			$protected = $field->is_protected();
 
 			if ( null !== $protected ) {

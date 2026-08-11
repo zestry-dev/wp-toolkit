@@ -264,6 +264,8 @@ public function is_enabled(): bool
 | **Return** | `bool` |
 | **Throws** | — |
 
-Called once, at discovery, after the instance is wired and before anything is registered. Return false and nothing happens: no hook is bound, no WordPress registration is made, and the file might as well not be there.
+Called once, after the instance is wired and before anything is registered. Return false and nothing happens: no hook is bound and no WordPress registration is made.
 
 The default is true, so a file that says nothing registers — being on disk is the convention, and this is the exception to it.
+
+Most modules ask at discovery and drop the file there. `post-types` and `fields` ask at registration instead, so that a switched-off file still appears in what they list — a screen offering to switch a feature on can only offer what it can see. It registers nothing either way.

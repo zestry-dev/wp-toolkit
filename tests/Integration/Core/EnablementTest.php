@@ -22,6 +22,12 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  * no hook bound. A shared helper would assert the module's own bookkeeping, which
  * is the half that is easy to get right.
  *
+ * `post-types` and `fields` answer the switch one step later than the others:
+ * discovery lists every file and registration skips the switched-off ones, so a
+ * plugin can build a screen over what it declares. The pairs of tests below are
+ * what pin that -- listed *and* not registered, since either assertion alone
+ * passes for the wrong reason.
+ *
  * @covers \Zestry\WPToolkit\Kernel\Traits\WithEnablement
  */
 final class EnablementTest extends TestCase {
@@ -70,6 +76,55 @@ final class EnablementTest extends TestCase {
 		do_action( 'init' );
 
 		$this->assertFalse( post_type_exists( 'switched-off' ) );
+	}
+
+	/**
+	 * The other half of the test above: not registered, and still listed.
+	 *
+	 * A settings screen offering to switch a feature on can only offer what it
+	 * can see, so filtering at discovery hid the exact case such a screen is for.
+	 *
+	 * @return void
+	 */
+	public function test_a_disabled_post_type_is_still_discovered(): void {
+		$this->write_plugin_file(
+			'post-types/switched-off.php',
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\PostType;\nreturn new class extends PostType {\n"
+				. "public function is_enabled(): bool { return false; }\n"
+				. "public function singular_name(): string { return 'Off'; }\n"
+				. "public function plural_name(): string { return 'Offs'; }\n};\n"
+		);
+
+		$post_types = $this->plugin->get( PostTypes::class );
+		$post_types->boot();
+		do_action( 'init' );
+
+		$discovered = $post_types->get_discovered_post_types();
+
+		$this->assertArrayHasKey( 'switched-off', $discovered, 'Declared, so listed.' );
+		$this->assertFalse( $discovered['switched-off']->is_enabled(), 'And the instance says why it is not registered.' );
+		$this->assertFalse( post_type_exists( 'switched-off' ), 'Listed is not registered.' );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_a_disabled_taxonomy_is_still_discovered(): void {
+		$this->write_plugin_file(
+			'taxonomies/off-tax.php',
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\Taxonomy;\nreturn new class extends Taxonomy {\n"
+				. "public function is_enabled(): bool { return false; }\n"
+				. "public function singular_name(): string { return 'Off Tax'; }\n"
+				. "public function plural_name(): string { return 'Off Taxes'; }\n"
+				. "public function object_types(): array { return array( 'post' ); }\n};\n"
+		);
+
+		$post_types = $this->plugin->get( PostTypes::class );
+		$post_types->boot();
+		do_action( 'init' );
+
+		$this->assertArrayHasKey( 'off-tax', $post_types->get_discovered_taxonomies(), 'Declared, so listed.' );
+		$this->assertFalse( taxonomy_exists( 'off-tax' ), 'Listed is not registered.' );
 	}
 
 	/**
@@ -168,6 +223,59 @@ final class EnablementTest extends TestCase {
 		$registered = get_registered_meta_keys( 'post', 'zestry_conditional' );
 
 		$this->assertArrayNotHasKey( 'off_key', $registered );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_a_disabled_field_is_still_enumerated(): void {
+		register_post_type( 'zestry_enumerable', array( 'public' => true ) );
+
+		$this->write_plugin_file(
+			'fields/off_key.php',
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\Fields\\Field;\nreturn new class extends Field {\n"
+				. "public function is_enabled(): bool { return false; }\n"
+				. "public function subtypes(): array { return array( 'zestry_enumerable' ); }\n"
+				. "public function type(): string { return 'string'; }\n};\n"
+		);
+
+		$fields = $this->plugin->get( Fields::class );
+		$fields->boot();
+		do_action( 'init' );
+
+		$this->assertArrayHasKey( 'off_key', $fields->get_all_fields(), 'Declared, so listed.' );
+		$this->assertArrayNotHasKey(
+			'off_key',
+			get_registered_meta_keys( 'post', 'zestry_enumerable' ),
+			'Listed is not registered.'
+		);
+	}
+
+	/**
+	 * Enumeration is not permission to read or write.
+	 *
+	 * A switched-off field registered no meta, so `get()` would hand back the
+	 * `''` that a mistyped key gives and `set()` would store a value nothing
+	 * knows the shape of -- the two failures these accessors exist to prevent.
+	 *
+	 * @return void
+	 */
+	public function test_the_value_accessors_refuse_a_disabled_field(): void {
+		$this->write_plugin_file(
+			'fields/off_key.php',
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\Fields\\Field;\nreturn new class extends Field {\n"
+				. "public function is_enabled(): bool { return false; }\n"
+				. "public function type(): string { return 'string'; }\n};\n"
+		);
+
+		$fields = $this->plugin->get( Fields::class );
+		$fields->boot();
+		do_action( 'init' );
+
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'declared but switched off' );
+
+		$fields->get( 1, 'off_key' );
 	}
 
 	/**

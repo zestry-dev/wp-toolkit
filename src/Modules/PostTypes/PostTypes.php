@@ -31,6 +31,13 @@ use Zestry\WPToolkit\Services\Path;
  * discovery order, so a taxonomy's {@see Taxonomy::object_types()} can safely
  * name any post type this same plugin discovers.
  *
+ * {@see get_discovered_post_types()} and {@see get_discovered_taxonomies()}
+ * hand back everything the two directories declare, switched on or off, so a
+ * plugin can build a screen over its own post types without keeping a second
+ * list of them somewhere. `is_enabled()` is read at registration instead: a
+ * file that switches itself off is one you can list and WordPress never hears
+ * about.
+ *
  * Both roots behave the same way, which is what lets a plugin with post types
  * but no taxonomies skip the `taxonomies/` directory entirely. Name one with
  * {@see set_post_types_root()} or {@see set_taxonomies_root()} and it must
@@ -116,16 +123,21 @@ class PostTypes extends Module {
 	/**
 	 * Discovered post type instances, indexed by their registered name.
 	 *
-	 * @var array<string, PostType>
+	 * Null until the directory has been walked, so discovery runs once and every
+	 * caller is handed the same instances -- which is what lets
+	 * {@see get_post_type_of()} recognise one it gave out earlier. Requiring a
+	 * file again would return an equal instance that is not the same object.
+	 *
+	 * @var array<string, PostType>|null
 	 */
-	private array $post_types = array();
+	private ?array $post_types = null;
 
 	/**
 	 * Discovered taxonomy instances, indexed by their registered name.
 	 *
-	 * @var array<string, Taxonomy>
+	 * @var array<string, Taxonomy>|null
 	 */
-	private array $taxonomies = array();
+	private ?array $taxonomies = null;
 
 	/**
 	 * Set the plugin-relative directory that contains post type files.
@@ -139,6 +151,9 @@ class PostTypes extends Module {
 	public function set_post_types_root( string $post_types_root ): void {
 		$this->post_types_root         = $post_types_root;
 		$this->post_types_root_was_set = true;
+
+		// Anything already read came from the old directory.
+		$this->post_types = null;
 	}
 
 	/**
@@ -153,6 +168,9 @@ class PostTypes extends Module {
 	public function set_taxonomies_root( string $taxonomies_root ): void {
 		$this->taxonomies_root         = $taxonomies_root;
 		$this->taxonomies_root_was_set = true;
+
+		// Anything already read came from the old directory.
+		$this->taxonomies = null;
 	}
 
 	/**
@@ -161,9 +179,10 @@ class PostTypes extends Module {
 	 * @param PostType $post_type The instance to look up.
 	 * @return string
 	 * @throws \InvalidArgumentException When the instance was not discovered by this module.
+	 * @throws DiscoveryException When discovery fails.
 	 */
 	public function get_post_type_of( PostType $post_type ): string {
-		$name = \array_search( $post_type, $this->post_types, true );
+		$name = \array_search( $post_type, $this->get_discovered_post_types(), true );
 
 		if ( false === $name ) {
 			throw new \InvalidArgumentException(
@@ -180,9 +199,10 @@ class PostTypes extends Module {
 	 * @param Taxonomy $taxonomy The instance to look up.
 	 * @return string
 	 * @throws \InvalidArgumentException When the instance was not discovered by this module.
+	 * @throws DiscoveryException When discovery fails.
 	 */
 	public function get_taxonomy_of( Taxonomy $taxonomy ): string {
-		$name = \array_search( $taxonomy, $this->taxonomies, true );
+		$name = \array_search( $taxonomy, $this->get_discovered_taxonomies(), true );
 
 		if ( false === $name ) {
 			throw new \InvalidArgumentException(
@@ -200,22 +220,162 @@ class PostTypes extends Module {
 	 * discovered afterward can name any of them in object_types() regardless
 	 * of the two directories' relative file discovery order.
 	 *
+	 * This is the only place `is_enabled()` is consulted. Discovery hands back
+	 * every file either way, so a file that switches itself off is still
+	 * something you can list; it is registration it does not reach.
+	 *
 	 * @return void
 	 *
 	 * @internal
 	 */
 	public function register_all(): void {
 		foreach ( $this->get_discovered_post_types() as $name => $post_type ) {
+			if ( ! $post_type->is_enabled() ) {
+				continue;
+			}
+
 			$this->assert_registered( \register_post_type( $name, $post_type->get_args() ), $name, 'post type' );
 		}
 
 		foreach ( $this->get_discovered_taxonomies() as $name => $taxonomy ) {
+			if ( ! $taxonomy->is_enabled() ) {
+				continue;
+			}
+
 			$this->assert_registered(
 				\register_taxonomy( $name, $taxonomy->object_types(), $taxonomy->get_args() ),
 				$name,
 				'taxonomy'
 			);
 		}
+	}
+
+	/**
+	 * Every post type this plugin declares, by registered name.
+	 *
+	 * Everything the directory holds, including any file whose `is_enabled()`
+	 * returns false — so a screen offering to switch features on can list the
+	 * ones currently switched off, which is the only case such a screen exists
+	 * for. Ask an instance yourself when you need to tell them apart; only
+	 * {@see register_all()} acts on the answer.
+	 *
+	 * The directory is walked once and the instances kept, so two calls hand
+	 * back the same objects and {@see get_post_type_of()} recognises one you
+	 * were given earlier.
+	 *
+	 * @return array<string, PostType> Wired instances keyed by registered name.
+	 * @throws DiscoveryException When a post types directory named by set_post_types_root() does not exist, or a file returns the wrong value.
+	 */
+	public function get_discovered_post_types(): array {
+		if ( null !== $this->post_types ) {
+			return $this->post_types;
+		}
+
+		$root_dir = $this->path->get_plugin_path( $this->post_types_root );
+
+		if ( ! \is_dir( $root_dir ) ) {
+			// Never named, and the default is absent: this plugin has none of
+			// these yet. Only a directory asked for by name is missing in the
+			// sense worth throwing over.
+			if ( ! $this->post_types_root_was_set ) {
+				$this->post_types = array();
+
+				return $this->post_types;
+			}
+
+			throw DiscoveryException::missing_root( 'Post types', $root_dir, 'set_post_types_root()' );
+		}
+
+		$this->post_types = array();
+
+		// A post type name is the `post_type` column in wp_posts. The filename is it,
+		// verbatim: rewriting one renames every row already stored under it.
+		foreach ( $this->walk_folder( $root_dir, array( 'php' ), 1 ) as $file ) {
+			$name = \basename( $file, '.php' );
+
+			/** @var PostType $instance */
+			$instance = require $root_dir . '/' . $file;
+
+			if ( ! $instance instanceof PostType ) {
+				throw new DiscoveryException(
+					\sprintf(
+						'The file "%s" must return an instance of %s. Got: %s',
+						$root_dir . '/' . $file,
+						PostType::class,
+						\is_object( $instance ) ? $instance::class : \gettype( $instance )
+					)
+				);
+			}
+
+			// Wired here rather than at registration, so that is_enabled() can
+			// read an injected service whenever it is asked.
+			$this->get_plugin()->wire( $instance );
+
+			$this->post_types[ $name ] = $instance;
+		}
+
+		return $this->post_types;
+	}
+
+	/**
+	 * Every taxonomy this plugin declares, by registered name.
+	 *
+	 * Everything the directory holds, on the same terms as
+	 * {@see get_discovered_post_types()}: a file whose `is_enabled()` returns
+	 * false is listed here and registered nowhere.
+	 *
+	 * @return array<string, Taxonomy> Wired instances keyed by registered name.
+	 * @throws DiscoveryException When a named taxonomies directory does not exist, or a file returns the wrong value.
+	 */
+	public function get_discovered_taxonomies(): array {
+		if ( null !== $this->taxonomies ) {
+			return $this->taxonomies;
+		}
+
+		$root_dir = $this->path->get_plugin_path( $this->taxonomies_root );
+
+		if ( ! \is_dir( $root_dir ) ) {
+			// The default directory, absent and never asked for: this plugin
+			// registers no taxonomies. Only a directory named by
+			// set_taxonomies_root() is missing in the sense worth throwing over
+			// -- see $taxonomies_root_was_set.
+			if ( ! $this->taxonomies_root_was_set ) {
+				$this->taxonomies = array();
+
+				return $this->taxonomies;
+			}
+
+			throw DiscoveryException::missing_root( 'Taxonomies', $root_dir, 'set_taxonomies_root()' );
+		}
+
+		$this->taxonomies = array();
+
+		// A taxonomy name is stored the same way, and is equally not ours to respell.
+		foreach ( $this->walk_folder( $root_dir, array( 'php' ), 1 ) as $file ) {
+			$name = \basename( $file, '.php' );
+
+			/** @var Taxonomy $instance */
+			$instance = require $root_dir . '/' . $file;
+
+			if ( ! $instance instanceof Taxonomy ) {
+				throw new DiscoveryException(
+					\sprintf(
+						'The file "%s" must return an instance of %s. Got: %s',
+						$root_dir . '/' . $file,
+						Taxonomy::class,
+						\is_object( $instance ) ? $instance::class : \gettype( $instance )
+					)
+				);
+			}
+
+			// Wired here rather than at registration, so that is_enabled() can
+			// read an injected service whenever it is asked.
+			$this->get_plugin()->wire( $instance );
+
+			$this->taxonomies[ $name ] = $instance;
+		}
+
+		return $this->taxonomies;
 	}
 
 	/**
@@ -261,117 +421,5 @@ class PostTypes extends Module {
 		}
 
 		throw DiscoveryException::registration_refused( $kind, $name, $result->get_error_message() );
-	}
-
-	/**
-	 * Discover every post type file and wire an instance for each.
-	 *
-	 * @return array<string, PostType> Wired instances keyed by registered name.
-	 * @throws DiscoveryException When a post types directory named by set_post_types_root() does not exist, or a file returns the wrong value.
-	 */
-	private function get_discovered_post_types(): array {
-		$root_dir = $this->path->get_plugin_path( $this->post_types_root );
-
-		if ( ! \is_dir( $root_dir ) ) {
-			// Never named, and the default is absent: this plugin has none of
-			// these yet. Only a directory asked for by name is missing in the
-			// sense worth throwing over.
-			if ( ! $this->post_types_root_was_set ) {
-				return array();
-			}
-
-			throw DiscoveryException::missing_root( 'Post types', $root_dir, 'set_post_types_root()' );
-		}
-
-		$this->post_types = array();
-
-		// A post type name is the `post_type` column in wp_posts. The filename is it,
-		// verbatim: rewriting one renames every row already stored under it.
-		foreach ( $this->walk_folder( $root_dir, array( 'php' ), 1 ) as $file ) {
-			$name = \basename( $file, '.php' );
-
-			/** @var PostType $instance */
-			$instance = require $root_dir . '/' . $file;
-
-			if ( ! $instance instanceof PostType ) {
-				throw new DiscoveryException(
-					\sprintf(
-						'The file "%s" must return an instance of %s. Got: %s',
-						$root_dir . '/' . $file,
-						PostType::class,
-						\is_object( $instance ) ? $instance::class : \gettype( $instance )
-					)
-				);
-			}
-
-			$this->get_plugin()->wire( $instance );
-
-			// Discovered but switched off: wired first, so is_enabled() can read an
-			// injected service, then nothing about it is registered.
-			if ( ! $instance->is_enabled() ) {
-				continue;
-			}
-
-			$this->post_types[ $name ] = $instance;
-		}
-
-		return $this->post_types;
-	}
-
-	/**
-	 * Discover every taxonomy file and wire an instance for each.
-	 *
-	 * @return array<string, Taxonomy> Wired instances keyed by registered name.
-	 * @throws DiscoveryException When a named taxonomies directory does not exist, or a file returns the wrong value.
-	 */
-	private function get_discovered_taxonomies(): array {
-		$root_dir = $this->path->get_plugin_path( $this->taxonomies_root );
-
-		if ( ! \is_dir( $root_dir ) ) {
-			// The default directory, absent and never asked for: this plugin
-			// registers no taxonomies. Only a directory named by
-			// set_taxonomies_root() is missing in the sense worth throwing over
-			// -- see $taxonomies_root_was_set.
-			if ( ! $this->taxonomies_root_was_set ) {
-				$this->taxonomies = array();
-
-				return $this->taxonomies;
-			}
-
-			throw DiscoveryException::missing_root( 'Taxonomies', $root_dir, 'set_taxonomies_root()' );
-		}
-
-		$this->taxonomies = array();
-
-		// A taxonomy name is stored the same way, and is equally not ours to respell.
-		foreach ( $this->walk_folder( $root_dir, array( 'php' ), 1 ) as $file ) {
-			$name = \basename( $file, '.php' );
-
-			/** @var Taxonomy $instance */
-			$instance = require $root_dir . '/' . $file;
-
-			if ( ! $instance instanceof Taxonomy ) {
-				throw new DiscoveryException(
-					\sprintf(
-						'The file "%s" must return an instance of %s. Got: %s',
-						$root_dir . '/' . $file,
-						Taxonomy::class,
-						\is_object( $instance ) ? $instance::class : \gettype( $instance )
-					)
-				);
-			}
-
-			$this->get_plugin()->wire( $instance );
-
-			// Discovered but switched off: wired first, so is_enabled() can read an
-			// injected service, then nothing about it is registered.
-			if ( ! $instance->is_enabled() ) {
-				continue;
-			}
-
-			$this->taxonomies[ $name ] = $instance;
-		}
-
-		return $this->taxonomies;
 	}
 }
