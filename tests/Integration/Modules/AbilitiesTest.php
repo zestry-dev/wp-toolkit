@@ -430,6 +430,71 @@ final class AbilitiesTest extends TestCase {
 	}
 
 	/**
+	 * An ability is discovered once and that instance answers every call, so what
+	 * one call binds is still on the object when the next one arrives. A nullable
+	 * argument meaning "not supplied" is how an optional one is written, which
+	 * makes this the difference between an update that changes one field and one
+	 * that repeats the previous caller's.
+	 *
+	 * Invisible over REST, where a request is a process. It shows up when one
+	 * request runs an ability twice -- a WP-CLI command, a cron schedule, an
+	 * agent batching tool calls.
+	 *
+	 * @return void
+	 */
+	public function test_an_argument_left_out_of_a_second_run_returns_to_its_default(): void {
+		$this->write_ability(
+			'update-entity',
+			'return array( \'slug\' => $this->slug );',
+			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+				. 'public ?string $slug = null;'
+		);
+
+		$abilities = $this->register();
+
+		$this->assertSame(
+			array( 'slug' => 'our-team' ),
+			$abilities->run( 'update-entity', array( 'slug' => 'our-team' ) )
+		);
+
+		$this->assertSame(
+			array( 'slug' => null ),
+			$abilities->run( 'update-entity', array() ),
+			'The second call sees its declared default, not what the first call sent.'
+		);
+	}
+
+	/**
+	 * Why the argument above can only go stale through a second *array* input:
+	 * WordPress refuses anything that is not an object before either callback
+	 * runs, so an ability declaring arguments is never executed with none.
+	 *
+	 * The callbacks bind unconditionally all the same -- what clears the last
+	 * call must not depend on the shape of this one's input -- and this is what
+	 * says the platform is holding that line today rather than the toolkit.
+	 *
+	 * @return void
+	 */
+	public function test_wordpress_refuses_a_run_with_no_input_when_the_ability_declares_arguments(): void {
+		$this->write_ability(
+			'read-entity',
+			'return array( \'slug\' => $this->slug );',
+			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+				. 'public ?string $slug = null;'
+		);
+
+		$abilities = $this->register();
+
+		$abilities->run( 'read-entity', array( 'slug' => 'our-team' ) );
+
+		$refused = $abilities->run( 'read-entity' );
+
+		$this->assertInstanceOf( \WP_Error::class, $refused );
+		$this->assertSame( 'ability_invalid_input', $refused->get_error_code() );
+		$this->assertStringContainsString( 'not of type object', $refused->get_error_message() );
+	}
+
+	/**
 	 * The permission check runs before the callback, and often needs the very
 	 * thing being acted on, so binding has to have happened by then.
 	 */

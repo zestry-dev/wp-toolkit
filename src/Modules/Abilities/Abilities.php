@@ -491,15 +491,21 @@ class Abilities extends Module {
 						}
 
 						$input = $prepared;
-						$this->request->bind( $ability, $input );
 					}
+
+					/*
+					 * Bound even with nothing to bind, because binding is also
+					 * what takes the last call's arguments back off this same
+					 * instance -- and an ability invoked with no input at all is
+					 * exactly the call that would otherwise still be holding
+					 * them.
+					 */
+					$this->request->bind( $ability, \is_array( $input ) ? $input : array() );
 
 					return $ability->handle( $input );
 				},
 				'permission_callback' => function ( $input = null ) use ( $ability ) {
-					if ( \is_array( $input ) ) {
-						$this->request->bind( $ability, $input );
-					}
+					$this->request->bind( $ability, \is_array( $input ) ? $input : array() );
 
 					return $ability->permission_check( $input );
 				},

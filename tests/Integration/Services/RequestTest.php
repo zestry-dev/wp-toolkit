@@ -953,6 +953,113 @@ final class RequestTest extends TestCase {
 
 		$this->request()->get_schema( new RequestTestCycle() );
 	}
+
+	/**
+	 * A route, an ability, an action and a page are each built once and answer
+	 * many calls, so the second call has to start where the first one did.
+	 *
+	 * @return void
+	 */
+	public function test_an_argument_left_out_of_a_second_bind_returns_to_its_default(): void {
+		$target = new class() {
+			#[RequestArgument( 'Which one.' )]
+			public ?string $slug = null;
+
+			#[RequestArgument( 'How many.' )]
+			public int $limit = 10;
+		};
+
+		$this->request()->bind( $target, array( 'slug' => 'our-team', 'limit' => 50 ) );
+
+		$this->assertSame( 'our-team', $target->slug );
+		$this->assertSame( 50, $target->limit );
+
+		$this->request()->bind( $target, array() );
+
+		$this->assertNull( $target->slug, 'The declared default, not the last call.' );
+		$this->assertSame( 10, $target->limit );
+	}
+
+	/**
+	 * An argument with no default is uninitialized until something assigns it,
+	 * which is what makes it required. Putting a stale value back would leave a
+	 * missing required argument looking supplied.
+	 *
+	 * @return void
+	 */
+	public function test_an_argument_with_no_default_goes_back_to_uninitialized(): void {
+		$target = new class() {
+			#[RequestArgument( 'Which one.' )]
+			public int $id;
+		};
+
+		$this->request()->bind( $target, array( 'id' => 42 ) );
+
+		$this->assertSame( 42, $target->id );
+
+		$this->request()->reset( $target );
+
+		$this->assertFalse(
+			( new \ReflectionProperty( $target, 'id' ) )->isInitialized( $target ),
+			'Not zero, and not the last call: unset, as it was before anything was bound.'
+		);
+	}
+
+	/**
+	 * `unset()` obeys the scope it runs in, so a protected argument cannot be
+	 * cleared the way a public one can -- and every module that binds accepts
+	 * both.
+	 *
+	 * @return void
+	 */
+	public function test_a_protected_argument_is_cleared_too(): void {
+		$target = new class() {
+			#[RequestArgument( 'Which one.' )]
+			protected ?string $slug = null;
+
+			#[RequestArgument( 'A number.' )]
+			protected int $count;
+
+			public function get_slug(): ?string {
+				return $this->slug;
+			}
+
+			public function has_count(): bool {
+				return isset( $this->count );
+			}
+		};
+
+		$this->request()->bind( $target, array( 'slug' => 'kept', 'count' => 3 ) );
+
+		$this->assertSame( 'kept', $target->get_slug() );
+		$this->assertTrue( $target->has_count() );
+
+		$this->request()->bind( $target, array() );
+
+		$this->assertNull( $target->get_slug() );
+		$this->assertFalse( $target->has_count() );
+	}
+
+	/**
+	 * A readonly argument is left exactly as it was, so the message explaining
+	 * why it cannot work on a reused object still reaches the reader. Clearing it
+	 * would replace that with PHP's own fatal for unsetting one.
+	 *
+	 * @return void
+	 */
+	public function test_a_readonly_argument_still_reports_itself_rather_than_being_cleared(): void {
+		$target = new class() {
+			#[RequestArgument( 'Which one.' )]
+			public readonly int $id;
+		};
+
+		$this->request()->bind( $target, array( 'id' => 1 ) );
+
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'readonly' );
+
+		$this->request()->bind( $target, array( 'id' => 2 ) );
+	}
 }
 
 /**

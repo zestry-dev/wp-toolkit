@@ -160,6 +160,28 @@ The schema's cast happens here too, and only here: an ability's input is validat
 
 <br>
 
+### `reset( $target )`
+
+Return an object's declared arguments to what a first call would see.
+
+```php
+public function reset( object $target ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$target` — The object whose arguments to clear |
+| **Return** | — |
+| **Throws** | `InvalidArgumentException` — When an argument cannot be described |
+
+A route, an ability, an action and a page are each built once and answer many calls. Without this, an argument left out of the second call still holds what the first one sent — so a nullable argument meaning "not supplied", which is how one is made optional, quietly reports the previous caller's value instead.
+
+An argument with a default goes back to it. One without goes back to uninitialized, so a required argument that is missing fails as it would on a first call rather than reusing a stale value.
+
+`bind()` calls this before it assigns anything, so binding is enough on its own; this is public for a caller that assigns arguments by hand.
+
+<br>
+
 ### `bind( $target, $values )`
 
 Assign incoming values onto an object's declared arguments.
@@ -174,7 +196,7 @@ public function bind( object $target, array $values ): void
 | **Return** | — |
 | **Throws** | `InvalidArgumentException` — When an argument cannot be described |
 
-A value for a structure is built into an instance of it first, so the handler reads `$this->address->city` rather than an array. An argument the caller left out is not touched, so its declared default stands.
+A value for a structure is built into an instance of it first, so the handler reads `$this->address->city` rather than an array. An argument the caller left out goes back to its declared default, and one with no default goes back to uninitialized — see `reset()`, which runs first.
 
 <br>
 

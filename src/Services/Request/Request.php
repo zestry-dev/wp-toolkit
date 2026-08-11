@@ -425,11 +425,54 @@ class Request extends Service {
 	}
 
 	/**
+	 * Return an object's declared arguments to what a first call would see.
+	 *
+	 * A route, an ability, an action and a page are each built once and answer
+	 * many calls. Without this, an argument left out of the second call still
+	 * holds what the first one sent -- so a nullable argument meaning "not
+	 * supplied", which is how one is made optional, quietly reports the previous
+	 * caller's value instead.
+	 *
+	 * An argument with a default goes back to it. One without goes back to
+	 * uninitialized, so a required argument that is missing fails as it would on
+	 * a first call rather than reusing a stale value.
+	 *
+	 * {@see bind()} calls this before it assigns anything, so binding is enough
+	 * on its own; this is public for a caller that assigns arguments by hand.
+	 *
+	 * @param object $target The object whose arguments to clear.
+	 * @return void
+	 * @throws \InvalidArgumentException When an argument cannot be described.
+	 */
+	public function reset( object $target ): void {
+		foreach ( $this->get_arguments( $target ) as $name => [ $property ] ) {
+			if ( $property->isReadOnly() ) {
+				// Left alone. PHP refuses to unset an initialized readonly
+				// property, and assign() already refuses one on an object that
+				// answers more than one call, in a message that says what to do
+				// about it -- clearing it here would replace that with a fatal.
+				continue;
+			}
+
+			[ $has_default, $default ] = $this->get_declared_default( $property );
+
+			if ( $has_default ) {
+				$this->assign( $target, $property, $name, $default );
+
+				continue;
+			}
+
+			$this->unset_property( $target, $property->getName() );
+		}
+	}
+
+	/**
 	 * Assign incoming values onto an object's declared arguments.
 	 *
 	 * A value for a structure is built into an instance of it first, so the
 	 * handler reads `$this->address->city` rather than an array. An argument the
-	 * caller left out is not touched, so its declared default stands.
+	 * caller left out goes back to its declared default, and one with no default
+	 * goes back to uninitialized -- see {@see reset()}, which runs first.
 	 *
 	 * @param object              $target The object to populate.
 	 * @param array<string,mixed> $values The validated values.
@@ -437,6 +480,10 @@ class Request extends Service {
 	 * @throws \InvalidArgumentException When an argument cannot be described.
 	 */
 	public function bind( object $target, array $values ): void {
+		// This call's arguments start from the declaration rather than from
+		// whatever the last call through the same object left behind.
+		$this->reset( $target );
+
 		foreach ( $this->get_arguments( $target ) as $name => [ $property, $argument ] ) {
 			if ( ! \array_key_exists( $name, $values ) ) {
 				/*
@@ -555,6 +602,25 @@ class Request extends Service {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Return a typed property to uninitialized.
+	 *
+	 * `unset()` is a language construct and obeys the visibility of the scope it
+	 * runs in, so a protected argument is out of reach from here -- and
+	 * reflection has no unset of its own to use instead. Calling the closure on
+	 * the target gives it that object's own scope, which is where the construct
+	 * works for either visibility.
+	 *
+	 * @param object $target The object holding the property.
+	 * @param string $name   The property's name.
+	 * @return void
+	 */
+	private function unset_property( object $target, string $name ): void {
+		( function ( string $property ): void {
+			unset( $this->$property );
+		} )->call( $target, $name );
 	}
 
 	/**
