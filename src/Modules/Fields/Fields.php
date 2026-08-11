@@ -265,25 +265,41 @@ class Fields extends Module {
 	 * refuse it — WordPress's order for meta, applied from inside the write
 	 * rather than here, so `update_post_meta()` behaves identically.
 	 *
-	 * **Returns false when the field refuses the value**, which is the one place
-	 * this differs from `Options`, `Globals` and `Transients`: those take
-	 * anything, and a field has a validator that can say no. Check the return
-	 * when the value came from a request.
+	 * **Returns a `WP_Error` when the field refuses the value**, which is the one
+	 * place this differs from `Options`, `Globals` and `Transients`: those take
+	 * anything, and a field is held to its own schema. Check the return with
+	 * `is_wp_error()` when the value came from a request — the message names the
+	 * key and what was wrong with it, so a form has something to show.
 	 *
-	 * @param int    $object_id The object to write to.
-	 * @param string $key     A meta key one of your fields declares.
+	 * A plain `false` means the write did not happen for a reason that is not a
+	 * refusal: storing the value it already had is the usual one.
+	 *
+	 * @param int      $object_id The object to write to.
+	 * @param string   $key       A meta key one of your fields declares.
 	 * @param mixed    $value     The value to store.
 	 * @param MetaType $type      Which meta table the key lives in. Post meta by default.
-	 * @return bool False when `validate()` rejected the value and nothing was written.
+	 * @return bool|\WP_Error True once written, a `WP_Error` when the field refused the value, false when nothing was written for any other reason.
 	 * @throws \InvalidArgumentException When no field declares that key.
 	 */
-	public function set( int $object_id, string $key, mixed $value, MetaType $type = MetaType::Post ): bool {
-		$this->get_field( $key, $type );
+	public function set( int $object_id, string $key, mixed $value, MetaType $type = MetaType::Post ): bool|\WP_Error {
+		$field = $this->get_field( $key, $type );
 
-		// False here is the field's validate() refusing, through the filter this
-		// module binds -- so the check lives in one place and applies to every
-		// write, not just this one.
-		return false !== \update_metadata( $type->value, $object_id, $key, $value );
+		// The write is what validates, through the filter this module binds, so
+		// the check lives in one place and covers update_post_meta() too.
+		if ( false !== \update_metadata( $type->value, $object_id, $key, $value ) ) {
+			return true;
+		}
+
+		/*
+		 * Refused, or simply not written -- and the write cannot say which:
+		 * WordPress casts the filter's return to a bool, so the reason the field
+		 * gave was already thrown away by the time update_metadata() returned.
+		 * Asking the field again is what recovers it, and only happens on the
+		 * path that is about to report a failure anyway.
+		 */
+		$refusal = $field->validate( $field->sanitize( $value ) );
+
+		return \is_wp_error( $refusal ) ? $refusal : false;
 	}
 
 	/**
@@ -492,7 +508,10 @@ class Fields extends Module {
 			return $check;
 		}
 
-		return $field->validate( $meta_value ) ? $check : false;
+		// Compared against true rather than tested for truth: a refusal carrying
+		// its reason is a WP_Error, and an object is truthy -- so anything looser
+		// here would let every explained refusal through.
+		return true === $field->validate( $meta_value ) ? $check : false;
 	}
 
 	/**

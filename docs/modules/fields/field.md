@@ -205,6 +205,9 @@ One of `string`, `boolean`, `integer`, `number`, `array` or `object`. An `array`
 
 This describes the REST schema; it does not cast anything on the PHP side. `get_post_meta()` still hands back a string for a field typed `integer`, so cast at the point you read it.
 
+> [!IMPORTANT]
+> **It does decide what a write may look like**, since `validate()` holds every write to this schema. The default is `string`, and WordPress is strict about that one: `set( $id, 'acme-count', 5 )` on a field that never declared a type is refused, because 5 is not a string. Declare the type you actually store. `integer` and `number` are the lenient ones — they take a numeric string, which is what a value read back out of the database always is.
+
 Use `array` to hold several values. A field is always one value per post here, so many values means one array in one row rather than many rows — which is also what REST wants, given a schema.
 
 <br>
@@ -266,6 +269,14 @@ Two things that make a field silently invisible rather than erroring:
 - **An `array` or `object` type needs a schema**, given as an array here
 with a `schema` key, or WordPress refuses to register it.
 
+**The `schema` you give here is enforced on every write**, not only on the REST one that publishes it — `minimum`, `maximum`, `enum`, `pattern`, `minItems` and the rest hold for `update_post_meta()`, a meta box and WP-CLI alike. That is `validate()` reading `get_schema()`, and it is why turning REST off does not turn the constraints off with it.
+
+```php
+public function is_shown_in_rest(): bool|array {
+    return array( 'schema' => array( 'minimum' => 1, 'maximum' => 5 ) );
+}
+```
+
 <br>
 
 ### `is_protected()`
@@ -323,22 +334,28 @@ Off by default. Turn it on for a field that is part of the content — a subtitl
 Whether a value is acceptable at all.
 
 ```php
-public function validate( mixed $value ): bool
+public function validate( mixed $value ): bool|\WP_Error
 ```
 
 |  | Details |
 |---|---|
 | **Parameters** | `$value` — The incoming value |
-| **Return** | True to accept it |
+| **Return** | True to accept it, false or a `WP_Error` to refuse |
 | **Throws** | — |
 
-Returning false stops the write. This applies to **every** write — `update_post_meta()`, the REST API, a meta box — because it runs on the filter WordPress offers for exactly this, not inside one accessor.
+**By default this enforces your own schema**, so `minimum`, `maximum`, `enum`, `pattern`, `minItems` and the rest of the keywords `is_shown_in_rest()` publishes hold on **every** write — `update_post_meta()`, `Fields::set()`, a meta box, WP-CLI, an ability, the REST API. WordPress reads that schema in its REST controller and nowhere else, so without this a field declaring `maximum: 5` stores 9 through any other route and says nothing.
+
+Override to add a rule a schema cannot express, and call `check_schema()` if you still want the declared keywords enforced:
 
 ```php
-public function validate( mixed $value ): bool {
-    return is_numeric( $value ) && (int) $value >= 1 && (int) $value <= 5;
+public function validate( mixed $value ): bool|\WP_Error {
+    $checked = $this->check_schema( $value );
+
+    return true === $checked ? $this->is_a_working_day( $value ) : $checked;
 }
 ```
+
+**Return `true` to accept.** Anything else refuses the write: `false` for no reason given, or a `WP_Error` carrying one — which is what the default returns, and what `Fields::set()` hands back to its caller. A refusal through `update_post_meta()` cannot carry the message, since WordPress casts the filter's return to a bool.
 
 **The value has already been through `sanitize()` by the time this sees it.** That is WordPress's order for meta, and it is the reverse of how it treats a REST parameter: a request argument is validated and then sanitised, meta is sanitised and then offered for a veto.
 
@@ -381,6 +398,44 @@ public function can_edit( int $post_id ): bool
 Checked on top of the post's own edit permission, never instead of it.
 
 The default asks whether they can edit that post, which is almost always the right answer — and is deliberately not what WordPress does. Core decides from the key's name: a key starting with `_` is refused to everyone, so prefixing a key to hide it from the classic custom-fields box also stops the block editor saving it, with nothing to say why.
+
+<br>
+
+### `get_schema()`
+
+The schema this field's values are held to.
+
+```php
+final public function get_schema(): array
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | `array` |
+| **Throws** | — |
+
+What `type()` and `description()` say, plus whatever `is_shown_in_rest()` carries under its `schema` key — assembled the way WordPress assembles it for REST, so the constraints a caller reads in your API are the constraints a write is checked against. Both are derived from the same three methods, so neither can drift from the other.
+
+<br>
+
+### `check_schema( $value )`
+
+Hold a value to the declared schema, and say why when it does not fit.
+
+```php
+final protected function check_schema( mixed $value ): bool|\WP_Error
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$value` — The sanitised value |
+| **Return** | True to accept it, or why it was refused |
+| **Throws** | — |
+
+What `validate()` does by default, kept separate so an override can still have it. `rest_validate_value_from_schema()` does the work, and it lives in `wp-includes/rest-api.php`, which is always loaded — so this needs no REST request and nothing required.
+
+**An empty value is accepted whatever the schema says.** A key that has never been written reads back as `''`, and `''` satisfies neither `type: integer` nor any `enum` — so checking it would have a field refuse its own absence, and would make `enum` unusable on anything optional. Put `'required' => true` in the schema for a field that must be filled in.
 
 <br>
 

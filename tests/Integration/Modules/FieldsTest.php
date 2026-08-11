@@ -391,6 +391,146 @@ final class FieldsTest extends TestCase {
 	}
 
 	/**
+	 * WordPress reads a meta field's schema in its REST controller and nowhere
+	 * else, so a field declaring `maximum: 5` used to store 9 through any other
+	 * route and say nothing about it.
+	 */
+	public function test_a_schema_keyword_is_enforced_on_a_bare_update_post_meta(): void {
+		$this->write_rated_field();
+
+		$this->boot()->register_fields();
+		$post_id = self::factory()->post->create();
+
+		$this->assertFalse( update_post_meta( $post_id, 'acme-rating', 9 ) );
+		$this->assertSame( '', get_post_meta( $post_id, 'acme-rating', true ), 'Nothing was written.' );
+
+		$this->assertNotFalse( update_post_meta( $post_id, 'acme-rating', 4 ) );
+		$this->assertEquals( 4, get_post_meta( $post_id, 'acme-rating', true ), 'A value inside the range is untouched.' );
+	}
+
+	/**
+	 * The single most likely way to get this wrong. A key that has never been
+	 * written reads back as `''`, which satisfies neither `type: integer` nor any
+	 * `enum` -- so checking it would have a field refuse its own absence, on
+	 * ordinary content rather than on an edge case.
+	 */
+	public function test_an_unset_field_is_read_and_cleared_without_being_refused(): void {
+		$this->write_rated_field();
+
+		$fields = $this->boot();
+		$fields->register_fields();
+		$post_id = self::factory()->post->create();
+
+		$this->assertNull( $fields->get( $post_id, 'acme-rating' ), 'Reading one that was never set is not a refusal.' );
+
+		// And emptying one that was set is a write of '' -- which the schema
+		// would reject as an integer if it were being checked.
+		$fields->set( $post_id, 'acme-rating', 3 );
+
+		$this->assertTrue( $fields->set( $post_id, 'acme-rating', '' ) );
+		$this->assertSame( '', get_post_meta( $post_id, 'acme-rating', true ) );
+	}
+
+	/**
+	 * `enum` is the keyword this unlocks: it was unusable on an optional field,
+	 * because an unset key reads as `''` and no enum lists that. Now it is both
+	 * safe to declare and enforced on every write.
+	 */
+	public function test_an_enum_is_enforced_and_still_allows_an_unset_key(): void {
+		$this->write_field(
+			'acme-colour',
+			array( 'post' ),
+			"public function is_shown_in_rest(): bool|array { return array( 'schema' => array( 'enum' => array( 'red', 'blue' ) ) ); }\n"
+		);
+
+		$fields = $this->boot();
+		$fields->register_fields();
+		$post_id = self::factory()->post->create();
+
+		$this->assertNull( $fields->get( $post_id, 'acme-colour' ), 'An unset key is not held to the enum.' );
+		$this->assertInstanceOf( \WP_Error::class, $fields->set( $post_id, 'acme-colour', 'green' ) );
+		$this->assertTrue( $fields->set( $post_id, 'acme-colour', 'blue' ) );
+	}
+
+	/**
+	 * A refusal with no message makes every consumer write one, which is what
+	 * `rest_validate_value_from_schema()` already did for us.
+	 */
+	public function test_a_refusal_carries_a_message_naming_the_key(): void {
+		$this->write_rated_field();
+
+		$fields = $this->boot();
+		$fields->register_fields();
+
+		$refused = $fields->set( self::factory()->post->create(), 'acme-rating', 9 );
+
+		$this->assertInstanceOf( \WP_Error::class, $refused );
+		$this->assertStringContainsString( 'acme-rating', $refused->get_error_message() );
+	}
+
+	/**
+	 * The sharpest edge of enforcing the schema, pinned so it stays a decision.
+	 *
+	 * `type()` defaults to `string`, and WordPress is strict about that one --
+	 * where `integer` and `number` accept a numeric string, which is what a value
+	 * read back out of the database always is. So a field that never declared a
+	 * type refuses an integer write, and the answer is to declare the type rather
+	 * than to coerce here: coercing would change what gets stored.
+	 */
+	public function test_the_default_string_type_refuses_a_non_string_write(): void {
+		$this->write_field( 'acme-note' );
+
+		$fields = $this->boot();
+		$fields->register_fields();
+		$post_id = self::factory()->post->create();
+
+		$this->assertInstanceOf(
+			\WP_Error::class,
+			$fields->set( $post_id, 'acme-note', 5 ),
+			'An untyped field is a string field, and 5 is not a string.'
+		);
+
+		$this->assertTrue( $fields->set( $post_id, 'acme-note', '5' ) );
+	}
+
+	/**
+	 * The other half: a numeric string is what a read gives back, so an integer
+	 * field has to accept one or nothing could be written back where it came
+	 * from.
+	 */
+	public function test_an_integer_field_accepts_the_numeric_string_a_read_gives_back(): void {
+		$this->write_rated_field();
+
+		$fields = $this->boot();
+		$fields->register_fields();
+		$post_id = self::factory()->post->create();
+
+		$this->assertTrue( $fields->set( $post_id, 'acme-rating', 4 ) );
+		$this->assertTrue( $fields->set( $post_id, 'acme-rating', '3' ), 'The string a read hands back is still a valid write.' );
+	}
+
+	/**
+	 * The schema validation and the registration are two readings of the same
+	 * three methods, so neither can come to hold a value the other would not.
+	 */
+	public function test_the_schema_is_assembled_from_what_the_field_declares(): void {
+		$this->write_field(
+			'acme-rating',
+			array( 'post' ),
+			"public function type(): string { return 'integer'; }\n"
+				. "public function description(): string { return 'Out of five.'; }\n"
+				. "public function is_shown_in_rest(): bool|array { return array( 'schema' => array( 'minimum' => 1, 'maximum' => 5 ) ); }\n"
+		);
+
+		$schema = $this->boot()->get_field( 'acme-rating' )->get_schema();
+
+		$this->assertSame( 'integer', $schema['type'] );
+		$this->assertSame( 'Out of five.', $schema['description'] );
+		$this->assertSame( 1, $schema['minimum'] );
+		$this->assertSame( 5, $schema['maximum'] );
+	}
+
+	/**
 	 * A field can attach to something other than a post -- the meta table is
 	 * chosen by the field, not assumed.
 	 */
@@ -474,6 +614,20 @@ final class FieldsTest extends TestCase {
 	 */
 	private function boot(): Fields {
 		return $this->plugin->get( Fields::class );
+	}
+
+	/**
+	 * An integer field constrained to 1-5 by its own schema, and nothing else.
+	 *
+	 * @return void
+	 */
+	private function write_rated_field(): void {
+		$this->write_field(
+			'acme-rating',
+			array( 'post' ),
+			"public function type(): string { return 'integer'; }\n"
+				. "public function is_shown_in_rest(): bool|array { return array( 'schema' => array( 'minimum' => 1, 'maximum' => 5 ) ); }\n"
+		);
 	}
 
 	/**

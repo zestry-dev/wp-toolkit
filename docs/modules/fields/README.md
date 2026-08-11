@@ -212,18 +212,20 @@ Distinct from `null !== get()`, which cannot tell a stored null from a post that
 Write a field's value to a post.
 
 ```php
-public function set( int $object_id, string $key, mixed $value, MetaType $type = MetaType::Post ): bool
+public function set( int $object_id, string $key, mixed $value, MetaType $type = MetaType::Post ): bool|\WP_Error
 ```
 
 |  | Details |
 |---|---|
 | **Parameters** | `$object_id` — The object to write to<br>`$key` — A meta key one of your fields declares<br>`$value` — The value to store<br>`$type` — Which meta table the key lives in. Post meta by default |
-| **Return** | False when `validate()` rejected the value and nothing was written |
+| **Return** | True once written, a `WP_Error` when the field refused the value, false when nothing was written for any other reason |
 | **Throws** | `InvalidArgumentException` — When no field declares that key |
 
 The field's `sanitize()` shapes the value and its `validate()` may then refuse it — WordPress's order for meta, applied from inside the write rather than here, so `update_post_meta()` behaves identically.
 
-**Returns false when the field refuses the value**, which is the one place this differs from `Options`, `Globals` and `Transients`: those take anything, and a field has a validator that can say no. Check the return when the value came from a request.
+**Returns a `WP_Error` when the field refuses the value**, which is the one place this differs from `Options`, `Globals` and `Transients`: those take anything, and a field is held to its own schema. Check the return with `is_wp_error()` when the value came from a request — the message names the key and what was wrong with it, so a form has something to show.
+
+A plain `false` means the write did not happen for a reason that is not a refusal: storing the value it already had is the usual one.
 
 <br>
 

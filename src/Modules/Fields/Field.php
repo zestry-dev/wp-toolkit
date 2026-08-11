@@ -71,6 +71,16 @@ abstract class Field implements PluginAware {
 	use WithEnablement;
 
 	/**
+	 * The effective schema, once it has been assembled.
+	 *
+	 * Held because {@see validate()} asks for it on every write, and assembling
+	 * it calls three of this class's own methods.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	private ?array $schema = null;
+
+	/**
 	 * Prevent direct construction from bypassing plugin initialization.
 	 *
 	 * @return void
@@ -134,6 +144,15 @@ abstract class Field implements PluginAware {
 	 * `get_post_meta()` still hands back a string for a field typed `integer`,
 	 * so cast at the point you read it.
 	 *
+	 * > [!IMPORTANT]
+	 * > **It does decide what a write may look like**, since {@see validate()}
+	 * > holds every write to this schema. The default is `string`, and WordPress
+	 * > is strict about that one: `set( $id, 'acme-count', 5 )` on a field that
+	 * > never declared a type is refused, because 5 is not a string. Declare the
+	 * > type you actually store. `integer` and `number` are the lenient ones —
+	 * > they take a numeric string, which is what a value read back out of the
+	 * > database always is.
+	 *
 	 * Use `array` to hold several values. A field is always one value per post
 	 * here, so many values means one array in one row rather than many rows —
 	 * which is also what REST wants, given a schema.
@@ -179,6 +198,16 @@ abstract class Field implements PluginAware {
 	 *   `post` and `page` are; another plugin's may not be.
 	 * - **An `array` or `object` type needs a schema**, given as an array here
 	 *   with a `schema` key, or WordPress refuses to register it.
+	 *
+	 * **The `schema` you give here is enforced on every write**, not only on the
+	 * REST one that publishes it — `minimum`, `maximum`, `enum`, `pattern`,
+	 * `minItems` and the rest hold for `update_post_meta()`, a meta box and
+	 * WP-CLI alike. That is {@see validate()} reading {@see get_schema()}, and it
+	 * is why turning REST off does not turn the constraints off with it.
+	 *
+	 *     public function is_shown_in_rest(): bool|array {
+	 *         return array( 'schema' => array( 'minimum' => 1, 'maximum' => 5 ) );
+	 *     }
 	 *
 	 * @return bool|array<string, mixed> True, false, or an array carrying `schema`.
 	 */
@@ -245,13 +274,28 @@ abstract class Field implements PluginAware {
 	/**
 	 * Whether a value is acceptable at all.
 	 *
-	 * Returning false stops the write. This applies to **every** write —
-	 * `update_post_meta()`, the REST API, a meta box — because it runs on the
-	 * filter WordPress offers for exactly this, not inside one accessor.
+	 * **By default this enforces your own schema**, so `minimum`, `maximum`,
+	 * `enum`, `pattern`, `minItems` and the rest of the keywords
+	 * {@see is_shown_in_rest()} publishes hold on **every** write —
+	 * `update_post_meta()`, `Fields::set()`, a meta box, WP-CLI, an ability, the
+	 * REST API. WordPress reads that schema in its REST controller and nowhere
+	 * else, so without this a field declaring `maximum: 5` stores 9 through any
+	 * other route and says nothing.
 	 *
-	 *     public function validate( mixed $value ): bool {
-	 *         return is_numeric( $value ) && (int) $value >= 1 && (int) $value <= 5;
+	 * Override to add a rule a schema cannot express, and call
+	 * {@see check_schema()} if you still want the declared keywords enforced:
+	 *
+	 *     public function validate( mixed $value ): bool|\WP_Error {
+	 *         $checked = $this->check_schema( $value );
+	 *
+	 *         return true === $checked ? $this->is_a_working_day( $value ) : $checked;
 	 *     }
+	 *
+	 * **Return `true` to accept.** Anything else refuses the write: `false` for
+	 * no reason given, or a `WP_Error` carrying one — which is what the default
+	 * returns, and what {@see Fields::set()} hands back to its caller. A refusal
+	 * through `update_post_meta()` cannot carry the message, since WordPress
+	 * casts the filter's return to a bool.
 	 *
 	 * **The value has already been through {@see sanitize()} by the time this
 	 * sees it.** That is WordPress's order for meta, and it is the reverse of
@@ -263,10 +307,10 @@ abstract class Field implements PluginAware {
 	 * a value into shape, or refuse it — rather than both.
 	 *
 	 * @param mixed $value The incoming value.
-	 * @return bool True to accept it.
+	 * @return bool|\WP_Error True to accept it, false or a `WP_Error` to refuse.
 	 */
-	public function validate( mixed $value ): bool {
-		return true;
+	public function validate( mixed $value ): bool|\WP_Error {
+		return $this->check_schema( $value );
 	}
 
 	/**
@@ -302,6 +346,43 @@ abstract class Field implements PluginAware {
 	}
 
 	/**
+	 * The schema this field's values are held to.
+	 *
+	 * What {@see type()} and {@see description()} say, plus whatever
+	 * {@see is_shown_in_rest()} carries under its `schema` key — assembled the
+	 * way WordPress assembles it for REST, so the constraints a caller reads in
+	 * your API are the constraints a write is checked against. Both are derived
+	 * from the same three methods, so neither can drift from the other.
+	 *
+	 * @return array<string, mixed>
+	 */
+	final public function get_schema(): array {
+		if ( null !== $this->schema ) {
+			return $this->schema;
+		}
+
+		$rest     = $this->is_shown_in_rest();
+		$declared = \is_array( $rest ) && isset( $rest['schema'] ) && \is_array( $rest['schema'] )
+			? $rest['schema']
+			: array();
+
+		$schema = array(
+			'type'        => $this->type(),
+			'description' => $this->description(),
+		);
+
+		if ( null !== $this->default_value() ) {
+			$schema['default'] = $this->default_value();
+		}
+
+		// Declared keys last, the order WP_REST_Meta_Fields merges them in, so a
+		// schema saying `type => integer` over a `type()` of string means it.
+		$this->schema = \array_merge( $schema, $declared );
+
+		return $this->schema;
+	}
+
+	/**
 	 * The arguments WordPress registers this field with.
 	 *
 	 * @return array<string, mixed>
@@ -331,6 +412,33 @@ abstract class Field implements PluginAware {
 		}
 
 		return $args;
+	}
+
+	/**
+	 * Hold a value to the declared schema, and say why when it does not fit.
+	 *
+	 * What {@see validate()} does by default, kept separate so an override can
+	 * still have it. `rest_validate_value_from_schema()` does the work, and it
+	 * lives in `wp-includes/rest-api.php`, which is always loaded — so this needs
+	 * no REST request and nothing required.
+	 *
+	 * **An empty value is accepted whatever the schema says.** A key that has
+	 * never been written reads back as `''`, and `''` satisfies neither
+	 * `type: integer` nor any `enum` — so checking it would have a field refuse
+	 * its own absence, and would make `enum` unusable on anything optional. Put
+	 * `'required' => true` in the schema for a field that must be filled in.
+	 *
+	 * @param mixed $value The sanitised value.
+	 * @return bool|\WP_Error True to accept it, or why it was refused.
+	 */
+	final protected function check_schema( mixed $value ): bool|\WP_Error {
+		$schema = $this->get_schema();
+
+		if ( ( null === $value || '' === $value ) && true !== ( $schema['required'] ?? false ) ) {
+			return true;
+		}
+
+		return \rest_validate_value_from_schema( $value, $schema, $this->key() );
 	}
 
 	/**
