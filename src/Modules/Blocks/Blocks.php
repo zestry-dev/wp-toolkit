@@ -49,6 +49,37 @@ use WP_Block_Type_Registry;
  * A block declaring WordPress's own `render` field instead is left alone
  * entirely, and a block declaring neither is static. Both are still registered.
  *
+ * ## Static or dynamic
+ *
+ * `wp zestry make block` asks, and defaults to static. Three questions settle
+ * it, in this order.
+ *
+ * **Does the output depend on anything outside the block's own attributes?** A
+ * query, an option, the current user, another post — then it is dynamic, and
+ * there is nothing left to weigh.
+ *
+ * **Is the markup settled?** Then static. It is saved into `post_content`, so
+ * it survives the plugin being deactivated, as plain HTML that still reads as
+ * the content it was. Changing it afterwards means owing a `deprecated` entry
+ * and a migration, or every post already saved shows "This block contains
+ * unexpected or invalid content".
+ *
+ * **Is the markup still moving?** Then dynamic, which is free to change
+ * forever. What it costs is that the content is not in `post_content`:
+ * deactivate the plugin and the block renders nothing at all.
+ *
+ * **Performance is not the deciding factor, and it is the usual reason given.**
+ * A dynamic block costs one PHP call per instance while `the_content` is
+ * assembled, which is not measurable next to the rest of a page load — full
+ * page caching applies either way. What costs is the work *inside* the render:
+ * a `WP_Query` per block on a page listing forty of them is the thing to avoid,
+ * and it is equally avoidable in a dynamic block.
+ *
+ * So the trade is maintenance against content ownership, not speed. A plugin
+ * that renders everything dynamically to keep its markup free is a deliberate
+ * and defensible choice; one that does it by default has usually not been
+ * asked the first question.
+ *
  * Registration reads `blocks-manifest.php` when one is present (see
  * `wp-scripts build --blocks-manifest`), which spares WordPress a `block.json`
  * read and decode per block, and walks the blocks directory when there is not.
