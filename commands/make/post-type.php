@@ -51,6 +51,11 @@ return new class() extends MakeCommand {
 	 * : Overwrite an existing file without asking, and take the default for
 	 * every prompt below rather than asking, for an unattended run.
 	 *
+	 * [--extends=<class>]
+	 * : Extend one of your own abstracts instead of the toolkit base. A bare name
+	 * is looked for under your Abstracts\ namespace; the generated file stubs the
+	 * methods that class leaves abstract, and nothing it has already settled.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     # Generate a post type, prompting only for the plural name.
@@ -96,6 +101,10 @@ return new class() extends MakeCommand {
 
 	protected function get_default_dir( array $config ): string {
 		return 'post-types';
+	}
+
+	protected function get_base_class(): ?string {
+		return 'Modules\PostTypes\PostType';
 	}
 
 	protected static function get_type(): string {

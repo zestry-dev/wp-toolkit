@@ -17,6 +17,9 @@ Writes a file into the plugin's `debug-sections/` directory, where the SiteHealt
 - **`[--dir=<dir>]`**  
   Write somewhere other than `debug-sections/`, relative to the plugin root.
 
+- **`[--extends=<class>]`**  
+  Extend one of your own abstracts instead of the toolkit base. A bare name is looked for under your Abstracts\ namespace; the generated file stubs the methods that class leaves abstract, and nothing it has already settled.
+
 ## Examples
 
 ```bash

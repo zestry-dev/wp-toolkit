@@ -32,6 +32,9 @@ Needs the `admin-pages` module, so run `wp zestry add module admin-pages` first 
 - **`[--yes]`**  
   Overwrite an existing file without asking, for an unattended run.
 
+- **`[--extends=<class>]`**  
+  Extend one of your own abstracts instead of the toolkit base. A bare name is looked for under your Abstracts\ namespace; the generated file stubs the methods that class leaves abstract, and nothing it has already settled.
+
 ## Examples
 
 ```bash

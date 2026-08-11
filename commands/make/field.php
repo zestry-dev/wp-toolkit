@@ -28,6 +28,11 @@ return new class() extends MakeCommand {
 	 * [--dir=<dir>]
 	 * : Write somewhere other than `fields/`, relative to the plugin root.
 	 *
+	 * [--extends=<class>]
+	 * : Extend one of your own abstracts instead of the toolkit base. A bare name
+	 * is looked for under your Abstracts\ namespace; the generated file stubs the
+	 * methods that class leaves abstract, and nothing it has already settled.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     # Generate fields/acme-rating.php.
@@ -48,6 +53,10 @@ return new class() extends MakeCommand {
 
 	protected function get_default_dir( array $config ): string {
 		return 'fields';
+	}
+
+	protected function get_base_class(): ?string {
+		return 'Modules\Fields\Field';
 	}
 
 	protected static function get_type(): string {

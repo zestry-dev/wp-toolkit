@@ -17,6 +17,9 @@ Writes a file into the plugin's `fields/` directory, where the Fields module dis
 - **`[--dir=<dir>]`**  
   Write somewhere other than `fields/`, relative to the plugin root.
 
+- **`[--extends=<class>]`**  
+  Extend one of your own abstracts instead of the toolkit base. A bare name is looked for under your Abstracts\ namespace; the generated file stubs the methods that class leaves abstract, and nothing it has already settled.
+
 ## Examples
 
 ```bash

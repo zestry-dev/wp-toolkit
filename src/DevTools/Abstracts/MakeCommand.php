@@ -18,6 +18,7 @@ use Zestry\WPToolkit\DevTools\ConsumerPlugin;
 use Zestry\WPToolkit\DevTools\Copier;
 use Zestry\WPToolkit\DevTools\DeclarationResult;
 use Zestry\WPToolkit\DevTools\Formatter;
+use Zestry\WPToolkit\DevTools\ParentClass;
 use Zestry\WPToolkit\DevTools\ZestryConfig;
 use Zestry\WPToolkit\DevTools\StubRenderer;
 use Zestry\WPToolkit\Modules\CLI\Command;
@@ -81,6 +82,11 @@ abstract class MakeCommand extends Command {
 	public RuntimePlugin $runtime;
 
 	/**
+	 * @var ParentClass
+	 */
+	public ParentClass $parent_class;
+
+	/**
 	 * Parse errors in the files just written, keyed by absolute path.
 	 *
 	 * @var array<string, string>
@@ -103,6 +109,10 @@ abstract class MakeCommand extends Command {
 	 * : Write into this plugin-relative directory instead of the type's
 	 * default -- use this when the consuming plugin configured a module's
 	 * root to something other than its default.
+	 *
+	 * [--extends=<class>]
+	 * : Extend your own intermediate abstract instead of the toolkit's base.
+	 * The generated file then stubs the methods *that* class leaves abstract.
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -162,6 +172,22 @@ abstract class MakeCommand extends Command {
 
 		$values = \array_merge( $values, $this->get_extra_values( $name, $assoc_args ) );
 
+		$extends = $this->get_flag( $assoc_args, 'extends', null );
+		$parent  = null;
+
+		if ( null !== $extends ) {
+			$parent = $this->get_parent_values( $extends, $namespace );
+
+			// Said and stopped in get_parent_values(): a bad parent is worth
+			// refusing before a file exists, since every way it is wrong is one
+			// that only shows up at boot, on every request.
+			if ( null === $parent ) {
+				return;
+			}
+
+			$values = \array_merge( $values, $parent );
+		}
+
 		if ( ! $this->allows_custom_dir() && null !== $this->get_flag( $assoc_args, 'dir', null ) ) {
 			$this->error(
 				\sprintf(
@@ -178,7 +204,15 @@ abstract class MakeCommand extends Command {
 			? $this->get_flag( $assoc_args, 'dir', $this->get_default_dir( $config ) )
 			: $this->get_default_dir( $config );
 
-		$stub = $this->path->get_plugin_path( 'src/DevTools/stubs/' . $this->get_stub() );
+		/*
+		 * One shared stub for every type once a parent is named. The type's own
+		 * stub explains the base class it extends -- which methods to override,
+		 * what each default means -- and none of that is true of someone else's
+		 * abstract, whose whole purpose is to have settled those already.
+		 */
+		$stub = $this->path->get_plugin_path(
+			'src/DevTools/stubs/' . ( null === $parent ? $this->get_stub() : 'extends.php.stub' )
+		);
 
 		$relative_path = $this->get_destination_path( $dir, $name );
 		$destination   = Str::join_path( $plugin_root, $relative_path );
@@ -240,6 +274,24 @@ abstract class MakeCommand extends Command {
 				? \sprintf( 'Created %s (%d files)', $relative_path, \count( $written ) )
 				: 'Created ' . $relative_path
 		);
+	}
+
+	/**
+	 * The toolkit base a file of this type has to extend, or null for a type
+	 * that extends nothing.
+	 *
+	 * Given relative to the copied namespace, the way a stub's own import
+	 * writes it -- `Modules\Fields\Field` -- since the plugin's copy is what a
+	 * generated file extends and what its own abstract extends in turn.
+	 *
+	 * **Returning null is what makes `--extends` unavailable**, and three types
+	 * mean it: a `route` is built by `Route::get()` rather than by extending
+	 * anything, and a `view` and a `page-view` are templates.
+	 *
+	 * @return string|null
+	 */
+	protected function get_base_class(): ?string {
+		return null;
 	}
 
 	/**
@@ -550,6 +602,56 @@ abstract class MakeCommand extends Command {
 
 			$directory = $parent;
 		}
+	}
+
+	/**
+	 * Resolve `--extends`, refuse it if it cannot work, and describe it to the stub.
+	 *
+	 * Everything is settled before a file is written, because each way this can
+	 * be wrong is one that surfaces at boot rather than here: the wrong base
+	 * throws a DiscoveryException on every request, and a final class is a fatal
+	 * as soon as the file is read.
+	 *
+	 * @param string $requested The value given for --extends.
+	 * @param string $root      The plugin's namespace root.
+	 * @return array<string, string>|null The stub's parent values, or null once the reason has been reported.
+	 */
+	private function get_parent_values( string $requested, string $root ): ?array {
+		$base = $this->get_base_class();
+
+		if ( null === $base ) {
+			$this->error(
+				\sprintf( '`%s` does not take --extends: it does not generate a class that extends anything.', static::get_type() )
+			);
+
+			return null;
+		}
+
+		try {
+			$parent = $this->parent_class->resolve( $requested, $root );
+
+			$this->parent_class->assert_usable( $parent, Copier::get_target_namespace( $root ) . '\\' . $base );
+		} catch ( \InvalidArgumentException $exception ) {
+			$this->error( $exception->getMessage() );
+
+			return null;
+		}
+
+		$methods = $this->parent_class->get_abstract_methods( $parent );
+
+		if ( '' === $methods ) {
+			// Not a failure, and worth saying: a parent leaving nothing abstract
+			// generates an empty class, which is a correct file and rarely what
+			// someone expected to see.
+			$this->log( \sprintf( '"%s" leaves no methods abstract, so the generated file overrides nothing.', $parent ) );
+		}
+
+		return array(
+			'parent_fqn'       => $parent,
+			'parent'           => ( new \ReflectionClass( $parent ) )->getShortName(),
+			'abstract_methods' => $methods,
+			'type'             => static::get_type(),
+		);
 	}
 
 	/**

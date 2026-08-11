@@ -25,6 +25,11 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  */
 final class MakeCommandTest extends TestCase {
 
+	/**
+	 * The namespace the `--extends` fixtures really live under.
+	 */
+	private const FIXTURE_NAMESPACE = 'Zestry\\WPToolkit\\Tests\\Support\\ExtendsFixture';
+
 	private string $target_plugin_dir = '';
 
 	public function set_up(): void {
@@ -249,7 +254,7 @@ final class MakeCommandTest extends TestCase {
 		$this->run_make( array( 'send-welcome-email' ) );
 
 		$this->assertNotNull( \WP_CLI::last( 'error' ) );
-		$this->assertStringContainsString( 'directory already exists', (string) \WP_CLI::last( 'error' )[0] );
+		$this->assertStringContainsString( 'directory already exists', $this->last_error() );
 	}
 
 	public function test_refuses_to_write_when_a_parent_path_segment_is_already_a_file(): void {
@@ -262,7 +267,7 @@ final class MakeCommandTest extends TestCase {
 		$this->run_make( array( 'send-welcome-email' ), array( 'dir' => 'actions/leaf' ) );
 
 		$this->assertNotNull( \WP_CLI::last( 'error' ) );
-		$this->assertStringContainsString( 'already exists as a file', (string) \WP_CLI::last( 'error' )[0] );
+		$this->assertStringContainsString( 'already exists as a file', $this->last_error() );
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/actions/leaf/send-welcome-email.php' );
 	}
 
@@ -282,7 +287,7 @@ final class MakeCommandTest extends TestCase {
 		$this->run_make( array( 'test-1/test-2' ), array(), 'command.php.stub' );
 
 		$this->assertNotNull( \WP_CLI::last( 'error' ) );
-		$this->assertStringContainsString( 'already registered as a command', (string) \WP_CLI::last( 'error' )[0] );
+		$this->assertStringContainsString( 'already registered as a command', $this->last_error() );
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/commands/test-1/test-2.php' );
 	}
 
@@ -295,7 +300,7 @@ final class MakeCommandTest extends TestCase {
 		$this->run_make( array( 'test-1' ), array(), 'command.php.stub' );
 
 		$this->assertNotNull( \WP_CLI::last( 'error' ) );
-		$this->assertStringContainsString( 'already exists as a command namespace', (string) \WP_CLI::last( 'error' )[0] );
+		$this->assertStringContainsString( 'already exists as a command namespace', $this->last_error() );
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/commands/test-1.php' );
 	}
 
@@ -1014,6 +1019,246 @@ final class MakeCommandTest extends TestCase {
 				}
 			}
 		}
+	}
+
+	/**
+	 * The point of the flag: a generated file that knows what *your* abstract
+	 * still owes, which no stub shipped here could contain.
+	 *
+	 * @return void
+	 */
+	public function test_extends_stubs_the_methods_the_named_abstract_leaves_abstract(): void {
+		$this->use_fixture_namespace();
+
+		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'EntityField' ), 'field' );
+
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/fields/acme-rating.php' );
+
+		$this->assertStringContainsString( 'use ' . self::FIXTURE_NAMESPACE . '\\Abstracts\\EntityField;', $written );
+		$this->assertStringContainsString( 'extends EntityField', $written );
+
+		// Everything EntityField still leaves abstract, and its signature intact.
+		$this->assertStringContainsString( 'public function attaches_to(): array {', $written );
+		$this->assertStringContainsString( 'public function label(): string {', $written );
+		$this->assertStringContainsString( 'public function format( mixed $value, bool $escape = true ): ?string {', $written );
+		$this->assertStringContainsString( 'protected function get_store(): \ArrayObject {', $written );
+
+		// ...and nothing it has already answered.
+		$this->assertStringNotContainsString(
+			'function subtypes(',
+			$written,
+			'EntityField implements subtypes(), so the generated file must not override it.'
+		);
+	}
+
+	/**
+	 * A generated file that does not compile is worse than no file, and the
+	 * bodies are chosen by return type, so this is where a wrong choice shows.
+	 *
+	 * @return void
+	 */
+	public function test_the_generated_file_compiles_and_its_bodies_match_the_return_types(): void {
+		$this->use_fixture_namespace();
+
+		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'EntityField' ), 'field' );
+
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/fields/acme-rating.php' );
+
+		// Throws a ParseError if what was written is not PHP.
+		token_get_all( $written, TOKEN_PARSE );
+
+		$this->assertStringContainsString( 'return array();', $written, 'An array return gets an empty array.' );
+		$this->assertStringContainsString( "return '';", $written, 'A string return gets an empty string.' );
+		$this->assertStringContainsString( 'return null;', $written, 'A nullable return gets null.' );
+		$this->assertStringContainsString(
+			'throw new \RuntimeException(',
+			$written,
+			'An object return has no obviously-unfinished value, so it stops instead of guessing one.'
+		);
+	}
+
+	/**
+	 * The whole docblock travels with the method, so the generated file says
+	 * what each one owes without opening the parent -- including the tags, which
+	 * describe a signature this file carries verbatim and are therefore as true
+	 * here as they were there.
+	 *
+	 * @return void
+	 */
+	public function test_each_stubbed_method_carries_its_whole_docblock(): void {
+		$this->use_fixture_namespace();
+
+		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'EntityField' ), 'field' );
+
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/fields/acme-rating.php' );
+
+		$this->assertStringContainsString(
+			"\t/**\n\t * Render the stored value for display.\n"
+				. "\t *\n"
+				. "\t * @param mixed \$value  The stored value.\n"
+				. "\t * @param bool  \$escape Whether to escape it.\n"
+				. "\t * @return string|null\n"
+				. "\t */\n"
+				. "\tpublic function format( mixed \$value, bool \$escape = true ): ?string {",
+			$written,
+			'Copied entire, and re-indented for where it landed rather than where it came from.'
+		);
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_extends_accepts_a_fully_qualified_name(): void {
+		$this->use_fixture_namespace();
+
+		$this->run_make(
+			array( 'acme-rating' ),
+			array( 'extends' => self::FIXTURE_NAMESPACE . '\\Abstracts\\EntityField' ),
+			'field'
+		);
+
+		$this->assertFileExists( $this->target_plugin_dir . '/fields/acme-rating.php' );
+	}
+
+	/**
+	 * A `DiscoveryException` waiting to happen, refused while it is still cheap:
+	 * the wrong base is only found at boot, and then on every request.
+	 *
+	 * @return void
+	 */
+	public function test_extends_refuses_a_class_that_is_not_the_types_own_base(): void {
+		$this->use_fixture_namespace();
+
+		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'EntityPostType' ), 'field' );
+
+		$this->assertStringContainsString( 'does not extend', $this->last_error() );
+		$this->assertFileDoesNotExist(
+			$this->target_plugin_dir . '/fields/acme-rating.php',
+			'Refused before anything was written.'
+		);
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_extends_refuses_a_final_class(): void {
+		$this->use_fixture_namespace();
+
+		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'SealedField' ), 'field' );
+
+		$this->assertStringContainsString( 'is final', $this->last_error() );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/fields/acme-rating.php' );
+	}
+
+	/**
+	 * The message lists what was looked for, since the commonest cause is a
+	 * class that exists but has not been dumped into the autoloader yet.
+	 *
+	 * @return void
+	 */
+	public function test_extends_refuses_a_class_that_does_not_load(): void {
+		$this->use_fixture_namespace();
+
+		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'NoSuchField' ), 'field' );
+
+		$error = $this->last_error();
+
+		$this->assertStringContainsString( 'could be loaded', $error );
+		$this->assertStringContainsString( 'Abstracts\\NoSuchField', $error, 'It says where it looked.' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/fields/acme-rating.php' );
+	}
+
+	/**
+	 * A plugin that never added the module has no base class for the generated
+	 * file to extend, and saying "does not extend" would be true and useless --
+	 * the class it does not extend is one this plugin has never had.
+	 *
+	 * Left at the default `Acme\Plugin` namespace, where no copied source
+	 * exists, which is exactly the state a plugin is in before `add module`.
+	 *
+	 * @return void
+	 */
+	public function test_extends_says_so_when_the_plugin_has_no_base_class_at_all(): void {
+		$this->run_make(
+			array( 'acme-rating' ),
+			array( 'extends' => self::FIXTURE_NAMESPACE . '\\Abstracts\\EntityField' ),
+			'field'
+		);
+
+		$error = $this->last_error();
+
+		$this->assertStringContainsString( 'This plugin has no', $error );
+		$this->assertStringContainsString( 'Acme\\Plugin\\Core\\Modules\\Fields\\Field', $error );
+		$this->assertStringContainsString( 'add module', $error, 'And what to do about it.' );
+	}
+
+	/**
+	 * A type that generates no class to extend says so, rather than writing a
+	 * file that ignores the flag.
+	 *
+	 * @return void
+	 */
+	public function test_a_type_that_extends_nothing_refuses_the_flag(): void {
+		$this->use_fixture_namespace();
+
+		// The default anonymous subclass declares no base class, which is what
+		// `route`, `view` and `page-view` do.
+		$this->run_make( array( 'anything' ), array( 'extends' => 'EntityField' ) );
+
+		$this->assertStringContainsString( 'does not take --extends', $this->last_error() );
+	}
+
+	/**
+	 * Without the flag nothing changes: the type's own stub, with all of its
+	 * commentary about the base class it extends.
+	 *
+	 * @return void
+	 */
+	public function test_without_the_flag_the_types_own_stub_is_still_used(): void {
+		$this->use_fixture_namespace();
+
+		$this->run_make( array( 'acme-rating' ), array(), 'field' );
+
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/fields/acme-rating.php' );
+
+		$this->assertStringContainsString( 'extends Field', $written );
+		$this->assertStringContainsString( 'public function subtypes(): array {', $written );
+	}
+
+	/**
+	 * The message of the last `error()` the command made.
+	 *
+	 * `WP_CLI::last()` hands back the call's arguments, so the message is the
+	 * first of them.
+	 *
+	 * @return string The message, or an empty string when nothing errored.
+	 */
+	private function last_error(): string {
+		return (string) ( \WP_CLI::last( 'error' )[0] ?? '' );
+	}
+
+	/**
+	 * Point zestry.json at a namespace whose classes really exist.
+	 *
+	 * `--extends` resolves and reflects a live class, and checks it against the
+	 * plugin's *copied* base -- so a fixture needs real classes at both the
+	 * `Abstracts\` and the `Core\Modules\` ends, which `tests/Support/` provides
+	 * through this package's own autoloader.
+	 *
+	 * @return void
+	 */
+	private function use_fixture_namespace(): void {
+		file_put_contents(
+			$this->target_plugin_dir . '/zestry.json',
+			(string) json_encode(
+				array(
+					'namespace'   => self::FIXTURE_NAMESPACE,
+					'root'        => 'lib',
+					'text_domain' => 'acme-plugin',
+				),
+				JSON_PRETTY_PRINT
+			)
+		);
 	}
 
 	/**

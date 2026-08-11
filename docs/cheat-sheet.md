@@ -164,7 +164,7 @@ Run from inside your plugin's directory, with the plugin active.
 | [`wp zestry init`](commands/init.md) | Copies the kernel; writes `zestry.json`, `zestry.lock.json`, `bootstrap.php`, the PSR-4 entry, `.gitignore`, the linter configs and `AGENTS.md`. `--no-phpcs`, `--no-eslint`, `--no-prettier`, `--no-agents`, `--yes` |
 | [`wp zestry add module <name>...`](commands/add-module.md) | Copies modules and their dependencies; declares each in `bootstrap.php`. Skips what is already there. `--yes` |
 | [`wp zestry add service <name>...`](commands/add-service.md) | Copies services and their dependencies. Declares nothing. `--yes` |
-| [`wp zestry make <type> <name>`](commands/) | Generates one file from a stub — see the 20 types below. `--yes`, plus `--dir=` on every type but `module` and `service` |
+| [`wp zestry make <type> <name>`](commands/) | Generates one file from a stub — see the 20 types below. `--yes`, plus `--dir=` on every type but `module` and `service`, and `--extends=` on every type that generates a class |
 | [`wp zestry describe`](commands/describe.md) | Reports what this plugin has: each module installed, declared, the directory it reads and the base class a file there returns. `--format`, `--kind`, `--installed` |
 | [`wp zestry doctor`](commands/doctor.md) | Reports the wiring mistakes that raise no error — chiefly a module on disk that nothing declares. `--format=report\|csv\|json\|yaml` |
 | [`wp zestry update`](commands/update.md) | Re-copies everything under `lib/Core/` from the installed toolkit, keeping files you edited. `--dry-run`, `--force`, `--yes` |

@@ -21,6 +21,9 @@ WordPress matches both halves of that name against `^[a-z0-9-]+$` and refuses an
 - **`[--dir=<dir>]`**  
   Write somewhere other than `abilities/`, relative to the plugin root.
 
+- **`[--extends=<class>]`**  
+  Extend one of your own abstracts instead of the toolkit base. A bare name is looked for under your Abstracts\ namespace; the generated file stubs the methods that class leaves abstract, and nothing it has already settled.
+
 ## Examples
 
 ```bash

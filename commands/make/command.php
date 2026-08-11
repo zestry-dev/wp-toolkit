@@ -43,6 +43,11 @@ return new class() extends MakeCommand {
 	 * [--yes]
 	 * : Overwrite an existing file without asking, for an unattended run.
 	 *
+	 * [--extends=<class>]
+	 * : Extend one of your own abstracts instead of the toolkit base. A bare name
+	 * is looked for under your Abstracts\ namespace; the generated file stubs the
+	 * methods that class leaves abstract, and nothing it has already settled.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     # Generate a WP-CLI command at commands/greet.php.
@@ -113,6 +118,10 @@ return new class() extends MakeCommand {
 					. 'namespace and cannot also be used as a command name.'
 			);
 		}
+	}
+
+	protected function get_base_class(): ?string {
+		return 'Modules\CLI\Command';
 	}
 
 	protected static function get_type(): string {

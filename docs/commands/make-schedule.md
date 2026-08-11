@@ -26,6 +26,9 @@ Needs the `cron` module, so run `wp zestry add module cron` first if you have no
 - **`[--yes]`**  
   Overwrite an existing file without asking, for an unattended run.
 
+- **`[--extends=<class>]`**  
+  Extend one of your own abstracts instead of the toolkit base. A bare name is looked for under your Abstracts\ namespace; the generated file stubs the methods that class leaves abstract, and nothing it has already settled.
+
 ## Examples
 
 ```bash

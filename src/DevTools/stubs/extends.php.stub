@@ -1,0 +1,18 @@
+<?php
+/**
+ * {{title}}.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{parent_fqn}};
+
+// Everything {{parent}} settles is settled. What is below is what it leaves
+// for each {{type}} to answer -- see {{parent}} itself for the rest.
+return new class() extends {{parent}} {
+
+{{abstract_methods}}
+};

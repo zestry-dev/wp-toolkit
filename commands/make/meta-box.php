@@ -25,6 +25,11 @@ return new class() extends MakeCommand {
 	 * [--dir=<dir>]
 	 * : Write somewhere other than `meta-boxes/`, relative to the plugin root.
 	 *
+	 * [--extends=<class>]
+	 * : Extend one of your own abstracts instead of the toolkit base. A bare name
+	 * is looked for under your Abstracts\ namespace; the generated file stubs the
+	 * methods that class leaves abstract, and nothing it has already settled.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     # Generate meta-boxes/book-details.php.
@@ -45,6 +50,10 @@ return new class() extends MakeCommand {
 
 	protected function get_default_dir( array $config ): string {
 		return 'meta-boxes';
+	}
+
+	protected function get_base_class(): ?string {
+		return 'Modules\MetaBoxes\MetaBox';
 	}
 
 	protected static function get_type(): string {
