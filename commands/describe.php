@@ -121,6 +121,8 @@ return new class() extends Command {
 	 *       ajax           actions/         AjaxAction    wp zestry make action
 	 *       cli            commands/        Command       wp zestry make command
 	 *       cron           schedules/       Schedule      wp zestry make schedule   NOT DECLARED
+	 *       fields         fields/          Field         wp zestry make field
+	 *           fields/ 40 files via Acme\Plugin\Abstracts\EntityField
 	 *
 	 *     SERVICES
 	 *       path           —
@@ -186,7 +188,7 @@ return new class() extends Command {
 		\WP_CLI\Utils\format_items(
 			$format,
 			$entries,
-			array( 'name', 'kind', 'installed', 'declared', 'configured', 'reads', 'returns', 'make', 'file' )
+			array( 'name', 'kind', 'installed', 'declared', 'configured', 'reads', 'returns', 'via', 'make', 'file' )
 		);
 	}
 
@@ -213,6 +215,8 @@ return new class() extends Command {
 
 			$class = $namespace . '\\' . Copier::get_relative_class( $entry['source'] );
 			$roots = $this->get_default_roots( $entry['source'] );
+			$bases = $this->get_returned_bases( $entry['source'] );
+			$via   = $this->get_intermediates( $plugin_root, $bases, $roots, $namespace );
 
 			$entries[] = array(
 				'name'       => $name,
@@ -231,7 +235,23 @@ return new class() extends Command {
 						$roots
 					)
 				),
-				'returns'    => implode( ', ', $this->get_returned_bases( $entry['source'] ) ),
+				'returns'    => implode( ', ', $bases ),
+				'via'        => implode(
+					', ',
+					array_map(
+						static function ( array $found, string $root ): string {
+							return sprintf(
+								'%s/ %d file%s via %s',
+								$root,
+								$found['files'],
+								1 === $found['files'] ? '' : 's',
+								$found['parent']
+							);
+						},
+						$via,
+						array_keys( $via )
+					)
+				),
 				'make'       => implode( ', ', array_values( array_intersect_key( $makers, array_flip( $roots ) ) ) ),
 				'file'       => $on_disk,
 			);
@@ -297,6 +317,15 @@ return new class() extends Command {
 						$entry['declared'] ? '' : '  NOT DECLARED'
 					)
 				);
+
+				/*
+				 * On its own line rather than in the table: it is the answer to a
+				 * question the table does not ask, and the one thing someone
+				 * opening this repository cold cannot find out any other way.
+				 */
+				foreach ( '' === $entry['via'] ? array() : explode( ', ', (string) $entry['via'] ) as $via ) {
+					$this->log( '      ' . $via );
+				}
 			}
 		}
 
@@ -393,6 +422,124 @@ return new class() extends Command {
 		sort( $roots );
 
 		return $roots;
+	}
+
+	/**
+	 * The intermediate abstract a directory's files all extend, if they do.
+	 *
+	 * A plugin past a handful of files of one kind grows one -- a class between
+	 * the toolkit's base and each file, holding what every one of them shares.
+	 * Discovery has always accepted it, because it checks `instanceof` and a
+	 * subclass of a `Field` is a `Field`, so nothing had to be taught about it
+	 * and nothing was. Which leaves someone opening the repository cold reading
+	 * `extends EntityField` with no path from any command to what that is.
+	 *
+	 * Reported only when *every* file in the directory shares the parent. A
+	 * mixed directory has no such thing to name, and saying "mostly" would be
+	 * worse than saying nothing.
+	 *
+	 * @rationale
+	 * Read from the source rather than reflected off the discovered instances,
+	 * which is what the modules now hand back publicly and would have been the
+	 * shorter route. Reflecting means booting the consumer's module, and booting
+	 * one walks its directory and `require`s every file in it -- arbitrary code,
+	 * during a command whose entire job is to report. `describe` derives
+	 * everything else statically for that reason, and `doctor` has the same rule
+	 * written down. Reading the files also answers for a module that is
+	 * installed but not declared, which is exactly the plugin most in need of
+	 * being described.
+	 *
+	 * @param string   $plugin_root Absolute path to the consuming plugin's root.
+	 * @param string[] $bases       The base class names files here may return.
+	 * @param string[] $roots       The module's default directories.
+	 * @param string   $copied      The namespace the toolkit's own classes were copied under.
+	 * @return array<string, array{parent: string, files: int}> Keyed by directory.
+	 */
+	private function get_intermediates( string $plugin_root, array $bases, array $roots, string $copied ): array {
+		$found = array();
+
+		foreach ( $roots as $root ) {
+			$directory = Str::join_path( rtrim( $plugin_root, '/\\' ), $root );
+
+			if ( ! is_dir( $directory ) ) {
+				continue;
+			}
+
+			$files = glob( $directory . '/*.php' );
+			$files = false === $files ? array() : $files;
+
+			if ( array() === $files ) {
+				continue;
+			}
+
+			$parents = array();
+
+			foreach ( $files as $file ) {
+				$parents[] = $this->get_extended_class( $file );
+			}
+
+			// Counted before filtering, so a file extending nothing is a file
+			// that does not share the parent -- which is the whole condition.
+			$named  = array_values( array_filter( $parents ) );
+			$unique = array_unique( $named );
+
+			if ( count( $named ) !== count( $files ) || 1 !== count( $unique ) ) {
+				continue;
+			}
+
+			$parent = (string) reset( $unique );
+
+			/*
+			 * The base they would have extended anyway is not an intermediate,
+			 * and naming it would say nothing the `returns` column does not.
+			 * Matched on the short name *and* where it came from: a class of the
+			 * plugin's own that happens to be called `Taxonomy` is an
+			 * intermediate, and the copied namespace is what tells them apart.
+			 * An unqualified name is read as the toolkit's, which is what a file
+			 * with no import of its own means.
+			 */
+			$separator = strrpos( $parent, '\\' );
+			$short     = false === $separator ? $parent : substr( $parent, $separator + 1 );
+
+			if ( in_array( $short, $bases, true )
+				&& ( $short === $parent || str_starts_with( $parent, $copied . '\\' ) )
+			) {
+				continue;
+			}
+
+			$found[ $root ] = array(
+				'parent' => $parent,
+				'files'  => count( $files ),
+			);
+		}
+
+		return $found;
+	}
+
+	/**
+	 * What one discovered file extends, qualified where the file says so.
+	 *
+	 * A discovered file is `return new class() extends X`, and `X` is an import
+	 * in the same file -- so the `use` line is what turns the short name into
+	 * one worth printing. A name with no matching import is reported as written.
+	 *
+	 * @param string $file Absolute path to the file.
+	 * @return string|null The class extended, or null when the file extends nothing.
+	 */
+	private function get_extended_class( string $file ): ?string {
+		$source = (string) file_get_contents( $file );
+
+		if ( 1 !== preg_match( '/\bextends\s+([A-Za-z_\\\\][\w\\\\]*)/', $source, $match ) ) {
+			return null;
+		}
+
+		$short = ltrim( $match[1], '\\' );
+
+		if ( 1 === preg_match( '/^use\s+([\w\\\\]*\\\\' . preg_quote( $short, '/' ) . ')\s*;/m', $source, $import ) ) {
+			return $import[1];
+		}
+
+		return $short;
 	}
 
 	/**

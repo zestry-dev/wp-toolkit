@@ -181,6 +181,94 @@ final class DescribeCommandTest extends TestCase {
 	}
 
 	/**
+	 * The one thing someone opening a repository cold cannot find out any other
+	 * way: that every file in a directory goes through a class of the plugin's
+	 * own before it reaches the toolkit's.
+	 *
+	 * @return void
+	 */
+	public function test_names_the_intermediate_every_file_in_a_directory_extends(): void {
+		$this->write_discovered( 'fields/acme_rating.php', 'EntityField', 'Acme\\Plugin\\Abstracts\\EntityField' );
+		$this->write_discovered( 'fields/acme_note.php', 'EntityField', 'Acme\\Plugin\\Abstracts\\EntityField' );
+
+		$rows = $this->describe_rows();
+
+		$this->assertSame( 'fields/ 2 files via Acme\\Plugin\\Abstracts\\EntityField', $rows['fields']['via'] );
+	}
+
+	/**
+	 * One directory of the two-root module can have an intermediate while the
+	 * other has none, so each is answered separately.
+	 *
+	 * @return void
+	 */
+	public function test_each_root_of_a_two_root_module_answers_for_itself(): void {
+		$this->write_discovered( 'post-types/acme_book.php', 'EntityPostType', 'Acme\\Plugin\\Abstracts\\EntityPostType' );
+		$this->write_discovered( 'taxonomies/acme_genre.php', 'Taxonomy', 'Acme\\Plugin\\Core\\Modules\\PostTypes\\Taxonomy' );
+
+		$rows = $this->describe_rows();
+
+		$this->assertStringContainsString( 'post-types/ 1 file via Acme\\Plugin\\Abstracts\\EntityPostType', $rows['post-types']['via'] );
+		$this->assertStringNotContainsString(
+			'taxonomies/',
+			$rows['post-types']['via'],
+			'Extending the toolkit base is not going via anything.'
+		);
+	}
+
+	/**
+	 * "Mostly" is worse than nothing: a directory where one file goes direct has
+	 * no shared parent to name, and the report says nothing rather than
+	 * something almost true.
+	 *
+	 * @return void
+	 */
+	public function test_a_mixed_directory_names_no_intermediate(): void {
+		$this->write_discovered( 'fields/acme_rating.php', 'EntityField', 'Acme\\Plugin\\Abstracts\\EntityField' );
+		$this->write_discovered( 'fields/acme_note.php', 'Field', 'Acme\\Plugin\\Core\\Modules\\Fields\\Field' );
+
+		$rows = $this->describe_rows();
+
+		$this->assertSame( '', $rows['fields']['via'] );
+	}
+
+	/**
+	 * Nothing here loads a consumer class, so a file whose parent does not exist
+	 * is still reported -- which is the plugin most in need of describing.
+	 *
+	 * @return void
+	 */
+	public function test_the_intermediate_is_read_rather_than_loaded(): void {
+		$this->write_discovered( 'fields/acme_rating.php', 'NeverDefined', 'Acme\\Plugin\\Abstracts\\NeverDefined' );
+
+		$rows = $this->describe_rows();
+
+		$this->assertStringContainsString( 'Acme\\Plugin\\Abstracts\\NeverDefined', $rows['fields']['via'] );
+		$this->assertFalse( class_exists( 'Acme\\Plugin\\Abstracts\\NeverDefined' ), 'And it was never loaded.' );
+	}
+
+	/**
+	 * Write a discovered file extending a named class, as a consumer's would be.
+	 *
+	 * @param string $relative Path within the plugin.
+	 * @param string $short    The class it extends, as written.
+	 * @param string $import   The `use` line that qualifies it.
+	 * @return void
+	 */
+	private function write_discovered( string $relative, string $short, string $import ): void {
+		$path = $this->target_plugin_dir . '/' . $relative;
+
+		if ( ! is_dir( dirname( $path ) ) ) {
+			mkdir( dirname( $path ), 0777, true );
+		}
+
+		file_put_contents(
+			$path,
+			"<?php\n\nuse " . $import . ";\n\nreturn new class() extends " . $short . " {\n};\n"
+		);
+	}
+
+	/**
 	 * Put a file where a copied module's would be. The content does not matter:
 	 * `describe` reports what is on disk, and never loads a consumer's copy.
 	 *

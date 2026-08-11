@@ -43,6 +43,8 @@ MODULES
   ajax           actions/         AjaxAction    wp zestry make action
   cli            commands/        Command       wp zestry make command
   cron           schedules/       Schedule      wp zestry make schedule   NOT DECLARED
+  fields         fields/          Field         wp zestry make field
+      fields/ 40 files via Acme\Plugin\Abstracts\EntityField
 
 SERVICES
   path           —
