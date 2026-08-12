@@ -7,15 +7,16 @@
 
 Reads from `assets/`, `build/` &nbsp;·&nbsp; Dependencies [`path`](../../services/path/)
 
-Composes plugin asset URLs and wraps WordPress's script/style APIs.
+Registers what the JavaScript build produced, and composes plugin asset URLs.
 
-A thin wrapper over WordPress's own script and style functions — `wp_register_script()`, `wp_enqueue_style()`, `wp_add_inline_script()` and the rest.
+On `init` it registers every entry and shared package the build wrote into its manifest, each under the handle the build composed for it — so `enqueue_entry( 'settings' )` works from anywhere with no registration call first. For an asset the build did not produce, `register_script()` and `register_style()` resolve a URL under the configured assets directory and namespace the handle to the plugin slug, so `'app'` becomes `'{plugin-slug}-app'` and cannot collide with core, a theme or another plugin.
 
-Every method takes a plain, unprefixed handle like `'app'` and namespaces it to the plugin slug before calling WordPress, so `'app'` becomes `'{plugin-slug}-app'`. A plugin's handles therefore cannot collide with WordPress core, a theme, or another plugin.
+**Everything that returns a handle returns a real one**, ready to hand straight to WordPress. Attaching inline code or data, adding registration metadata, and enqueueing something registered by hand are WordPress's own functions, called with that handle:
 
-Registering and enqueueing stay separate steps. `register_script()` and `register_style()` declare an asset and return its namespaced handle; `enqueue_script()` and `enqueue_style()` take that handle and queue the asset for output.
-
-On `init` it registers everything the JavaScript build produced, so `enqueue_script( 'settings' )` works from anywhere with no registration call first.
+```
+$handle = $assets->enqueue_entry( 'dashboard' );
+wp_add_inline_script( $handle, 'window.dashboard = ' . wp_json_encode( $data ) . ';', 'before' );
+```
 
 `wp zestry add module assets` brings the build with it: a `webpack.config.js` that compiles three directories, each with a different owner.
 
@@ -23,11 +24,13 @@ On `init` it registers everything the JavaScript build produced, so `enqueue_scr
 | --- | --- | --- |
 | `src/blocks/{name}/` | `{build}/blocks/{name}/` | WordPress, from `block.json` |
 | `src/entries/{name}/` | `{build}/entries/{name}` | this module, as `{plugin-slug}-{name}` |
-| `src/shared/{name}/` | `{build}/shared/{name}` | this module, under the handle the build declared |
+| `src/shared/{name}/` | `{build}/shared/{name}` | this module, as `{plugin-slug}-shared-{name}` |
 
 That merge is the reason the config exists. `@wordpress/scripts` decides entry points three mutually exclusive ways — files listed on the command line, `block.json` scanning, or the `src/index` fallback — each of which disables the others, so a plugin with one block has no supported way to build a script of its own.
 
-[Adding it](#adding-it) &nbsp;·&nbsp; [Registering and enqueueing](#registering-and-enqueueing) &nbsp;·&nbsp; [Your own script, built and registered](#your-own-script-built-and-registered) &nbsp;·&nbsp; [Sharing code between entries](#sharing-code-between-entries) &nbsp;·&nbsp; [Registering something the build did not produce](#registering-something-the-build-did-not-produce) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+The build composes every handle, and this module reads them. An entry and a shared package can therefore share a name — `src/entries/collections` and `src/shared/collections` — without one silently displacing the other, which is what the `shared` segment is there to prevent.
+
+[Adding it](#adding-it) &nbsp;·&nbsp; [Your own script, built and registered](#your-own-script-built-and-registered) &nbsp;·&nbsp; [An asset the build did not produce](#an-asset-the-build-did-not-produce) &nbsp;·&nbsp; [Sharing code between entries](#sharing-code-between-entries) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
 
 ## Adding it
 
@@ -45,25 +48,25 @@ return array(
 );
 ```
 
-## Registering and enqueueing
+## Your own script, built and registered
+
+`wp zestry make entry settings` writes `src/entries/settings/`. The build compiles it, this module registers it on `init`, and using it is one call — from an admin page, a shortcode, anywhere:
+
+```php
+$assets->enqueue_entry( 'settings' );
+```
+
+The stylesheet the entry imports is registered under that same handle, so it comes along. Nothing derives its filename: `@wordpress/scripts` writes a source file called `style.scss` as `style-{entry}.css` and any other name as `{entry}.css`, so the build records what it actually emitted — including the RTL variant, which is swapped in the way core does it for block styles.
+
+## An asset the build did not produce
 
 `$src` is resolved through `get_asset_url()` — relative to the configured assets directory (`assets` by default) — into a full URL via the injected Path service, so you never construct asset URLs by hand.
 
 ```php
 $app = $assets->register_script( 'app', 'app.js' );
 $assets->register_script( 'widgets', 'widgets.js', array( $app ) );
-$assets->enqueue_script( 'widgets' );
+wp_enqueue_script( $app );
 ```
-
-## Your own script, built and registered
-
-`wp zestry make entry settings` writes `src/entries/settings/`. The build compiles it, this module registers it on `init`, and using it is one call — from an admin page, a shortcode, anywhere:
-
-```php
-$assets->enqueue_script( 'settings' );
-```
-
-The stylesheet the entry imports is registered under that same handle, so it comes along. Nothing derives its filename: `@wordpress/scripts` writes a source file called `style.scss` as `style-{entry}.css` and any other name as `{entry}.css`, so the build records what it actually emitted — including the RTL variant, which is swapped in the way core does it for block styles.
 
 ## Sharing code between entries
 
@@ -73,14 +76,6 @@ A directory under `src/shared/` is an npm workspace imported by name, built once
 // Only for a package nothing imports, or one a hand-registered script needs.
 $assets->enqueue_shared( 'formatting' );
 $assets->register_script( 'legacy', 'legacy.js', array( $assets->get_shared_handle( 'formatting' ) ) );
-```
-
-## Registering something the build did not produce
-
-`register_script_from_manifest()` takes a build entry name and reads its dependencies and content-hash version from the build itself, rather than having them hand-maintained. Reach for it when an entry needs a handle of your choosing, or lives outside `src/entries/`:
-
-```php
-$assets->register_script_from_manifest( 'legacy-editor', 'entries/settings' );
 ```
 
 ## Changing the defaults
@@ -114,22 +109,6 @@ const DEFAULT_BUILD_ROOT = 'build';
 ```
 
 Default plugin-relative directory of `@wordpress/scripts` build output.
-
-### `SHARED_SEGMENT`
-
-```php
-const SHARED_SEGMENT = 'shared';
-```
-
-Directory within the build root that holds built shared packages.
-
-### `ENTRIES_SEGMENT`
-
-```php
-const ENTRIES_SEGMENT = 'entries';
-```
-
-Directory within the build root that holds this plugin's own entries.
 
 ### `MANIFEST_FILENAMES`
 
@@ -311,140 +290,6 @@ Reads `{entry}.asset.php` next to `{entry}.js` in the configured build directory
 
 <br>
 
-### `register_manifest_script( $slug, $entry, $deps, $args )`
-
-Register a built script under a handle WordPress takes verbatim.
-
-```php
-public function register_manifest_script( string $slug, string $entry, array $deps = array(), $args = null ): string
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$slug` — The handle exactly as WordPress should know it<br>`$entry` — The build entry name, e.g. 'app' for 'app.js' + 'app.asset.php'<br>`$deps` — Extra handles to depend on, merged after the manifest's dependencies<br>`$args` — Extra registration args, or a bool for the legacy in-footer flag; defaults to array( 'in_footer' => true ) |
-| **Return** | The handle it was registered under, unchanged |
-| **Throws** | `InvalidArgumentException` — When the entry's manifest file does not exist or is malformed |
-
-`register_script_from_manifest()` with the namespacing left out — everything else is identical, and that method is this one with `get_asset_slug()` applied first.
-
-Reach for it when the handle is not yours to choose: something else has already written it down, and a name of your own making would leave that reference pointing at nothing. A JavaScript package is the case this exists for — the build records the handle in every importer's own `.asset.php`, long before any of this runs.
-
-Prefer `register_script_from_manifest()` everywhere else. A handle that is not namespaced is one another plugin can collide with.
-
-<br>
-
-### `enqueue_script( $handle )`
-
-Enqueue a script already registered with register_script() or register_script_from_manifest().
-
-```php
-public function enqueue_script( string $handle ): string
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$handle` — The local script handle |
-| **Return** | The namespaced handle |
-| **Throws** | — |
-
-<br>
-
-### `enqueue_style( $handle )`
-
-Enqueue a style already registered with register_style().
-
-```php
-public function enqueue_style( string $handle ): string
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$handle` — The local style handle |
-| **Return** | The namespaced handle |
-| **Throws** | — |
-
-<br>
-
-### `add_inline_script( $handle, $data, $position )`
-
-Attach inline JavaScript to a registered or enqueued script.
-
-```php
-public function add_inline_script( string $handle, string $data, string $position = 'after' ): bool
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$handle` — The local script handle the inline code attaches to<br>`$data` — The inline JavaScript, without surrounding <script> tags<br>`$position` — Whether to print 'before' or 'after' the script |
-| **Return** | True on success |
-| **Throws** | — |
-
-<br>
-
-### `add_inline_style( $handle, $data )`
-
-Attach inline CSS to a registered or enqueued style.
-
-```php
-public function add_inline_style( string $handle, string $data ): bool
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$handle` — The local style handle the inline CSS attaches to<br>`$data` — The inline CSS |
-| **Return** | True on success |
-| **Throws** | — |
-
-<br>
-
-### `localize_script( $handle, $object_name, $l10n )`
-
-Expose data to a registered or enqueued script as a global JavaScript object.
-
-```php
-public function localize_script( string $handle, string $object_name, array $l10n ): bool
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$handle` — The local script handle to attach the data to<br>`$object_name` — The JavaScript global variable name the data is exposed as<br>`$l10n` — The data, made available to JavaScript as $object_name |
-| **Return** | True on success |
-| **Throws** | — |
-
-<br>
-
-### `script_add_data( $handle, $key, $value )`
-
-Attach extra metadata to a registered script, such as 'conditional' or 'strategy'.
-
-```php
-public function script_add_data( string $handle, string $key, $value ): bool
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$handle` — The local script handle to attach data to<br>`$key` — The data key, for example 'conditional' or 'strategy'<br>`$value` — The data value |
-| **Return** | True on success |
-| **Throws** | — |
-
-<br>
-
-### `style_add_data( $handle, $key, $value )`
-
-Attach extra metadata to a registered style, such as 'conditional' or 'rtl'.
-
-```php
-public function style_add_data( string $handle, string $key, $value ): bool
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$handle` — The local style handle to attach data to<br>`$key` — The data key, for example 'conditional' or 'rtl'<br>`$value` — The data value |
-| **Return** | True on success |
-| **Throws** | — |
-
-<br>
-
 ### `get_shared_packages()`
 
 Every built shared package, keyed by its local name.
@@ -491,7 +336,7 @@ Blocks are not here: WordPress registers those from their own `block.json`, and 
 
 ### `get_build_manifest()`
 
-Every entry the build produced, keyed by entry name.
+Everything the build produced, keyed by the handle it registers under.
 
 ```php
 public function get_build_manifest(): array
@@ -503,7 +348,7 @@ public function get_build_manifest(): array
 | **Return** | `array` |
 | **Throws** | `DiscoveryException` — When a manifest is present but does not describe entries |
 
-`index`, each block's scripts, each shared package. What a caller can do with one is register it: `register_script_from_manifest()` takes an entry name, and reads its dependencies and version from right here.
+Every entry and every shared package — but no blocks, which WordPress registers from their own `block.json` and which a row here would only describe a second time.
 
 Empty when the plugin has never been built, or was built by a configuration that writes no manifest.
 
@@ -525,7 +370,7 @@ public function get_shared_handle( string $name ): string
 
 A script's handle, or a module's id. Pass it as a dependency of a script registered by hand, the way `'wp-element'` would be.
 
-Unlike every other handle here it is **not** namespaced to the plugin slug: it is whatever the build wrote into each importer's own `.asset.php`, and a name of this service's making would leave those references pointing at nothing.
+The build decided it, not this module: for a script it is `{plugin-slug}-shared-{name}`, and for a module the package's own npm name, because that is the specifier its importers import. Either way it is the string already written into every importer's `.asset.php`, which is why nothing here composes a second one.
 
 <br>
 
@@ -579,7 +424,7 @@ public function enqueue_entry( string $name ): string
 | **Return** | The handle or module id that was enqueued |
 | **Throws** | `InvalidArgumentException` — When no entry of that name was built |
 
-A classic script and an ES module are separate WordPress registries with separate enqueue functions, so this picks the right one — worth preferring over `enqueue_script()` for an entry, since changing an entry's kind then stays a one-line change in its own `package.json`.
+A classic script and an ES module are separate WordPress registries with separate enqueue functions, so this picks the right one — and changing an entry's kind stays a one-line change in its own `package.json`.
 
 <br>
 

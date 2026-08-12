@@ -15,7 +15,7 @@ import { greet } from '@acme-plugin/formatting';
 
 Nothing that imports it bundles a copy. The generated `webpack.config.js` reads the `wordpress` block in the package's own `package.json`, builds it once into `build/shared/`, and makes every importer declare it as a dependency instead — the same treatment `@wordpress/element` already gets.
 
-The scope is your plugin slug, which is what `assets` registers the built package under, so the import and the handle cannot disagree. A package name is an npm one and takes no capitals or spaces, so a name holding either is written as the one npm accepts and the command says what it wrote.
+The scope is your plugin slug. A script package registers as `{slug}-shared-{name}` and a module keeps the npm name it is imported by; either way the build composes it, so there is nothing here to keep in step. A package name is an npm one and takes no capitals or spaces, so a name holding either is written as the one npm accepts and the command says what it wrote.
 
 Run `npm install` afterwards: npm is what links the new directory into `node_modules/`, and until it has, the import resolves to nothing.
 

@@ -7,15 +7,20 @@
  * A directory under `src/shared/` is an npm workspace, imported by name — so
  * `import { thing } from '@{{slug}}/formatting'` resolves for TypeScript, ESLint
  * and webpack alike, with no path aliases anywhere. Each one says in its own
- * `package.json` how WordPress should load it:
+ * `package.json` only how WordPress should load it:
  *
- *     "wordpress": { "kind": "script", "handle": "{{slug}}-formatting", "global": [ "{{slug_camel}}", "formatting" ] }
+ *     "wordpress": { "kind": "script" }
  *     "wordpress": { "kind": "module" }
  *
- * and this file wires that up. Without it webpack inlines a copy of the code
- * into every entry that imports it; with it, it is built once into
- * `build/shared/` and each entry declares it as a dependency in its own
- * `.asset.php`, exactly as it already does for `@wordpress/element`.
+ * and this file works out the rest. A script package registers as
+ * `{{slug}}-shared-formatting` and publishes `window.{{slug_camel}}.formatting`,
+ * both composed here from the plugin slug and the directory name. A module keeps
+ * its npm name, because that is the specifier its importers write.
+ *
+ * Without this webpack inlines a copy of the code into every entry that imports
+ * it; with it, it is built once into `build/shared/` and each entry declares it
+ * as a dependency in its own `.asset.php`, exactly as it already does for
+ * `@wordpress/element`.
  *
  * `wp zestry make shared <name>` writes one. The `assets` module registers what
  * this produces, so nothing has to call `wp_register_script()` by hand.
@@ -33,11 +38,22 @@ const RemoveEmptyScriptsPlugin = require( 'webpack-remove-empty-scripts' );
 /**
  * Where shared packages live, and the directory they are built into.
  *
- * The output segment is read by PHP as well — `Assets::SHARED_SEGMENT` — so the
- * two have to agree. Everything else about the build is `@wordpress/scripts`'.
+ * The segment appears in every shared package's handle as well, which is what
+ * keeps those disjoint from this plugin's own entries. Everything else about
+ * the build is `@wordpress/scripts`'.
  */
 const SHARED_SEGMENT = 'shared';
 const SHARED_DIR = join( __dirname, 'src', SHARED_SEGMENT );
+
+/**
+ * Where `@wordpress/scripts` builds blocks, which this manifest leaves alone.
+ *
+ * WordPress registers a block from its own `block.json`, resolving each
+ * `file:` reference against the directory that file sits in — so a block's
+ * scripts and styles are already fully described without this build saying
+ * anything, and a row here would be an index nothing reads.
+ */
+const BLOCKS_SEGMENT = 'blocks';
 
 /**
  * Where this plugin's own script entries live, and what they build into.
@@ -81,8 +97,9 @@ const STYLE_FILES = [
  * they emit into the same directory — a single name means whichever finishes
  * last silently discards the other's entries.
  *
- * These names and the segment above are spelled in PHP too, as
- * `Assets::MANIFEST_FILENAMES` and `Assets::SHARED_SEGMENT`.
+ * These names are spelled in PHP too, as `Assets::MANIFEST_FILENAMES`. Nothing
+ * else here is: every path and handle PHP needs is written into the manifest
+ * rather than recomposed there.
  */
 const MANIFEST_FILENAMES = {
 	script: 'assets-manifest.php',
@@ -90,9 +107,113 @@ const MANIFEST_FILENAMES = {
 };
 
 /**
+ * This plugin's slug, and the JavaScript global its script packages hang from.
+ *
+ * Every handle this build mints is composed from the first, and every shared
+ * script's `window` global from the second. They live here rather than in each
+ * package's own `package.json` because a name written twice is a name that can
+ * disagree — and the handle composed here is the same string written into every
+ * importer's `.asset.php`, so a package cannot end up registered under one name
+ * and depended on under another.
+ */
+const PLUGIN_SLUG = '{{slug}}';
+const PLUGIN_GLOBAL = '{{slug_camel}}';
+
+/**
+ * A kebab-case name as the camelCase property a global hangs from.
+ *
+ * @param {string} name A directory name.
+ * @return {string} Its camelCase form.
+ */
+function toCamel( name ) {
+	return name.replace( /-+([a-z0-9])/g, ( _, character ) =>
+		character.toUpperCase()
+	);
+}
+
+/**
+ * An entry's local name, as a caller asks for it.
+ *
+ * `entries/settings` is `settings`. Anything outside that directory — the
+ * `src/index` fallback `@wordpress/scripts` builds when there is one — is
+ * already local and answers for itself.
+ *
+ * @param {string} name The webpack entry name.
+ * @return {string} The name PHP takes.
+ */
+function localName( name ) {
+	return name.startsWith( `${ ENTRIES_SEGMENT }/` )
+		? name.slice( ENTRIES_SEGMENT.length + 1 )
+		: name;
+}
+
+/**
+ * What WordPress registers a shared package under.
+ *
+ * `{slug}-shared-{dir}` for a script. That middle segment is load-bearing: this
+ * plugin's own entries register as `{slug}-{name}`, so without it
+ * `src/entries/collections` and `src/shared/collections` compose one handle and
+ * whichever registers second is silently dropped — a working build serving the
+ * wrong file.
+ *
+ * A module keeps its npm name instead. A script module's id *is* the specifier
+ * its importers import, so a name of this build's making would leave every one
+ * of them resolving to nothing.
+ *
+ * @param {string} name The package's npm name.
+ * @param {Object} pkg  Its `wordpress` block, plus `dir`.
+ * @return {string} The script handle, or the module id.
+ */
+function sharedId( name, pkg ) {
+	return pkg.kind === 'module'
+		? name
+		: `${ PLUGIN_SLUG }-${ SHARED_SEGMENT }-${ pkg.dir }`;
+}
+
+/**
+ * Refuse a build in which two things would claim one handle.
+ *
+ * Only reachable by naming an entry after the shared segment —
+ * `src/entries/shared-collections` against `src/shared/collections` — which the
+ * segment cannot rule out on its own. Cheap to check, and the alternative is
+ * the silent registration this whole scheme exists to prevent.
+ *
+ * @param {Object} packages Shared packages, keyed by npm name.
+ * @param {Object} entries  This plugin's entries, keyed by entry name.
+ * @return {void}
+ * @throws {Error} When one handle has two claimants.
+ */
+function assertDistinctHandles( packages, entries ) {
+	const taken = new Map(
+		Object.entries( packages ).map( ( [ name, pkg ] ) => [
+			sharedId( name, pkg ),
+			`src/${ SHARED_SEGMENT }/${ pkg.dir }`,
+		] )
+	);
+
+	for ( const name of Object.keys( entries ) ) {
+		const handle = `${ PLUGIN_SLUG }-${ localName( name ) }`;
+
+		if ( taken.has( handle ) ) {
+			throw new Error(
+				`src/${ name } and ${ taken.get( handle ) } would both register ` +
+					`as "${ handle }". Rename one of them: WordPress keeps the ` +
+					'first registration and discards the second without a word.'
+			);
+		}
+	}
+}
+
+/**
  * Every workspace package that says how WordPress should load it.
  *
- * @return {Object} Package name => its `wordpress` block, plus where it lives.
+ * Only `kind` is read. A `handle` is composed here rather than declared, and a
+ * `global` defaults to `[ '{{slug_camel}}', '<dir>' ]` — both were fields a
+ * package could get wrong, and a missing `global` in particular had no symptom:
+ * the package was quietly bundled into every importer instead of externalised,
+ * and everything worked, twice.
+ *
+ * @return {Object} Package name => how to build and register it.
  */
 function readShared() {
 	if ( ! existsSync( SHARED_DIR ) ) {
@@ -118,12 +239,27 @@ function readShared() {
 				return found;
 			}
 
+			const pkg = {
+				kind: wordpress.kind || 'script',
+				dir: entry.name,
+				entry: join( SHARED_DIR, entry.name, main || 'index.ts' ),
+			};
+
 			return {
 				...found,
 				[ name ]: {
-					...wordpress,
-					dir: entry.name,
-					entry: join( SHARED_DIR, entry.name, main || 'index.ts' ),
+					...pkg,
+					id: sharedId( name, pkg ),
+					// A module publishes no global: it is imported, not read
+					// off `window`.
+					...( pkg.kind === 'script'
+						? {
+								global: wordpress.global || [
+									PLUGIN_GLOBAL,
+									toCamel( entry.name ),
+								],
+						  }
+						: {} ),
 				},
 			};
 		}, {} );
@@ -174,6 +310,8 @@ function readEntries() {
 const shared = readShared();
 const ownEntries = readEntries();
 
+assertDistinctHandles( shared, ownEntries );
+
 /**
  * Write one PHP manifest describing everything this build produced.
  *
@@ -223,6 +361,14 @@ class AssetsManifestPlugin {
 							name,
 							entrypoint,
 						] of compilation.entrypoints ) {
+							// A block describes itself in its own `block.json`,
+							// which WordPress reads and resolves `file:` against.
+							if (
+								name.startsWith( `${ BLOCKS_SEGMENT }/` )
+							) {
+								continue;
+							}
+
 							const files = entrypoint
 								.getFiles()
 								.filter( ( file ) =>
@@ -243,20 +389,36 @@ class AssetsManifestPlugin {
 
 							const rtl =
 								css && css.replace( /\.css$/, '-rtl.css' );
+							const pkg = this.shared[ name ];
 
-							entries[ name ] = {
+							/*
+							 * Keyed by the handle WordPress will know it as, so
+							 * PHP registers what it reads instead of composing a
+							 * second opinion. `source` and `name` are what it
+							 * filters and looks up on, which is why neither half
+							 * of the composition rule has to be spelled there.
+							 */
+							entries[
+								pkg
+									? pkg.id
+									: `${ PLUGIN_SLUG }-${ localName( name ) }`
+							] = {
+								source: pkg ? SHARED_SEGMENT : 'entry',
+								name: pkg ? pkg.dir : localName( name ),
+								kind:
+									pkg?.kind ||
+									ownEntries[ name ]?.kind ||
+									'script',
+								...( pkg?.global
+									? { global: pkg.global }
+									: {} ),
+								// Absent for a style-only entry, which is what
+								// tells PHP there is no script to register.
+								...( js ? { js } : {} ),
 								...( css ? { css } : {} ),
 								...( rtl && compilation.getAsset( rtl )
 									? { rtl }
 									: {} ),
-								// A module entry needs saying; a script one is the
-								// default PHP already assumes.
-								...( ownEntries[ name ]?.kind === 'module'
-									? { kind: 'module' }
-									: {} ),
-								...( this.shared[ name ] || {} ),
-								// Absent for a style-only entry, which is what tells
-								// PHP there is no script to register.
 								...( js
 									? {
 											asset: readAssetLiteral(
@@ -381,17 +543,21 @@ function dropMissingBlockFiles( compilation ) {
 }
 
 /**
- * One entry's `.asset.php` contents, as the PHP array literal it already is.
+ * One entry's `.asset.php` contents, as the PHP fields it already spells.
  *
  * Extracted rather than parsed: the extraction plugin writes exactly
- * `<?php return <literal>;`, so the boundaries are known and the text in
+ * `<?php return array(<fields>);`, so both boundaries are known and the text in
  * between needs no interpretation to be correct. A file that does not look
  * like that is a change in a tool this build depends on, and saying so here
  * beats emitting a manifest that is quietly wrong.
  *
+ * The outer `array( … )` is stripped so the fields sit directly on the entry's
+ * own row: `dependencies` and `version` describe the entry, and nesting them
+ * under a key of this build's invention only asked PHP to reach through it.
+ *
  * @param {Object} compilation The webpack compilation.
  * @param {string} file        The entry's emitted JavaScript file.
- * @return {string} A PHP array literal.
+ * @return {string} PHP `key => value` pairs, or an empty string.
  */
 function readAssetLiteral( compilation, file ) {
 	const name = file.replace( /\.m?js$/i, '.asset.php' );
@@ -399,20 +565,22 @@ function readAssetLiteral( compilation, file ) {
 
 	// Built with WP_NO_EXTERNALS, which writes no asset files at all.
 	if ( ! asset ) {
-		return 'array()';
+		return '';
 	}
 
 	const source = asset.source.source().toString();
-	const match = source.match( /^<\?php\s+return\s+([\s\S]+);\s*$/ );
+	const match = source.match(
+		/^<\?php\s+return\s+array\(([\s\S]*)\)\s*;\s*$/
+	);
 
 	if ( ! match ) {
 		throw new Error(
-			`Cannot read ${ name }: expected "<?php return <array>;" from ` +
+			`Cannot read ${ name }: expected "<?php return array( … );" from ` +
 				'@wordpress/dependency-extraction-webpack-plugin.'
 		);
 	}
 
-	return match[ 1 ];
+	return match[ 1 ].trim().replace( /,$/, '' );
 }
 
 /**
@@ -430,6 +598,21 @@ function phpString( value ) {
 }
 
 /**
+ * A JavaScript value as PHP source.
+ *
+ * Strings and arrays of them are the whole vocabulary a manifest row uses --
+ * a handle, a path, and the property chain a script package's global hangs from.
+ *
+ * @param {string|string[]} value The value to render.
+ * @return {string} PHP source.
+ */
+function phpValue( value ) {
+	return Array.isArray( value )
+		? `array( ${ value.map( phpValue ).join( ', ' ) } )`
+		: phpString( value );
+}
+
+/**
  * The manifest as a PHP file returning an array.
  *
  * @param {Object} entries Entry name => what PHP needs to know about it.
@@ -443,10 +626,12 @@ function renderManifest( entries ) {
 			`\t${ phpString( name ) } => array(`,
 			...Object.entries( rest ).map(
 				( [ key, value ] ) =>
-					`\t\t${ phpString( key ) } => ${ phpString( value ) },`
+					`\t\t${ phpString( key ) } => ${ phpValue( value ) },`
 			),
-			// Absent for a style-only entry: there is no script to describe.
-			...( asset ? [ `\t\t'asset' => ${ asset },` ] : [] ),
+			// The extraction plugin's own `dependencies` and `version`, spliced
+			// in as the literal it already wrote. Absent for a style-only entry:
+			// there is no script to describe.
+			...( asset ? [ `\t\t${ asset },` ] : [] ),
 			'\t),',
 		];
 	} );
@@ -488,16 +673,9 @@ function withShared( config ) {
 	const manifest = new AssetsManifestPlugin(
 		MANIFEST_FILENAMES[ kind ],
 		Object.fromEntries(
-			mine.map( ( [ name, pkg ] ) => [
+			mine.map( ( [ , pkg ] ) => [
 				`${ SHARED_SEGMENT }/${ pkg.dir }`,
-				// `id` is what WordPress registers it under: a module's npm name,
-				// because that is the specifier the built JavaScript imports; a
-				// script's declared handle, because that is what every importer's
-				// own `.asset.php` already names.
-				{
-					kind: pkg.kind,
-					id: pkg.kind === 'module' ? name : pkg.handle,
-				},
+				pkg,
 			] )
 		)
 	);
@@ -506,8 +684,11 @@ function withShared( config ) {
 	 * An entry goes to the compilation matching its own kind. Most are classic
 	 * scripts; one declaring `"kind": "module"` is built as an ES module and
 	 * can then only import what WordPress ships as a script module --
-	 * `@wordpress/interactivity` is one, `@wordpress/element` is not, and
-	 * webpack says so outright rather than building something broken.
+	 * `@wordpress/interactivity` is one, `@wordpress/element` is not.
+	 *
+	 * Nothing here checks that. An import WordPress cannot serve as a module
+	 * builds cleanly and fails in the browser, so `kind: 'module'` is a claim
+	 * about what the code imports that only the code can keep.
 	 */
 	const own = Object.entries( ownEntries ).reduce(
 		( found, [ name, entry ] ) =>
@@ -590,8 +771,11 @@ function withShared( config ) {
 					? {
 							requestToExternal: ( request ) =>
 								shared[ request ]?.global,
+							// The same string the manifest is keyed by, from the
+							// same function -- so what an importer is told to
+							// depend on and what gets registered cannot diverge.
 							requestToHandle: ( request ) =>
-								shared[ request ]?.handle,
+								shared[ request ]?.id,
 					  }
 					: {
 							requestToExternalModule: ( request ) =>

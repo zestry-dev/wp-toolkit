@@ -17,7 +17,7 @@ return new class() extends MakeCommand {
 	 * `build/entries/<name>` and the `assets` module registers on `init`. Using
 	 * it is then one call, from an admin page, a shortcode, anywhere:
 	 *
-	 *     $this->assets->enqueue_script( 'settings' );
+	 *     $this->assets->enqueue_entry( 'settings' );
 	 *
 	 * This exists because `@wordpress/scripts` has no answer for it.  It decides
 	 * entry points three mutually exclusive ways — files listed on the command

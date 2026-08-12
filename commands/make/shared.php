@@ -30,10 +30,12 @@ return new class() extends MakeCommand {
 	 * once into `build/shared/`, and makes every importer declare it as a
 	 * dependency instead — the same treatment `@wordpress/element` already gets.
 	 *
-	 * The scope is your plugin slug, which is what `assets` registers the built
-	 * package under, so the import and the handle cannot disagree. A package name
-	 * is an npm one and takes no capitals or spaces, so a name holding either is
-	 * written as the one npm accepts and the command says what it wrote.
+	 * The scope is your plugin slug. A script package registers as
+	 * `{slug}-shared-{name}` and a module keeps the npm name it is imported by;
+	 * either way the build composes it, so there is nothing here to keep in step.
+	 * A package name is an npm one and takes no capitals or spaces, so a name
+	 * holding either is written as the one npm accepts and the command says what
+	 * it wrote.
 	 *
 	 * Run `npm install` afterwards: npm is what links the new directory into
 	 * `node_modules/`, and until it has, the import resolves to nothing.
@@ -89,18 +91,17 @@ return new class() extends MakeCommand {
 		$slug = $this->get_scope();
 		$kind = $this->resolve_kind( $assoc_args );
 
-		$wordpress = 'script' === $kind
-			? sprintf(
-				"{\n\t\t\"kind\": \"script\",\n\t\t\"handle\": \"%s-%s\",\n\t\t\"global\": [\n\t\t\t\"%s\",\n\t\t\t\"%s\"\n\t\t]\n\t}",
-				$slug,
-				$name,
-				$this->stub_renderer->to_camel( $slug ),
-				$this->stub_renderer->to_camel( $name )
-			)
-			: "{\n\t\t\"kind\": \"module\"\n\t}";
+		/*
+		 * Only `kind`. A script package's handle and the global it publishes are
+		 * composed by the generated `webpack.config.js`, from this same slug and
+		 * the directory name -- and the handle it composes is the string it
+		 * writes into every importer's own `.asset.php`. Writing either here too
+		 * would be a second opinion that can disagree with the one that counts.
+		 */
+		$wordpress = sprintf( "{\n\t\t\"kind\": \"%s\"\n\t}", $kind );
 
 		$loading = 'script' === $kind
-			? sprintf( 'WordPress loads it as the `%s-%s` script handle.', $slug, $name )
+			? sprintf( 'WordPress loads it as the `%s-shared-%s` script handle.', $slug, $name )
 			: sprintf( 'WordPress loads it as the `@%s/%s` module.', $slug, $name );
 
 		return array(
@@ -150,11 +151,12 @@ return new class() extends MakeCommand {
 	/**
 	 * The npm scope this plugin's shared packages sit under.
 	 *
-	 * The plugin's own slug, which is what `Assets` registers a built package
-	 * under at runtime -- so a scope built here and a handle built there agree.
-	 * `wp zestry make block` takes a block namespace from the same place, and
-	 * `add module assets` writes the build configuration from it, so all three
-	 * agree without any of them reading the others.
+	 * The plugin's own slug, which the generated `webpack.config.js` also carries
+	 * -- so the name a package is imported by and the handle the build registers
+	 * it under are composed from one string. `wp zestry make block` takes a block
+	 * namespace from the same place, and `add module assets` writes the build
+	 * configuration from it, so all three agree without any of them reading the
+	 * others.
 	 *
 	 * Not the text domain: that names a translation catalogue, and is free to
 	 * differ from the slug.

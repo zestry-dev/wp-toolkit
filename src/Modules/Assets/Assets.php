@@ -16,25 +16,25 @@ use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Services\Path;
 
 /**
- * Composes plugin asset URLs and wraps WordPress's script/style APIs.
+ * Registers what the JavaScript build produced, and composes plugin asset URLs.
  *
- * A thin wrapper over WordPress's own script and style functions --
- * `wp_register_script()`, `wp_enqueue_style()`, `wp_add_inline_script()` and
- * the rest.
+ * On `init` it registers every entry and shared package the build wrote into
+ * its manifest, each under the handle the build composed for it -- so
+ * `enqueue_entry( 'settings' )` works from anywhere with no registration call
+ * first. For an asset the build did not produce, `register_script()` and
+ * `register_style()` resolve a URL under the configured assets directory and
+ * namespace the handle to the plugin slug, so `'app'` becomes
+ * `'{plugin-slug}-app'` and cannot collide with core, a theme or another plugin.
  *
- * Every method takes a plain, unprefixed handle like `'app'` and namespaces it
- * to the plugin slug before calling WordPress, so `'app'` becomes
- * `'{plugin-slug}-app'`. A plugin's handles therefore cannot collide with
- * WordPress core, a theme, or another plugin.
+ * **Everything that returns a handle returns a real one**, ready to hand
+ * straight to WordPress. Attaching inline code or data, adding registration
+ * metadata, and enqueueing something registered by hand are WordPress's own
+ * functions, called with that handle:
  *
- * Registering and enqueueing stay separate steps. `register_script()` and
- * `register_style()` declare an asset and return its namespaced handle;
- * `enqueue_script()` and `enqueue_style()` take that handle and queue the
- * asset for output.
- *
- * On `init` it registers everything the JavaScript build produced, so
- * `enqueue_script( 'settings' )` works from anywhere with no registration call
- * first.
+ * ```
+ * $handle = $assets->enqueue_entry( 'dashboard' );
+ * wp_add_inline_script( $handle, 'window.dashboard = ' . wp_json_encode( $data ) . ';', 'before' );
+ * ```
  *
  * `wp zestry add module assets` brings the build with it: a `webpack.config.js`
  * that compiles three directories, each with a different owner.
@@ -43,7 +43,7 @@ use Zestry\WPToolkit\Services\Path;
  * | --- | --- | --- |
  * | `src/blocks/{name}/` | `{build}/blocks/{name}/` | WordPress, from `block.json` |
  * | `src/entries/{name}/` | `{build}/entries/{name}` | this module, as `{plugin-slug}-{name}` |
- * | `src/shared/{name}/` | `{build}/shared/{name}` | this module, under the handle the build declared |
+ * | `src/shared/{name}/` | `{build}/shared/{name}` | this module, as `{plugin-slug}-shared-{name}` |
  *
  * That merge is the reason the config exists. `@wordpress/scripts` decides
  * entry points three mutually exclusive ways -- files listed on the command
@@ -51,16 +51,10 @@ use Zestry\WPToolkit\Services\Path;
  * disables the others, so a plugin with one block has no supported way to build
  * a script of its own.
  *
- * @example Registering and enqueueing
- * `$src` is resolved through `get_asset_url()` -- relative to the configured
- * assets directory (`assets` by default) -- into a full URL via the injected
- * Path service, so you never construct asset URLs by hand.
- *
- * ```
- * $app = $assets->register_script( 'app', 'app.js' );
- * $assets->register_script( 'widgets', 'widgets.js', array( $app ) );
- * $assets->enqueue_script( 'widgets' );
- * ```
+ * The build composes every handle, and this module reads them. An entry and a
+ * shared package can therefore share a name -- `src/entries/collections` and
+ * `src/shared/collections` -- without one silently displacing the other, which
+ * is what the `shared` segment is there to prevent.
  *
  * @example Your own script, built and registered
  * `wp zestry make entry settings` writes `src/entries/settings/`. The build
@@ -68,7 +62,7 @@ use Zestry\WPToolkit\Services\Path;
  * from an admin page, a shortcode, anywhere:
  *
  * ```
- * $assets->enqueue_script( 'settings' );
+ * $assets->enqueue_entry( 'settings' );
  * ```
  *
  * The stylesheet the entry imports is registered under that same handle, so it
@@ -76,6 +70,17 @@ use Zestry\WPToolkit\Services\Path;
  * source file called `style.scss` as `style-{entry}.css` and any other name as
  * `{entry}.css`, so the build records what it actually emitted -- including the
  * RTL variant, which is swapped in the way core does it for block styles.
+ *
+ * @example An asset the build did not produce
+ * `$src` is resolved through `get_asset_url()` -- relative to the configured
+ * assets directory (`assets` by default) -- into a full URL via the injected
+ * Path service, so you never construct asset URLs by hand.
+ *
+ * ```
+ * $app = $assets->register_script( 'app', 'app.js' );
+ * $assets->register_script( 'widgets', 'widgets.js', array( $app ) );
+ * wp_enqueue_script( $app );
+ * ```
  *
  * @example Sharing code between entries
  * A directory under `src/shared/` is an npm workspace imported by name, built
@@ -87,16 +92,6 @@ use Zestry\WPToolkit\Services\Path;
  * // Only for a package nothing imports, or one a hand-registered script needs.
  * $assets->enqueue_shared( 'formatting' );
  * $assets->register_script( 'legacy', 'legacy.js', array( $assets->get_shared_handle( 'formatting' ) ) );
- * ```
- *
- * @example Registering something the build did not produce
- * `register_script_from_manifest()` takes a build entry name and reads its
- * dependencies and content-hash version from the build itself, rather than
- * having them hand-maintained. Reach for it when an entry needs a handle of
- * your choosing, or lives outside `src/entries/`:
- *
- * ```
- * $assets->register_script_from_manifest( 'legacy-editor', 'entries/settings' );
  * ```
  *
  * @setup
@@ -129,31 +124,6 @@ class Assets extends Module {
 	const DEFAULT_BUILD_ROOT = 'build';
 
 	/**
-	 * Directory within the build root that holds built shared packages.
-	 *
-	 * Fixed rather than configurable, and derived from the build root rather
-	 * than named separately: the generated `webpack.config.js` compiles
-	 * `src/shared/{name}` to `shared/{name}` under whatever `--output-path` it
-	 * was given, so one setting already decides both ends. A second one could
-	 * only disagree.
-	 */
-	const SHARED_SEGMENT = 'shared';
-
-	/**
-	 * Directory within the build root that holds this plugin's own entries.
-	 *
-	 * `@wordpress/scripts` decides entry points three mutually exclusive ways --
-	 * files listed on the command line, `block.json` scanning, or the
-	 * `src/index` fallback -- so adding one block silently stops `src/index`
-	 * being built and there is no supported way to have both. The generated
-	 * `webpack.config.js` merges them, compiling each `src/entries/{name}/index`
-	 * to `{build_root}/entries/{name}`, and everything found here is registered
-	 * on `init` under the plugin-namespaced handle {@see get_asset_slug()}
-	 * returns -- so `enqueue_script( 'settings' )` needs no registration call.
-	 */
-	const ENTRIES_SEGMENT = 'entries';
-
-	/**
 	 * The build manifests the generated `webpack.config.js` writes.
 	 *
 	 * One per compilation, since `--experimental-modules` runs two of them into
@@ -161,9 +131,18 @@ class Assets extends Module {
 	 * discarding the other's entries. Both are optional: a plugin that has never
 	 * been built has neither, and a hand-rolled build may write neither.
 	 *
-	 * Each returns an entry name => `{ asset, kind?, id? }` map, where `asset` is
-	 * the extraction plugin's own `{ dependencies, version }` copied verbatim --
-	 * so one `require` answers for every entry, rather than one read per entry.
+	 * Each returns a **handle => fields** map, keyed by the name WordPress will
+	 * know the thing as. Every field registering it needs is on the row:
+	 * `source` (`entry` or `shared`) and `name` for looking it up, `kind` for
+	 * which registry it belongs to, `js`/`css`/`rtl` as build-root-relative
+	 * paths, `dependencies` and `version` from the extraction plugin, and a
+	 * `global` for a shared script.
+	 *
+	 * That the key is the handle is the point. Composing one here as well would
+	 * be a second opinion about a name the build has already written into every
+	 * importer's own `.asset.php`, and the two silently disagreeing is how an
+	 * entry and a shared package of the same name used to end up claiming one
+	 * registration.
 	 */
 	const MANIFEST_FILENAMES = array( 'assets-manifest.php', 'assets-module-manifest.php' );
 
@@ -332,33 +311,7 @@ class Assets extends Module {
 	 * @throws \InvalidArgumentException When the entry's manifest file does not exist or is malformed.
 	 */
 	public function register_script_from_manifest( string $handle, string $entry, array $deps = array(), $args = null ): string {
-		return $this->register_manifest_script( $this->get_asset_slug( $handle ), $entry, $deps, $args );
-	}
-
-	/**
-	 * Register a built script under a handle WordPress takes verbatim.
-	 *
-	 * {@see register_script_from_manifest()} with the namespacing left out --
-	 * everything else is identical, and that method is this one with
-	 * {@see get_asset_slug()} applied first.
-	 *
-	 * Reach for it when the handle is not yours to choose: something else has
-	 * already written it down, and a name of your own making would leave that
-	 * reference pointing at nothing. A JavaScript package is the case this
-	 * exists for -- the build records the handle in every importer's own
-	 * `.asset.php`, long before any of this runs.
-	 *
-	 * Prefer {@see register_script_from_manifest()} everywhere else. A handle
-	 * that is not namespaced is one another plugin can collide with.
-	 *
-	 * @param string     $slug  The handle exactly as WordPress should know it.
-	 * @param string     $entry The build entry name, e.g. 'app' for 'app.js' + 'app.asset.php'.
-	 * @param string[]   $deps  Extra handles to depend on, merged after the manifest's dependencies.
-	 * @param array|bool $args  Extra registration args, or a bool for the legacy in-footer flag; defaults to array( 'in_footer' => true ).
-	 * @return string The handle it was registered under, unchanged.
-	 * @throws \InvalidArgumentException When the entry's manifest file does not exist or is malformed.
-	 */
-	public function register_manifest_script( string $slug, string $entry, array $deps = array(), $args = null ): string {
+		$slug     = $this->get_asset_slug( $handle );
 		$manifest = $this->get_manifest( $entry );
 
 		\wp_register_script(
@@ -374,12 +327,11 @@ class Assets extends Module {
 		if ( array() !== $styles ) {
 			// Scripts and styles are separate WordPress registries, so the
 			// script and its stylesheet can share the same handle -- a caller
-			// enqueues both with the same local name, enqueue_script( 'app' )
-			// and enqueue_style( 'app' ), rather than having to remember a
-			// second, differently suffixed name for the style.
+			// enqueues both with the same handle rather than having to remember
+			// a second, differently suffixed name for the style.
 			\wp_register_style(
 				$slug,
-				$this->path->get_plugin_url( $this->build_root . '/' . $styles['css'] ),
+				$this->get_build_url( $styles['css'] ),
 				array(),
 				$manifest['version']
 			);
@@ -397,90 +349,6 @@ class Assets extends Module {
 	}
 
 	/**
-	 * Enqueue a script already registered with register_script() or
-	 * register_script_from_manifest().
-	 *
-	 * @param string $handle The local script handle.
-	 * @return string The namespaced handle.
-	 */
-	public function enqueue_script( string $handle ): string {
-		$slug = $this->get_asset_slug( $handle );
-		\wp_enqueue_script( $slug );
-		return $slug;
-	}
-
-	/**
-	 * Enqueue a style already registered with register_style().
-	 *
-	 * @param string $handle The local style handle.
-	 * @return string The namespaced handle.
-	 */
-	public function enqueue_style( string $handle ): string {
-		$slug = $this->get_asset_slug( $handle );
-		\wp_enqueue_style( $slug );
-		return $slug;
-	}
-
-	/**
-	 * Attach inline JavaScript to a registered or enqueued script.
-	 *
-	 * @param string $handle   The local script handle the inline code attaches to.
-	 * @param string $data     The inline JavaScript, without surrounding <script> tags.
-	 * @param string $position Whether to print 'before' or 'after' the script.
-	 * @return bool True on success.
-	 */
-	public function add_inline_script( string $handle, string $data, string $position = 'after' ): bool {
-		return \wp_add_inline_script( $this->get_asset_slug( $handle ), $data, $position );
-	}
-
-	/**
-	 * Attach inline CSS to a registered or enqueued style.
-	 *
-	 * @param string $handle The local style handle the inline CSS attaches to.
-	 * @param string $data   The inline CSS.
-	 * @return bool True on success.
-	 */
-	public function add_inline_style( string $handle, string $data ): bool {
-		return \wp_add_inline_style( $this->get_asset_slug( $handle ), $data );
-	}
-
-	/**
-	 * Expose data to a registered or enqueued script as a global JavaScript object.
-	 *
-	 * @param string               $handle      The local script handle to attach the data to.
-	 * @param string               $object_name The JavaScript global variable name the data is exposed as.
-	 * @param array<string, mixed> $l10n        The data, made available to JavaScript as $object_name.
-	 * @return bool True on success.
-	 */
-	public function localize_script( string $handle, string $object_name, array $l10n ): bool {
-		return \wp_localize_script( $this->get_asset_slug( $handle ), $object_name, $l10n );
-	}
-
-	/**
-	 * Attach extra metadata to a registered script, such as 'conditional' or 'strategy'.
-	 *
-	 * @param string $handle The local script handle to attach data to.
-	 * @param string $key    The data key, for example 'conditional' or 'strategy'.
-	 * @param mixed  $value  The data value.
-	 * @return bool True on success.
-	 */
-	public function script_add_data( string $handle, string $key, $value ): bool {
-		return \wp_script_add_data( $this->get_asset_slug( $handle ), $key, $value );
-	}
-
-	/**
-	 * Attach extra metadata to a registered style, such as 'conditional' or 'rtl'.
-	 *
-	 * @param string $handle The local style handle to attach data to.
-	 * @param string $key    The data key, for example 'conditional' or 'rtl'.
-	 * @param mixed  $value  The data value.
-	 * @return bool True on success.
-	 */
-	public function style_add_data( string $handle, string $key, $value ): bool {
-		return \wp_style_add_data( $this->get_asset_slug( $handle ), $key, $value );
-	}
-
-	/**
 	 * Every built shared package, keyed by its local name.
 	 *
 	 * The local name is the package directory's -- `src/shared/formatting` is
@@ -491,40 +359,7 @@ class Assets extends Module {
 	 * @throws DiscoveryException When a shared package's manifest is unreadable or does not describe a loadable package.
 	 */
 	public function get_shared_packages(): array {
-		$shared = array();
-
-		$prefix = self::SHARED_SEGMENT . '/';
-
-		foreach ( $this->get_build_manifest() as $entry => $fields ) {
-			// By where it was built, not by carrying a `kind`: an entry declares
-			// one too, and reading that as a shared package would demand a
-			// handle it has no reason to have.
-			if ( ! \str_starts_with( $entry, $prefix ) ) {
-				continue;
-			}
-
-			if ( ! \in_array( $fields['kind'] ?? null, array( 'script', 'module' ), true ) ) {
-				throw new DiscoveryException(
-					\sprintf(
-						'The build manifest entry "%s" declares a "kind" of %s; expected "script" or "module".',
-						$entry,
-						\wp_json_encode( $fields['kind'] )
-					)
-				);
-			}
-
-			if ( empty( $fields['id'] ) || ! \is_string( $fields['id'] ) ) {
-				throw new DiscoveryException(
-					'The build manifest entry "' . $entry . '" declares no "id" to register it under.'
-				);
-			}
-
-			// Keyed by the local name rather than the entry: `shared/formatting`
-			// is how the build addresses it, `formatting` is how a caller does.
-			$shared[ \substr( $entry, \strlen( $prefix ) ) ] = $fields + array( 'entry' => $entry );
-		}
-
-		return $shared;
+		return $this->get_built( 'shared' );
 	}
 
 	/**
@@ -550,24 +385,15 @@ class Assets extends Module {
 	 * @throws DiscoveryException When a manifest is present but does not describe entries.
 	 */
 	public function get_entries(): array {
-		$entries = array();
-		$prefix  = self::ENTRIES_SEGMENT . '/';
-
-		foreach ( $this->get_build_manifest() as $entry => $fields ) {
-			if ( \str_starts_with( $entry, $prefix ) ) {
-				$entries[ \substr( $entry, \strlen( $prefix ) ) ] = $fields + array( 'entry' => $entry );
-			}
-		}
-
-		return $entries;
+		return $this->get_built( 'entry' );
 	}
 
 	/**
-	 * Every entry the build produced, keyed by entry name.
+	 * Everything the build produced, keyed by the handle it registers under.
 	 *
-	 * `index`, each block's scripts, each shared package. What a caller can do
-	 * with one is register it: {@see register_script_from_manifest()} takes an
-	 * entry name, and reads its dependencies and version from right here.
+	 * Every entry and every shared package -- but no blocks, which WordPress
+	 * registers from their own `block.json` and which a row here would only
+	 * describe a second time.
 	 *
 	 * Empty when the plugin has never been built, or was built by a
 	 * configuration that writes no manifest.
@@ -598,6 +424,8 @@ class Assets extends Module {
 				);
 			}
 
+			$this->assert_current_manifest( $path, $entries );
+
 			// Merged rather than replaced: the script and module builds each
 			// write one, and both halves belong to the same plugin.
 			$this->manifest += $entries;
@@ -612,29 +440,18 @@ class Assets extends Module {
 	 * A script's handle, or a module's id. Pass it as a dependency of a script
 	 * registered by hand, the way `'wp-element'` would be.
 	 *
-	 * Unlike every other handle here it is **not** namespaced to the plugin
-	 * slug: it is whatever the build wrote into each importer's own
-	 * `.asset.php`, and a name of this service's making would leave those
-	 * references pointing at nothing.
+	 * The build decided it, not this module: for a script it is
+	 * `{plugin-slug}-shared-{name}`, and for a module the package's own npm
+	 * name, because that is the specifier its importers import. Either way it is
+	 * the string already written into every importer's `.asset.php`, which is
+	 * why nothing here composes a second one.
 	 *
 	 * @param string $name The package's local name, e.g. `formatting`.
 	 * @return string The registered handle or module id.
 	 * @throws \InvalidArgumentException When no package of that name was built.
 	 */
 	public function get_shared_handle( string $name ): string {
-		$packages = $this->get_shared_packages();
-
-		if ( ! isset( $packages[ $name ] ) ) {
-			throw new \InvalidArgumentException(
-				\sprintf(
-					'No built package named "%s". Built: %s',
-					$name,
-					array() === $packages ? 'none' : \implode( ', ', \array_keys( $packages ) )
-				)
-			);
-		}
-
-		return $packages[ $name ]['id'];
+		return $this->get_built_handle( 'shared', $name );
 	}
 
 	/**
@@ -666,90 +483,33 @@ class Assets extends Module {
 	 * @throws \InvalidArgumentException When no package of that name was built.
 	 */
 	public function enqueue_shared( string $name ): string {
-		$id = $this->get_shared_handle( $name );
-
-		if ( $this->is_shared_module( $name ) ) {
-			\wp_enqueue_script_module( $id );
-
-			return $id;
-		}
-
-		\wp_enqueue_script( $id );
-
-		if ( \wp_style_is( $id, 'registered' ) ) {
-			\wp_enqueue_style( $id );
-		}
-
-		return $id;
+		return $this->enqueue_built( 'shared', $name );
 	}
 
 	/**
-	 * Register every built package with WordPress.
+	 * Register everything the build produced with WordPress.
 	 *
-	 * @return void
-	 * @throws DiscoveryException When a shared package's manifest is unreadable or does not describe a loadable package.
-	 *
-	 * @internal
-	 */
-	public function register_shared(): void {
-		foreach ( $this->get_shared_packages() as $package ) {
-			$entry = $package['entry'];
-
-			if ( 'module' === $package['kind'] ) {
-				$manifest = $this->get_manifest( $entry );
-
-				\wp_register_script_module(
-					$package['id'],
-					$this->get_build_url( $entry . '.js' ),
-					$manifest['dependencies'],
-					$manifest['version']
-				);
-
-				continue;
-			}
-
-			// The handle exactly as the build wrote it, which is why this goes
-			// through the un-namespaced twin of register_script_from_manifest().
-			$this->register_manifest_script( $package['id'], $entry );
-		}
-	}
-
-	/**
-	 * Register this plugin's own entries under their namespaced handles.
-	 *
-	 * Registering, not enqueuing: it costs nothing on a request that never uses
-	 * one, and it is what makes `enqueue_script( 'settings' )` work from
-	 * anywhere without a registration call first.
+	 * One loop over the manifest, with nothing to branch on but the `kind` each
+	 * row states. Entries and shared packages used to be registered by two
+	 * methods composing their handles two different ways -- which is exactly how
+	 * an entry and a package of the same name came to claim one registration,
+	 * with the loser silently dropped. A row now carries the handle it was built
+	 * for, so there is one way to read it and no name to compose.
 	 *
 	 * @return void
 	 * @throws DiscoveryException When a manifest is present but does not describe entries.
 	 *
 	 * @internal
 	 */
-	public function register_entries(): void {
-		foreach ( $this->get_entries() as $name => $entry ) {
-			// No script survived the build: the entry was only a stylesheet, or
-			// its JavaScript compiled to nothing but webpack's own runtime.
-			if ( ! isset( $entry['asset'] ) ) {
-				$this->register_entry_style( $name, $entry );
-
-				continue;
+	public function register_built(): void {
+		foreach ( $this->get_build_manifest() as $handle => $fields ) {
+			// No script survived the build: a style-only entry, or one whose
+			// JavaScript compiled to nothing but webpack's own runtime.
+			if ( isset( $fields['js'] ) ) {
+				$this->register_built_script( $handle, $fields );
 			}
 
-			if ( 'module' !== ( $entry['kind'] ?? 'script' ) ) {
-				$this->register_script_from_manifest( $name, $entry['entry'] );
-
-				continue;
-			}
-
-			$manifest = $this->get_manifest( $entry['entry'] );
-
-			\wp_register_script_module(
-				$this->get_asset_slug( $name ),
-				$this->get_build_url( $entry['entry'] . '.js' ),
-				$manifest['dependencies'],
-				$manifest['version']
-			);
+			$this->register_built_style( $handle, $fields );
 		}
 	}
 
@@ -757,46 +517,15 @@ class Assets extends Module {
 	 * Enqueue one of this plugin's entries, whichever kind it is.
 	 *
 	 * A classic script and an ES module are separate WordPress registries with
-	 * separate enqueue functions, so this picks the right one -- worth
-	 * preferring over {@see enqueue_script()} for an entry, since changing an
-	 * entry's kind then stays a one-line change in its own `package.json`.
+	 * separate enqueue functions, so this picks the right one -- and changing an
+	 * entry's kind stays a one-line change in its own `package.json`.
 	 *
 	 * @param string $name The entry's local name, e.g. `settings`.
 	 * @return string The handle or module id that was enqueued.
 	 * @throws \InvalidArgumentException When no entry of that name was built.
 	 */
 	public function enqueue_entry( string $name ): string {
-		$entries = $this->get_entries();
-
-		if ( ! isset( $entries[ $name ] ) ) {
-			throw new \InvalidArgumentException(
-				\sprintf(
-					'No built entry named "%s". Built: %s',
-					$name,
-					array() === $entries ? 'none' : \implode( ', ', \array_keys( $entries ) )
-				)
-			);
-		}
-
-		$slug = $this->get_asset_slug( $name );
-
-		if ( 'module' === ( $entries[ $name ]['kind'] ?? 'script' ) ) {
-			\wp_enqueue_script_module( $slug );
-
-			return $slug;
-		}
-
-		// A style-only entry has no script to enqueue, and asking for one would
-		// be WordPress's "dependency is not registered" notice.
-		if ( \wp_script_is( $slug, 'registered' ) ) {
-			$this->enqueue_script( $name );
-		}
-
-		if ( \wp_style_is( $slug, 'registered' ) ) {
-			$this->enqueue_style( $name );
-		}
-
-		return $slug;
+		return $this->enqueue_built( 'entry', $name );
 	}
 
 	/**
@@ -813,8 +542,7 @@ class Assets extends Module {
 	protected function on_boot(): void {
 		$this->run_at_init(
 			static function ( self $module ): void {
-				$module->register_shared();
-				$module->register_entries();
+				$module->register_built();
 			}
 		);
 	}
@@ -848,60 +576,206 @@ class Assets extends Module {
 	}
 
 	/**
-	 * Register an entry that produced a stylesheet and no script.
+	 * Everything the build produced from one source, keyed by local name.
 	 *
-	 * The version is the plugin's own rather than a content hash: the hash lives
-	 * in the `.asset.php` the build writes beside a script, and there is no
-	 * script here to have one.
+	 * The manifest is keyed by handle, which is what registering wants and what
+	 * looking something up by name does not. Each row already says where it came
+	 * from and what it is called, so this is a filter rather than a second
+	 * reading of the key.
 	 *
-	 * @param string               $name  The entry's local name.
-	 * @param array<string, mixed> $entry Its manifest fields.
+	 * @param string $source Which the caller wants: `entry` or `shared`.
+	 * @return array<string, array<string, mixed>> Manifest fields plus `handle`, keyed by local name.
+	 * @throws DiscoveryException When a manifest is present but does not describe entries.
+	 */
+	private function get_built( string $source ): array {
+		$found = array();
+
+		foreach ( $this->get_build_manifest() as $handle => $fields ) {
+			if ( $source !== ( $fields['source'] ?? null ) ) {
+				continue;
+			}
+
+			$found[ $fields['name'] ] = $fields + array( 'handle' => $handle );
+		}
+
+		return $found;
+	}
+
+	/**
+	 * The handle one built thing registered under.
+	 *
+	 * @param string $source Which set to look in: `entry` or `shared`.
+	 * @param string $name   Its local name.
+	 * @return string The registered handle or module id.
+	 * @throws \InvalidArgumentException When nothing of that name was built.
+	 */
+	private function get_built_handle( string $source, string $name ): string {
+		$built = $this->get_built( $source );
+
+		if ( ! isset( $built[ $name ] ) ) {
+			throw new \InvalidArgumentException(
+				\sprintf(
+					'No built %s named "%s". Built: %s',
+					'shared' === $source ? 'package' : 'entry',
+					$name,
+					array() === $built ? 'none' : \implode( ', ', \array_keys( $built ) )
+				)
+			);
+		}
+
+		return $built[ $name ]['handle'];
+	}
+
+	/**
+	 * Enqueue one built thing, into whichever registry it belongs to.
+	 *
+	 * @param string $source Which set to look in: `entry` or `shared`.
+	 * @param string $name   Its local name.
+	 * @return string The handle or module id that was enqueued.
+	 * @throws \InvalidArgumentException When nothing of that name was built.
+	 */
+	private function enqueue_built( string $source, string $name ): string {
+		$handle = $this->get_built_handle( $source, $name );
+
+		if ( 'module' === ( $this->get_built( $source )[ $name ]['kind'] ?? 'script' ) ) {
+			\wp_enqueue_script_module( $handle );
+
+			return $handle;
+		}
+
+		// A style-only entry has no script to enqueue, and asking for one would
+		// be WordPress's "dependency is not registered" notice.
+		if ( \wp_script_is( $handle, 'registered' ) ) {
+			\wp_enqueue_script( $handle );
+		}
+
+		if ( \wp_style_is( $handle, 'registered' ) ) {
+			\wp_enqueue_style( $handle );
+		}
+
+		return $handle;
+	}
+
+	/**
+	 * Register one built row's script, into whichever registry its kind names.
+	 *
+	 * @param string               $handle The handle the build assigned it.
+	 * @param array<string, mixed> $fields Its manifest fields.
 	 * @return void
 	 */
-	private function register_entry_style( string $name, array $entry ): void {
-		if ( ! isset( $entry['css'] ) ) {
+	private function register_built_script( string $handle, array $fields ): void {
+		$source       = $this->get_build_url( $fields['js'] );
+		$dependencies = $fields['dependencies'] ?? array();
+		$version      = $fields['version'] ?? null;
+
+		if ( 'module' === ( $fields['kind'] ?? 'script' ) ) {
+			\wp_register_script_module( $handle, $source, $dependencies, $version );
+
 			return;
 		}
 
-		$slug = $this->get_asset_slug( $name );
+		// Defaults to the footer: a script depending on wp-element or
+		// wp-api-fetch almost always needs to run after the DOM and after those
+		// are available.
+		\wp_register_script( $handle, $source, $dependencies, $version, array( 'in_footer' => true ) );
+	}
+
+	/**
+	 * Register one built row's stylesheet, when the build produced one.
+	 *
+	 * Under the same handle as its script: scripts and styles are separate
+	 * WordPress registries, so the two cannot collide, and a caller enqueues
+	 * both with one name.
+	 *
+	 * A style-only entry has no content hash to version by -- that lives in the
+	 * `.asset.php` written beside a script, and there is no script here to have
+	 * one -- so it falls back to the plugin's own version.
+	 *
+	 * @param string               $handle The handle the build assigned it.
+	 * @param array<string, mixed> $fields Its manifest fields.
+	 * @return void
+	 */
+	private function register_built_style( string $handle, array $fields ): void {
+		if ( ! isset( $fields['css'] ) ) {
+			return;
+		}
 
 		\wp_register_style(
-			$slug,
-			$this->path->get_plugin_url( $this->build_root . '/' . $entry['css'] ),
+			$handle,
+			$this->get_build_url( $fields['css'] ),
 			array(),
-			$this->get_plugin()->get_version()
+			$fields['version'] ?? $this->get_plugin()->get_version()
 		);
 
-		if ( isset( $entry['rtl'] ) ) {
-			\wp_style_add_data( $slug, 'rtl', 'replace' );
+		// Mirrors WordPress core's own block-style registration
+		// (wp_register_style( ..., 'rtl', 'replace' )): only opt a style into
+		// RTL swapping when RTLCSS actually produced a distinct file for it.
+		if ( isset( $fields['rtl'] ) ) {
+			\wp_style_add_data( $handle, 'rtl', 'replace' );
+		}
+	}
+
+	/**
+	 * Refuse a manifest an older build configuration wrote.
+	 *
+	 * `wp zestry update` refreshes the copied PHP but leaves `webpack.config.js`
+	 * alone -- it is generated once and yours to edit -- so an updated plugin can
+	 * arrive at a manifest written to the shape before this one. Every row now
+	 * says where it came from; a row that does not is from a build that keyed by
+	 * entry path and nested its dependencies under `asset`, and reading it would
+	 * register nothing while looking like a plugin with no JavaScript.
+	 *
+	 * @param string               $path    The manifest that was read.
+	 * @param array<string, mixed> $entries What it returned.
+	 * @return void
+	 * @throws DiscoveryException When the manifest predates the current shape.
+	 */
+	private function assert_current_manifest( string $path, array $entries ): void {
+		foreach ( $entries as $handle => $fields ) {
+			if ( ! \is_array( $fields ) || ! isset( $fields['source'] ) ) {
+				throw new DiscoveryException(
+					\sprintf(
+						'The build manifest "%s" was written by an older build configuration. Re-run '
+							. '`wp zestry add module assets --overwrite` to refresh webpack.config.js, then rebuild.',
+						$path
+					)
+				);
+			}
+
+			// The handle is how WordPress finds it; the name is how you do. A row
+			// without one registers fine and answers to nothing.
+			if ( ! isset( $fields['name'] ) || ! \is_string( $fields['name'] ) ) {
+				throw new DiscoveryException(
+					\sprintf(
+						'The build manifest row "%s" in "%s" declares no "name" to look it up by.',
+						$handle,
+						$path
+					)
+				);
+			}
 		}
 	}
 
 	/**
 	 * The stylesheet one entry produced, and whether it has an RTL variant.
 	 *
-	 * Taken from the build manifest, because the name is not derivable from the
-	 * entry: `@wordpress/scripts` splits a source file called `style.scss` into
-	 * a chunk of its own and writes it as `style-{entry}.css`, while any other
-	 * name lands as `{entry}.css`. The build records what it actually emitted,
-	 * so both work and neither is guessed at.
+	 * Probed rather than read from the manifest, because this serves the one
+	 * path the manifest does not describe: a build entry named by hand through
+	 * {@see register_script_from_manifest()}, which may be a block's script or
+	 * anything else outside `src/entries/`. Everything the manifest *does*
+	 * describe records the stylesheet it actually emitted, and is registered
+	 * from that.
 	 *
-	 * Falls back to looking for `{entry}.css` when the build wrote no manifest,
-	 * which is the convention that held before there was one.
+	 * Only `{entry}.css` is looked for. `@wordpress/scripts` splits a source file
+	 * called `style.scss` into a chunk of its own and writes it as
+	 * `style-{entry}.css`, which is not derivable from the entry name -- an entry
+	 * whose stylesheet is named that way needs the manifest, and has it.
 	 *
 	 * @param string $entry The build entry name.
 	 * @return array{css?: string, rtl?: string} Build-root-relative paths, empty when there is no stylesheet.
 	 */
 	private function get_entry_styles( string $entry ): array {
-		$recorded = $this->get_build_manifest()[ $entry ] ?? null;
-
-		if ( isset( $recorded['css'] ) ) {
-			return \array_intersect_key( $recorded, \array_flip( array( 'css', 'rtl' ) ) );
-		}
-
-		if ( null !== $recorded || ! $this->path->plugin_file_exists( $this->build_root . '/' . $entry . '.css' ) ) {
-			// The manifest knows this entry and recorded no stylesheet, or there
-			// is no manifest and no file: either way there is nothing to add.
+		if ( ! $this->path->plugin_file_exists( $this->build_root . '/' . $entry . '.css' ) ) {
 			return array();
 		}
 
@@ -917,19 +791,16 @@ class Assets extends Module {
 	/**
 	 * Read a `@wordpress/scripts`-generated `{entry}.asset.php` manifest.
 	 *
+	 * The per-entry file, not the build manifest: this serves callers naming a
+	 * build entry by its path, which is the one thing the build manifest no
+	 * longer keys by. Everything it does describe is registered from the row
+	 * itself, which already carries these two fields.
+	 *
 	 * @param string $entry The build entry name, e.g. 'app' for 'app.asset.php'.
 	 * @return array{dependencies: string[], version: string} The manifest's dependencies and version.
 	 * @throws \InvalidArgumentException When the manifest file does not exist or is malformed.
 	 */
 	private function get_manifest( string $entry ): array {
-		// The build manifest answers for every entry in one read, so the
-		// per-entry file is only reached when the build wrote no manifest.
-		$manifest = $this->get_build_manifest()[ $entry ]['asset'] ?? null;
-
-		if ( \is_array( $manifest ) && isset( $manifest['dependencies'], $manifest['version'] ) ) {
-			return $manifest;
-		}
-
 		$manifest_path = $this->path->get_plugin_path( $this->build_root . '/' . $entry . '.asset.php' );
 
 		if ( ! \is_file( $manifest_path ) ) {

@@ -67,6 +67,7 @@
     "docs:generate": "php bin/generate-docs.php",
     "docs:check": "php bin/generate-docs.php && git diff --exit-code --stat docs/",
     "lint:stubs": "php bin/check-stubs.php",
+    "test:build": "php bin/check-build.php",
     "docs": [
       "@docs:generate"
     ]

@@ -10,7 +10,7 @@ Generate a script entry of this plugin's own.
 Writes `src/entries/<name>/`, which the build compiles to `build/entries/<name>` and the `assets` module registers on `init`. Using it is then one call, from an admin page, a shortcode, anywhere:
 
 ```php
-$this->assets->enqueue_script( 'settings' );
+$this->assets->enqueue_entry( 'settings' );
 ```
 
 This exists because `@wordpress/scripts` has no answer for it.  It decides entry points three mutually exclusive ways — files listed on the command line, `block.json` scanning, or the `src/index` fallback — so adding a single block silently stops `src/index` being built, and there is no supported way to have both. The generated `webpack.config.js` merges them.

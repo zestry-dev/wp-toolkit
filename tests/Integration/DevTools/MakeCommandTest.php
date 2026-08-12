@@ -576,7 +576,7 @@ final class MakeCommandTest extends TestCase {
 		$source = (string) file_get_contents( $this->target_plugin_dir . '/src/entries/settings/index.ts' );
 
 		$this->assertStringContainsString( "import './style.scss';", $source );
-		$this->assertStringContainsString( "enqueue_script( 'settings' )", $source );
+		$this->assertStringContainsString( "enqueue_entry( 'settings' )", $source );
 	}
 
 	public function test_entry_type_declares_nothing_for_a_classic_script(): void {
@@ -628,25 +628,21 @@ final class MakeCommandTest extends TestCase {
 	}
 
 	/**
-	 * A script package is reached by handle and by global, and the build
-	 * configuration reads both straight out of this block -- so a wrong one here
-	 * is a dependency WordPress never resolves.
+	 * `kind` and nothing else. The handle a script package registers under and
+	 * the global it publishes are composed by the generated `webpack.config.js`,
+	 * which is also what writes that handle into every importer's `.asset.php` --
+	 * so a copy here could only ever be a second opinion about a name that has
+	 * already been decided.
 	 */
-	public function test_shared_type_script_declares_a_handle_and_a_global(): void {
+	public function test_shared_type_declares_only_how_wordpress_loads_it(): void {
 		$this->run_make( array( 'formatting' ), array( 'kind' => 'script' ), 'shared' );
 
 		$manifest = $this->read_shared_manifest( 'formatting' );
 
-		$this->assertSame( 'script', $manifest['wordpress']['kind'] );
-		$this->assertSame( 'acme-plugin-formatting', $manifest['wordpress']['handle'] );
-		$this->assertSame( array( 'acmePlugin', 'formatting' ), $manifest['wordpress']['global'] );
+		$this->assertSame( array( 'kind' => 'script' ), $manifest['wordpress'] );
 	}
 
-	/**
-	 * A module is registered under its npm name, so it needs neither -- and
-	 * declaring a global it never exposes would be a lie the build cannot catch.
-	 */
-	public function test_shared_type_module_declares_neither_handle_nor_global(): void {
+	public function test_shared_type_module_declares_only_its_kind(): void {
 		$this->run_make( array( 'runtime' ), array( 'kind' => 'module' ), 'shared' );
 
 		$manifest = $this->read_shared_manifest( 'runtime' );

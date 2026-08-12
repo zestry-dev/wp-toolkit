@@ -133,7 +133,7 @@ return new class() extends Block {
 	 * @return void
 	 */
 	public static function enqueue_assets( \Acme\Plugin\Core\Kernel\Plugin $plugin ): void {
-		// $plugin->get( Assets::class )->enqueue_script( 'slider' );
+		// $plugin->get( Assets::class )->enqueue_entry( 'slider' );
 	}
 };
 ```
@@ -265,7 +265,7 @@ Called once per request, the first time this block renders on the page, so a lib
 
 ## Getting data to your `viewScript`
 
-Not through this method, and not with `localize_script()`. Put it in the markup `render()` returns, as `data-` attributes, and read it back in the browser:
+Not through this method, and not with `wp_localize_script()`. Put it in the markup `render()` returns, as `data-` attributes, and read it back in the browser:
 
 ```php
 // render()
@@ -286,7 +286,7 @@ The reason is not style. A block appears any number of times on a page, each occ
 
 An attribute also survives full-page caching, where a localized `<script>` written at render time does not.
 
-If you do need a page-wide value, WordPress registers a `viewScript` under a handle it generates: `{namespace}-{name}-view-script`, so `acme-plugin/card` gives `acme-plugin-card-view-script`. That handle is WordPress's, not this toolkit's, so pass it to `wp_add_inline_script()` directly rather than through `Assets`, whose own methods namespace a local handle to your plugin slug and would produce a different one.
+If you do need a page-wide value, WordPress registers a `viewScript` under a handle it generates: `{namespace}-{name}-view-script`, so `acme-plugin/card` gives `acme-plugin-card-view-script`. Pass that to `wp_add_inline_script()`, the same call any other handle takes.
 
 For an Interactivity API block, `wp_interactivity_state()` is the right answer to all of this and none of the above applies.
 

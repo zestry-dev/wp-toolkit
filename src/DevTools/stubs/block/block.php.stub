@@ -66,6 +66,6 @@ return new class() extends Block {
 	 * @return void
 	 */
 	public static function enqueue_assets( \{{copied_namespace}}\Kernel\Plugin $plugin ): void {
-		// $plugin->get( Assets::class )->enqueue_script( 'slider' );
+		// $plugin->get( Assets::class )->enqueue_entry( 'slider' );
 	}
 };

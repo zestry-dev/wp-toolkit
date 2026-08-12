@@ -187,7 +187,7 @@ abstract class Block implements PluginAware {
 	 *
 	 * ## Getting data to your `viewScript`
 	 *
-	 * Not through this method, and not with `localize_script()`. Put it in the
+	 * Not through this method, and not with `wp_localize_script()`. Put it in the
 	 * markup {@see render()} returns, as `data-` attributes, and read it back in
 	 * the browser:
 	 *
@@ -219,10 +219,8 @@ abstract class Block implements PluginAware {
 	 *
 	 * If you do need a page-wide value, WordPress registers a `viewScript` under
 	 * a handle it generates: `{namespace}-{name}-view-script`, so
-	 * `acme-plugin/card` gives `acme-plugin-card-view-script`. That handle is
-	 * WordPress's, not this toolkit's, so pass it to `wp_add_inline_script()`
-	 * directly rather than through `Assets`, whose own methods namespace a local
-	 * handle to your plugin slug and would produce a different one.
+	 * `acme-plugin/card` gives `acme-plugin-card-view-script`. Pass that to
+	 * `wp_add_inline_script()`, the same call any other handle takes.
 	 *
 	 * For an Interactivity API block, `wp_interactivity_state()` is the right
 	 * answer to all of this and none of the above applies.
@@ -230,7 +228,7 @@ abstract class Block implements PluginAware {
 	 * @example Enqueueing a library registered at boot
 	 * ```
 	 * public static function enqueue_assets( Plugin $plugin ): void {
-	 *     $plugin->get( Assets::class )->enqueue_script( 'slider' );
+	 *     $plugin->get( Assets::class )->enqueue_entry( 'slider' );
 	 * }
 	 * ```
 	 *

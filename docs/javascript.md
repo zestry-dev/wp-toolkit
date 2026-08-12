@@ -54,7 +54,11 @@ wp zestry make entry cart --kind=module
 
 which adds a `package.json` saying so. It is then built as an ES module and registered with `wp_register_script_module()` — what you want for Interactivity API code that is not inside a block.
 
-The catch is what a module may import: only what WordPress itself ships as a script module. `@wordpress/interactivity` is one; `@wordpress/element` is not, and webpack says so outright rather than building something that cannot load. Use `enqueue_entry()` rather than `enqueue_script()` and changing an entry's kind stays a one-line change in its own `package.json`.
+The catch is what a module may import: only what WordPress itself ships as a script module. `@wordpress/interactivity` is one; `@wordpress/element` is not.
+
+**Nothing checks this.** An import WordPress cannot serve as a module builds cleanly and fails in the browser, so `kind: module` is a claim about what your code imports that only your code can keep. Reach for it when you are writing Interactivity API code, and stay on the default `script` otherwise.
+
+Use `enqueue_entry()` either way: it picks the right registry, so changing an entry's kind stays a one-line change in its own `package.json`.
 
 ## Shared code
 
@@ -72,7 +76,15 @@ Now import it by name, from anywhere:
 import { formatMoney } from '@acme-plugin/formatting';
 ```
 
-It is built once into `build/shared/`, and every importer declares it as a dependency instead of copying it — the same treatment `@wordpress/element` already gets. The scope, `@acme-plugin`, is your plugin's slug — the same name `assets` registers the built package under, so the import and the handle cannot disagree.
+It is built once into `build/shared/`, and every importer declares it as a dependency instead of copying it — the same treatment `@wordpress/element` already gets. The scope, `@acme-plugin`, is your plugin's slug.
+
+Its `package.json` says only how WordPress should load it:
+
+```json
+"wordpress": { "kind": "script" }
+```
+
+The handle it registers under — `acme-plugin-shared-formatting` — and the `window.acmePlugin.formatting` global it publishes are both composed by the build, from that slug and the directory name. Neither is yours to write down, because the build is also what records the handle in every importer's `.asset.php`; a second copy could only ever disagree with the one that counts.
 
 > [!IMPORTANT]
 > **`npm install` after making one.** npm is what links `src/shared/formatting` into `node_modules/`. Until it has, the import resolves to nothing and the build fails with "module not found".
@@ -91,23 +103,35 @@ You can have both in one plugin; each package picks its own.
 
 ```php
 <?php return array(
-    'blocks/toggle/index' => array(
-        'asset' => array( 'dependencies' => array(), 'version' => '96f42e92' ),
+    'acme-plugin-settings'           => array(
+        'source'       => 'entry',
+        'name'         => 'settings',
+        'kind'         => 'script',
+        'js'           => 'entries/settings.js',
+        'css'          => 'entries/style-settings.css',
+        'rtl'          => 'entries/style-settings-rtl.css',
+        'dependencies' => array( 'acme-plugin-shared-formatting' ),
+        'version'      => 'dd8b2e6d',
     ),
-    'entries/settings'    => array(
-        'css'   => 'entries/style-settings.css',
-        'rtl'   => 'entries/style-settings-rtl.css',
-        'asset' => array( 'dependencies' => array( 'acme-plugin-formatting' ), 'version' => 'dd8b2e6d' ),
-    ),
-    'shared/formatting'   => array(
-        'kind'  => 'script',
-        'id'    => 'acme-plugin-formatting',
-        'asset' => array( 'dependencies' => array(), 'version' => '137631dc' ),
+    'acme-plugin-shared-formatting'  => array(
+        'source'       => 'shared',
+        'name'         => 'formatting',
+        'kind'         => 'script',
+        'global'       => array( 'acmePlugin', 'formatting' ),
+        'js'           => 'shared/formatting.js',
+        'dependencies' => array(),
+        'version'      => '137631dc',
     ),
 );
 ```
 
-One `require` tells the module every entry that exists, what each depends on, which ones are shared packages, and what stylesheet each produced. Read it yourself with `$assets->get_build_manifest()`.
+**Each row is keyed by the handle WordPress registers it under**, and carries everything registering it takes. The build composes those handles — `{plugin-slug}-{name}` for an entry, `{plugin-slug}-shared-{name}` for a package — and writes the package's into every importer's own `.asset.php`, so what a thing is registered as and what depends on it come from one place and cannot disagree. `source` and `name` are how you look one up; the handle is how WordPress does.
+
+That `shared` segment is why `src/entries/collections` and `src/shared/collections` can both exist. Composed without it they would be one handle, and WordPress keeps the first registration and discards the second without a word.
+
+Blocks are not here. WordPress registers those from their own `block.json`, resolving each `file:` against the directory that file sits in, so a row here would describe them a second time and nothing would read it.
+
+One `require` tells the module every entry that exists, what each depends on, which are shared packages, and what stylesheet each produced. Read it yourself with `$assets->get_build_manifest()`.
 
 The stylesheet is recorded rather than derived because its name is not predictable: a source file called `style.scss` is split into a chunk of its own and written as `style-{entry}.css`, while any other name lands as `{entry}.css`. Asking the build is right for both.
 
