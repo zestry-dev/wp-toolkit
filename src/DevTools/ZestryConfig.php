@@ -29,11 +29,9 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  *         "text_domain": "my-plugin"
  *     }
  *
- * `text_domain` is optional on read: a project initialized before this field
- * existed has an `zestry.json` without it, and re-running `init` is neither
- * required nor offered (`init` refuses once `zestry.json` already exists) -- a
- * missing value reads back as `null`, which `Copier` treats as "leave
- * text-domain strings untouched" rather than a malformed file.
+ * `text_domain` is optional on read. A missing value comes back as `null`,
+ * which `Copier` treats as "leave text-domain strings untouched" rather than as
+ * a malformed file.
  */
 class ZestryConfig extends Service {
 

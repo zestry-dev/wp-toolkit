@@ -72,7 +72,7 @@ return new class() extends Command {
 	 * - a module on disk that `bootstrap.php` does not list -- never built, so
 	 *   `on_boot()` never runs and the feature is simply absent;
 	 * - a declaration whose class file is gone;
-	 * - an `zestry.json` naming a root directory that is not there.
+	 * - a `zestry.json` naming a root directory that is not there.
 	 *
 	 * Needs an initialized plugin: with no `zestry.json` in the current directory
 	 * it exits non-zero telling you to run `wp zestry init` first, and it stops the
@@ -110,7 +110,7 @@ return new class() extends Command {
 	 *
 	 *     # Check the plugin in the current directory.
 	 *     $ wp zestry doctor
-	 *     zestry.json       Acme\Plugin -> lib/
+	 *     zestry.json    Acme\Plugin -> lib/
 	 *     bootstrap.php  6 classes declared
 	 *
 	 *     ! The "cron" module is copied in but never declared.
@@ -181,7 +181,7 @@ return new class() extends Command {
 	 * @return void
 	 */
 	private function report_summary( string $plugin_root, array $config, array $declarations ): void {
-		$this->log( sprintf( 'zestry.json       %s -> %s/', $config['namespace'], trim( $config['root'], '/\\' ) ) );
+		$this->log( sprintf( 'zestry.json    %s -> %s/', $config['namespace'], trim( $config['root'], '/\\' ) ) );
 
 		// The name this plugin actually reads, which is `bootstrap.php` unless its
 		// entry file pointed `bootstrap()` somewhere else.
@@ -246,7 +246,7 @@ return new class() extends Command {
 	}
 
 	/**
-	 * Flag an zestry.json naming a root directory that is not there.
+	 * Flag a zestry.json naming a root directory that is not there.
 	 *
 	 * @param string                                 $plugin_root Absolute path to the plugin root.
 	 * @param array{namespace: string, root: string} $config      The project's zestry.json.

@@ -46,10 +46,9 @@ class Copier extends Service {
 	 * namespace.
 	 *
 	 * It exists only where the two kinds of code meet, which is the consuming
-	 * plugin. This repository is all toolkit, so its own tree stays
-	 * `src/Kernel/`, `src/Modules/`, `src/Services/` and this is applied on the
-	 * way out -- {@see get_target_namespace()} and {@see get_target_root()} are
-	 * the only two places that know the word.
+	 * plugin, so it is applied on the way out rather than carried in the source.
+	 * {@see get_target_namespace()} and {@see get_target_root()} are the only two
+	 * places that know the word.
 	 */
 	public const COPIED_SEGMENT = 'Core';
 

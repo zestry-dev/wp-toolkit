@@ -30,6 +30,9 @@ return new class() extends MakeCommand {
 	 * [--dir=<dir>]
 	 * : Write somewhere other than your `Modules/` directory, relative to the plugin root.
 	 *
+	 * [--yes]
+	 * : Overwrite an existing file without asking, for an unattended run.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     # Generate lib/Modules/Activation.php and declare it.

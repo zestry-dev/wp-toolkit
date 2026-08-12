@@ -111,6 +111,11 @@ class Migrations extends Module {
 
 	use WithFolderWalker;
 
+	/**
+	 * The Options group the list of migrations that have run is stored under.
+	 *
+	 * Its own group, so the record cannot collide with a setting of yours.
+	 */
 	const OPTIONS_GROUP_NAME = '_migrations_';
 
 	/**
@@ -372,7 +377,8 @@ class Migrations extends Module {
 	 * which a `try`/`finally` can trap, that timestamp is left behind: proof
 	 * migrations 1-3 of 5 ran but 4 and 5 did not.
 	 *
-	 * This module never calls it for you (see the class docblock). For
+	 * This module never calls it for you, the same way it never calls
+	 * `run_pending()` for you. For
 	 * automatic recovery, hook something periodic of your own -- `admin_init`,
 	 * a cron schedule, whatever fits -- and call this from there. Without that,
 	 * an interrupted run stays incomplete until your own trigger calls
@@ -427,7 +433,7 @@ class Migrations extends Module {
 	 * WP-CLI commands, under WP-CLI only.
 	 *
 	 * Deliberately the only thing this method does: this module never decides
-	 * on its own when migrations should run (see the class docblock) -- the
+	 * on its own when migrations should run -- the
 	 * CLI commands are themselves consumer-invoked, not automatic, so they are
 	 * the one thing safe to register unconditionally.
 	 *

@@ -46,6 +46,29 @@ The stylesheet comes along under that same handle — scripts and styles are sep
 
 An entry can also be **only** a stylesheet: leave out `index.ts` and put `style.scss` in the directory on its own. The build drops the JavaScript webpack would otherwise generate for it — a file of pure runtime — and registers just the style.
 
+### Getting PHP data into it
+
+Export an `initialize()` from the entry, and call it with the data:
+
+```php
+$handle = $this->assets->enqueue_entry( 'settings' );
+
+wp_add_inline_script(
+    $handle,
+    sprintf( 'acmeSettings.initialize( %s );', wp_json_encode( $data ) ),
+    'after'
+);
+```
+
+`enqueue_entry()` returns the real handle, so it goes straight to WordPress's own function — there is nothing to prefix and no second name to keep in step.
+
+**Hand the data to the script rather than leaving it on a global for the script to find.** Both work, and this one fails better: printed `after`, it calls a function the bundle defined, so a bundle that failed to load throws `initialize is not a function` in the console instead of leaving an unread global and a screen with nothing on it. It is also the shape core starts its own editors with — `wp.editWidgets.initialize( … )`, `wp.editSite.initialize( … )`.
+
+Two things that make `after` the right position:
+
+- **An entry registers blocking, in the footer.** So by the time the inline script runs, the bundle has evaluated and `initialize` exists. Give a script a `defer` strategy of your own and you need core's `wp.domReady()` wrapper as well.
+- **`wp_json_encode()`, not `wp_localize_script()`.** That function casts every scalar it passes to a string, so `'bindable' => false` arrives in JavaScript as `""` — which is truthy, and every field reads as bindable.
+
 ### An entry can be a module
 
 ```bash
@@ -93,7 +116,7 @@ The handle it registers under — `acme-plugin-shared-formatting` — and the `w
 
 `--kind=script` registers a classic script handle. It works everywhere, in every context. Reach for it unless you have a reason not to.
 
-`--kind=module` registers an ES module under the package's npm name. Modules are how the Interactivity API and the block editor's newer front-end code load, and they only import each other — a classic script cannot import one. Needs WordPress 6.5 or newer.
+`--kind=module` registers an ES module under the package's npm name. Modules are how the Interactivity API and the block editor's newer front-end code load, and they only import each other — a classic script cannot import one.
 
 You can have both in one plugin; each package picks its own.
 
@@ -125,7 +148,7 @@ You can have both in one plugin; each package picks its own.
 );
 ```
 
-**Each row is keyed by the handle WordPress registers it under**, and carries everything registering it takes. The build composes those handles — `{plugin-slug}-{name}` for an entry, `{plugin-slug}-shared-{name}` for a package — and writes the package's into every importer's own `.asset.php`, so what a thing is registered as and what depends on it come from one place and cannot disagree. `source` and `name` are how you look one up; the handle is how WordPress does.
+**Each row is keyed by the handle WordPress registers it under**, and carries everything registering it takes. The build composes those handles — `{plugin-slug}-{name}` for an entry, `{plugin-slug}-shared-{name}` for a script package, and for a module package its own npm name, because that is the specifier its importers import — and writes the package's into every importer's own `.asset.php`, so what a thing is registered as and what depends on it come from one place and cannot disagree. `source` and `name` are how you look one up; the handle is how WordPress does.
 
 That `shared` segment is why `src/entries/collections` and `src/shared/collections` can both exist. Composed without it they would be one handle, and WordPress keeps the first registration and discards the second without a word.
 

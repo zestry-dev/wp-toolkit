@@ -81,8 +81,8 @@ class Manifest extends Service {
 	/**
 	 * Whether a project has a manifest at all.
 	 *
-	 * Absent is not an error: a plugin initialized before manifests existed has
-	 * none, and every command that reads one has to keep working without it.
+	 * Absent is not an error: every command that reads one has to keep working
+	 * without it, degrading to a plain difference report.
 	 *
 	 * @param string $plugin_root Absolute path to the consuming plugin's root.
 	 * @return bool

@@ -33,6 +33,9 @@ use Zestry\WPToolkit\Services\Path;
  * Checks run on the Site Health screen and on the weekly cron behind it, so keep
  * them quick and free of side effects.
  *
+ * @discovers HealthCheck
+ * @discovers DebugSection
+ *
  * @example A health check
  * ```
  * // health-checks/api-key.php

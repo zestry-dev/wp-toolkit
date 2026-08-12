@@ -358,10 +358,9 @@ abstract class PostType implements PluginAware {
 	 * user-facing string in this toolkit (see `Ajax`/`AdminPages`). The
 	 * `'zestry-toolkit'` text domain here is this toolkit's own -- `Copier`
 	 * rewrites it to the consuming project's own text domain when this file
-	 * is copied via `wp zestry add post-types`/`wp zestry init` (see
-	 * `.claude/references/devtools.md`), the same way it rewrites the
-	 * `Zestry\WPToolkit` namespace, so this string should never be hand-edited to
-	 * something else here. `$singular`/`$plural` themselves are NOT
+	 * is copied via `wp zestry add post-types`/`wp zestry init`, the same way
+	 * it rewrites the `Zestry\WPToolkit` namespace, so this string should never
+	 * be hand-edited to something else here. `$singular`/`$plural` are NOT
 	 * translated here -- they are runtime values from the consumer's own
 	 * `singular_name()`/`plural_name()`, not strings this base class owns; a
 	 * consumer wanting `Book`/`Books` translated wraps its own return values

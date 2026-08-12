@@ -11,7 +11,7 @@ Coordinates plugin-wide services and module initialization.
 
 The plugin owns the module repository and provides plugin metadata to modules while keeping module construction in one place. Modules are registered during plugin setup, resolved once when first requested, and can be queued to resolve together when `run()` is called.
 
-Modules are declared in a `bootstrap.php`, which `bootstrap()` reads. `wp zestry init` creates that file and `wp zestry add` appends to it, so a module is active as soon as it is copied and the entry file never has to change. `configure()` and `autoload()` remain available for plugins that prefer to declare modules in the entry file, and the two approaches can be combined.
+Modules are declared in a `bootstrap.php`, which `bootstrap()` reads. `wp zestry init` creates that file and `wp zestry add` appends to it, so a module is active as soon as it is copied and the entry file never has to change. `configure()` and `autoload()` are public, so a plugin that prefers to declare its modules in the entry file can do that instead, and the two approaches can be combined.
 
 A `Service` is never declared there: it resolves on demand through `get()`, or is injected into another class by type. One that takes configuration is given it with `configure()` in the entry file.
 
@@ -206,7 +206,7 @@ Because every entry means one thing, nothing here has to ask what a class *is* �
 
 A missing file is not an error. If there is no `bootstrap.php` the plugin is returned unchanged, so you can call this unconditionally from a template entry file and declare everything in the entry file itself.
 
-A plugin with a hand-written entry file needs none of this: calling `configure()`/`autoload()` directly behaves exactly as before, and the two can be mixed.
+A plugin with a hand-written entry file needs none of this: `configure()` and `autoload()` are public, and the two approaches can be mixed.
 
 <br>
 
@@ -479,7 +479,7 @@ public function run( ?callable $on_boot_callback = null ): self
 |---|---|
 | **Parameters** | `$on_boot_callback` — Optional callback receiving this plugin after modules are ready |
 | **Return** | `self` |
-| **Throws** | `Zestry\WPToolkit\Kernel\Exceptions\ModuleException` — When a queued class cannot be built, or a discovery module cannot read its root<br>`Throwable` — Whatever a module's own `on_boot()` raises, unchanged |
+| **Throws** | `ModuleException` — When a queued class cannot be built, or a discovery module cannot read its root<br>`Throwable` — Whatever a module's own `on_boot()` raises, unchanged |
 
 Call this from the plugin entry file once modules are registered. It runs synchronously, so the caller controls timing: invoke it directly at plugin load, or from inside a `plugins_loaded`/`init` hook when a later point is needed. Queued classes resolve first — and a `Module` boots as it resolves — then the callback runs with all of them available.
 

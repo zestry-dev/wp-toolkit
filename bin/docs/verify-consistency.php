@@ -72,9 +72,18 @@ function zestry_verify_consistency( string $root ): array {
  * docblock, so what the sheet claims is checked against what the command will
  * actually accept.
  *
- * One-directional on purpose. A row may describe a flag's values (`--format=a|b`)
- * or group several (`--dir=` on every type but two), so only an omission is a
- * problem; a row saying more than the synopsis is a row doing its job.
+ * Both directions, for different failures. A row omitting a flag hides one that
+ * works; a row claiming one the synopsis does not declare is worse, because
+ * WP-CLI treats an undeclared flag as a fatal parameter error -- `add module`
+ * and `add service` were listed with `--yes`, which neither declares and neither
+ * needs, so the documented unattended invocation exited non-zero.
+ *
+ * A row is paired with its command by the page it links to, not by name: two
+ * files are called `module.php` (`add` and `overwrite`), and matching on the
+ * basename alone holds each to the other's flags.
+ *
+ * Values a row spells out (`--format=a|b`) are not claims about a second flag,
+ * so only the flag name is compared.
  *
  * @param string                $root  Absolute path to the repository root.
  * @param array<string, string> $pages Repo-relative path => absolute path.
@@ -88,10 +97,13 @@ function zestry_check_cheat_sheet_flags( string $root, array $pages ): array {
 	$sheet = (string) file_get_contents( $pages['docs/cheat-sheet.md'] );
 	$rows  = array();
 
-	// Each `| [`wp zestry <command>`](...) | <description> |` row of the table.
-	if ( preg_match_all( '~\|\s*\[`(wp zestry [^`]+)`\]\([^)]*\)\s*\|([^|]*)\|~', $sheet, $matches, PREG_SET_ORDER ) ) {
+	// Each `| [`wp zestry <command>`](<page>) | <description> |` row of the table.
+	if ( preg_match_all( '~\|\s*\[`(wp zestry [^`]+)`\]\(([^)]*)\)\s*\|([^|]*)\|~', $sheet, $matches, PREG_SET_ORDER ) ) {
 		foreach ( $matches as $match ) {
-			$rows[ trim( $match[1] ) ] = $match[2];
+			$rows[ trim( $match[1] ) ] = array(
+				'page'        => basename( trim( $match[2] ) ),
+				'description' => $match[3],
+			);
 		}
 	}
 
@@ -105,28 +117,42 @@ function zestry_check_cheat_sheet_flags( string $root, array $pages ): array {
 			$flags = array_unique( $found[1] );
 		}
 
-		if ( array() === $flags ) {
-			continue;
-		}
+		$relative = substr( $file, strlen( $root ) + 1 );
 
-		$name = basename( $file, '.php' );
+		// `commands/add/module.php` documents `docs/commands/add-module.md`.
+		$page = str_replace( '/', '-', substr( $relative, strlen( 'commands/' ), -strlen( '.php' ) ) ) . '.md';
 
-		foreach ( $rows as $command => $description ) {
-			// A row belongs to this file when its command names it, spelled either
-			// as the file is (`update`) or as a subcommand is (`add module`).
-			if ( ! str_contains( $command, str_replace( '-', ' ', $name ) ) && ! str_contains( $command, $name ) ) {
+		foreach ( $rows as $command => $row ) {
+			if ( $row['page'] !== $page ) {
 				continue;
 			}
 
 			foreach ( $flags as $flag ) {
-				if ( ! str_contains( $description, '--' . $flag ) ) {
+				if ( ! str_contains( $row['description'], '--' . $flag ) ) {
 					$problems[] = sprintf(
 						'docs/cheat-sheet.md: the row for `%s` omits `--%s`, which %s accepts -- and the sheet is where a reader looks for a flag.',
 						$command,
 						$flag,
-						substr( $file, strlen( $root ) + 1 )
+						$relative
 					);
 				}
+			}
+
+			if ( ! preg_match_all( '~`--([a-z0-9-]+)~', $row['description'], $claimed ) ) {
+				continue;
+			}
+
+			foreach ( array_unique( $claimed[1] ) as $flag ) {
+				if ( in_array( $flag, $flags, true ) ) {
+					continue;
+				}
+
+				$problems[] = sprintf(
+					'docs/cheat-sheet.md: the row for `%s` offers `--%s`, which %s does not declare -- WP-CLI rejects an undeclared flag outright, so the documented command exits non-zero.',
+					$command,
+					$flag,
+					$relative
+				);
 			}
 		}
 	}
@@ -135,7 +161,10 @@ function zestry_check_cheat_sheet_flags( string $root, array $pages ): array {
 }
 
 /**
- * Every DevTools command file, including the per-type `make` subcommands.
+ * Every DevTools command file, including each subcommand directory.
+ *
+ * `add` and `overwrite` are here for the same reason `make` is: each is a real
+ * command with its own synopsis and its own row on the cheat sheet.
  *
  * @param string $root Absolute path to the repository root.
  * @return string[] Absolute paths.
@@ -143,7 +172,9 @@ function zestry_check_cheat_sheet_flags( string $root, array $pages ): array {
 function zestry_command_files( string $root ): array {
 	return array_merge(
 		glob( $root . '/commands/*.php' ) ?: array(),
-		glob( $root . '/commands/make/*.php' ) ?: array()
+		glob( $root . '/commands/make/*.php' ) ?: array(),
+		glob( $root . '/commands/add/*.php' ) ?: array(),
+		glob( $root . '/commands/overwrite/*.php' ) ?: array()
 	);
 }
 

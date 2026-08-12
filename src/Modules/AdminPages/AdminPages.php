@@ -69,9 +69,9 @@ use Zestry\WPToolkit\Services\Request\Request;
  * reviewable long before it stops growing.
  *
  * {@see AdminPage::view()} renders through the {@see \Zestry\WPToolkit\Services\Views}
- * service, and the template gets exactly what the call names -- nothing of the
- * page itself. A form needs three strings, so three strings is what it is
- * given, and a template's inputs stay readable without opening it.
+ * service, and the template gets what that call passes and nothing else -- it
+ * cannot reach the page for anything the call left out. So the call is the list
+ * of the template's inputs, readable without opening the template.
  *
  * ```
  * <?php // views/admin-pages/settings.php

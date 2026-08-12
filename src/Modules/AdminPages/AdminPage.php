@@ -239,13 +239,14 @@ abstract class AdminPage implements PluginAware {
 	 * }
 	 * ```
 	 *
-	 * The template gets exactly what is passed here, and nothing else of this
-	 * page -- what a form needs is three strings, so three strings is what it is
-	 * given. Naming them at the call site is also what makes a template's inputs
-	 * readable without opening it.
+	 * The template gets what this call passes and nothing else -- it cannot
+	 * reach the page for anything the call left out. So this call *is* the list
+	 * of the template's inputs, and you can read it without opening the
+	 * template.
 	 *
-	 * {@see \Zestry\WPToolkit\Services\Views} puts one thing of its own in scope,
-	 * `$partial`, for rendering a subview.
+	 * {@see \Zestry\WPToolkit\Services\Views} puts one thing of its own in
+	 * scope: `$this`, the service itself, so a subview is
+	 * `$this->render( 'admin-pages/-fields', array( ... ) )`.
 	 *
 	 * @param string               $view A view name, relative to the views root.
 	 * @param array<string, mixed> $data Variables for the template.

@@ -15,8 +15,19 @@ On `init` it registers every entry and shared package the build wrote into its m
 
 ```
 $handle = $assets->enqueue_entry( 'dashboard' );
-wp_add_inline_script( $handle, 'window.dashboard = ' . wp_json_encode( $data ) . ';', 'before' );
+
+wp_add_inline_script(
+    $handle,
+    sprintf( 'acmeDashboard.initialize( %s );', wp_json_encode( $data ) ),
+    'after'
+);
 ```
+
+**Hand the data to the script, rather than leaving it on a global for the script to find.** Both work. This one fails better: printed `after`, it calls a function the bundle defined, so a bundle that did not load throws `initialize is not a function` in the console instead of leaving an unread global and a screen with nothing on it. It is core's own shape — `wp.editWidgets.initialize( ... )`, `wp.editSite.initialize( ... )`.
+
+`after` is safe because an entry registers blocking, in the footer. Give a script a `defer` strategy of your own and the inline code needs core's `wp_add_inline_script( $handle, 'wp.domReady( ... )' )` wrapper too.
+
+`wp_json_encode()` rather than `wp_localize_script()`, which casts every scalar it passes to a string — `bindable: false` arrives as `""`, and every field reads as bindable.
 
 `wp zestry add module assets` brings the build with it: a `webpack.config.js` that compiles three directories, each with a different owner.
 
@@ -188,7 +199,7 @@ public function get_build_root(): string
 | **Return** | `string` |
 | **Throws** | — |
 
-Whatever `--output-path` the build was given, or `build` by default. It is also where `get_shared_packages()` looks, under `SHARED_SEGMENT`, so moving the build moves both without a second setting to keep in step.
+Whatever `--output-path` the build was given, or `build` by default. The manifest every entry and shared package is read from lives there too, so moving the build moves both without a second setting to keep in step.
 
 <br>
 
@@ -302,7 +313,7 @@ public function get_shared_packages(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | Each package's build manifest, keyed by local name |
-| **Throws** | `DiscoveryException` — When a shared package's manifest is unreadable or does not describe a loadable package |
+| **Throws** | `DiscoveryException` — When a manifest is present but does not describe entries |
 
 The local name is the package directory's — `src/shared/formatting` is `formatting` — not the npm name it publishes itself under. That is the name the methods here take, and the one `wp zestry make shared` was given.
 
@@ -328,7 +339,7 @@ A directory under `src/entries/` — `src/entries/settings/index.ts` is `setting
 $assets->enqueue_entry( 'settings' );
 ```
 
-An entry is a classic script unless a `package.json` beside it declares a `kind` of `module`, which builds it as an ES module and registers it with `wp_register_script_module()` instead. The two are separate WordPress registries, which is why `enqueue_entry()` is worth preferring over `enqueue_script()` here.
+An entry is a classic script unless a `package.json` beside it declares a `kind` of `module`, which builds it as an ES module and registers it with `wp_register_script_module()` instead. The two are separate WordPress registries, which is why `enqueue_entry()` is worth preferring over `wp_enqueue_script()` here.
 
 Blocks are not here: WordPress registers those from their own `block.json`, and registering them again under a second handle would load each twice.
 

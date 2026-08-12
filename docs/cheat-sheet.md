@@ -46,7 +46,7 @@ Add any of them with `wp zestry add module <name>`; dependencies come along.
 | [`site-health`](modules/site-health/) | `debug-sections/` | [`DebugSection`](modules/site-health/debug-section.md) | `set_sections_root()` | [`make debug-section`](commands/make-debug-section.md) |
 | [`blocks`](modules/blocks/) | `build/blocks/` | [`Block`](modules/blocks/block.md) | `set_blocks_root()` | [`make block`](commands/make-block.md) |
 | [`migrations`](modules/migrations/) | `migrations/` | [`Migration`](modules/migrations/migration.md) | `set_migrations_root()` | [`make migration`](commands/make-migration.md) |
-| [`assets`](modules/assets/) | `assets/`, `build/` (via its manifest) | — | `set_build_root()` | [`make entry`](commands/make-entry.md), [`make shared`](commands/make-shared.md) |
+| [`assets`](modules/assets/) | `assets/`, `build/` (via its manifest) | — | `set_assets_root()`, `set_build_root()` | [`make entry`](commands/make-entry.md), [`make shared`](commands/make-shared.md) |
 | [`options`](modules/options/) | — | — | `set_group_name()` | — |
 | [`log`](modules/log/) | — | — | `set_min_level()` | — |
 
@@ -71,7 +71,7 @@ Add any of them with `wp zestry add module <name>`; dependencies come along.
 - **An entry or a shared package can be `--kind=module`**, built as an ES module and registered with `wp_register_script_module()`. A module may only import what WordPress ships as one: `@wordpress/interactivity` yes, `@wordpress/element` no.
 
 - **`assets` is a module because of one thing it does unasked.** Called, it composes asset URLs and registers scripts and styles. Unasked, on `init`, it registers every shared package `npm run build` compiled from `src/shared/` into `build/shared/`, so an entry that imports one can declare it as a dependency instead of bundling a copy.
-- **An admin page's markup goes in a template**, and [`make page`](commands/make-page.md) writes both files. The template gets exactly what the `render()` call names and nothing of the page itself — a form needs three strings, so `render()` passes three. Echoing markup from `render()` works for something tiny and stops working sooner than it looks.
+- **An admin page's markup goes in a template**, and [`make page`](commands/make-page.md) writes both files. The template gets exactly what the `render()` call names and nothing of the page itself. Echoing markup from `render()` works for something tiny and stops working sooner than it looks.
 - **[`make view`](commands/make-view.md) writes a standalone template**, and a name with a slash nests: `wp zestry make view emails/receipt` is `views/emails/receipt.php`, rendered as `emails/receipt`.
 - **`$this` inside any template is the [`views`](services/views/) service**, so a subview is `$this->render( 'admin-pages/-fields', array( … ) )` — the same call every other caller makes, costing no variable name. Declare `@var` at the top of a template and your editor completes all of it.
 - **`admin-pages`** also accepts a [`ModernAdminPage`](modules/admin-pages/modern-admin-page.md). A page whose `menu()` returns [`AdminMenu::Network`](modules/admin-pages/admin-menu.md) goes to the network administrator's menu on multisite instead of every site's — pick `capability()` to match, and remember the two menus offer different `ParentMenu` sections.
@@ -118,7 +118,7 @@ Add with `wp zestry add service <name>`. Reach one by declaring a typed property
 | [`db`](services/db/) | Names your tables and WordPress's | `$this->db->get_table( 'events' )` |
 | [`globals`](services/globals/) | Request-scoped key/value store | `$this->globals->set( 'run_id', $id )` |
 | [`transients`](services/transients/) | Key/value that outlives the request, with a TTL | `$this->transients->set( 'rates', $r, HOUR_IN_SECONDS )` |
-| [`cookie`](services/cookie/) | Cookies, encrypted, and one value carried across a redirect | `$this->cookies->set_flash( 'Saved.' )` |
+| [`cookie`](services/cookie/) | Cookies, encrypted, and one value carried across a redirect | `$this->cookie->set_flash( 'Saved.' )` |
 
 **[`assets`](modules/assets/) is a module, not a service** — `wp zestry add module assets`.
 
@@ -162,9 +162,9 @@ Run from inside your plugin's directory, with the plugin active.
 | Command | What it does |
 |---|---|
 | [`wp zestry init`](commands/init.md) | Copies the kernel; writes `zestry.json`, `zestry.lock.json`, `bootstrap.php`, the PSR-4 entry, `.gitignore`, the linter configs and `AGENTS.md`. `--no-phpcs`, `--no-eslint`, `--no-prettier`, `--no-agents`, `--yes` |
-| [`wp zestry add module <name>...`](commands/add-module.md) | Copies modules and their dependencies; declares each in `bootstrap.php`. Skips what is already there. `--yes` |
-| [`wp zestry add service <name>...`](commands/add-service.md) | Copies services and their dependencies. Declares nothing. `--yes` |
-| [`wp zestry make <type> <name>`](commands/) | Generates one file from a stub — see the 21 types below. `--yes`, plus `--dir=` on every type but `module`, `service` and `abstract`, and `--extends=` on every type that generates a class -- `abstract` also takes `--for=<type>` |
+| [`wp zestry add module <name>...`](commands/add-module.md) | Copies modules and their dependencies; declares each in `bootstrap.php`. Skips what is already there. Never asks. |
+| [`wp zestry add service <name>...`](commands/add-service.md) | Copies services and their dependencies. Declares nothing. Never asks. |
+| [`wp zestry make <type> <name>`](commands/) | Generates one file from a stub — see the 21 types below. `--yes` on every type; `--dir=` on every type but `module`, `service` and `abstract`; `--extends=` on every type that returns a discovered file, plus `abstract`, which also takes `--for=<type>` |
 | [`wp zestry describe`](commands/describe.md) | Reports what this plugin has: each module installed, declared, the directory it reads and the base class a file there returns. `--format`, `--kind`, `--installed` |
 | [`wp zestry doctor`](commands/doctor.md) | Reports the wiring mistakes that raise no error — chiefly a module on disk that nothing declares. `--format=report\|csv\|json\|yaml` |
 | [`wp zestry update`](commands/update.md) | Re-copies everything under `lib/Core/` from the installed toolkit, keeping files you edited. `--dry-run`, `--force`, `--yes` |
@@ -191,17 +191,18 @@ Each type writes one file into the directory its module discovers, so the genera
 | [`health-check`](commands/make-health-check.md) | `health-checks/` | a Site Health **Status** test |
 | [`debug-section`](commands/make-debug-section.md) | `debug-sections/` | a Site Health **Info** panel |
 | [`migration`](commands/make-migration.md) | `migrations/` | a schema change, timestamp-prefixed |
-| [`block`](commands/make-block.md) | `src/blocks/` | a block. `--view=script\|module`, `--js` |
+| [`block`](commands/make-block.md) | `src/blocks/` | a block. `--dynamic`, `--view=none\|script\|module`, `--js` |
 | [`entry`](commands/make-entry.md) | `src/entries/` | your own script. `--kind=script\|module` |
-| [`shared`](commands/make-shared.md) | `src/shared/` | a package two entries can share |
+| [`shared`](commands/make-shared.md) | `src/shared/` | a package two entries can share. `--kind=script\|module` |
 | [`module`](commands/make-module.md) | `lib/Modules/` | your own module, **declared in `bootstrap.php`** |
 | [`activation`](commands/make-activation.md) | `lib/Modules/` | an activation handler, **declared** too |
 | [`service`](commands/make-service.md) | `lib/Services/` | your own service. Declares nothing |
+| [`abstract`](commands/make-abstract.md) | `lib/Abstracts/` | a base your own files share. `--for=<type>`, `--extends=` |
 
-The last three land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zestry update`](commands/update.md) may replace. `module` and `service` are the two types with no `--dir=` at all, for the same reason.
+The last four land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zestry update`](commands/update.md) may replace. `module`, `service` and `abstract` are the three types with no `--dir=` at all: PSR-4 ties their namespace to one directory, so the name decides both.
 
 <!-- zestry:include generator="prompting-generators" -->
-**5 of the 21 generators ask for what you leave out** — [`block`](commands/make-block.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops; `--yes` answers each with its documented default without reading input. The other 16 never prompt.
+**5 of the 21 generators ask for what you leave out** — [`block`](commands/make-block.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 16 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.
 <!-- /zestry:include -->
 
 `make module` and `make activation` are the only generators that also write to `bootstrap.php`, since being listed is the only thing that builds a module. `make service` declares nothing: a service is built the moment something asks for it, so an entry naming one would only build it sooner than needed.

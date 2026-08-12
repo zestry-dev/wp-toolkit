@@ -24,7 +24,7 @@ Needs the `admin-pages` module, so run `wp zestry add module admin-pages` first 
   Write into this plugin-relative directory instead of `admin-pages` — pass it when you have pointed AdminPages's pages root somewhere other than its default.
 
 - **`[--no-view]`**  
-  Skip the template, and leave `render()` to echo its own markup. The page class is written either way.
+  Skip the template, and generate a `render()` that echoes its own markup instead of rendering one. The page class is written either way.
 
 - **`[--views-dir=<dir>]`**  
   Write the template under this plugin-relative directory instead of `views` — pass it when you have pointed the Views service's root somewhere other than its default.

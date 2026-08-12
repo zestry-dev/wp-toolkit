@@ -5,7 +5,7 @@
 
 # SiteHealth
 
-Discovers `health-checks/`, `debug-sections/` &nbsp;·&nbsp; Dependencies [`path`](../../services/path/)
+Discovers `health-checks/`, `debug-sections/` &nbsp;·&nbsp; Each file returns [`HealthCheck`](health-check.md), [`DebugSection`](debug-section.md) &nbsp;·&nbsp; Dependencies [`path`](../../services/path/)
 
 Puts your plugin on WordPress's Site Health screen.
 
@@ -15,7 +15,7 @@ This is the supported way to see a site you cannot log into. A user copies the r
 
 Checks run on the Site Health screen and on the weekly cron behind it, so keep them quick and free of side effects.
 
-[Adding it](#adding-it) &nbsp;·&nbsp; [A health check](#a-health-check) &nbsp;·&nbsp; [A debug section](#a-debug-section) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+[Adding it](#adding-it) &nbsp;·&nbsp; [A health check](#a-health-check) &nbsp;·&nbsp; [A debug section](#a-debug-section) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a HealthCheck](#writing-a-healthcheck) &nbsp;·&nbsp; [Writing a DebugSection](#writing-a-debugsection) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
 
 ## Adding it
 
@@ -82,13 +82,19 @@ SiteHealth::class => static function ( SiteHealth $health ): void {
 },
 ```
 
+## Writing a HealthCheck
+
+A file in `health-checks/` returns a [`HealthCheck`](health-check.md) instance, which `wp zestry make health-check <name>` generates.
+
+## Writing a DebugSection
+
+A file in `debug-sections/` returns a [`DebugSection`](debug-section.md) instance, which `wp zestry make debug-section <name>` generates.
+
 ## Related classes
 
 Shipped with this module, and written against directly:
 
 - [`BadgeColor`](badge-color.md) — enum, the colour of the category badge beside a check's label
-- [`DebugSection`](debug-section.md) — abstract class, one panel on the Site Health *Info* tab
-- [`HealthCheck`](health-check.md) — abstract class, one check on the Site Health screen
 
 ## Constants
 
@@ -276,6 +282,8 @@ protected function on_boot(): void {
 
 ## See also
 
+- [`HealthCheck`](health-check.md) — what a file in `health-checks/` returns
+- [`DebugSection`](debug-section.md) — what a file in `debug-sections/` returns
 - [`path`](../../services/path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
 - [`wp zestry add module site-health`](../../commands/add-module.md) — the command that copies it

@@ -33,6 +33,9 @@ Add the `assets` module to register what the build produces: `wp zestry add modu
 - **`[--dir=<dir>]`**  
   Write somewhere other than `src/shared/`, relative to the plugin root.
 
+- **`[--yes]`**  
+  Overwrite an existing file without asking, and take the default for `--kind` rather than asking — a `script` package, which works everywhere.
+
 > [!NOTE]
 > **This generator asks for anything you leave out.** Give every option above and it never stops.
 >

@@ -14,7 +14,7 @@ Three checks, each targeting a mistake that produces no error at runtime:
 - a module on disk that `bootstrap.php` does not list — never built, so
 `on_boot()` never runs and the feature is simply absent;
 - a declaration whose class file is gone;
-- an `zestry.json` naming a root directory that is not there.
+- a `zestry.json` naming a root directory that is not there.
 
 Needs an initialized plugin: with no `zestry.json` in the current directory it exits non-zero telling you to run `wp zestry init` first, and it stops the same way when `bootstrap.php` does not parse.
 
@@ -35,7 +35,7 @@ A directory named through a `set_*_root()` call inside an initializer is not ver
 ```bash
 # Check the plugin in the current directory.
 $ wp zestry doctor
-zestry.json       Acme\Plugin -> lib/
+zestry.json    Acme\Plugin -> lib/
 bootstrap.php  6 classes declared
 
 ! The "cron" module is copied in but never declared.

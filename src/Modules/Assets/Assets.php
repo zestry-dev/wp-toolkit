@@ -33,8 +33,28 @@ use Zestry\WPToolkit\Services\Path;
  *
  * ```
  * $handle = $assets->enqueue_entry( 'dashboard' );
- * wp_add_inline_script( $handle, 'window.dashboard = ' . wp_json_encode( $data ) . ';', 'before' );
+ *
+ * wp_add_inline_script(
+ *     $handle,
+ *     sprintf( 'acmeDashboard.initialize( %s );', wp_json_encode( $data ) ),
+ *     'after'
+ * );
  * ```
+ *
+ * **Hand the data to the script, rather than leaving it on a global for the
+ * script to find.** Both work. This one fails better: printed `after`, it calls
+ * a function the bundle defined, so a bundle that did not load throws
+ * `initialize is not a function` in the console instead of leaving an unread
+ * global and a screen with nothing on it. It is core's own shape --
+ * `wp.editWidgets.initialize( ... )`, `wp.editSite.initialize( ... )`.
+ *
+ * `after` is safe because an entry registers blocking, in the footer. Give a
+ * script a `defer` strategy of your own and the inline code needs core's
+ * `wp_add_inline_script( $handle, 'wp.domReady( ... )' )` wrapper too.
+ *
+ * `wp_json_encode()` rather than `wp_localize_script()`, which casts every
+ * scalar it passes to a string -- `bindable: false` arrives as `""`, and every
+ * field reads as bindable.
  *
  * `wp zestry add module assets` brings the build with it: a `webpack.config.js`
  * that compiles three directories, each with a different owner.
@@ -207,10 +227,9 @@ class Assets extends Module {
 	/**
 	 * The plugin-relative directory `@wordpress/scripts` builds into.
 	 *
-	 * Whatever `--output-path` the build was given, or `build` by default. It is
-	 * also where {@see get_shared_packages()} looks, under
-	 * {@see SHARED_SEGMENT}, so moving the build moves both without a second
-	 * setting to keep in step.
+	 * Whatever `--output-path` the build was given, or `build` by default. The
+	 * manifest every entry and shared package is read from lives there too, so
+	 * moving the build moves both without a second setting to keep in step.
 	 *
 	 * @return string
 	 */
@@ -356,7 +375,7 @@ class Assets extends Module {
 	 * name the methods here take, and the one `wp zestry make shared` was given.
 	 *
 	 * @return array<string, array<string, mixed>> Each package's build manifest, keyed by local name.
-	 * @throws DiscoveryException When a shared package's manifest is unreadable or does not describe a loadable package.
+	 * @throws DiscoveryException When a manifest is present but does not describe entries.
 	 */
 	public function get_shared_packages(): array {
 		return $this->get_built( 'shared' );
@@ -375,7 +394,7 @@ class Assets extends Module {
 	 * `kind` of `module`, which builds it as an ES module and registers it with
 	 * `wp_register_script_module()` instead. The two are separate WordPress
 	 * registries, which is why {@see enqueue_entry()} is worth preferring over
-	 * {@see enqueue_script()} here.
+	 * `wp_enqueue_script()` here.
 	 *
 	 * Blocks are not here: WordPress registers those from their own
 	 * `block.json`, and registering them again under a second handle would
@@ -490,11 +509,10 @@ class Assets extends Module {
 	 * Register everything the build produced with WordPress.
 	 *
 	 * One loop over the manifest, with nothing to branch on but the `kind` each
-	 * row states. Entries and shared packages used to be registered by two
-	 * methods composing their handles two different ways -- which is exactly how
-	 * an entry and a package of the same name came to claim one registration,
-	 * with the loser silently dropped. A row now carries the handle it was built
-	 * for, so there is one way to read it and no name to compose.
+	 * row states. A row carries the handle the build registered it under, so
+	 * there is one way to read it and no name to compose here -- which is what
+	 * lets an entry and a shared package share a local name without one of them
+	 * claiming the other's registration.
 	 *
 	 * @return void
 	 * @throws DiscoveryException When a manifest is present but does not describe entries.

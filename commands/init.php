@@ -708,7 +708,7 @@ return new class() extends Command {
 	 *
 	 * An agent opening this plugin sees a `Core/` tree it did not write and a
 	 * `bootstrap.php` whose entries look optional. Every convention explaining
-	 * those is in the toolkit's documentation, which is not in this repository
+	 * those is in the toolkit's documentation, which the plugin does not carry
 	 * -- so it either infers them or goes looking, and inference gets the
 	 * load-bearing ones wrong.
 	 *

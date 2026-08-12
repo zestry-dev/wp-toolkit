@@ -294,29 +294,21 @@ The markup belongs in `views/`, not in a PHP string. An admin page is mostly a f
 
 ```
 public function render(): void {
-
-```php
-$this->view(
-    'admin-pages/settings',
-    array(
-        'title'  => $this->title(),
-        'action' => $this->get_page_url(),
-        'nonce'  => $this->get_nonce_action(),
-        'items'  => $this->items,
-    )
-);
-```
-
+    $this->view(
+        'admin-pages/settings',
+        array(
+            'title'  => $this->title(),
+            'action' => $this->get_page_url(),
+            'nonce'  => $this->get_nonce_action(),
+            'items'  => $this->items,
+        )
+    );
 }
 ```
 
-The template gets exactly what is passed here, and nothing else of this
-page — what a form needs is three strings, so three strings is what it is
-given. Naming them at the call site is also what makes a template's inputs
-readable without opening it.
+The template gets what this call passes and nothing else — it cannot reach the page for anything the call left out. So this call *is* the list of the template's inputs, and you can read it without opening the template.
 
-`Views` puts one thing of its own in scope,
-`$partial`, for rendering a subview.
+`Views` puts one thing of its own in scope: `$this`, the service itself, so a subview is `$this->render( 'admin-pages/-fields', array( ... ) )`.
 
 <br>
 

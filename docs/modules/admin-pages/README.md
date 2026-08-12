@@ -52,7 +52,7 @@ return new class() extends AdminPage {
 
 A page's markup belongs in a template, and `wp zestry make page` writes one alongside the class. An admin page is mostly a form — a table, a notice, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing.
 
-`AdminPage::view()` renders through the `Views` service, and the template gets exactly what the call names — nothing of the page itself. A form needs three strings, so three strings is what it is given, and a template's inputs stay readable without opening it.
+`AdminPage::view()` renders through the `Views` service, and the template gets what that call passes and nothing else — it cannot reach the page for anything the call left out. So the call is the list of the template's inputs, readable without opening the template.
 
 ```php
 <?php // views/admin-pages/settings.php

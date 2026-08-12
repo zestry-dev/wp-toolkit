@@ -5,7 +5,7 @@
 
 # DebugSection
 
-[A section](#a-section) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use)
+[A section](#a-section) &nbsp;·&nbsp; [Generated starting point](#generated-starting-point) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use)
 
 One panel on the Site Health *Info* tab.
 
@@ -48,6 +48,65 @@ return new class extends DebugSection {
             ),
         );
     }
+};
+```
+
+## Generated starting point
+
+[`wp zestry make debug-section <name>`](../../commands/make-debug-section.md) writes this file:
+
+```php
+<?php
+/**
+ * example debug section.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use Acme\Plugin\Core\Modules\SiteHealth\DebugSection;
+
+return new class() extends DebugSection {
+
+	// The section id is this file's name -- {plugin-slug}-example. Nothing a
+	// user sees depends on it, but anything filtering `debug_information` by
+	// that key does.
+
+	// The heading shown above this panel on Site Health -> Info.
+	public function label(): string {
+		return 'Example';
+	}
+
+	// The values the panel lists, keyed by field id. Each needs a translated
+	// label and a value; add 'debug' for a short, untranslated version that
+	// goes into the copied text a user pastes into a support ticket.
+	//
+	// Anything a Module or Service can be injected into this can too: declare
+	// a typed public property and report real state rather than guessing.
+	public function fields(): array {
+		return array(
+			'version' => array(
+				'label' => 'Version',
+				'value' => $this->get_plugin()->get_version(),
+			),
+		);
+	}
+
+	// A sentence under the heading, if the labels do not speak for themselves.
+	//
+	// public function description(): string {
+	//     return 'What this plugin is currently doing.';
+	// }
+
+	// Keep a field out of the copied text with 'private' => true in the field
+	// above, or the whole panel out with this. The value is still shown on
+	// screen either way, so never put a credential in one at all.
+	//
+	// public function is_private(): bool {
+	//     return true;
+	// }
 };
 ```
 

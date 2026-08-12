@@ -125,7 +125,7 @@ composer lint                                    # phpcs, if init set it up
 npm run lint:js                                  # eslint, if init set it up
 npm run test:php                                 # your suite, green
 npm run build                                    # build/ from src/blocks/
-wp zestry doctor                                    # wiring that fails silently
+wp zestry doctor                                 # wiring that fails silently
 ```
 
 Plus the things no command can check for you:

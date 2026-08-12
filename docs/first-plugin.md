@@ -53,11 +53,13 @@ That copied the kernel to `lib/Core/Kernel/`, added `"Acme\\Books\\": "lib/"` to
 
 ```bash
 $ wp zestry add module post-types rest-api admin-pages options log
-Also adding required dependencies: path, request, views
+Also adding required dependencies: path, request, transients, cookie, views
 Added path
 Added post-types
 Added request
 Added rest-api
+Added transients
+Added cookie
 Added views
 Added admin-pages
 Added options
@@ -66,7 +68,7 @@ Declared in bootstrap.php: post-types, rest-api, admin-pages, options, log
 Success: Done.
 ```
 
-Each module arrives after whatever it needs, which is why the list interleaves. `path` came along because three of those modules resolve plugin-relative directories with it, `request` because that is how a REST route declares what it accepts, and `views` because that is how an admin page renders its markup. All three are **services**, so none of them is declared anywhere — each gets built the first time something asks for it.
+Each module arrives after whatever it needs, which is why the list interleaves. `path` came along because three of those modules resolve plugin-relative directories with it, `request` because that is how a REST route declares what it accepts, and `views` because that is how an admin page renders its markup. `cookie` is how a page carries a notice across the redirect that follows a save, and it brings `transients` for a payload too big for a cookie. All five are **services**, so none of them is declared anywhere — each gets built the first time something asks for it.
 
 ## 2. The entry file
 
@@ -542,7 +544,7 @@ One class of mistake in this system produces no error: a module on disk that `bo
 
 ```bash
 $ wp zestry doctor
-zestry.json       Acme\Books -> lib/
+zestry.json    Acme\Books -> lib/
 bootstrap.php  7 classes declared
 Success: No problems found.
 ```
@@ -555,8 +557,8 @@ Seven: `PostTypes`, `RestApi`, `AdminPages`, `Assets`, `Log`, `Options`, `Activa
 acme-books/
 ├── acme-books.php              ← the entry file
 ├── bootstrap.php               ← the modules, and how each is configured
-├── zestry.json                    ← namespace, root, text domain
-├── zestry.lock.json               ← a hash per copied file; commit it
+├── zestry.json                 ← namespace, root, text domain
+├── zestry.lock.json            ← a hash per copied file; commit it
 ├── composer.json
 ├── phpcs.xml
 ├── admin-pages/
@@ -582,8 +584,10 @@ acme-books/
 │   │   │   ├── Log.php
 │   │   │   └── Options.php
 │   │   └── Services/
+│   │       ├── Cookie.php
 │   │       ├── Path.php
 │   │       ├── Request/
+│   │       ├── Transients.php
 │   │       └── Views.php
 │   └── Modules/
 │       └── Activation.php     ← yours; nothing overwrites it

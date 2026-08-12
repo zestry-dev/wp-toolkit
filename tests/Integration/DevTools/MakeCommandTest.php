@@ -651,6 +651,23 @@ final class MakeCommandTest extends TestCase {
 	}
 
 	/**
+	 * `--yes` takes the documented default for an omitted `--kind`, rather than
+	 * answering the prompt affirmatively.
+	 *
+	 * The prompt asks "load it as an ES module?", so answering yes would make an
+	 * unattended run produce the kind nobody asked for -- and a module only
+	 * imports other modules, so the package would be unusable from the classic
+	 * scripts a plugin normally has.
+	 */
+	public function test_shared_type_yes_takes_the_documented_kind_default(): void {
+		$this->run_make( array( 'formatting' ), array( 'yes' => true ), 'shared' );
+
+		$manifest = $this->read_shared_manifest( 'formatting' );
+
+		$this->assertSame( array( 'kind' => 'script' ), $manifest['wordpress'] );
+	}
+
+	/**
 	 * The generated source is what the consumer edits first, so it has to import
 	 * under the same name the manifest publishes.
 	 */
@@ -792,6 +809,37 @@ final class MakeCommandTest extends TestCase {
 
 		$this->assertFileExists( $this->target_plugin_dir . '/admin-pages/ping.php' );
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/views/admin-pages/ping.php' );
+	}
+
+	/**
+	 * `--no-view` has to reach `render()`, not only the template writer.
+	 *
+	 * Skipping the template while still generating a `render()` that calls one
+	 * writes a page that throws the first time anyone opens it -- the template
+	 * it renders is the one that was deliberately not written.
+	 */
+	public function test_page_type_no_view_renders_without_a_template(): void {
+		$this->run_make( array( 'ping' ), array( 'view' => false ), 'page' );
+
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/ping.php' );
+
+		// The indent is what distinguishes the call from the commented mention
+		// of it, which the generated file carries deliberately: it is how you
+		// move to a template later.
+		$this->assertStringNotContainsString( "\n\t\t\$this->view(", $page );
+		$this->assertStringContainsString( 'esc_html( $this->title() )', $page );
+	}
+
+	/**
+	 * The default still renders the template written beside it.
+	 */
+	public function test_page_type_renders_the_template_it_writes(): void {
+		$this->run_make( array( 'settings' ), array(), 'page' );
+
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
+
+		$this->assertStringContainsString( "\n\t\t\$this->view(", $page );
+		$this->assertStringContainsString( "'admin-pages/settings'", $page );
 	}
 
 	public function test_page_type_honours_a_custom_views_root(): void {

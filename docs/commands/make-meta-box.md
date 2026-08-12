@@ -20,6 +20,9 @@ Writes a file into the plugin's `meta-boxes/` directory, where the MetaBoxes mod
 - **`[--extends=<class>]`**  
   Extend one of your own abstracts instead of the toolkit base. A bare name is looked for under your Abstracts\ namespace; the generated file stubs the methods that class leaves abstract, and nothing it has already settled.
 
+- **`[--yes]`**  
+  Answer both prompts without reading input: overwrite an existing file, and add the `meta-boxes` module when this plugin has none.
+
 ## Examples
 
 ```bash

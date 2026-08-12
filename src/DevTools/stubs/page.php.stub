@@ -84,26 +84,8 @@ return new class() extends AdminPage {
 	// Outputs the page's markup, wrapped in the admin container. Called on
 	// every GET view, and again after handle_submit() on a validated POST.
 	//
-	// The markup lives in views/admin-pages/{{name}}.php, generated alongside
-	// this file. The template gets exactly what is named here and nothing else
-	// of this page, so its inputs are readable without opening it. A form needs
-	// three of them; add your own alongside.
-	//
-	// Echoing markup from here works for something tiny, and stops working
-	// sooner than it looks: an admin page grows a table, then a notice, then a
-	// second form.
+{{render_note}}
 	public function render(): void {
-		$this->view(
-			'admin-pages/{{name}}',
-			array(
-				'title'   => $this->title(),
-				'action'  => $this->get_page_url(),
-				'nonce'   => $this->get_nonce_action(),
-				// Set by the redirect in handle_submit(). Reading a query
-				// argument to decide what to show needs no nonce -- nothing is
-				// being acted on -- which is what the ignore says.
-				'updated' => isset( $_GET['updated'] ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			)
-		);
+{{render_body}}
 	}
 };

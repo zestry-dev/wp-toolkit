@@ -113,6 +113,20 @@ if ( array() !== $problems ) {
 
 echo "All example and stub imports resolve.\n";
 
+$problems = zestry_verify_see_tags( $root );
+
+if ( array() !== $problems ) {
+	fwrite( STDERR, "\n{@see} references naming a method that does not exist:\n" );
+
+	foreach ( $problems as $problem ) {
+		fwrite( STDERR, '  ' . $problem . "\n" );
+	}
+
+	exit( 1 );
+}
+
+echo "Every {@see} resolves to a method its file declares.\n";
+
 $problems = zestry_verify_module_lists( $root );
 
 if ( array() !== $problems ) {

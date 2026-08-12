@@ -33,8 +33,9 @@ namespace Zestry\WPToolkit\Kernel\Exceptions;
  * passed to these guards -- the offending value is what `require` returned. And
  * its parent `\LogicException` is documented for errors detectable by reading
  * the code, whereas which files exist on disk is the definition of a runtime
- * error. `.claude/references/rules.md` owns the wider split of which failures
- * stay `\InvalidArgumentException`.
+ * error. Bad arguments that are not discovery -- an unsafe path, an unknown
+ * schedule name, a placeholder that binds to nothing -- stay
+ * `\InvalidArgumentException`.
  */
 class DiscoveryException extends ModuleException {
 

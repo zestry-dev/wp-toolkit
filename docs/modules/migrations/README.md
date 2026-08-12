@@ -89,6 +89,8 @@ A file in `migrations/` returns a [`Migration`](migration.md) instance, which `w
 const OPTIONS_GROUP_NAME = '_migrations_';
 ```
 
+The Options group the list of migrations that have run is stored under.
+
 ### `DEFAULT_MIGRATIONS_ROOT`
 
 ```php
@@ -250,7 +252,7 @@ public function maybe_resume_interrupted_run(): void
 
 `run_pending()` records a `running_since` timestamp before it starts and clears it only once every pending migration has run (or thrown). If PHP is killed mid-run — `max_execution_time`, an OOM kill — neither of which a `try`/`finally` can trap, that timestamp is left behind: proof migrations 1-3 of 5 ran but 4 and 5 did not.
 
-This module never calls it for you (see the class docblock). For automatic recovery, hook something periodic of your own — `admin_init`, a cron schedule, whatever fits — and call this from there. Without that, an interrupted run stays incomplete until your own trigger calls `run_pending()` again.
+This module never calls it for you, the same way it never calls `run_pending()` for you. For automatic recovery, hook something periodic of your own — `admin_init`, a cron schedule, whatever fits — and call this from there. Without that, an interrupted run stays incomplete until your own trigger calls `run_pending()` again.
 
 A `running_since` younger than five minutes is left alone. It reads as a slow run still going on another request, not an interrupted one — without that, two requests arriving mid-run would both try to resume it at once. Override `get_stale_run_threshold()` in a subclass to move that line.
 

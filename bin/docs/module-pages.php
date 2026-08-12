@@ -170,6 +170,19 @@ function zestry_read_module( string $path ): ?array {
 		$returns
 	);
 
+	$found = $returns[1];
+
+	/*
+	 * A module walking two roots with one method holds the expected class in a
+	 * variable -- `! $instance instanceof $expected` -- which the pattern above
+	 * cannot name, so SiteHealth came back with no base classes at all and the
+	 * modules index told a reader its files return nothing. The `@discovers` tag
+	 * is how such a module says so itself.
+	 */
+	if ( preg_match_all( '/^\s*\*?\s*@discovers\s+(\w+)/m', $docblock, $declared ) ) {
+		$found = array_merge( $found, $declared[1] );
+	}
+
 	return array(
 		'class'     => $class,
 		'summary'   => zestry_summary( $docblock ),
@@ -184,8 +197,8 @@ function zestry_read_module( string $path ): ?array {
 		// the template name you give it; it never enumerates `views/`.
 		'walks'     => str_contains( $source, 'use WithFolderWalker;' ),
 		'roots'     => $roots[2],
-		'root_of'   => zestry_pair_roots_to_bases( $roots[1], $roots[2], array_values( array_unique( $returns[1] ) ) ),
-		'returns'   => array_values( array_unique( $returns[1] ) ),
+		'root_of'   => zestry_pair_roots_to_bases( $roots[1], $roots[2], array_values( array_unique( $found ) ) ),
+		'returns'   => array_values( array_unique( $found ) ),
 	);
 }
 

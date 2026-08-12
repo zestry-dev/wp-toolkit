@@ -139,8 +139,6 @@ public stdClass $settings;
 
 A named class is the better choice wherever the shape is actually known — a caller can read a structure and cannot read an open object.
 
-`LineItem` is a plain class of yours — the PSR-4 entry `wp zestry init` writes covers your whole source root, so `lib/Data/LineItem.php` autoloads with nothing else to do.
-
 ### Lists
 
 PHP has no array-of-type syntax — `LineItem[]` is docblock notation, not a type — so a list says what it holds:
@@ -154,6 +152,8 @@ public array $order_ids;                                        // int[]
 ```
 
 `of:` also takes an enum. One or the other is required — see [Limitations](#limitations).
+
+`LineItem` is a plain class of yours — the PSR-4 entry `wp zestry init` writes covers your whole source root, so `lib/Data/LineItem.php` autoloads with nothing else to do.
 
 ### Enums
 
@@ -216,7 +216,7 @@ An upload arrives as `multipart/form-data`, which JSON Schema has no type for �
 A file is therefore the one argument no schema checks. [`store()`](services/request/uploaded-file.md) does the checking WordPress would want and moves the file into the uploads directory:
 
 ```php
-public function handle( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+public function handle( WP_REST_Request $request ): WP_REST_Response|WP_Error {
     $stored = $this->image->store();
 
     if ( is_wp_error( $stored ) ) {

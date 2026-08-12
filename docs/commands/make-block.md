@@ -16,7 +16,7 @@ WordPress matches both halves of a block name against `^[a-z0-9-]+$`, so a name 
 ## Options
 
 - **`<name>`**  
-  The local name, e.g. 'hero'. Becomes the directory (`src/blocks/{name}/`) and the second half of the block's own name, `{plugin-slug}/{name}`. **The slug, not the text domain.** They are answered separately and are often equal, which is why this went wrong once: the module decides a block is yours by comparing the namespace in its name against your slug, and looks for its PHP under a `supports.{plugin-slug}-php` entry. A block namespaced anything else registers, works in the editor, and renders nothing on the front end.
+  The local name, e.g. 'hero'. Becomes the directory (`src/blocks/{name}/`) and the second half of the block's own name, `{plugin-slug}/{name}`. **The slug, not the text domain.** The two are answered separately and are often equal, so it is worth checking which you have: the module decides a block is yours by comparing the namespace in its name against your slug, and looks for its PHP under a `supports.{plugin-slug}-php` entry. A block namespaced anything else registers, works in the editor, and renders nothing on the front end.
 
 - **`[--dir=<dir>]`**  
   Write into this plugin-relative directory instead of `src/blocks` — note this is the *source* directory `wp-scripts` compiles from, not the built one the Blocks module discovers.

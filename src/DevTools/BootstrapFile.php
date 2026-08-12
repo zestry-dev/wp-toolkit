@@ -113,8 +113,7 @@ class BootstrapFile extends Service {
 	 * Whether a plugin has a `bootstrap.php` at all.
 	 *
 	 * Absent is a choice rather than a mistake: a plugin may declare its modules
-	 * in its entry file by hand, and one initialized before this file existed
-	 * has none.
+	 * in its entry file by hand instead.
 	 *
 	 * @param string $plugin_root Absolute path to the consuming plugin's root.
 	 * @return bool

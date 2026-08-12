@@ -28,9 +28,9 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  * Modules are declared in a `bootstrap.php`, which {@see bootstrap()} reads.
  * `wp zestry init` creates that file and `wp zestry add` appends to it, so a module
  * is active as soon as it is copied and the entry file never has to change.
- * {@see configure()} and {@see autoload()} remain available for plugins
- * that prefer to declare modules in the entry file, and the two approaches can
- * be combined.
+ * {@see configure()} and {@see autoload()} are public, so a plugin that prefers
+ * to declare its modules in the entry file can do that instead, and the two
+ * approaches can be combined.
  *
  * A {@see \Zestry\WPToolkit\Kernel\Abstracts\Service} is never declared there: it resolves on
  * demand through {@see get()}, or is injected into another class by type. One
@@ -334,9 +334,8 @@ class Plugin {
 	 * is returned unchanged, so you can call this unconditionally from a
 	 * template entry file and declare everything in the entry file itself.
 	 *
-	 * A plugin with a hand-written entry file needs none of this: calling
-	 * `configure()`/`autoload()` directly behaves exactly as before, and
-	 * the two can be mixed.
+	 * A plugin with a hand-written entry file needs none of this: `configure()`
+	 * and `autoload()` are public, and the two approaches can be mixed.
 	 *
 	 * @param string|null $file Absolute path to the bootstrap file; defaults to `bootstrap.php` beside the entry file.
 	 * @return $this
@@ -618,7 +617,7 @@ class Plugin {
 	 *
 	 * @param callable(self $plugin): void|null $on_boot_callback Optional callback receiving this plugin after modules are ready.
 	 * @return $this
-	 * @throws \Zestry\WPToolkit\Kernel\Exceptions\ModuleException When a queued class cannot be built, or a discovery module cannot read its root.
+	 * @throws ModuleException When a queued class cannot be built, or a discovery module cannot read its root.
 	 * @throws \Throwable Whatever a module's own `on_boot()` raises, unchanged.
 	 */
 	public function run( ?callable $on_boot_callback = null ): self {

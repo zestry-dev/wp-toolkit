@@ -75,7 +75,7 @@ return array(
 
 ```bash
 $ wp zestry doctor
-zestry.json       Acme\Plugin -> lib/
+zestry.json    Acme\Plugin -> lib/
 bootstrap.php  6 classes declared
 
 ! The "cron" module is copied in but never declared.
@@ -269,7 +269,7 @@ The rule reads the same in both directions. In `$deps`, use:
 - the **return value** of a previous `register_script()`/`register_style()` call for one of your own assets;
 - the **plain handle** for anything registered outside the service — `jquery`, `wp-element`, `wp-components`. Those pass through as-is, which is exactly what you want; namespacing `jquery` would yield `acme-plugin-jquery`, which nothing registered.
 
-Every *other* method takes the **local** name and namespaces it for you — `enqueue_script( 'main' )`, `localize_script( 'main', … )`, `add_inline_script( 'main', … )`. `$deps` is the one place that does not, because it is the one place the value might not be yours.
+`$deps` is the one place that takes a handle you did not get back from somewhere, because it is the one place the value might not be yours. Everything else here already speaks in real handles: `register_script()`/`register_style()` return one, `enqueue_entry()`/`enqueue_shared()` return one, and WordPress's own `wp_add_inline_script()`/`wp_localize_script()` take it from there.
 
 ---
 

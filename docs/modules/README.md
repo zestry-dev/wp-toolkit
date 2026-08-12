@@ -40,7 +40,7 @@ Add nothing up front. Reach for one when you hit what it solves:
 | [`options`](options/) | store settings | — | — | — |
 | [`post-types`](post-types/) | register a custom post type or taxonomy | `post-types/`, `taxonomies/` | [`PostType`](post-types/post-type.md), [`Taxonomy`](post-types/taxonomy.md) | `path` |
 | [`rest-api`](rest-api/) | expose an HTTP endpoint | `routes/` | [`Route`](rest-api/route.md) | `path`, `request` |
-| [`site-health`](site-health/) | report a verdict on Site Health, or list values on Info | `health-checks/`, `debug-sections/` | — | `path` |
+| [`site-health`](site-health/) | report a verdict on Site Health, or list values on Info | `health-checks/`, `debug-sections/` | [`HealthCheck`](site-health/health-check.md), [`DebugSection`](site-health/debug-section.md) | `path` |
 
 **`blocks` and `assets` also write build tooling outside their own tree** — npm scripts and devDependencies, a `tsconfig.json`, a `webpack.config.js`, `.gitignore` entries. Everything either writes is additive, and [`wp zestry add module`](../commands/add-module.md) lists it.
 

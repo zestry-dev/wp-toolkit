@@ -348,3 +348,57 @@ function zestry_inherited_methods( array $classes, string $class, array $seen = 
 
 	return array_unique( $methods );
 }
+
+/**
+ * Report an `{@see method()}` naming a method its own file does not declare.
+ *
+ * The prose gate above has to exclude sentences, because a sentence may name a
+ * method on a class this cannot resolve. `{@see}` carries no such ambiguity:
+ * written bare, it means "on this class", so the file that contains it is the
+ * file that has to declare it. That is narrow enough to check, and it is a
+ * reference readers follow -- the extractor renders it as the method's name, so
+ * a published page recommended `enqueue_script()` for a year after the method
+ * was deleted.
+ *
+ * A qualified `{@see Foo::bar()}` is left alone: the class it names may live
+ * anywhere, which is the ambiguity this deliberately does not take on.
+ *
+ * @param string $root Absolute path to the repository root.
+ * @return string[] Problems found.
+ */
+function zestry_verify_see_tags( string $root ): array {
+	$problems = array();
+
+	foreach ( array( '/src', '/commands' ) as $directory ) {
+		$files = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root . $directory ) );
+
+		foreach ( $files as $file ) {
+			if ( ! $file->isFile() || 'php' !== $file->getExtension() ) {
+				continue;
+			}
+
+			$source = (string) file_get_contents( $file->getPathname() );
+
+			foreach ( explode( "\n", $source ) as $number => $line ) {
+				if ( ! preg_match_all( '/\{@see\s+([a-z_][a-z0-9_]*)\(\)\}/i', $line, $seen ) ) {
+					continue;
+				}
+
+				foreach ( $seen[1] as $method ) {
+					if ( preg_match( '/function\s+' . preg_quote( $method, '/' ) . '\s*\(/', $source ) ) {
+						continue;
+					}
+
+					$problems[] = sprintf(
+						'%s:%d: {@see %s()} names a method this file does not declare -- the page renders it as a recommendation a reader cannot follow.',
+						substr( $file->getPathname(), strlen( $root ) + 1 ),
+						$number + 1,
+						$method
+					);
+				}
+			}
+		}
+	}
+
+	return $problems;
+}

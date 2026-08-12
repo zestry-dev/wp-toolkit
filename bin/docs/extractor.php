@@ -144,7 +144,37 @@ function zestry_split_example( string $body ): array {
 		$pending = array();
 	};
 
+	$fenced = false;
+
 	foreach ( explode( "\n", $body ) as $line ) {
+		/*
+		 * A ``` fence says where the code starts, so indentation inside one means
+		 * nothing but indentation. Without this the rule below fired on the
+		 * *body* of a fenced sample and cut a code block out of the middle of it,
+		 * leaving the fence markers behind in the prose -- which renders as a
+		 * ```php block nested inside a bare ``` one, and a stray closing brace
+		 * outside both. Fenced lines go to prose, where zestry_unwrap_prose()
+		 * already tracks the same state and passes them through verbatim.
+		 */
+		if ( preg_match( '/^\s*```/', $line ) ) {
+			$flush();
+
+			$fenced   = ! $fenced;
+			$blocks[] = array(
+				'type' => 'prose',
+				'text' => $line,
+			);
+			continue;
+		}
+
+		if ( $fenced ) {
+			$blocks[] = array(
+				'type' => 'prose',
+				'text' => $line,
+			);
+			continue;
+		}
+
 		$is_indented = '' !== trim( $line ) && str_starts_with( $line, '    ' );
 
 		if ( $is_indented ) {
@@ -618,8 +648,10 @@ function zestry_render_blocks( array $blocks ): array {
  * docblock can say what a block of code is *for* instead of the generator
  * guessing from indentation and heuristics:
  *
- *     @setup    how to register/configure the module
- *     @example  a usage sample, with an optional caption after the tag name
+ *     @setup     how to register/configure the module
+ *     @example   a usage sample, with an optional caption after the tag name
+ *     @discovers a base class a discovered file returns, for a module whose
+ *                own guard holds it in a variable and so cannot be read
  *
  * A tag's body is every following line indented by at least one space, so it
  * reads naturally in the source and needs no fence. `@example Caption here`

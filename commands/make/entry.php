@@ -54,6 +54,9 @@ return new class() extends MakeCommand {
 	 * The module reads `{build}/entries/`, so an entry written elsewhere is
 	 * yours to register.
 	 *
+	 * [--yes]
+	 * : Overwrite an existing file without asking, for an unattended run.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     # A script for an admin screen.

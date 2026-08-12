@@ -62,6 +62,10 @@ return new class() extends MakeCommand {
 	 * [--dir=<dir>]
 	 * : Write somewhere other than `src/shared/`, relative to the plugin root.
 	 *
+	 * [--yes]
+	 * : Overwrite an existing file without asking, and take the default for
+	 * `--kind` rather than asking -- a `script` package, which works everywhere.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     # A package other scripts depend on by handle.
@@ -184,6 +188,17 @@ return new class() extends MakeCommand {
 
 		if ( 'script' === $given || 'module' === $given ) {
 			$this->kind = $given;
+
+			return $this->kind;
+		}
+
+		/*
+		 * Not confirm()'s own --yes handling: that answers yes, which would make
+		 * an unattended run produce a module. An omitted --kind takes the
+		 * documented default instead, the way every other generator does.
+		 */
+		if ( ! empty( $assoc_args['yes'] ) ) {
+			$this->kind = 'script';
 
 			return $this->kind;
 		}

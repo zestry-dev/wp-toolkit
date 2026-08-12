@@ -64,8 +64,8 @@ return new class() extends MakeCommand {
 	 * than its default.
 	 *
 	 * [--no-view]
-	 * : Skip the template, and leave `render()` to echo its own markup. The page
-	 * class is written either way.
+	 * : Skip the template, and generate a `render()` that echoes its own markup
+	 * instead of rendering one. The page class is written either way.
 	 *
 	 * [--views-dir=<dir>]
 	 * : Write the template under this plugin-relative directory instead of
@@ -160,7 +160,12 @@ return new class() extends MakeCommand {
 	}
 
 	/**
-	 * Capture the answers `after_write()` needs, which is handed none.
+	 * Capture the answers `after_write()` needs, and pick the `render()` body.
+	 *
+	 * `after_write()` is handed none of the arguments, so the two flags are read
+	 * here. `--no-view` has to reach the stub as well as the template writer:
+	 * skipping the template while still generating a `render()` that calls one
+	 * writes a page that throws the first time anyone opens it.
 	 *
 	 * @param string $name       The local name given on the command line.
 	 * @param array  $assoc_args WP-CLI's named arguments.
@@ -171,7 +176,10 @@ return new class() extends MakeCommand {
 		$this->write_view = false !== ( $assoc_args['view'] ?? null );
 		$this->views_dir  = trim( (string) $this->get_flag( $assoc_args, 'views-dir', 'views' ), '/\\' );
 
-		return array();
+		return array(
+			'render_note' => $this->get_render_note( $name ),
+			'render_body' => $this->get_render_body( $name ),
+		);
 	}
 
 	protected function get_stub(): string {
@@ -197,6 +205,83 @@ return new class() extends MakeCommand {
 
 	protected function get_default_dir( array $config ): string {
 		return 'admin-pages';
+	}
+
+	/**
+	 * The comment above the generated `render()`, which `--no-view` changes.
+	 *
+	 * @return string
+	 */
+	private function get_render_note( string $name ): string {
+		if ( ! $this->write_view ) {
+			return implode(
+				"\n",
+				array(
+					"\t// No template: --no-view was given, so this echoes its own markup.",
+					"\t// That works for something tiny and stops working sooner than it looks",
+					"\t// -- an admin page grows a table, then a notice, then a second form.",
+					"\t// `wp zestry make view admin-pages/" . $name . '` writes one, and',
+					"\t// `\$this->view( 'admin-pages/" . $name . "', array( ... ) )` renders it.",
+				)
+			);
+		}
+
+		return implode(
+			"\n",
+			array(
+				"\t// The markup lives in views/admin-pages/" . $name . '.php, generated alongside',
+				"\t// this file. The template gets exactly what is named here and nothing else",
+				"\t// of this page, so its inputs are readable without opening it. Add your own",
+				"\t// alongside these.",
+				"\t//",
+				"\t// Echoing markup from here works for something tiny, and stops working",
+				"\t// sooner than it looks: an admin page grows a table, then a notice, then a",
+				"\t// second form.",
+			)
+		);
+	}
+
+	/**
+	 * The body of the generated `render()`, which `--no-view` changes.
+	 *
+	 * With a template, one `view()` call naming what the template gets. Without
+	 * one, markup echoed here -- which is what `--no-view` is asking for, and
+	 * the only shape that works, since the template it would otherwise render
+	 * was deliberately not written.
+	 *
+	 * @param string $name The local name given on the command line.
+	 * @return string
+	 */
+	private function get_render_body( string $name ): string {
+		if ( ! $this->write_view ) {
+			return implode(
+				"\n",
+				array(
+					"\t\tprintf(",
+					"\t\t\t'<div class=\"wrap\"><h1>%s</h1></div>',",
+					"\t\t\tesc_html( \$this->title() )",
+					"\t\t);",
+				)
+			);
+		}
+
+		return implode(
+			"\n",
+			array(
+				"\t\t\$this->view(",
+				"\t\t\t'admin-pages/" . $name . "',",
+				"\t\t\tarray(",
+				"\t\t\t\t'title'   => \$this->title(),",
+				"\t\t\t\t'action'  => \$this->get_page_url(),",
+				"\t\t\t\t'nonce'   => \$this->get_nonce_action(),",
+				"\t\t\t\t// Set by the redirect in handle_submit(). Reading a query",
+				"\t\t\t\t// argument to decide what to show needs no nonce -- nothing is",
+				"\t\t\t\t// being acted on -- which is what the ignore says.",
+				"\t\t\t\t'updated' => isset( \$_GET['updated'] ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended",
+				"\t\t\t)",
+				"\t\t);",
+			)
+		);
 	}
 
 	protected static function get_type(): string {

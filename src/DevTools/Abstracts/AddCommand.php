@@ -35,9 +35,9 @@ use Zestry\WPToolkit\DevTools\RuntimePlugin;
  * project's zestry.json for its namespace, text domain, and destination root,
  * resolve the requested modules' transitive dependencies against the
  * registry, then copy whichever of them {@see filter_existing_modules()}
- * leaves in the copy set. `zestry.json`'s `text_domain` may be null for a
- * project initialized before that field existed; `Copier` treats null as
- * "leave text-domain strings untouched" rather than requiring one.
+ * leaves in the copy set. `zestry.json`'s `text_domain` may be null, which
+ * `Copier` treats as "leave text-domain strings untouched" rather than
+ * requiring one.
  *
  * The two concrete commands differ only in what happens when a resolved
  * module's destination already exists on disk: `add` removes it from the
