@@ -3,7 +3,7 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make health-check
+# wp zt make health-check
 
 Generate a Site Health check.
 
@@ -27,6 +27,6 @@ Writes a file into the plugin's `health-checks/` directory, where the SiteHealth
 
 ```bash
 # Generate health-checks/api-key.php.
-$ wp zestry make health-check api-key
+$ wp zt make health-check api-key
 Success: Created health-checks/api-key.php
 ```

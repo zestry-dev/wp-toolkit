@@ -17,18 +17,18 @@ For the absolutes alone, with the tables and the caveats stripped out, see [Rule
 
 | Written by | On disk | Namespace |
 |---|---|---|
-| `wp zestry init` | `lib/Core/Kernel/` | `Acme\Plugin\Core\Kernel\Plugin` |
-| `wp zestry add module ajax`, `wp zestry add service path` | `lib/Core/Modules/Ajax/`, `lib/Core/Services/Path.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax`, `Acme\Plugin\Core\Services\Path` |
-| `wp zestry make module`, `wp zestry make service`, `wp zestry make abstract` | `lib/Modules/Shortcode.php`, `lib/Services/Cache.php`, `lib/Abstracts/EntityField.php` | `Acme\Plugin\Modules\Shortcode`, `Acme\Plugin\Services\Cache`, `Acme\Plugin\Abstracts\EntityField` |
+| `wp zt init` | `lib/Core/Kernel/` | `Acme\Plugin\Core\Kernel\Plugin` |
+| `wp zt add module ajax`, `wp zt add service path` | `lib/Core/Modules/Ajax/`, `lib/Core/Services/Path.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax`, `Acme\Plugin\Core\Services\Path` |
+| `wp zt make module`, `wp zt make service`, `wp zt make abstract` | `lib/Modules/Shortcode.php`, `lib/Services/Cache.php`, `lib/Abstracts/EntityField.php` | `Acme\Plugin\Modules\Shortcode`, `Acme\Plugin\Services\Cache`, `Acme\Plugin\Abstracts\EntityField` |
 | you, anywhere else under `lib/` | `lib/Data/LineItem.php` | `Acme\Plugin\Data\LineItem` |
 
 **A plain class needs no generator and no directory of ours.** The one PSR-4 entry `init` writes maps your whole source root, so any class under it autoloads from its namespace — a DTO, a value object, a helper. `Modules/` and `Services/` are where the two generators write, not a rule about what may exist.
 
-`wp zestry update` and `wp zestry overwrite` may replace anything under `lib/Core/`, and can never touch anything outside it — including directories you made yourself.
+`wp zt update` and `wp zt overwrite` may replace anything under `lib/Core/`, and can never touch anything outside it — including directories you made yourself.
 
 ## Modules
 
-Add any of them with `wp zestry add module <name>`; dependencies come along.
+Add any of them with `wp zt add module <name>`; dependencies come along.
 
 | Module | Directory | A file returns | Configure with | Generate one |
 |---|---|---|---|---|
@@ -55,7 +55,7 @@ Add any of them with `wp zestry add module <name>`; dependencies come along.
 - **`abilities` is the AI-agent surface.** WordPress 6.9+ gives each one a REST endpoint, and an MCP adapter on the site turns it into a tool an agent can call — with no protocol code from you. Call your own with `$abilities->run( 'name', $input )`.
 - **`site-health` has two directories, one per tab.** A `health-checks/` file reports a verdict on **Status**; a `debug-sections/` file lists values on **Info**, which is what the "Copy site info" button copies.
 - **`taxonomies/` is its own directory.** One module, two roots — a `Taxonomy` file under `post-types/` is discovered as a `PostType` and throws.
-- **`blocks` reads the built directory.** `wp zestry make block` writes source into `src/blocks/`; `npm run build` compiles it to `build/blocks/`, which is what the module walks. A block that has never been built registers nothing.
+- **`blocks` reads the built directory.** `wp zt make block` writes source into `src/blocks/`; `npm run build` compiles it to `build/blocks/`, which is what the module walks. A block that has never been built registers nothing.
 
 ### Where JavaScript goes
 
@@ -65,14 +65,14 @@ Add any of them with `wp zestry add module <name>`; dependencies come along.
 | `entries/{name}/` | `build/entries/{name}` | `assets`, as `{slug}-{name}` | [`make entry`](commands/make-entry.md) |
 | `shared/{name}/` | `build/shared/{name}` | `assets`, under the build's handle | [`make shared`](commands/make-shared.md) |
 
-- **`wp zestry add module assets` writes the build.** `webpack.config.js`, the `src/shared/*` npm workspace, and `npm run build`/`start`. Without that config `@wordpress/scripts` builds *one* of the three — adding a block silently stops `src/index.ts` being built.
+- **`wp zt add module assets` writes the build.** `webpack.config.js`, the `src/shared/*` npm workspace, and `npm run build`/`start`. Without that config `@wordpress/scripts` builds *one* of the three — adding a block silently stops `src/index.ts` being built.
 - **`build/assets-manifest.php` is what PHP reads.** One `require`: every entry, its dependencies and version, its stylesheet, and which entries are shared packages. Build output — gitignored, never committed.
 - **Nothing empty is registered.** A stylesheet that compiles to nothing is deleted and left out of the manifest, an entry that is only a stylesheet loses the JavaScript webpack generates for it, and a block's `block.json` loses any `file:` field whose target compiled away — so no page pays for an empty `<link>` or `<script>`.
 - **An entry or a shared package can be `--kind=module`**, built as an ES module and registered with `wp_register_script_module()`. A module may only import what WordPress ships as one: `@wordpress/interactivity` yes, `@wordpress/element` no.
 
 - **`assets` is a module because of one thing it does unasked.** Called, it composes asset URLs and registers scripts and styles. Unasked, on `init`, it registers every shared package `npm run build` compiled from `src/shared/` into `build/shared/`, so an entry that imports one can declare it as a dependency instead of bundling a copy.
 - **An admin page's markup goes in a template**, and [`make page`](commands/make-page.md) writes both files. The template gets exactly what the `render()` call names and nothing of the page itself. Echoing markup from `render()` works for something tiny and stops working sooner than it looks.
-- **[`make view`](commands/make-view.md) writes a standalone template**, and a name with a slash nests: `wp zestry make view emails/receipt` is `views/emails/receipt.php`, rendered as `emails/receipt`.
+- **[`make view`](commands/make-view.md) writes a standalone template**, and a name with a slash nests: `wp zt make view emails/receipt` is `views/emails/receipt.php`, rendered as `emails/receipt`.
 - **`$this` inside any template is the [`views`](services/views/) service**, so a subview is `$this->render( 'admin-pages/-fields', array( … ) )` — the same call every other caller makes, costing no variable name. Declare `@var` at the top of a template and your editor completes all of it.
 - **`admin-pages`** also accepts a [`ModernAdminPage`](modules/admin-pages/modern-admin-page.md). A page whose `menu()` returns [`AdminMenu::Network`](modules/admin-pages/admin-menu.md) goes to the network administrator's menu on multisite instead of every site's — pick `capability()` to match, and remember the two menus offer different `ParentMenu` sections.
 - **`meta-boxes` reaches two screens.** Posts and comments are the only ones WordPress renders boxes on; terms and users take custom fields through action hooks instead. Register their meta with `fields` and render it on those forms yourself.
@@ -106,7 +106,7 @@ The filename is what a file registers as. Whether your slug is prefixed onto it 
 
 ## Services
 
-Add with `wp zestry add service <name>`. Reach one by declaring a typed property on any service, module, command, action, page or route — `public Path $path;` — or with `$plugin->get( Path::class )`.
+Add with `wp zt add service <name>`. Reach one by declaring a typed property on any service, module, command, action, page or route — `public Path $path;` — or with `$plugin->get( Path::class )`.
 
 `globals`, `transients` and the `options` module are the same four verbs — `get`, `set`, `has`, `delete` — differing only in how long a value lasts: this request, until it expires, or until you change it.
 
@@ -120,7 +120,7 @@ Add with `wp zestry add service <name>`. Reach one by declaring a typed property
 | [`transients`](services/transients/) | Key/value that outlives the request, with a TTL | `$this->transients->set( 'rates', $r, HOUR_IN_SECONDS )` |
 | [`cookie`](services/cookie/) | Cookies, encrypted, and one value carried across a redirect | `$this->cookie->set_flash( 'Saved.' )` |
 
-**[`assets`](modules/assets/) is a module, not a service** — `wp zestry add module assets`.
+**[`assets`](modules/assets/) is a module, not a service** — `wp zt add module assets`.
 
 ## The `Plugin` API
 
@@ -155,21 +155,21 @@ An [`ActivationHandler`](modules/activation-handler.md) subclass only works if `
 
 See [`WithPlugin`](kernel/with-plugin.md), [`NoInject`](kernel/no-inject.md), [`PluginAware`](kernel/plugin-aware.md).
 
-## Every `wp zestry` command
+## Every `wp zt` command
 
 Run from inside your plugin's directory, with the plugin active.
 
 | Command | What it does |
 |---|---|
-| [`wp zestry init`](commands/init.md) | Copies the kernel; writes `zestry.json`, `zestry.lock.json`, `bootstrap.php`, the PSR-4 entry, `.gitignore`, the linter configs and `AGENTS.md`. `--no-phpcs`, `--no-eslint`, `--no-prettier`, `--no-agents`, `--yes` |
-| [`wp zestry add module <name>...`](commands/add-module.md) | Copies modules and their dependencies; declares each in `bootstrap.php`. Skips what is already there. Never asks. |
-| [`wp zestry add service <name>...`](commands/add-service.md) | Copies services and their dependencies. Declares nothing. Never asks. |
-| [`wp zestry make <type> <name>`](commands/) | Generates one file from a stub — see the 21 types below. `--yes` on every type; `--dir=` on every type but `module`, `service` and `abstract`; `--extends=` on every type that returns a discovered file, plus `abstract`, which also takes `--for=<type>` |
-| [`wp zestry describe`](commands/describe.md) | Reports what this plugin has: each module installed, declared, the directory it reads and the base class a file there returns. `--format`, `--kind`, `--installed` |
-| [`wp zestry doctor`](commands/doctor.md) | Reports the wiring mistakes that raise no error — chiefly a module on disk that nothing declares. `--format=report\|csv\|json\|yaml` |
-| [`wp zestry update`](commands/update.md) | Re-copies everything under `lib/Core/` from the installed toolkit, keeping files you edited. `--dry-run`, `--force`, `--yes` |
-| [`wp zestry overwrite module <name>...`](commands/overwrite-module.md) | Like `add module`, but replaces what is already on disk after one confirmation. `--yes` |
-| [`wp zestry overwrite service <name>...`](commands/overwrite-service.md) | Like `add service`, but replaces what is already on disk after one confirmation. `--yes` |
+| [`wp zt init`](commands/init.md) | Copies the kernel; writes `zestry.json`, `zestry.lock.json`, `bootstrap.php`, the PSR-4 entry, `.gitignore`, the linter configs and `AGENTS.md`. `--no-phpcs`, `--no-eslint`, `--no-prettier`, `--no-agents`, `--yes` |
+| [`wp zt add module <name>...`](commands/add-module.md) | Copies modules and their dependencies; declares each in `bootstrap.php`. Skips what is already there. Never asks. |
+| [`wp zt add service <name>...`](commands/add-service.md) | Copies services and their dependencies. Declares nothing. Never asks. |
+| [`wp zt make <type> <name>`](commands/) | Generates one file from a stub — see the 21 types below. `--yes` on every type; `--dir=` on every type but `module`, `service` and `abstract`; `--extends=` on every type that returns a discovered file, plus `abstract`, which also takes `--for=<type>` |
+| [`wp zt describe`](commands/describe.md) | Reports what this plugin has: each module installed, declared, the directory it reads and the base class a file there returns. `--format`, `--kind`, `--installed` |
+| [`wp zt doctor`](commands/doctor.md) | Reports the wiring mistakes that raise no error — chiefly a module on disk that nothing declares. `--format=report\|csv\|json\|yaml` |
+| [`wp zt update`](commands/update.md) | Re-copies everything under `lib/Core/` from the installed toolkit, keeping files you edited. `--dry-run`, `--force`, `--yes` |
+| [`wp zt overwrite module <name>...`](commands/overwrite-module.md) | Like `add module`, but replaces what is already on disk after one confirmation. `--yes` |
+| [`wp zt overwrite service <name>...`](commands/overwrite-service.md) | Like `add service`, but replaces what is already on disk after one confirmation. `--yes` |
 
 ### What `make` generates
 
@@ -199,7 +199,7 @@ Each type writes one file into the directory its module discovers, so the genera
 | [`service`](commands/make-service.md) | `lib/Services/` | your own service. Declares nothing |
 | [`abstract`](commands/make-abstract.md) | `lib/Abstracts/` | a base your own files share. `--for=<type>`, `--extends=` |
 
-The last four land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zestry update`](commands/update.md) may replace. `module`, `service` and `abstract` are the three types with no `--dir=` at all: PSR-4 ties their namespace to one directory, so the name decides both.
+The last four land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. `module`, `service` and `abstract` are the three types with no `--dir=` at all: PSR-4 ties their namespace to one directory, so the name decides both.
 
 <!-- zestry:include generator="prompting-generators" -->
 **5 of the 21 generators ask for what you leave out** — [`block`](commands/make-block.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 16 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.

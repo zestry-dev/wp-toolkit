@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Devtool command: `wp zestry overwrite module <module>...`.
+ * Devtool command: `wp zt overwrite module <module>...`.
  *
- * Like `wp zestry add module`, but deliberately replaces a module already present
+ * Like `wp zt add module`, but deliberately replaces a module already present
  * on disk instead of skipping it -- warns once, listing every already-present
  * module the batch would touch, and proceeds only after a single explicit
  * confirmation covering the whole batch. Any local edits to those files are
@@ -20,8 +20,8 @@ return new class() extends AddCommand {
 	 * Copy one or more feature modules into an initialized plugin, replacing
 	 * any of them (or their dependencies) already present.
 	 *
-	 * Requires `wp zestry init` to have already run in this plugin. Resolves
-	 * dependencies exactly like `wp zestry add module`, but warns before
+	 * Requires `wp zt init` to have already run in this plugin. Resolves
+	 * dependencies exactly like `wp zt add module`, but warns before
 	 * overwriting anything already on disk: local edits to an already-present
 	 * module are destroyed by the copy, with no confirmation per file -- only
 	 * one confirmation for the whole resolved batch. Answering "no" cancels the
@@ -30,7 +30,7 @@ return new class() extends AddCommand {
 	 *
 	 * Dependencies cross the two kinds, so a module's services are re-copied
 	 * with it. To replace a service on its own, use
-	 * `wp zestry overwrite service <service>`.
+	 * `wp zt overwrite service <service>`.
 	 *
 	 * ## OPTIONS
 	 *
@@ -44,14 +44,14 @@ return new class() extends AddCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Re-copy cli from the toolkit, discarding any local edits to it.
-	 *     $ wp zestry overwrite module cli
+	 *     $ wp zt overwrite module cli
 	 *     Warning: This will overwrite existing files for: cli
 	 *     Any local changes to these files will be lost. Continue? [y/N] y
 	 *     Overwrote cli
 	 *     Success: Done.
 	 *
 	 *     # Declining leaves every file untouched, including new deps.
-	 *     $ wp zestry overwrite module rest-api
+	 *     $ wp zt overwrite module rest-api
 	 *     Also adding required dependencies: path
 	 *     Warning: This will overwrite existing files for: rest-api
 	 *     Any local changes to these files will be lost. Continue? [y/N] n

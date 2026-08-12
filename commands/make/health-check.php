@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make health-check <name>`.
+ * Devtool command: `wp zt make health-check <name>`.
  */
 
 declare( strict_types=1 );
@@ -37,7 +37,7 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Generate health-checks/api-key.php.
-	 *     $ wp zestry make health-check api-key
+	 *     $ wp zt make health-check api-key
 	 *     Success: Created health-checks/api-key.php
 	 *
 	 * @param array $args

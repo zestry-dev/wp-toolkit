@@ -13,13 +13,13 @@ A page file returns an AdminPage subclass instance; the AdminPages module wires 
 
 Authorization is enforced by the module before render(): the current user must satisfy capability(), and a nonce is verified on POST. A page therefore only has to describe itself (title, capability, placement) and render its markup.
 
-A file at `admin-pages/settings.php` registers as a top-level menu page with the slug `{plugin}-settings` (see `get_page_slug()`). Return a ParentMenu case from `parent()` to nest it under a core WordPress menu instead, such as `ParentMenu::Settings`. A property typed as a Service or Module subclass — `public Path $path;`, say — is injected automatically when the page is wired. `wp zestry make page <name>` generates a starting point.
+A file at `admin-pages/settings.php` registers as a top-level menu page with the slug `{plugin}-settings` (see `get_page_slug()`). Return a ParentMenu case from `parent()` to nest it under a core WordPress menu instead, such as `ParentMenu::Settings`. A property typed as a Service or Module subclass — `public Path $path;`, say — is injected automatically when the page is wired. `wp zt make page <name>` generates a starting point.
 
 A page rendering its own full-width application shell rather than the usual WordPress "wrap" layout should extend `ModernAdminPage` instead, which is this class plus a critical-CSS reset of wp-admin's default chrome. It satisfies the same discovery guard, so it is a drop-in swap for the `extends AdminPage` a generated file starts with.
 
 ## Generated starting point
 
-[`wp zestry make page <name>`](../../commands/make-page.md) writes this file:
+[`wp zt make page <name>`](../../commands/make-page.md) writes this file:
 
 ```php
 <?php
@@ -343,7 +343,7 @@ public function view( string $view, array $data = array() ): void
 | **Return** | — |
 | **Throws** | `InvalidArgumentException` — When the views root or the view is missing |
 
-The markup belongs in `views/`, not in a PHP string. An admin page is mostly a form — tables, fields, notices, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing. `wp zestry make page` writes the template alongside the class, so there is one to render from the start.
+The markup belongs in `views/`, not in a PHP string. An admin page is mostly a form — tables, fields, notices, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing. `wp zt make page` writes the template alongside the class, so there is one to render from the start.
 
 ```
 public function render(): void {

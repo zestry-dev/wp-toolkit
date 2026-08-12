@@ -20,11 +20,11 @@ Checks run on the Site Health screen and on the weekly cron behind it, so keep t
 ## Adding it
 
 ```bash
-wp zestry add module site-health
+wp zt add module site-health
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `SiteHealth` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `SiteHealth` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -84,11 +84,11 @@ SiteHealth::class => static function ( SiteHealth $health ): void {
 
 ## Writing a HealthCheck
 
-A file in `health-checks/` returns a [`HealthCheck`](health-check.md) instance, which `wp zestry make health-check <name>` generates.
+A file in `health-checks/` returns a [`HealthCheck`](health-check.md) instance, which `wp zt make health-check <name>` generates.
 
 ## Writing a DebugSection
 
-A file in `debug-sections/` returns a [`DebugSection`](debug-section.md) instance, which `wp zestry make debug-section <name>` generates.
+A file in `debug-sections/` returns a [`DebugSection`](debug-section.md) instance, which `wp zt make debug-section <name>` generates.
 
 ## Related classes
 
@@ -286,4 +286,4 @@ protected function on_boot(): void {
 - [`DebugSection`](debug-section.md) — what a file in `debug-sections/` returns
 - [`path`](../../services/path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module site-health`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module site-health`](../../commands/add-module.md) — the command that copies it

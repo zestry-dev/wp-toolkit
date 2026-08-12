@@ -38,7 +38,7 @@ final class ConsumerPluginTest extends TestCase {
 
 	public function test_throws_when_cwd_is_not_inside_the_plugins_directory(): void {
 		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Run `wp zestry` from inside the plugin you want to set up' );
+		$this->expectExceptionMessage( 'Run `wp zt` from inside the plugin you want to set up' );
 
 		$this->consumer_plugin()->get_plugin_root_for( untrailingslashit( WP_CONTENT_DIR ) );
 	}

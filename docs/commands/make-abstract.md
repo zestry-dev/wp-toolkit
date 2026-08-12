@@ -3,13 +3,13 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make abstract
+# wp zt make abstract
 
 [What to extend](#what-to-extend) &nbsp;·&nbsp; [Options](#options) &nbsp;·&nbsp; [Examples](#examples)
 
 Generate an intermediate abstract of your own.
 
-Requires `wp zestry init` to have already run in this plugin. The file lands in `{zestry.json root}/Abstracts/`, which is the first place `--extends=` looks — so `make field acme-rating --extends=EntityField` finds it by the bare name afterwards.
+Requires `wp zt init` to have already run in this plugin. The file lands in `{zestry.json root}/Abstracts/`, which is the first place `--extends=` looks — so `make field acme-rating --extends=EntityField` finds it by the bare name afterwards.
 
 ## What to extend
 
@@ -37,14 +37,14 @@ Neither one extends nothing, which is a plain abstract class: useful for somethi
 
 ```bash
 # An abstract every post type file will extend.
-$ wp zestry make abstract EntityPostType --for=post-type
+$ wp zt make abstract EntityPostType --for=post-type
 Success: Created lib/Abstracts/EntityPostType.php
 
 # Layered onto that one.
-$ wp zestry make abstract CuratedPostType --extends=EntityPostType
+$ wp zt make abstract CuratedPostType --extends=EntityPostType
 Success: Created lib/Abstracts/CuratedPostType.php
 
 # Shared by something that is not a discovered file.
-$ wp zestry make abstract Importer
+$ wp zt make abstract Importer
 Success: Created lib/Abstracts/Importer.php
 ```

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make shared <name>`.
+ * Devtool command: `wp zt make shared <name>`.
  */
 
 declare( strict_types=1 );
@@ -41,7 +41,7 @@ return new class() extends MakeCommand {
 	 * `node_modules/`, and until it has, the import resolves to nothing.
 	 *
 	 * Add the `assets` module to register what the build produces:
-	 * `wp zestry add module assets`.
+	 * `wp zt add module assets`.
 	 *
 	 * ## OPTIONS
 	 *
@@ -69,11 +69,11 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # A package other scripts depend on by handle.
-	 *     $ wp zestry make shared formatting --kind=script
+	 *     $ wp zt make shared formatting --kind=script
 	 *     Success: Created src/shared/formatting (2 files)
 	 *
 	 *     # An ES module, imported by name at run time.
-	 *     $ wp zestry make shared runtime --kind=module
+	 *     $ wp zt make shared runtime --kind=module
 	 *     Success: Created src/shared/runtime (2 files)
 	 *
 	 * @param array $args
@@ -157,7 +157,7 @@ return new class() extends MakeCommand {
 	 *
 	 * The plugin's own slug, which the generated `webpack.config.js` also carries
 	 * -- so the name a package is imported by and the handle the build registers
-	 * it under are composed from one string. `wp zestry make block` takes a block
+	 * it under are composed from one string. `wp zt make block` takes a block
 	 * namespace from the same place, and `add module assets` writes the build
 	 * configuration from it, so all three agree without any of them reading the
 	 * others.

@@ -9,7 +9,7 @@ use Zestry\WPToolkit\Modules\CLI\Command;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
- * `wp zestry describe`: what a plugin has, where each module looks, and what a
+ * `wp zt describe`: what a plugin has, where each module looks, and what a
  * file dropped there must return.
  *
  * Everything it reports is derived -- from registry.php, the project's
@@ -177,7 +177,7 @@ final class DescribeCommandTest extends TestCase {
 		$this->run_describe();
 
 		$this->assertSame( 'error', $this->last_call()[0] );
-		$this->assertStringContainsString( 'wp zestry init', $this->last_call()[1] );
+		$this->assertStringContainsString( 'wp zt init', $this->last_call()[1] );
 	}
 
 	/**

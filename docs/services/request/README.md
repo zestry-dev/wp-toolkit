@@ -16,7 +16,7 @@ You rarely call this. Declare the properties, and the module that discovered you
 ## Adding it
 
 ```bash
-wp zestry add service request
+wp zt add service request
 ```
 
 ## What it does for you
@@ -241,4 +241,4 @@ $this->get_plugin()->get( Options::class )->get( 'api_key' );
 ## See also
 
 - [`Service`](../service.md) — what every service inherits
-- [`wp zestry add service request`](../../commands/add-service.md) — the command that copies it
+- [`wp zt add service request`](../../commands/add-service.md) — the command that copies it

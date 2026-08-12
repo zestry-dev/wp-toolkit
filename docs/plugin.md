@@ -11,7 +11,7 @@ Coordinates plugin-wide services and module initialization.
 
 The plugin owns the module repository and provides plugin metadata to modules while keeping module construction in one place. Modules are registered during plugin setup, resolved once when first requested, and can be queued to resolve together when `run()` is called.
 
-Modules are declared in a `bootstrap.php`, which `bootstrap()` reads. `wp zestry init` creates that file and `wp zestry add` appends to it, so a module is active as soon as it is copied and the entry file never has to change. `configure()` and `autoload()` are public, so a plugin that prefers to declare its modules in the entry file can do that instead, and the two approaches can be combined.
+Modules are declared in a `bootstrap.php`, which `bootstrap()` reads. `wp zt init` creates that file and `wp zt add` appends to it, so a module is active as soon as it is copied and the entry file never has to change. `configure()` and `autoload()` are public, so a plugin that prefers to declare its modules in the entry file can do that instead, and the two approaches can be combined.
 
 A `Service` is never declared there: it resolves on demand through `get()`, or is injected into another class by type. One that takes configuration is given it with `configure()` in the entry file.
 
@@ -42,7 +42,7 @@ my_plugin();
 
 ## The bootstrap file
 
-Declares every module the plugin uses, with the configuration each requires. `wp zestry init` creates the file and `wp zestry add` appends to it, so a module is active as soon as it is copied.
+Declares every module the plugin uses, with the configuration each requires. `wp zt init` creates the file and `wp zt add` appends to it, so a module is active as soon as it is copied.
 
 With this in place, a file returned from `actions/save-profile.php` becomes an AJAX action (see `AjaxAction`), a file returned from `commands/greet.php` becomes the WP-CLI command `wp my-plugin greet` (see `Command`), and a file returned from `admin-pages/settings.php` becomes an admin menu page (see `AdminPage`) — none of them need registering by hand.
 
@@ -174,7 +174,7 @@ public function bootstrap( ?string $file = null ): self
 | **Return** | `self` |
 | **Throws** | `ModuleException` — When the file does not return an array, or an entry is malformed |
 
-The file returns one flat list, so the entry file never changes as modules are added — and `wp zestry add` has somewhere to register what it copies, meaning a module works the moment it arrives rather than after a hand-edit:
+The file returns one flat list, so the entry file never changes as modules are added — and `wp zt add` has somewhere to register what it copies, meaning a module works the moment it arrives rather than after a hand-edit:
 
 ```php
 // bootstrap.php
@@ -226,7 +226,7 @@ public function set_languages_path( string $path, ?string $text_domain = null ):
 
 Only needed for a plugin shipping a `languages/` directory of its own. WordPress already looks in `wp-content/languages/plugins` without being asked, which is where a wordpress.org-hosted plugin's translations are installed — so a plugin distributed that way needs no call at all.
 
-The text domain defaults to the plugin slug, matching what `wp zestry init` writes into `zestry.json` and stamps into every copied file, so the two cannot disagree unless a consumer deliberately changes one.
+The text domain defaults to the plugin slug, matching what `wp zt init` writes into `zestry.json` and stamps into every copied file, so the two cannot disagree unless a consumer deliberately changes one.
 
 ```php
 $plugin ??= ( new Plugin( __FILE__ ) )

@@ -8,7 +8,7 @@ use Zestry\WPToolkit\DevTools\Tooling;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
- * The linting/formatting scaffold `wp zestry init` offers.
+ * The linting/formatting scaffold `wp zt init` offers.
  *
  * The property under test throughout is that every write is additive: a
  * consumer's composer.json, package.json and config files are their own, and

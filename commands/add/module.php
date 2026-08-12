@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Devtool command: `wp zestry add module <module>...`.
+ * Devtool command: `wp zt add module <module>...`.
  *
- * Copies one or more feature modules into a project already set up with `wp zestry
- * init`, resolving each one's transitive dependencies against the registry
+ * Copies one or more feature modules into a project already set up with
+ * `wp zt init`, resolving each one's transitive dependencies against the registry
  * first (see registry.php) so a module never ends up copied without something
  * it needs. Every `namespace Zestry\WPToolkit\...;`/`use Zestry\WPToolkit\...;` in each copied file is
  * rewritten to the namespace zestry.json recorded during init. Never overwrites a
- * module already present on disk -- use `wp zestry overwrite module` for that.
+ * module already present on disk -- use `wp zt overwrite module` for that.
  */
 
 declare( strict_types=1 );
@@ -20,14 +20,14 @@ return new class() extends AddCommand {
 	/**
 	 * Copy one or more feature modules into an initialized plugin.
 	 *
-	 * Requires `wp zestry init` to have already run in this plugin (it reads
+	 * Requires `wp zt init` to have already run in this plugin (it reads
 	 * zestry.json for the namespace and destination directory chosen there).
 	 * Resolves each requested module's dependencies before copying anything, so
 	 * `rest-api`, for example, also brings in `path` without needing to be asked
 	 * for by name. Every `namespace Zestry\WPToolkit\...;` declaration and `use Zestry\WPToolkit\...;`
 	 * import in each copied file is rewritten to the project's own namespace. A
 	 * module already present at its destination is left untouched and logged as
-	 * skipped -- run `wp zestry overwrite module <module>` to replace it
+	 * skipped -- run `wp zt overwrite module <module>` to replace it
 	 * deliberately.
 	 *
 	 * Each copied module is also declared in the plugin's
@@ -71,7 +71,7 @@ return new class() extends AddCommand {
 	 * with it. This command asks which kind you are naming, not which kinds it
 	 * is allowed to copy.
 	 *
-	 * To copy a service on its own, use `wp zestry add service <service>`.
+	 * To copy a service on its own, use `wp zt add service <service>`.
 	 *
 	 * ## OPTIONS
 	 *
@@ -82,7 +82,7 @@ return new class() extends AddCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Copy the REST API module, and the service it needs.
-	 *     $ wp zestry add module rest-api
+	 *     $ wp zt add module rest-api
 	 *     Also adding required dependencies: path
 	 *     Added path
 	 *     Added rest-api
@@ -90,17 +90,17 @@ return new class() extends AddCommand {
 	 *     Success: Done.
 	 *
 	 *     # Copy several in one call.
-	 *     $ wp zestry add module cli admin-pages
+	 *     $ wp zt add module cli admin-pages
 	 *     Success: Done.
 	 *
 	 *     # Already on disk, so it is left exactly as it is.
-	 *     $ wp zestry add module cli
+	 *     $ wp zt add module cli
 	 *     Skipped cli (already present)
 	 *     Success: Done.
 	 *
 	 *     # Naming a service here says where to find it.
-	 *     $ wp zestry add module path
-	 *     Error: "path" is a service, not a module. Run `wp zestry add service path`.
+	 *     $ wp zt add module path
+	 *     Error: "path" is a service, not a module. Run `wp zt add service path`.
 	 *
 	 * @param array $args
 	 * @param array $assoc_args

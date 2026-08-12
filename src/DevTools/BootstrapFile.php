@@ -17,7 +17,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * Declares modules in a consuming plugin's `bootstrap.php`.
  *
  * That file lists the modules a plugin uses, and `Plugin::bootstrap()` reads
- * it. Both `wp zestry add` and `wp zestry make module` write to it, so a module is
+ * it. Both `wp zt add` and `wp zt make module` write to it, so a module is
  * active as soon as it is created rather than requiring a manual edit.
  *
  * The file is real PHP holding real closures, so it is appended to rather than
@@ -236,9 +236,9 @@ class BootstrapFile extends Service {
 	 * `bootstrap.php` beside the entry file is the default and very nearly
 	 * always the answer, but `Plugin::bootstrap()` takes any path, and nothing
 	 * on disk records which was used. Assuming the default is not a cosmetic
-	 * error: `wp zestry doctor` reports every module as undeclared, and `wp zestry
-	 * add` appends a declaration to a file the plugin never reads -- which
-	 * copies a module in and leaves it inert, silently.
+	 * error: `wp zt doctor` reports every module as undeclared, and `wp zt add`
+	 * appends a declaration to a file the plugin never reads -- which copies a
+	 * module in and leaves it inert, silently.
 	 *
 	 * So the running plugin is asked first, and it knows because it is the thing
 	 * that called `bootstrap()`. A plugin that is not running, or that declares

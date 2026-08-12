@@ -13,7 +13,7 @@ Action files return a subclass instance. The Ajax module injects the shared plug
 
 Authorization is deliberately not optional: `capability_check()` is abstract, so every action must make an explicit allow/deny decision. A nonce proves the request was intended (anti-CSRF); it does not prove the user is permitted, so the two checks are separate and both run before `handle()`.
 
-A file at `actions/save-profile.php` registers as `wp_ajax_{plugin}-save-profile` (see `Ajax::get_action_slug()`). `wp zestry make action <name>` generates a starting point. The page that triggers this action gets its URL (with a nonce attached) from the Ajax module: `$ajax->get_action_url( 'save-profile' )`. The request is rejected before `handle()` runs if `capability_check()` returns false, or (since `is_nonce_required()` defaults to true) if the request's nonce does not verify.
+A file at `actions/save-profile.php` registers as `wp_ajax_{plugin}-save-profile` (see `Ajax::get_action_slug()`). `wp zt make action <name>` generates a starting point. The page that triggers this action gets its URL (with a nonce attached) from the Ajax module: `$ajax->get_action_url( 'save-profile' )`. The request is rejected before `handle()` runs if `capability_check()` returns false, or (since `is_nonce_required()` defaults to true) if the request's nonce does not verify.
 
 ## What it takes
 
@@ -32,7 +32,7 @@ An action that declares none reads the request itself, and nothing here touches 
 
 ## Generated starting point
 
-[`wp zestry make action <name>`](../../commands/make-action.md) writes this file:
+[`wp zt make action <name>`](../../commands/make-action.md) writes this file:
 
 ```php
 <?php

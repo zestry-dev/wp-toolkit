@@ -33,10 +33,10 @@ use Zestry\WPToolkit\Services\Request\Request;
 use Zestry\WPToolkit\Services\Views;
 
 /**
- * What `wp zestry add <name>` can install, grouped the way `bootstrap.php` is.
+ * What `wp zt add <name>` can install, grouped the way `bootstrap.php` is.
  *
  * Two sections, `services` and `modules`, matching the two base classes and the
- * two directories they live in. A name is unique across both -- `wp zestry add
+ * two directories they live in. A name is unique across both -- `wp zt add
  * path` needs no section, since the commands take a flat name.
  *
  * `source` is the class itself, and the rest is derived from it rather than

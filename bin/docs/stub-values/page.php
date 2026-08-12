@@ -9,7 +9,7 @@ declare( strict_types=1 );
 /*
  * What the generated `render()` and the comment above it read as, which
  * `--no-view` decides. The page shows the default -- a template written
- * alongside the class -- because that is what `wp zestry make page settings`
+ * alongside the class -- because that is what `wp zt make page settings`
  * produces and what the rest of the page describes.
  */
 return array(

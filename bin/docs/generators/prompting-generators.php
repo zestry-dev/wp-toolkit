@@ -1,7 +1,7 @@
 <?php
 
 /**
- * DevTools: which `wp zestry make` types stop to ask
+ * DevTools: which `wp zt make` types stop to ask
  */
 
 declare( strict_types=1 );

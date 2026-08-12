@@ -25,7 +25,7 @@ use WP_Block_Type_Registry;
  * > half is what it takes care of -- discovery, registration, wiring,
  * > rendering -- and that is the smaller half of a block. The editor half is
  * > React against `@wordpress/block-editor`: WordPress's API, documented by
- * > WordPress. `wp zestry make block` hands you a working `edit.tsx` and stops
+ * > WordPress. `wp zt make block` hands you a working `edit.tsx` and stops
  * > there on purpose.
  * >
  * > So a plugin whose interface *is* blocks is mostly a JavaScript project,
@@ -51,7 +51,7 @@ use WP_Block_Type_Registry;
  *
  * ## Static or dynamic
  *
- * `wp zestry make block` asks, and defaults to static. Three questions settle
+ * `wp zt make block` asks, and defaults to static. Three questions settle
  * it, in this order.
  *
  * **Does the output depend on anything outside the block's own attributes?** A
@@ -625,7 +625,7 @@ class Blocks extends Module {
 	/**
 	 * Whether a block belongs to this plugin, by its namespace.
 	 *
-	 * A block's name is `{namespace}/{name}`, and `wp zestry make block` writes the
+	 * A block's name is `{namespace}/{name}`, and `wp zt make block` writes the
 	 * plugin's own slug as that namespace, so this is one prefix comparison --
 	 * which matters on a filter every registered block on the site reaches.
 	 *
@@ -647,7 +647,7 @@ class Blocks extends Module {
 	 * Your slug unchanged. WordPress validates a block name against
 	 * `/^[a-z0-9-]+\/[a-z0-9-]+$/` (`WP_Block_Type_Registry::register()`), and
 	 * `Plugin` accepts only a slug that satisfies the namespace half, so there is
-	 * nothing to convert -- this is the same string `wp zestry make block` writes
+	 * nothing to convert -- this is the same string `wp zt make block` writes
 	 * into a generated `block.json`.
 	 *
 	 * @return string

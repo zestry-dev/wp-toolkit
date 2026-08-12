@@ -14,7 +14,7 @@ Unlike Options, values are never written to the database. This is useful for req
 ## Adding it
 
 ```bash
-wp zestry add service globals
+wp zt add service globals
 ```
 
 ## Sharing a value across one request
@@ -141,4 +141,4 @@ $this->get_plugin()->get( Options::class )->get( 'api_key' );
 ## See also
 
 - [`Service`](../service.md) — what every service inherits
-- [`wp zestry add service globals`](../../commands/add-service.md) — the command that copies it
+- [`wp zt add service globals`](../../commands/add-service.md) — the command that copies it

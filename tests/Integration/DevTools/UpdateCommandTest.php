@@ -10,7 +10,7 @@ use Zestry\WPToolkit\Modules\CLI\Command;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
- * `wp zestry update`: taking a later toolkit without losing local work.
+ * `wp zt update`: taking a later toolkit without losing local work.
  *
  * Runs against a throwaway plugin under WP_PLUGIN_DIR that has really had `add`
  * copy a module into it, so the files, the manifest and the registry all agree
@@ -222,7 +222,7 @@ final class UpdateCommandTest extends TestCase {
 		$this->run_command( 'update.php', array(), array( 'dry-run' => true ) );
 
 		$this->assertStringContainsString( 'removed with the "ajax" module', $this->stdout() );
-		$this->assertStringContainsString( 'wp zestry add module ajax', $this->stdout() );
+		$this->assertStringContainsString( 'wp zt add module ajax', $this->stdout() );
 		$this->assertStringNotContainsString( 'missing', $this->stdout() );
 	}
 

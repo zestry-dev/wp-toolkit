@@ -7,6 +7,6 @@
 declare( strict_types=1 );
 
 return array(
-	// `wp zestry make service` writes into `{root}/Services`, not `{root}/Modules`.
+	// `wp zt make service` writes into `{root}/Services`, not `{root}/Modules`.
 	'{{class_namespace}}' => 'Acme\\Plugin\\Services',
 );

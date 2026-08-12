@@ -1,6 +1,6 @@
 # Shipping
 
-The toolkit is not in your zip. `wp zestry init` copied its kernel into `lib/Core/Kernel/` under your own namespace, and every module you added since landed beside it — that is your source now, and it ships the way the rest of your source does. What you build a release from is the plugin directory you have been working in, minus the tooling.
+The toolkit is not in your zip. `wp zt init` copied its kernel into `lib/Core/Kernel/` under your own namespace, and every module you added since landed beside it — that is your source now, and it ships the way the rest of your source does. What you build a release from is the plugin directory you have been working in, minus the tooling.
 
 ## The package is a dev dependency
 
@@ -8,9 +8,9 @@ The toolkit is not in your zip. `wp zestry init` copied its kernel into `lib/Cor
 composer require zestry-dev/wp-toolkit --dev
 ```
 
-After `init`, nothing in your plugin's runtime references `Zestry\WPToolkit\`: the copy was rewritten to your namespace on the way in. What stays in `vendor/zestry-dev/wp-toolkit` is the `wp zestry` commands themselves — `init`, `add`, `make`, `update`, `doctor` — and those are development tools, in the same category as phpcs.
+After `init`, nothing in your plugin's runtime references `Zestry\WPToolkit\`: the copy was rewritten to your namespace on the way in. What stays in `vendor/zestry-dev/wp-toolkit` is the `wp zt` commands themselves — `init`, `add`, `make`, `update`, `doctor` — and those are development tools, in the same category as phpcs.
 
-The practical consequence: **`wp zestry` disappears from a `--no-dev` install.** Run it while you are working, not while you are packaging.
+The practical consequence: **`wp zt` disappears from a `--no-dev` install.** Run it while you are working, not while you are packaging.
 
 ## You still need `vendor/autoload.php`
 
@@ -35,7 +35,7 @@ composer install --no-dev --optimize-autoloader
 What you get is Composer's generated autoloader — `vendor/autoload.php` and `vendor/composer/` — plus any runtime packages you require yourself. `zestry-dev/wp-toolkit` is not among them, and neither is phpcs, PHPUnit or anything else under `require-dev`. If your plugin has no runtime dependencies at all, `vendor/` is just the autoloader, and it still has to be in the zip.
 
 > [!IMPORTANT]
-> Run `composer install --no-dev` into a build copy, or run `composer install` again afterwards. It deletes your dev dependencies from the working tree, and `wp zestry` along with them.
+> Run `composer install --no-dev` into a build copy, or run `composer install` again afterwards. It deletes your dev dependencies from the working tree, and `wp zt` along with them.
 
 ## What is committed, and what ships
 
@@ -58,14 +58,14 @@ They are not the same list, and the difference is what makes `git archive` the w
 
 Both are development records, and both belong in the repository.
 
-- **`zestry.json`** holds the three answers you gave `init` — namespace, text domain, source root. Every later `wp zestry` command reads it.
-- **`zestry.lock.json`** holds a hash per copied file, taken as the file was written. That is what lets `wp zestry update` tell an edit of yours from a change upstream, rather than reporting one indistinguishable difference. Commit it for the same reason you commit `composer.lock`: a manifest that is not in the repository tells a colleague's checkout nothing.
+- **`zestry.json`** holds the three answers you gave `init` — namespace, text domain, source root. Every later `wp zt` command reads it.
+- **`zestry.lock.json`** holds a hash per copied file, taken as the file was written. That is what lets `wp zt update` tell an edit of yours from a change upstream, rather than reporting one indistinguishable difference. Commit it for the same reason you commit `composer.lock`: a manifest that is not in the repository tells a colleague's checkout nothing.
 
 Neither is loaded by your plugin at runtime. Leaving them in the zip is harmless; excluding them costs nothing either.
 
 ## The JavaScript build
 
-If you have used `wp zestry make block`, there are two directories and only one of them ships.
+If you have used `wp zt make block`, there are two directories and only one of them ships.
 
 - **`src/blocks/{name}/`** is what you author and commit — `block.json`, scripts, styles, and the optional `block.php`.
 - **`build/blocks/`** is what `npm run build` compiles, and it is the directory the [`Blocks`](modules/blocks/) module walks. A block that has never been built registers nothing.
@@ -76,13 +76,13 @@ npm install
 npm run build
 ```
 
-`wp zestry add module blocks` wrote that script as `wp-scripts build --webpack-copy-php --experimental-modules --blocks-manifest`, so the build also copies each block's PHP into `build/` and writes a `blocks-manifest.php` the module reads in place of one `block.json` decode per block. **Build before packaging, every time** — `build/` is gitignored, so a fresh clone has nothing there at all.
+`wp zt add module blocks` wrote that script as `wp-scripts build --webpack-copy-php --experimental-modules --blocks-manifest`, so the build also copies each block's PHP into `build/` and writes a `blocks-manifest.php` the module reads in place of one `block.json` decode per block. **Build before packaging, every time** — `build/` is gitignored, so a fresh clone has nothing there at all.
 
 The npm packages are all dev dependencies. `wp-scripts` maps every `@wordpress/*` import onto the `wp.*` globals WordPress already enqueues, so none of them end up in the bundle and `node_modules/` never ships.
 
 ### Making the zip
 
-`wp zestry add module blocks` also added `npm run plugin-zip`, which wraps `wp-scripts plugin-zip`. It is usable, with one thing to set up first.
+`wp zt add module blocks` also added `npm run plugin-zip`, which wraps `wp-scripts plugin-zip`. It is usable, with one thing to set up first.
 
 Without a `files` field in your `package.json`, it falls back to a fixed list of Plugin Handbook directories — `admin/`, `build/`, `includes/`, `languages/`, `public/`, `{name}.php` and a few root files. **`lib/`, `vendor/` and `bootstrap.php` are not on that list**, so the zip it produces will be missing your entire plugin. Declare what ships:
 
@@ -107,14 +107,14 @@ A plugin that never added the `blocks` module has no npm tooling at all, and not
 
 ## Updating the toolkit in a shipped plugin
 
-A later release of the toolkit never arrives on its own. `wp zestry update` re-copies everything under `lib/Core/` — the kernel, plus every module and service you have added — from whichever version of `zestry-dev/wp-toolkit` is currently installed. Nothing outside `lib/Core/` is touched.
+A later release of the toolkit never arrives on its own. `wp zt update` re-copies everything under `lib/Core/` — the kernel, plus every module and service you have added — from whichever version of `zestry-dev/wp-toolkit` is currently installed. Nothing outside `lib/Core/` is touched.
 
 ```bash
 composer update zestry-dev/wp-toolkit
-wp zestry update --dry-run
+wp zt update --dry-run
 ```
 
-Every file comes back as `unchanged`, `upstream`, `missing`, `edited` or `conflict`; the first three are replaced or written back, and the last two are kept unless you pass `--force`. [Troubleshooting](troubleshooting.md#wp-zestry-update-and-your-edits) has the full table.
+Every file comes back as `unchanged`, `upstream`, `missing`, `edited` or `conflict`; the first three are replaced or written back, and the last two are kept unless you pass `--force`. [Troubleshooting](troubleshooting.md#wp-zt-update-and-your-edits) has the full table.
 
 Run `--dry-run` first, always — it reports and writes nothing. Then do the real run on a branch, with your [test suite](testing.md) as the check, exactly as you would any other code change. It is your code that just changed.
 
@@ -125,7 +125,7 @@ composer lint                                    # phpcs, if init set it up
 npm run lint:js                                  # eslint, if init set it up
 npm run test:php                                 # your suite, green
 npm run build                                    # build/ from src/blocks/
-wp zestry doctor                                 # wiring that fails silently
+wp zt doctor                                 # wiring that fails silently
 ```
 
 Plus the things no command can check for you:
@@ -133,12 +133,12 @@ Plus the things no command can check for you:
 - **Bump `Version:`** in the entry file header. `$plugin->get_version()` reads it straight from there, so anything of yours keyed to a version follows automatically.
 - **Migrations do not run themselves.** Adding one to `migrations/` ships a pending migration and nothing more — decide how the release triggers `run_pending()`, and see [Migrations](modules/migrations/) for why a hook is not it.
 
-`wp zestry doctor` comes last because it is the only check for a module that is on disk, correct, and never listed in `bootstrap.php` — which produces no error, just a missing feature — and because the `--no-dev` install in the next step takes it away.
+`wp zt doctor` comes last because it is the only check for a module that is on disk, correct, and never listed in `bootstrap.php` — which produces no error, just a missing feature — and because the `--no-dev` install in the next step takes it away.
 
 Then build the release: `composer install --no-dev --optimize-autoloader`, and zip.
 
 ## Next
 
 - [Testing](testing.md) — the suite the update step above leans on
-- [`wp zestry update`](commands/update.md) — every flag, and what each state reports
-- [`wp zestry doctor`](commands/doctor.md) — what it checks, and what it does not
+- [`wp zt update`](commands/update.md) — every flag, and what each state reports
+- [`wp zt doctor`](commands/doctor.md) — what it checks, and what it does not

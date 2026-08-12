@@ -10,7 +10,7 @@ use Zestry\WPToolkit\Modules\CLI\Command;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
- * `wp zestry doctor`: the silent-misconfiguration checks.
+ * `wp zt doctor`: the silent-misconfiguration checks.
  *
  * Every case here is one that produces no runtime error in a real plugin -- a
  * module nothing declares, a declaration pointing at a deleted file -- which is
@@ -53,7 +53,7 @@ final class DoctorCommandTest extends TestCase {
 		);
 
 		/*
-		 * Reaching `wp zestry doctor` at all means WordPress loaded this plugin and
+		 * Reaching `wp zt doctor` at all means WordPress loaded this plugin and
 		 * its entry file ran, which is the state every test here but one is
 		 * about. `Plugin::run()` publishes itself as its last act; a bare
 		 * fixture directory has no entry file to do that, so it is done here.
@@ -116,7 +116,7 @@ final class DoctorCommandTest extends TestCase {
 	}
 
 	/**
-	 * A bare entry is the shape `wp zestry add` and `wp zestry make module` write.
+	 * A bare entry is the shape `wp zt add` and `wp zt make module` write.
 	 *
 	 * It has an integer key, so a reader looking only for string keys sees
 	 * nothing -- and a module that is declared is then reported as undeclared,
@@ -279,7 +279,7 @@ final class DoctorCommandTest extends TestCase {
 
 		$this->run_doctor();
 
-		$this->assertStringContainsString( 'Run `wp zestry init` first', (string) \WP_CLI::last( 'error' )[0] );
+		$this->assertStringContainsString( 'Run `wp zt init` first', (string) \WP_CLI::last( 'error' )[0] );
 	}
 
 	/**
@@ -322,7 +322,7 @@ final class DoctorCommandTest extends TestCase {
 	 *
 	 * The undeclared-module check walks the registry and looks for each entry's
 	 * file under the consumer's own namespace, so a module has to sit exactly
-	 * where `wp zestry add` would have put it for that check to see it at all.
+	 * where `wp zt add` would have put it for that check to see it at all.
 	 *
 	 * @param string $class_name The class's short name, e.g. `AdminPages`.
 	 * @return void

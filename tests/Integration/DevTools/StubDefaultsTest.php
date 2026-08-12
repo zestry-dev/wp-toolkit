@@ -23,7 +23,7 @@ final class StubDefaultsTest extends TestCase {
 	 *
 	 * A generated file lints and runs as-is, so a permissive default ships a
 	 * finished-looking endpoint that anyone can call. The route stub used to
-	 * `return true;`, which meant `wp zestry make route delete-widget
+	 * `return true;`, which meant `wp zt make route delete-widget
 	 * --method=delete` produced a publicly callable DELETE route.
 	 */
 	public function test_authorization_stubs_deny_by_default(): void {

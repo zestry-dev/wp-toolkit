@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry doctor`.
+ * Devtool command: `wp zt doctor`.
  *
  * Checks a plugin's own wiring -- zestry.json, bootstrap.php, and the modules
  * declared in it -- for the mistakes that fail silently rather than loudly.
@@ -23,7 +23,7 @@ use Zestry\WPToolkit\Services\Path;
 return new class() extends Command {
 
 	/**
-	 * The plugin whose directory `wp zestry` was run from.
+	 * The plugin whose directory `wp zt` was run from.
 	 *
 	 * @var ConsumerPlugin
 	 */
@@ -75,7 +75,7 @@ return new class() extends Command {
 	 * - a `zestry.json` naming a root directory that is not there.
 	 *
 	 * Needs an initialized plugin: with no `zestry.json` in the current directory
-	 * it exits non-zero telling you to run `wp zestry init` first, and it stops the
+	 * it exits non-zero telling you to run `wp zt init` first, and it stops the
 	 * same way when `bootstrap.php` does not parse.
 	 *
 	 * Reads only. Nothing here edits a file, so it is safe to run at any point.
@@ -109,7 +109,7 @@ return new class() extends Command {
 	 * ## EXAMPLES
 	 *
 	 *     # Check the plugin in the current directory.
-	 *     $ wp zestry doctor
+	 *     $ wp zt doctor
 	 *     zestry.json    Acme\Plugin -> lib/
 	 *     bootstrap.php  6 classes declared
 	 *
@@ -121,15 +121,15 @@ return new class() extends Command {
 	 *     Error: 1 problem found.
 	 *
 	 *     # Nothing wrong.
-	 *     $ wp zestry doctor
+	 *     $ wp zt doctor
 	 *     Success: No problems found.
 	 *
 	 *     # For tooling. Exits non-zero, so it gates a build on its own.
-	 *     $ wp zestry doctor --format=json
+	 *     $ wp zt doctor --format=json
 	 *     [{"file":"lib\/Core\/Modules\/Cron\/Cron.php","problem":"The \"cron\" module is copied in but never declared."}]
 	 *
 	 *     # Same fields, easier to read over someone's shoulder.
-	 *     $ wp zestry doctor --format=yaml
+	 *     $ wp zt doctor --format=yaml
 	 *     ---
 	 *     -
 	 *       file: lib/Core/Modules/Cron/Cron.php
@@ -144,7 +144,7 @@ return new class() extends Command {
 		$plugin_root = $this->consumer_plugin->get_plugin_root();
 
 		if ( ! $this->zestry_config->exists( $plugin_root ) ) {
-			$this->error( 'No zestry.json here. Run `wp zestry init` first.' );
+			$this->error( 'No zestry.json here. Run `wp zt init` first.' );
 			return;
 		}
 
@@ -261,7 +261,7 @@ return new class() extends Command {
 
 		$this->add_problem(
 			sprintf( 'zestry.json names "%s/" as this project\'s root, but there is no such directory.', $root ),
-			'Every `wp zestry add` and `wp zestry make` writes there, and the PSR-4 entry in composer.json points at it.',
+			'Every `wp zt add` and `wp zt make` writes there, and the PSR-4 entry in composer.json points at it.',
 			'zestry.json'
 		);
 	}

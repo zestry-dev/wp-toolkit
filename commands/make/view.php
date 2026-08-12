@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make view <name>`.
+ * Devtool command: `wp zt make view <name>`.
  */
 
 declare( strict_types=1 );
@@ -14,7 +14,7 @@ return new class() extends MakeCommand {
 	 * Generate a view template.
 	 *
 	 * Writes `views/<name>.php`, which the Views service renders by that name.
-	 * A name may contain slashes, so `wp zestry make view admin-pages/settings`
+	 * A name may contain slashes, so `wp zt make view admin-pages/settings`
 	 * writes `views/admin-pages/settings.php` and creates the directory.
 	 *
 	 * A template receives exactly what its caller passes, plus `$this` -- the
@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 * everything else uses. Nothing else is in scope, which is what keeps a
 	 * template's inputs readable without opening it.
 	 *
-	 * Needs the `views` service: `wp zestry add service views`. It arrives on its
+	 * Needs the `views` service: `wp zt add service views`. It arrives on its
 	 * own with `admin-pages`, which renders its markup this way.
 	 *
 	 * ## OPTIONS
@@ -40,7 +40,7 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Rendered with $views->render( 'emails/receipt', array( ... ) ).
-	 *     $ wp zestry make view emails/receipt
+	 *     $ wp zt make view emails/receipt
 	 *     Success: Created views/emails/receipt.php
 	 *
 	 * @param array $args

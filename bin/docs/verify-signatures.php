@@ -52,7 +52,7 @@ function zestry_verify_signatures( string $root ): array {
 	/*
 	 * A stub is the same risk with a wider blast radius. A page showing a bad
 	 * override misleads whoever copies it; a stub *is* what every generated file
-	 * starts as, so the same mistake reaches everyone who runs `wp zestry make`
+	 * starts as, so the same mistake reaches everyone who runs `wp zt make`
 	 * from that point on. It has happened: route.php.stub once narrowed
 	 * permission_check() to `bool` while its own comment told the author to
 	 * return a WP_Error, which fatals under strict_types.

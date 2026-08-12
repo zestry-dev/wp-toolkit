@@ -73,7 +73,7 @@ function zestry_find_class_file( string $root, string $class ): ?string {
  * the same directory is just as much something a consumer writes against, and
  * satisfies the same guard. `ModernAdminPage` is one, and until this it
  * appeared in no generated page at all: it ships to every plugin that runs
- * `wp zestry add admin-pages`, yet the only way to learn it existed was to list
+ * `wp zt add admin-pages`, yet the only way to learn it existed was to list
  * the copied directory.
  *
  * Detected from the source rather than declared in `registry.php`, so a base
@@ -248,14 +248,14 @@ function zestry_pair_roots_to_bases( array $names, array $roots, array $bases ):
 }
 
 /**
- * The directory `wp zestry make <type>` writes into, read from the command itself.
+ * The directory `wp zt make <type>` writes into, read from the command itself.
  *
  * Only interesting when it differs from where the module then discovers the
  * file, which is true of exactly one type -- but reading it rather than listing
  * the exception means a second one cannot appear undocumented.
  *
  * @param string $root Absolute path to the repository root.
- * @param string $type The `wp zestry make` subcommand, e.g. `block`.
+ * @param string $type The `wp zt make` subcommand, e.g. `block`.
  * @return string|null The plugin-relative directory, or null when it is computed.
  */
 function zestry_make_destination( string $root, string $type ): ?string {
@@ -620,7 +620,7 @@ function zestry_render_method( array $method, string $level ): array {
 }
 
 /**
- * The sample values one `wp zestry make` type's stubs render with.
+ * The sample values one `wp zt make` type's stubs render with.
  *
  * The values every type shares live here. Anything only one type asks for
  * lives under `bin/docs/stub-values/`, which returns its own
@@ -633,7 +633,7 @@ function zestry_render_method( array $method, string $level ): array {
  * not each file's. A type with nothing of its own needs no file.
  *
  * @param string $root Absolute path to the repository root.
- * @param string $type The `wp zestry make <type>` word, e.g. `block` or `route`.
+ * @param string $type The `wp zt make <type>` word, e.g. `block` or `route`.
  * @return array<string, string> Replacement values, keyed by `{{placeholder}}`.
  */
 function zestry_stub_values( string $root, string $type ): array {
@@ -678,7 +678,7 @@ function zestry_stub_values( string $root, string $type ): array {
  * Read the example of a discovered file, from the stub that generates it.
  *
  * The stub is the better source than a base-class docblock: it is the file a
- * reader actually receives from `wp zestry make`, it is already exercised by the
+ * reader actually receives from `wp zt make`, it is already exercised by the
  * DevTools tests, and keeping the example only here means there is one copy
  * rather than a docblock and a stub that can disagree.
  *
@@ -724,7 +724,7 @@ function zestry_read_stub_example( string $root, string $base, string $base_file
 		return null;
 	}
 
-	// The `wp zestry make <type>` word: a multi-file type's stubs sit in a
+	// The `wp zt make <type>` word: a multi-file type's stubs sit in a
 	// directory named after it, a single-file type's stub is named for it.
 	$type = str_contains( $tags[0][1], '/' )
 		? dirname( $tags[0][1] )
@@ -944,14 +944,14 @@ function zestry_generate_module_pages( string $root ): int {
 		$page[] = '';
 		$page[] = '```bash';
 		// The subcommand names the kind, so the snippet has to as well.
-		$page[] = 'wp zestry add ' . ( $module['is_module'] ? 'module ' : 'service ' ) . $name;
+		$page[] = 'wp zt add ' . ( $module['is_module'] ? 'module ' : 'service ' ) . $name;
 		$page[] = '```';
 		$page[] = '';
 
 		/*
 		 * Copying a module is half of installing it: it acts on its own, so it
 		 * has to be built for any of that to happen, and being listed in
-		 * `bootstrap.php` is what builds it. `wp zestry add` writes that entry, so
+		 * `bootstrap.php` is what builds it. `wp zt add` writes that entry, so
 		 * this is reassurance for a reader wondering what else is needed -- and
 		 * the one thing to check when a module appears to do nothing. Said only
 		 * on module pages, since a service is never listed at all.
@@ -960,9 +960,9 @@ function zestry_generate_module_pages( string $root ): int {
 			$page[] = '> [!IMPORTANT]';
 			$page[] = '> **A module is built because `bootstrap.php` lists it.**'
 				. ' `' . $module['class'] . '` binds its hooks when the plugin builds it,'
-				. ' so it has to be listed there — which `wp zestry add` writes for you.'
+				. ' so it has to be listed there — which `wp zt add` writes for you.'
 				. ' Left out, nothing is discovered and nothing reports why;'
-				. ' [`wp zestry doctor`](../../commands/doctor.md) is what catches it.';
+				. ' [`wp zt doctor`](../../commands/doctor.md) is what catches it.';
 			$page[] = '';
 			$page[] = '```php';
 			$page[] = '// bootstrap.php';
@@ -1070,12 +1070,12 @@ function zestry_generate_module_pages( string $root ): int {
 				zestry_article( $base ),
 				$base,
 				zestry_base_slug( $base ),
-				null !== $stub ? sprintf( ', which `wp zestry make %s <name>` generates', $stub['type'] ) : ''
+				null !== $stub ? sprintf( ', which `wp zt make %s <name>` generates', $stub['type'] ) : ''
 			);
 
 			/*
 			 * Blocks is the one module whose files are not authored where they
-			 * are discovered: `wp zestry make block` writes to the source tree and
+			 * are discovered: `wp zt make block` writes to the source tree and
 			 * `wp-scripts` compiles it into the discovered one. Saying only
 			 * where the module looks sends a reader to edit build output.
 			 */
@@ -1084,7 +1084,7 @@ function zestry_generate_module_pages( string $root ): int {
 			if ( null !== $authored_in && $authored_in !== ( $module['root_of'][ $base ] ?? $module['roots'][0] ) ) {
 				$page[] = '';
 				$page[] = sprintf(
-					'You write it in `%s/` — that is what `wp zestry make %s <name>` creates and what you edit. `%s/` holds the compiled output `npm run build` produces, and is the directory this module reads.',
+					'You write it in `%s/` — that is what `wp zt make %s <name>` creates and what you edit. `%s/` holds the compiled output `npm run build` produces, and is the directory this module reads.',
 					$authored_in,
 					$stub['type'],
 					$module['root_of'][ $base ] ?? $module['roots'][0]
@@ -1328,7 +1328,7 @@ function zestry_generate_module_pages( string $root ): int {
 		}
 
 		$index[] = '';
-		$index[] = 'Everything here is optional. `wp zestry add ' . rtrim( $section, 's' ) . ' <name>` copies one into your'
+		$index[] = 'Everything here is optional. `wp zt add ' . rtrim( $section, 's' ) . ' <name>` copies one into your'
 			. ' plugin, along with anything it depends on.';
 		$index[] = '';
 
@@ -1449,7 +1449,7 @@ function zestry_generate_module_pages( string $root ): int {
 			$index[] = '**`blocks` and `assets` also write build tooling outside their own'
 				. ' tree** -- npm scripts and devDependencies, a `tsconfig.json`, a'
 				. ' `webpack.config.js`, `.gitignore` entries. Everything either writes is'
-				. ' additive, and [`wp zestry add module`](../commands/add-module.md) lists it.';
+				. ' additive, and [`wp zt add module`](../commands/add-module.md) lists it.';
 			$index[] = '';
 			$index[] = 'One worth calling out: **`ajax` serves `admin-ajax.php`**, not the REST'
 				. ' API. Reach for it when something already speaks that protocol -- an'
@@ -1749,7 +1749,7 @@ function zestry_write_base_class_page( string $root, string $output_dir, string 
 		// class page is written from `../..`, so the path climbs out of
 		// `modules/{module}/` to reach `commands/`.
 		$page[] = sprintf(
-			'[`wp zestry make %1$s <name>`](../../commands/make-%1$s.md) writes %2$s:',
+			'[`wp zt make %1$s <name>`](../../commands/make-%1$s.md) writes %2$s:',
 			$stub['type'],
 			count( $stub['files'] ) > 1 ? 'these files' : 'this file'
 		);
@@ -1857,7 +1857,7 @@ function zestry_render_see_also( array $module, string $name, array $sections ):
 		: '[`Service`](../service.md) — what every service inherits';
 
 	$links[] = sprintf(
-		'[`wp zestry add %s %s`](../../commands/add-%s.md) — the command that copies it',
+		'[`wp zt add %s %s`](../../commands/add-%s.md) — the command that copies it',
 		$module['is_module'] ? 'module' : 'service',
 		$name,
 		$module['is_module'] ? 'module' : 'service'

@@ -37,7 +37,7 @@ A page extending this needs no wrapper markup of its own: `AdminPages` already w
 
 ## Taking the full canvas
 
-`wp zestry make page <name>` generates a file extending `AdminPage`. Changing that one word is the entire migration — every other method behaves exactly as it did.
+`wp zt make page <name>` generates a file extending `AdminPage`. Changing that one word is the entire migration — every other method behaves exactly as it did.
 
 ```php
 <?php
@@ -290,7 +290,7 @@ public function view( string $view, array $data = array() ): void
 | **Return** | — |
 | **Throws** | `InvalidArgumentException` — When the views root or the view is missing |
 
-The markup belongs in `views/`, not in a PHP string. An admin page is mostly a form — tables, fields, notices, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing. `wp zestry make page` writes the template alongside the class, so there is one to render from the start.
+The markup belongs in `views/`, not in a PHP string. An admin page is mostly a form — tables, fields, notices, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing. `wp zt make page` writes the template alongside the class, so there is one to render from the start.
 
 ```
 public function render(): void {

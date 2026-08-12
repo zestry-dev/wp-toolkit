@@ -26,7 +26,7 @@ Three pairs, in order of how much they do:
 ## Adding it
 
 ```bash
-wp zestry add service cookie
+wp zt add service cookie
 ```
 
 ## Reading and writing
@@ -304,4 +304,4 @@ $this->get_plugin()->get( Options::class )->get( 'api_key' );
 
 - [`transients`](../transients/) — copied in alongside this one
 - [`Service`](../service.md) — what every service inherits
-- [`wp zestry add service cookie`](../../commands/add-service.md) — the command that copies it
+- [`wp zt add service cookie`](../../commands/add-service.md) — the command that copies it

@@ -46,7 +46,7 @@ return new class extends Field {
 
 ## Generated starting point
 
-[`wp zestry make field <name>`](../../commands/make-field.md) writes this file:
+[`wp zt make field <name>`](../../commands/make-field.md) writes this file:
 
 ```php
 <?php

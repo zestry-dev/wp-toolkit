@@ -447,7 +447,7 @@ final class AssetsTest extends TestCase {
 	}
 
 	/**
-	 * `wp zestry update` refreshes the copied PHP but leaves `webpack.config.js`
+	 * `wp zt update` refreshes the copied PHP but leaves `webpack.config.js`
 	 * alone -- it is generated once and yours to edit -- so an updated plugin can
 	 * meet a manifest written to the older shape. Read as-is it would register
 	 * nothing and look like a plugin with no JavaScript.

@@ -28,7 +28,7 @@ use Zestry\WPToolkit\DevTools\RuntimePlugin;
 /**
  * MakeCommand class.
  *
- * Shared flow behind every `wp zestry make <type> <name>` subcommand (see the
+ * Shared flow behind every `wp zt make <type> <name>` subcommand (see the
  * concrete classes under `commands/make/`): read the project's zestry.json for
  * its namespace, render the type's stub with the name/title plus whatever
  * {@see get_extra_values()} contributes, and write it into the type's
@@ -38,7 +38,7 @@ use Zestry\WPToolkit\DevTools\RuntimePlugin;
  * A concrete subcommand supplies only what makes it different from the
  * others: its stub filename, its default destination directory, and,
  * optionally, extra placeholder values gathered from flags or prompts.
- * Unlike `wp zestry add`, none of this touches the module registry or copies
+ * Unlike `wp zt add`, none of this touches the module registry or copies
  * any toolkit source -- it only writes one new file with the project's own
  * namespace already filled in.
  */
@@ -96,7 +96,7 @@ abstract class MakeCommand extends Command {
 	/**
 	 * Generate a new file from this type's stub.
 	 *
-	 * Requires `wp zestry init` to have already run in this plugin (it reads
+	 * Requires `wp zt init` to have already run in this plugin (it reads
 	 * zestry.json for the namespace to fill into the generated file).
 	 *
 	 * ## OPTIONS
@@ -121,7 +121,7 @@ abstract class MakeCommand extends Command {
 	public function handle( array $args, array $assoc_args ): void {
 		if ( \count( $args ) < 1 ) {
 			$this->error(
-				'Usage: wp zestry make ' . static::get_type() . ' <name>'
+				'Usage: wp zt make ' . static::get_type() . ' <name>'
 					. ( $this->allows_custom_dir() ? ' [--dir=<dir>]' : '' )
 			);
 			return;
@@ -677,7 +677,7 @@ abstract class MakeCommand extends Command {
 			// comes back to when the file turns out to do nothing.
 			$this->warning(
 				\sprintf(
-					'Writing it anyway, but this plugin has no %s. Run `wp zestry add module %s` before it can do anything.',
+					'Writing it anyway, but this plugin has no %s. Run `wp zt add module %s` before it can do anything.',
 					$class,
 					$module
 				)
@@ -733,7 +733,7 @@ abstract class MakeCommand extends Command {
 	}
 
 	/**
-	 * Run `wp zestry add module <name>` from inside this command.
+	 * Run `wp zt add module <name>` from inside this command.
 	 *
 	 * The real command rather than a copy of what it does: it resolves the
 	 * module's dependencies, rewrites every namespace, declares it in
@@ -876,7 +876,7 @@ abstract class MakeCommand extends Command {
 	}
 
 	/**
-	 * The `wp zestry make <type>` word this subcommand registers under.
+	 * The `wp zt make <type>` word this subcommand registers under.
 	 *
 	 * Used only to compose the usage message when no name is given; the word
 	 * itself comes from the subcommand's own filename under `commands/make/`

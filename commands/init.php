@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry init`.
+ * Devtool command: `wp zt init`.
  *
  * One-time setup for a consuming plugin: asks for a target namespace, a text
  * domain, and a destination directory (relative to the plugin's own root),
@@ -12,7 +12,7 @@
  * domain -- then writes `zestry.json` recording those choices, `zestry.lock.json`
  * recording what was written, a `bootstrap.php`, and a `.gitignore` covering
  * what is built rather than authored, and adds a matching PSR-4 autoload entry
- * to the plugin's own composer.json. Run `wp zestry add module <name>` afterward
+ * to the plugin's own composer.json. Run `wp zt add module <name>` afterward
  * to copy in individual feature modules.
  */
 
@@ -98,7 +98,7 @@ return new class() extends Command {
 	 *
 	 * Four files are written around that copy: `zestry.json`, recording the three
 	 * choices above; `zestry.lock.json`, recording the hash of every copied file as
-	 * it was written, which is what later lets `wp zestry update` tell an edit of
+	 * it was written, which is what later lets `wp zt update` tell an edit of
 	 * yours from an upstream change; `bootstrap.php`, the file your modules are
 	 * declared in; and `.gitignore`, covering the directories that are built
 	 * rather than authored. It then adds a matching PSR-4 autoload entry to your
@@ -106,7 +106,7 @@ return new class() extends Command {
 	 * copied classes load without a further step.
 	 *
 	 * Refuses to run if zestry.json already exists, since that means the
-	 * plugin has already been initialized; run `wp zestry add module <name>`
+	 * plugin has already been initialized; run `wp zt add module <name>`
 	 * instead to copy in additional feature modules.
 	 *
 	 * That directory is where the plugin's *own* classes belong too, beside
@@ -117,7 +117,7 @@ return new class() extends Command {
 	 * carries as an extra namespace segment.
 	 *
 	 * Do not choose `src`: `@wordpress/scripts` treats it as its source path,
-	 * and `wp zestry make block` writes into `src/blocks/`.
+	 * and `wp zt make block` writes into `src/blocks/`.
 	 *
 	 * ## TOOLING
 	 *
@@ -148,7 +148,7 @@ return new class() extends Command {
 	 * - `AGENTS.md`, the invariants an agent working in this plugin needs, and a
 	 *   `.claude/CLAUDE.md` pointing at it. Rendered from the toolkit's own rules
 	 *   page rather than written twice, and describing no feature of your plugin
-	 *   -- `wp zestry describe` answers that from the plugin itself.
+	 *   -- `wp zt describe` answers that from the plugin itself.
 	 *
 	 * Dependencies are added unversioned. The pin belongs in your lock file,
 	 * written the first time you install.
@@ -185,7 +185,7 @@ return new class() extends Command {
 	 *
 	 *     # A full run. The copied source becomes the plugin's own code, so a
 	 *     # plain project namespace is normal here.
-	 *     $ wp zestry init
+	 *     $ wp zt init
 	 *     Namespace (e.g. Vendor\MyPlugin): Vendor\MyPlugin
 	 *     Text domain: (default: my-plugin) my-plugin
 	 *     Source directory: (default: lib) lib
@@ -198,15 +198,15 @@ return new class() extends Command {
 	 *     Wrote .prettierrc.js
 	 *     Wrote .prettierignore
 	 *     Added to package.json: eslint, @wordpress/eslint-plugin, prettier, ...
-	 *     Success: Initialized. Run `wp zestry add module <name>` to copy in feature modules.
+	 *     Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
 	 *
 	 *     # Unattended, taking every inferred default and setting up all three.
-	 *     $ wp zestry init --yes
-	 *     Success: Initialized. Run `wp zestry add module <name>` to copy in feature modules.
+	 *     $ wp zt init --yes
+	 *     Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
 	 *
 	 *     # Unattended, and without the JS tooling.
-	 *     $ wp zestry init --yes --no-eslint --no-prettier
-	 *     Success: Initialized. Run `wp zestry add module <name>` to copy in feature modules.
+	 *     $ wp zt init --yes --no-eslint --no-prettier
+	 *     Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -250,9 +250,9 @@ return new class() extends Command {
 		}
 
 		/*
-		 * Only the kernel. Feature modules and services are opt-in through `wp
-		 * zestry add`, which writes beside this under the same `Core/` segment --
-		 * everything there came from the toolkit and `wp zestry update` may replace
+		 * Only the kernel. Feature modules and services are opt-in through
+		 * `wp zt add`, which writes beside this under the same `Core/` segment --
+		 * everything there came from the toolkit and `wp zt update` may replace
 		 * it, everything else under `{root}/` is the consumer's own.
 		 */
 		$written = $this->copier->copy_directory(
@@ -264,7 +264,7 @@ return new class() extends Command {
 
 		$this->zestry_config->write( $plugin_root, $namespace, $root, $text_domain );
 
-		// Recorded as it is written, so `wp zestry update` can later tell a file
+		// Recorded as it is written, so `wp zt update` can later tell a file
 		// this wrote from one the consumer has since edited.
 		$this->manifest->record( $plugin_root, $written );
 		$this->update_composer_autoload( $plugin_root, $composer_path, $composer, $namespace, $root );
@@ -272,7 +272,7 @@ return new class() extends Command {
 		$this->write_gitignore( $plugin_root );
 		$this->offer_tooling( $plugin_root, $root, $text_domain, $assoc_args );
 
-		$this->success( 'Initialized. Run `wp zestry add module <name>` to copy in feature modules.' );
+		$this->success( 'Initialized. Run `wp zt add module <name>` to copy in feature modules.' );
 	}
 
 	/**
@@ -512,7 +512,7 @@ return new class() extends Command {
 		}
 
 		// `src` belongs to `@wordpress/scripts`, which treats it as its source
-		// path, and `wp zestry make block` writes into `src/blocks/`. Copying PHP
+		// path, and `wp zt make block` writes into `src/blocks/`. Copying PHP
 		// there would put the two in the same tree for no gain.
 		if ( 'src' === trim( $root, '/' ) ) {
 			if ( $unattended ) {
@@ -831,7 +831,7 @@ return new class() extends Command {
 	}
 
 	/**
-	 * Write the `bootstrap.php` that `wp zestry add module` appends to.
+	 * Write the `bootstrap.php` that `wp zt add module` appends to.
 	 *
 	 * Left alone if one already exists: it is the plugin's own file the moment
 	 * it is written, and `init` has no business replacing declarations someone

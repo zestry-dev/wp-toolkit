@@ -16,11 +16,11 @@ A pages directory contains PHP files named after the page, such as `admin-pages/
 ## Adding it
 
 ```bash
-wp zestry add module admin-pages
+wp zt add module admin-pages
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `AdminPages` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `AdminPages` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -50,7 +50,7 @@ return new class() extends AdminPage {
 
 ## Where the markup goes
 
-A page's markup belongs in a template, and `wp zestry make page` writes one alongside the class. An admin page is mostly a form — a table, a notice, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing.
+A page's markup belongs in a template, and `wp zt make page` writes one alongside the class. An admin page is mostly a form — a table, a notice, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing.
 
 `AdminPage::view()` renders through the `Views` service, and the template gets what that call passes and nothing else — it cannot reach the page for anything the call left out. So the call is the list of the template's inputs, readable without opening the template.
 
@@ -84,7 +84,7 @@ return array(
 
 ## Writing an AdminPage
 
-A file in `admin-pages/` returns an [`AdminPage`](admin-page.md) instance, which `wp zestry make page <name>` generates.
+A file in `admin-pages/` returns an [`AdminPage`](admin-page.md) instance, which `wp zt make page <name>` generates.
 
 The toolkit also ships a specialised base to extend in place of `AdminPage`, satisfying the same guard:
 
@@ -299,4 +299,4 @@ protected function on_boot(): void {
 - [`request`](../../services/request/) — copied in alongside this one
 - [`views`](../../services/views/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module admin-pages`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module admin-pages`](../../commands/add-module.md) — the command that copies it

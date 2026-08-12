@@ -64,7 +64,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * @example Rendering an admin page
  * This is the case most plugins reach for first, and it has a shortcut: an
  * {@see \Zestry\WPToolkit\Modules\AdminPages\AdminPage} calls `$this->view()` rather than
- * resolving this service. `wp zestry make page` writes both files, and the
+ * resolving this service. `wp zt make page` writes both files, and the
  * template gets exactly what the `render()` call names -- nothing of the page
  * itself, so its inputs are readable without opening it.
  *

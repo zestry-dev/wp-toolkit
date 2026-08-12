@@ -7,7 +7,7 @@
 declare( strict_types=1 );
 
 /**
- * Every module name `wp zestry add module` accepts, comma-separated in backticks.
+ * Every module name `wp zt add module` accepts, comma-separated in backticks.
  *
  * Derived from `registry.php`, which is the single source of what is
  * installable -- so a module added there appears on every page naming them,

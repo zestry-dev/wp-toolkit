@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make module <name>`.
+ * Devtool command: `wp zt make module <name>`.
  *
  * Generates a new, plain consumer Module -- a hand-authored service (in the
  * spirit of Options/Log/Assets), not one of the file-based discovery
@@ -37,12 +37,12 @@ return new class() extends MakeCommand {
 	 * {@see \Zestry\WPToolkit\Kernel\Abstracts\Module::run_at_init()} instead, since a module
 	 * can be built on either side of it.
 	 *
-	 * Requires `wp zestry init` to have already run in this plugin. Unlike every
+	 * Requires `wp zt init` to have already run in this plugin. Unlike every
 	 * other `make` type, there is no fixed conventional directory to default
 	 * to -- a plain module is not discovered by anything -- so its home is your
 	 * own `{zestry.json root}/Modules/` directory, beside the copied `Core/` tree
 	 * rather than inside it. That separation is the point: `Core/` is what
-	 * `wp zestry update` may replace, and nothing you write belongs there.
+	 * `wp zt update` may replace, and nothing you write belongs there.
 	 *
 	 * Because nothing discovers it, this is also the one `make` type that
 	 * writes to your `bootstrap.php`: the new class is appended there, which is
@@ -60,7 +60,7 @@ return new class() extends MakeCommand {
 	 *     // bootstrap.php
 	 *     Shortcode::class,
 	 *
-	 * Its sibling `wp zestry make service` deliberately declares nothing. A service
+	 * Its sibling `wp zt make service` deliberately declares nothing. A service
 	 * is built the moment something asks for it, so an entry naming one would do
 	 * nothing but build it sooner than needed; configure one from
 	 * `$plugin->configure()` in your entry file instead.
@@ -89,11 +89,11 @@ return new class() extends MakeCommand {
 	 *
 	 *     # Generate a new module at lib/Modules/RequestLog.php (given a
 	 *     # project initialized with root "lib").
-	 *     $ wp zestry make module RequestLog
+	 *     $ wp zt make module RequestLog
 	 *     Success: Created lib/Modules/RequestLog.php
 	 *
 	 *     # Grouped: the directory and the namespace come from the same name.
-	 *     $ wp zestry make module Services/Mailer
+	 *     $ wp zt make module Services/Mailer
 	 *     Success: Created lib/Modules/Services/Mailer.php
 	 *
 	 * @param array $args
@@ -132,7 +132,7 @@ return new class() extends MakeCommand {
 	 * so its home has to be read from the project's own root --
 	 * {@see \Zestry\WPToolkit\DevTools\Abstracts\MakeCommand::get_default_dir()}'s `$config`
 	 * parameter exists specifically for this case. Beside the copied `Core/`
-	 * tree, never inside it: that tree is what `wp zestry update` may replace.
+	 * tree, never inside it: that tree is what `wp zt update` may replace.
 	 *
 	 * @param array{namespace: string, root: string} $config The project's zestry.json.
 	 * @return string

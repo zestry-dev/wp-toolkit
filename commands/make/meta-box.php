@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make meta-box <name>`.
+ * Devtool command: `wp zt make meta-box <name>`.
  */
 
 declare( strict_types=1 );
@@ -37,7 +37,7 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Generate meta-boxes/book-details.php.
-	 *     $ wp zestry make meta-box book-details
+	 *     $ wp zt make meta-box book-details
 	 *     Success: Created meta-boxes/book-details.php
 	 *
 	 * @param array $args

@@ -10,11 +10,11 @@ You need PHP 8.1+, WordPress 6.9+, Composer and WP-CLI, and a plugin directory t
 composer require zestry-dev/wp-toolkit --dev
 ```
 
-`wp zestry init` **copies** the toolkit into your plugin rather than loading it from `vendor/`, so once that has run nothing from `vendor/zestry-dev/` is needed at runtime — only to run the `wp zestry` commands themselves. Hence `--dev`.
+`wp zt init` **copies** the toolkit into your plugin rather than loading it from `vendor/`, so once that has run nothing from `vendor/zestry-dev/` is needed at runtime — only to run the `wp zt` commands themselves. Hence `--dev`.
 
 ## 2. Activate the plugin
 
-`wp zestry init` runs through WP-CLI, and WP-CLI only sees the command once WordPress has loaded your plugin's `vendor/autoload.php` — which happens only for an **active** plugin. If you do not have a plugin file yet, this is enough to activate:
+`wp zt init` runs through WP-CLI, and WP-CLI only sees the command once WordPress has loaded your plugin's `vendor/autoload.php` — which happens only for an **active** plugin. If you do not have a plugin file yet, this is enough to activate:
 
 ```php
 <?php
@@ -34,12 +34,12 @@ wp plugin activate acme-plugin
 ```
 
 > [!IMPORTANT]
-> **`wp zestry` only exists inside a plugin that requires this package, and only while that plugin is active.** Run it from inside the plugin's own directory. Anything else reports `'zestry' is not a registered wp command`; add `--debug` to any `wp` command to see which condition failed.
+> **`wp zt` — short for *zestry toolkit* — only exists inside a plugin that requires this package, and only while that plugin is active.** Run it from inside the plugin's own directory. Anything else reports `'zt' is not a registered wp command`; add `--debug` to any `wp` command to see which condition failed.
 
 ## 3. Initialize
 
 ```bash
-wp zestry init
+wp zt init
 ```
 
 It asks three questions, then confirms:
@@ -51,29 +51,29 @@ It asks three questions, then confirms:
 Answer those and it writes, in order:
 
 - `lib/Core/Kernel/` — the toolkit's kernel copied, with every `Zestry\WPToolkit\` namespace and text-domain literal rewritten to yours;
-- `zestry.lock.json` — a hash per copied file, so a later `wp zestry update` can tell your edits from upstream's changes. Commit it;
-- `zestry.json` — the three answers, read by every later `wp zestry` command;
+- `zestry.lock.json` — a hash per copied file, so a later `wp zt update` can tell your edits from upstream's changes. Commit it;
+- `zestry.json` — the three answers, read by every later `wp zt` command;
 - an `"Acme\\Plugin\\": "lib/"` PSR-4 entry in your `composer.json`, followed by a `composer dump-autoload` so it is live immediately;
 - `bootstrap.php` — where modules get declared;
 - `.gitignore` — covering what is built rather than authored;
 - `phpcs.xml`, `eslint.config.mjs`, `.prettierrc.js` and `.prettierignore`, with their dev dependencies added to `composer.json`/`package.json` and `composer lint`, `npm run lint:js` and `npm run format` to run them;
 - `AGENTS.md`, the invariants an AI agent working in your plugin needs, and a `.claude/CLAUDE.md` pointing at it.
 
-Nothing is ever overwritten — an existing config file, dependency or script is left exactly as it is, so running `init` in a configured plugin changes nothing. Skip any of them with `--no-phpcs`, `--no-eslint`, `--no-prettier` or `--no-agents`; [`wp zestry init`](commands/init.md) documents what each one writes, and `--yes` runs the whole thing unattended — with one prerequisite on a brand-new plugin: it infers the namespace from a PSR-4 entry in `composer.json`, and `init` is what writes one, so declare that entry yourself first or the unattended run stops rather than guessing. [`wp zestry init`](commands/init.md) has the exact message.
+Nothing is ever overwritten — an existing config file, dependency or script is left exactly as it is, so running `init` in a configured plugin changes nothing. Skip any of them with `--no-phpcs`, `--no-eslint`, `--no-prettier` or `--no-agents`; [`wp zt init`](commands/init.md) documents what each one writes, and `--yes` runs the whole thing unattended — with one prerequisite on a brand-new plugin: it infers the namespace from a PSR-4 entry in `composer.json`, and `init` is what writes one, so declare that entry yourself first or the unattended run stops rather than guessing. [`wp zt init`](commands/init.md) has the exact message.
 
 ## 4. Add the modules you want
 
 `init` copies only the kernel. Each feature is opt-in, and lands beside it under `lib/Core/`:
 
 ```bash
-wp zestry add module cli admin-pages
+wp zt add module cli admin-pages
 ```
 
 Dependencies come along automatically — nearly everything needs `path`, so it arrives too, and `migrations` also pulls in `db`, `options` and `cli`.
 
 What you add is one of two kinds:
 
-- a **[service](services/)** works only when you call it. Add one on its own with `wp zestry add service <name>`:
+- a **[service](services/)** works only when you call it. Add one on its own with `wp zt add service <name>`:
   <!-- zestry:include generator="service-names" -->
   `cookie`, `db`, `globals`, `path`, `request`, `transients`, `views`
   <!-- /zestry:include -->
@@ -113,7 +113,7 @@ acme_plugin();
 
 That is the whole file, and it stays this size however many modules you add. The slug defaults to the entry file's directory name — `acme-plugin` — and every hook, option and handle the modules register is namespaced with it. `bootstrap()` reads `bootstrap.php`; `run()` builds and boots what it found, synchronously, so you control the timing.
 
-`wp zestry add module` already appended to `bootstrap.php` in step 4, so it now reads:
+`wp zt add module` already appended to `bootstrap.php` in step 4, so it now reads:
 
 ```php
 <?php
@@ -156,10 +156,10 @@ $plugin ??= ( new Plugin( __FILE__ ) )
 return $plugin;
 ```
 
-The one mistake left is leaving a module out of `bootstrap.php`: nothing builds it, its `on_boot()` never runs, and no error says so. That is what [`wp zestry doctor`](commands/doctor.md) exists to catch.
+The one mistake left is leaving a module out of `bootstrap.php`: nothing builds it, its `on_boot()` never runs, and no error says so. That is what [`wp zt doctor`](commands/doctor.md) exists to catch.
 
 ```bash
-wp zestry doctor
+wp zt doctor
 ```
 
 `bootstrap.php` is not the only way — [`Plugin`](plugin.md) documents declaring modules from the entry file instead, and every method the class offers.
@@ -169,7 +169,7 @@ wp zestry doctor
 Every module that discovers files has a `make` command:
 
 ```bash
-wp zestry make command greet
+wp zt make command greet
 ```
 
 That writes `commands/greet.php` with your namespace already filled in, and it is live immediately:
@@ -181,7 +181,7 @@ Success: Done.
 
 Fill in the `handle()` method it generated, and keep its docblock up to date — WP-CLI reads the `## OPTIONS` and `## EXAMPLES` sections for `wp acme-plugin greet --help`, so it is not just a comment.
 
-There is no `WP_CLI::add_command()` to write: the module walks `commands/`, wires the returned object, and registers it under your plugin slug. The same holds for every other module — see [`wp zestry make`](commands/) for each type, and each module's page for what its files look like.
+There is no `WP_CLI::add_command()` to write: the module walks `commands/`, wires the returned object, and registers it under your plugin slug. The same holds for every other module — see [`wp zt make`](commands/) for each type, and each module's page for what its files look like.
 
 ## What just happened
 
@@ -196,8 +196,8 @@ Three conventions do the work, and they are the same in every module:
 Nothing so far touched the front end. When you want it:
 
 ```bash
-wp zestry add module assets
-wp zestry make entry settings
+wp zt add module assets
+wp zt make entry settings
 npm install && npm run build
 ```
 
@@ -213,22 +213,22 @@ The build configuration matters more than it looks. `@wordpress/scripts` picks e
 
 ## What is yours, and what came from the toolkit
 
-`lib/Core/` is the copied source; the rest of `lib/` is code you wrote. That one directory is the whole boundary, and it decides one thing: [`wp zestry update`](commands/update.md) and `wp zestry overwrite` may replace anything inside it, and can never touch anything outside it.
+`lib/Core/` is the copied source; the rest of `lib/` is code you wrote. That one directory is the whole boundary, and it decides one thing: [`wp zt update`](commands/update.md) and `wp zt overwrite` may replace anything inside it, and can never touch anything outside it.
 
 ```
 lib/
 ├── Core/                  ← copied in; `update` may replace it
-│   ├── Kernel/            ← wp zestry init
-│   ├── Modules/Ajax/      ← wp zestry add module ajax
-│   └── Services/Path.php  ← wp zestry add service path
-├── Modules/Shortcode.php  ← wp zestry make module Shortcode — yours
-├── Services/Cache.php     ← wp zestry make service Cache — yours
+│   ├── Kernel/            ← wp zt init
+│   ├── Modules/Ajax/      ← wp zt add module ajax
+│   └── Services/Path.php  ← wp zt add service path
+├── Modules/Shortcode.php  ← wp zt make module Shortcode — yours
+├── Services/Cache.php     ← wp zt make service Cache — yours
 └── Data/LineItem.php      ← no generator, no command — just yours
 ```
 
 It is all your code, under one namespace and one PSR-4 entry — which is why the last line needs no command: that entry maps the whole of `lib/`, so a plain class autoloads from wherever you put it. `Modules/` and `Services/` are where the two generators write, not a list of what may exist. The segment appears in the namespace too — `Acme\Plugin\Core\Modules\Ajax\Ajax` against your own `Acme\Plugin\Modules\Shortcode` — so which kind you are looking at shows in every `use` statement.
 
-Edit anything under `lib/Core/` freely. `wp zestry update` names the files you changed before it would replace them, and keeps them unless you pass `--force`. If you want a module to stop being upstream's altogether, move it out of `lib/Core/` and rename its namespace; `update` then has nothing to say about it.
+Edit anything under `lib/Core/` freely. `wp zt update` names the files you changed before it would replace them, and keeps them unless you pass `--force`. If you want a module to stop being upstream's altogether, move it out of `lib/Core/` and rename its namespace; `update` then has nothing to say about it.
 
 ## Next
 
@@ -236,4 +236,4 @@ Edit anything under `lib/Core/` freely. `wp zestry update` names the files you c
 - [Modules](modules/) — what each one discovers, and what its files return.
 - [JavaScript](javascript.md) — entries, shared code, and what the build hands to PHP.
 - [Services](services/) — paths, views, db, globals.
-- [Command reference](commands/) — every `wp zestry` command, including `make module` and `make service` for your own.
+- [Command reference](commands/) — every `wp zt` command, including `make module` and `make service` for your own.

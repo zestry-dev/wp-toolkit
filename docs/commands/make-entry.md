@@ -3,7 +3,7 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make entry
+# wp zt make entry
 
 Generate a script entry of this plugin's own.
 
@@ -17,7 +17,7 @@ This exists because `@wordpress/scripts` has no answer for it.  It decides entry
 
 The stylesheet beside `index.ts` is imported by it, which is what gets it built; it is registered under the same handle, so enqueuing the script brings it along.
 
-Needs the `assets` module, which brings the build configuration with it: `wp zestry add module assets`.
+Needs the `assets` module, which brings the build configuration with it: `wp zt add module assets`.
 
 ## Options
 
@@ -39,10 +39,10 @@ Needs the `assets` module, which brings the build configuration with it: `wp zes
 
 ```bash
 # A script for an admin screen.
-$ wp zestry make entry settings
+$ wp zt make entry settings
 Success: Created src/entries/settings (2 files)
 
 # An ES module, for Interactivity API code outside a block.
-$ wp zestry make entry cart --kind=module
+$ wp zt make entry cart --kind=module
 Success: Created src/entries/cart (3 files)
 ```

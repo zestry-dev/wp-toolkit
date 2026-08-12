@@ -38,7 +38,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * `ParentMenu::Settings`. A property typed as a Service or Module subclass --
  * `public Path $path;`, say -- is injected automatically when the page is
  * wired.
- * `wp zestry make page <name>` generates a starting point.
+ * `wp zt make page <name>` generates a starting point.
  *
  * A page rendering its own full-width application shell rather than the usual
  * WordPress "wrap" layout should extend {@see ModernAdminPage} instead, which
@@ -222,7 +222,7 @@ abstract class AdminPage implements PluginAware {
 	 * The markup belongs in `views/`, not in a PHP string. An admin page is
 	 * mostly a form -- tables, fields, notices, a second form further down --
 	 * and markup assembled by concatenation stops being reviewable long before
-	 * it stops growing. `wp zestry make page` writes the template alongside the
+	 * it stops growing. `wp zt make page` writes the template alongside the
 	 * class, so there is one to render from the start.
 	 *
 	 * ```

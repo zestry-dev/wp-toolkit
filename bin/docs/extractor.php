@@ -1154,7 +1154,7 @@ function zestry_insert_toc( array $page ): array {
  * generator's own template strings use a real dash beside it -- so the same
  * sentence could show both.
  *
- * Fence-aware, because inside a code block `--` is a flag: `wp zestry update
+ * Fence-aware, because inside a code block `--` is a flag: `wp zt update
  * --dry-run` has to survive a pass that rewrites the prose around it.
  *
  * @param string   $path  Absolute path to write to.

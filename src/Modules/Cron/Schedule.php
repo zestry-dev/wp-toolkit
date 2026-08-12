@@ -25,7 +25,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *
  * A file at `schedules/cleanup-logs.php` registers under the hook
  * `{plugin-slug}-cleanup-logs` (see {@see Cron::get_schedule_slug()}).
- * `wp zestry make schedule <name>` generates a starting point.
+ * `wp zt make schedule <name>` generates a starting point.
  *
  * `recurrence()` returns a WordPress built-in (`'hourly'`, `'twicedaily'`,
  * `'daily'`) or a key from {@see Cron::get_custom_interval_slug()}, for an

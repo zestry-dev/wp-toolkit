@@ -23,11 +23,11 @@ Changing `recurrence()` in a later release does take effect: every request compa
 ## Adding it
 
 ```bash
-wp zestry add module cron
+wp zt add module cron
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `Cron` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `Cron` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -52,7 +52,7 @@ return array(
 
 ## Writing a Schedule
 
-A file in `schedules/` returns a [`Schedule`](schedule.md) instance, which `wp zestry make schedule <name>` generates.
+A file in `schedules/` returns a [`Schedule`](schedule.md) instance, which `wp zt make schedule <name>` generates.
 
 ## Constants
 
@@ -297,4 +297,4 @@ protected function on_boot(): void {
 - [`Schedule`](schedule.md) — what a file in `schedules/` returns
 - [`path`](../../services/path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module cron`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module cron`](../../commands/add-module.md) — the command that copies it

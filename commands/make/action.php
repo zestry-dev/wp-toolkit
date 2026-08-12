@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make action <name>`.
+ * Devtool command: `wp zt make action <name>`.
  *
- * Generates a new AJAX action stub into a project already set up with `wp
- * zestry init`.
+ * Generates a new AJAX action stub into a project already set up with
+ * `wp zt init`.
  */
 
 declare( strict_types=1 );
@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 * the action opts logged-out visitors in. Writing the file is the whole
 	 * registration; nothing has to be declared anywhere.
 	 *
-	 * Needs the `ajax` module, so run `wp zestry add module ajax` first if you have
+	 * Needs the `ajax` module, so run `wp zt add module ajax` first if you have
 	 * not already.
 	 *
 	 * ## OPTIONS
@@ -47,7 +47,7 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Generate an AJAX action at actions/send-welcome-email.php.
-	 *     $ wp zestry make action send-welcome-email
+	 *     $ wp zt make action send-welcome-email
 	 *     Success: Created actions/send-welcome-email.php
 	 *
 	 * @param array $args

@@ -64,7 +64,7 @@ final class ZestryConfigTest extends TestCase {
 
 	public function test_read_throws_when_the_file_does_not_exist(): void {
 		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Run `wp zestry init` first' );
+		$this->expectExceptionMessage( 'Run `wp zt init` first' );
 
 		$this->zestry_config()->read( $this->plugin_dir );
 	}

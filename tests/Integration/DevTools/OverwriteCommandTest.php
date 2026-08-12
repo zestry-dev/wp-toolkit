@@ -9,7 +9,7 @@ use Zestry\WPToolkit\DevTools\Abstracts\AddCommand;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
- * `wp zestry overwrite <module>...`: the batch warning, single confirmation, and
+ * `wp zt overwrite <module>...`: the batch warning, single confirmation, and
  * cancel-leaves-nothing-copied behavior.
  *
  * Exercises a local subclass of AddCommand replicating commands/overwrite/module.php

@@ -265,7 +265,7 @@ final class CopierTest extends TestCase {
 
 	/**
 	 * Each section reads correctly on its own, so a name in both looks fine in
-	 * the file while making `wp zestry add <name>` install whichever section was
+	 * the file while making `wp zt add <name>` install whichever section was
 	 * read last. A single array could not hide this; two can.
 	 */
 	public function test_flatten_registry_refuses_a_name_declared_in_both_sections(): void {

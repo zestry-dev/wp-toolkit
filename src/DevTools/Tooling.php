@@ -17,7 +17,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
 /**
  * Sets a consuming plugin up with the linters the toolkit itself is written to.
  *
- * `wp zestry init` offers each of phpcs, ESLint and Prettier, and this writes
+ * `wp zt init` offers each of phpcs, ESLint and Prettier, and this writes
  * whatever the consumer accepts: a config file, the dev dependencies it needs,
  * and a script to run it with.
  *
@@ -102,7 +102,7 @@ class Tooling extends Service {
 	 * Prettier reads the first one it finds and ignores the rest, so writing a
 	 * second under a different name does not add a configuration -- it adds a
 	 * file that never applies. Asking about the whole set is what keeps two
-	 * commands from each writing their own: `wp zestry init` writes
+	 * commands from each writing their own: `wp zt init` writes
 	 * `.prettierrc.js`, and anything writing later finds it here.
 	 *
 	 * The `prettier` key in `package.json` is checked separately, since it is
@@ -153,7 +153,7 @@ class Tooling extends Service {
 	 *
 	 * Under `src/`, with the rest of the plugin's JavaScript: that is what
 	 * `@wordpress/scripts` treats as its source directory, and where
-	 * `wp zestry make block` already writes.
+	 * `wp zt make block` already writes.
 	 */
 	public const WORKSPACE_PATTERN = 'src/shared/*';
 

@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make taxonomy <name>`.
+ * Devtool command: `wp zt make taxonomy <name>`.
  *
  * Generates a new custom taxonomy stub into a project already set up with
- * `wp zestry init`.
+ * `wp zt init`.
  */
 
 declare( strict_types=1 );
@@ -23,7 +23,7 @@ return new class() extends MakeCommand {
 	 * declared anywhere.
 	 *
 	 * Needs the `post-types` module -- the same one that registers post types --
-	 * so run `wp zestry add module post-types` first if you have not already.
+	 * so run `wp zt add module post-types` first if you have not already.
 	 *
 	 * ## OPTIONS
 	 *
@@ -63,13 +63,13 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Generate a taxonomy, prompting for the plural name and object type.
-	 *     $ wp zestry make taxonomy genre
+	 *     $ wp zt make taxonomy genre
 	 *     Plural name: (default: Genres)
 	 *     Post type this taxonomy attaches to: (default: post)
 	 *     Success: Created taxonomies/genre.php
 	 *
 	 *     # Generate one with every value given explicitly.
-	 *     $ wp zestry make taxonomy genre --singular=Genre --plural=Genres --object-type=book
+	 *     $ wp zt make taxonomy genre --singular=Genre --plural=Genres --object-type=book
 	 *     Success: Created taxonomies/genre.php
 	 *
 	 * @param array $args

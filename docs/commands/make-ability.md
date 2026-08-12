@@ -3,7 +3,7 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make ability
+# wp zt make ability
 
 Generate an ability.
 
@@ -31,6 +31,6 @@ WordPress matches both halves of that name against `^[a-z0-9-]+$` and refuses an
 
 ```bash
 # Generate abilities/create-order.php.
-$ wp zestry make ability create-order
+$ wp zt make ability create-order
 Success: Created abilities/create-order.php
 ```

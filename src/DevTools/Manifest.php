@@ -18,7 +18,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * would destroy.
  *
  * Copying is one-way: nothing upstream reaches a plugin that has already run
- * `wp zestry init`. That is the trade the copy model makes, and it is a good one
+ * `wp zt init`. That is the trade the copy model makes, and it is a good one
  * -- but only if taking a later release is possible at all, and it is not while
  * the only question anyone can answer is "does this file differ from the current
  * toolkit?". That single comparison conflates the two things a consumer needs

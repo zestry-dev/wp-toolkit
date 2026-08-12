@@ -7,7 +7,7 @@
 # root at runtime:
 #
 #   src/                 the copied source, `DevTools/stubs/`, `DevTools/registry.php`
-#   commands/            the `wp zestry` commands themselves, globbed by `describe`
+#   commands/            the `wp zt` commands themselves, globbed by `describe`
 #   docs/rules.md        rendered verbatim into a consumer's AGENTS.md
 #   devtool.php          builds the DevTools Plugin instance
 #   devtool-autoload.php the `autoload.files` shim that requires it

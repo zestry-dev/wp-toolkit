@@ -29,7 +29,7 @@ wp_add_inline_script(
 
 `wp_json_encode()` rather than `wp_localize_script()`, which casts every scalar it passes to a string — `bindable: false` arrives as `""`, and every field reads as bindable.
 
-`wp zestry add module assets` brings the build with it: a `webpack.config.js` that compiles three directories, each with a different owner.
+`wp zt add module assets` brings the build with it: a `webpack.config.js` that compiles three directories, each with a different owner.
 
 | Source | Built to | Registered by |
 | --- | --- | --- |
@@ -46,11 +46,11 @@ The build composes every handle, and this module reads them. An entry and a shar
 ## Adding it
 
 ```bash
-wp zestry add module assets
+wp zt add module assets
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `Assets` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `Assets` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -61,7 +61,7 @@ return array(
 
 ## Your own script, built and registered
 
-`wp zestry make entry settings` writes `src/entries/settings/`. The build compiles it, this module registers it on `init`, and using it is one call — from an admin page, a shortcode, anywhere:
+`wp zt make entry settings` writes `src/entries/settings/`. The build compiles it, this module registers it on `init`, and using it is one call — from an admin page, a shortcode, anywhere:
 
 ```php
 $assets->enqueue_entry( 'settings' );
@@ -315,7 +315,7 @@ public function get_shared_packages(): array
 | **Return** | Each package's build manifest, keyed by local name |
 | **Throws** | `DiscoveryException` — When a manifest is present but does not describe entries |
 
-The local name is the package directory's — `src/shared/formatting` is `formatting` — not the npm name it publishes itself under. That is the name the methods here take, and the one `wp zestry make shared` was given.
+The local name is the package directory's — `src/shared/formatting` is `formatting` — not the npm name it publishes itself under. That is the name the methods here take, and the one `wp zt make shared` was given.
 
 <br>
 
@@ -469,4 +469,4 @@ protected function on_boot(): void {
 
 - [`path`](../../services/path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module assets`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module assets`](../../commands/add-module.md) — the command that copies it

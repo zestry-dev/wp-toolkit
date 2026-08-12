@@ -37,9 +37,9 @@ Read once, then use this to check yourself. The pages behind the links explain *
 
 ## What is yours
 
-20. **Everything under `Core/` came from upstream**, and [`wp zestry update`](commands/update.md) or [`wp zestry overwrite`](commands/overwrite-module.md) may replace any of it. — [Getting started](getting-started.md)
+20. **Everything under `Core/` came from upstream**, and [`wp zt update`](commands/update.md) or [`wp zt overwrite`](commands/overwrite-module.md) may replace any of it. — [Getting started](getting-started.md)
 21. **Everything else in your source root is yours**, and no command touches it. — [Getting started](getting-started.md)
-22. **`zestry.lock.json` is committed.** Without it an update cannot tell your edit from an upstream change. — [`wp zestry init`](commands/init.md)
+22. **`zestry.lock.json` is committed.** Without it an update cannot tell your edit from an upstream change. — [`wp zt init`](commands/init.md)
 
 ## When it fails
 

@@ -3,13 +3,13 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry add module
+# wp zt add module
 
 [Dependencies cross the two kinds](#dependencies-cross-the-two-kinds) &nbsp;·&nbsp; [Options](#options) &nbsp;·&nbsp; [Examples](#examples)
 
 Copy one or more feature modules into an initialized plugin.
 
-Requires `wp zestry init` to have already run in this plugin (it reads zestry.json for the namespace and destination directory chosen there). Resolves each requested module's dependencies before copying anything, so `rest-api`, for example, also brings in `path` without needing to be asked for by name. Every `namespace Zestry\WPToolkit\...;` declaration and `use Zestry\WPToolkit\...;` import in each copied file is rewritten to the project's own namespace. A module already present at its destination is left untouched and logged as skipped — run `wp zestry overwrite module <module>` to replace it deliberately.
+Requires `wp zt init` to have already run in this plugin (it reads zestry.json for the namespace and destination directory chosen there). Resolves each requested module's dependencies before copying anything, so `rest-api`, for example, also brings in `path` without needing to be asked for by name. Every `namespace Zestry\WPToolkit\...;` declaration and `use Zestry\WPToolkit\...;` import in each copied file is rewritten to the project's own namespace. A module already present at its destination is left untouched and logged as skipped — run `wp zt overwrite module <module>` to replace it deliberately.
 
 Each copied module is also declared in the plugin's `bootstrap.php`, because copying the files is only half of adding one: a module is built because that file lists it, and until it is built it discovers nothing and binds no hooks. So a module works the moment it arrives, rather than after a hand-edit. With no `bootstrap.php` to append to, the entry line is printed for you to paste wherever the plugin declares its modules instead.
 
@@ -25,7 +25,7 @@ Two modules write outside their own tree, because each needs a JavaScript build 
 
 A module may depend on services, and most do: everything but `log` and `options` needs `path`, and `migrations` also needs `db`. Those arrive with it. This command asks which kind you are naming, not which kinds it is allowed to copy.
 
-To copy a service on its own, use `wp zestry add service <service>`.
+To copy a service on its own, use `wp zt add service <service>`.
 
 ## Options
 
@@ -36,7 +36,7 @@ To copy a service on its own, use `wp zestry add service <service>`.
 
 ```bash
 # Copy the REST API module, and the service it needs.
-$ wp zestry add module rest-api
+$ wp zt add module rest-api
 Also adding required dependencies: path
 Added path
 Added rest-api
@@ -44,15 +44,15 @@ Declared in bootstrap.php: rest-api
 Success: Done.
 
 # Copy several in one call.
-$ wp zestry add module cli admin-pages
+$ wp zt add module cli admin-pages
 Success: Done.
 
 # Already on disk, so it is left exactly as it is.
-$ wp zestry add module cli
+$ wp zt add module cli
 Skipped cli (already present)
 Success: Done.
 
 # Naming a service here says where to find it.
-$ wp zestry add module path
-Error: "path" is a service, not a module. Run `wp zestry add service path`.
+$ wp zt add module path
+Error: "path" is a service, not a module. Run `wp zt add service path`.
 ```

@@ -34,11 +34,11 @@ Nothing here renders a form. A registered field is editable in the block editor 
 ## Adding it
 
 ```bash
-wp zestry add module fields
+wp zt add module fields
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `Fields` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `Fields` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -75,7 +75,7 @@ Fields::class => static function ( Fields $fields ): void {
 
 ## Writing a Field
 
-A file in `fields/` returns a [`Field`](field.md) instance, which `wp zestry make field <name>` generates.
+A file in `fields/` returns a [`Field`](field.md) instance, which `wp zt make field <name>` generates.
 
 ## Related classes
 
@@ -332,4 +332,4 @@ protected function on_boot(): void {
 - [`Field`](field.md) — what a file in `fields/` returns
 - [`path`](../../services/path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module fields`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module fields`](../../commands/add-module.md) — the command that copies it

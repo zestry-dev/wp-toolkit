@@ -54,7 +54,7 @@ return new class extends Ability {
 
 ## Generated starting point
 
-[`wp zestry make ability <name>`](../../commands/make-ability.md) writes this file:
+[`wp zt make ability <name>`](../../commands/make-ability.md) writes this file:
 
 ```php
 <?php

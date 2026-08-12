@@ -20,7 +20,7 @@ Values round-trip exactly as you stored them, `false` and `null` included, so st
 ## Adding it
 
 ```bash
-wp zestry add service transients
+wp zt add service transients
 ```
 
 ## Storing something expensive to work out
@@ -199,4 +199,4 @@ $this->get_plugin()->get( Options::class )->get( 'api_key' );
 ## See also
 
 - [`Service`](../service.md) — what every service inherits
-- [`wp zestry add service transients`](../../commands/add-service.md) — the command that copies it
+- [`wp zt add service transients`](../../commands/add-service.md) — the command that copies it

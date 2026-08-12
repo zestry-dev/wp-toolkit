@@ -29,11 +29,11 @@ What is left for this module is real, though: an admin screen whose JavaScript a
 ## Adding it
 
 ```bash
-wp zestry add module ajax
+wp zt add module ajax
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `Ajax` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `Ajax` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -57,7 +57,7 @@ return array(
 
 ## Writing an AjaxAction
 
-A file in `actions/` returns an [`AjaxAction`](ajax-action.md) instance, which `wp zestry make action <name>` generates.
+A file in `actions/` returns an [`AjaxAction`](ajax-action.md) instance, which `wp zt make action <name>` generates.
 
 ## Constants
 
@@ -273,4 +273,4 @@ protected function on_boot(): void {
 - [`path`](../../services/path/) — copied in alongside this one
 - [`request`](../../services/request/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module ajax`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module ajax`](../../commands/add-module.md) — the command that copies it

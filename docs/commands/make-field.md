@@ -3,7 +3,7 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make field
+# wp zt make field
 
 Generate a post meta field.
 
@@ -27,6 +27,6 @@ Writes a file into the plugin's `fields/` directory, where the Fields module dis
 
 ```bash
 # Generate fields/acme-rating.php.
-$ wp zestry make field acme-rating
+$ wp zt make field acme-rating
 Success: Created fields/acme-rating.php
 ```

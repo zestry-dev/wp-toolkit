@@ -13,7 +13,7 @@ src/
 One command sets all of it up:
 
 ```bash
-wp zestry add module assets
+wp zt add module assets
 ```
 
 which copies the [`assets`](modules/assets/) module and writes the `webpack.config.js`, the npm workspace declaration and the `build`/`start` scripts. `add module blocks` writes those same two scripts from the same definition, so whichever you add first writes them and the second leaves them alone. An existing `webpack.config.js` is never replaced, so the generated one is yours to edit.
@@ -26,7 +26,7 @@ which copies the [`assets`](modules/assets/) module and writes the `webpack.conf
 ## Your own scripts
 
 ```bash
-wp zestry make entry settings
+wp zt make entry settings
 npm run build
 ```
 
@@ -72,7 +72,7 @@ Two things that make `after` the right position:
 ### An entry can be a module
 
 ```bash
-wp zestry make entry cart --kind=module
+wp zt make entry cart --kind=module
 ```
 
 which adds a `package.json` saying so. It is then built as an ES module and registered with `wp_register_script_module()` — what you want for Interactivity API code that is not inside a block.
@@ -88,7 +88,7 @@ Use `enqueue_entry()` either way: it picks the right registry, so changing an en
 When two entries need the same code, the obvious move quietly costs you: webpack copies that file into every entry that imports it, so an admin screen and a block on the same page each ship their own.
 
 ```bash
-wp zestry make shared formatting --kind=script
+wp zt make shared formatting --kind=script
 npm install
 npm run build
 ```
@@ -172,15 +172,15 @@ An asset that compiles to nothing is deleted by the build and left out of the ma
 
 That last one matters most, because it is not yours to fix by hand: `blocks-manifest.php` is generated from those files after the build, so removing the field is what stops WordPress registering the empty stylesheet.
 
-This is why a freshly generated entry costs nothing until you write something. `wp zestry make entry` scaffolds a `style.scss` with no rules in it, and an empty scaffold should not be a request on every page load.
+This is why a freshly generated entry costs nothing until you write something. `wp zt make entry` scaffolds a `style.scss` with no rules in it, and an empty scaffold should not be a request on every page load.
 
 ## Tips
 
 - **A shared directory with no `wordpress` block is an ordinary dependency.** It is bundled into whatever imports it, like anything from npm. That is the right choice when a copy costs less than a request.
-- **`npm run build` asks for three things `wp-scripts` does not do by default.** The generated scripts pass `--webpack-copy-php`, so a block's `block.php` reaches `build/`; `--experimental-modules`, without which a `"kind": "module"` package is silently skipped; and `--blocks-manifest`. You do not add these — `wp zestry add module blocks` and `wp zestry add module assets` write them.
+- **`npm run build` asks for three things `wp-scripts` does not do by default.** The generated scripts pass `--webpack-copy-php`, so a block's `block.php` reaches `build/`; `--experimental-modules`, without which a `"kind": "module"` package is silently skipped; and `--blocks-manifest`. You do not add these — `wp zt add module blocks` and `wp zt add module assets` write them.
 - **A global is two segments.** `[ "acmePlugin", "formatting" ]` puts a shared package on `window.acmePlugin.formatting`, so everything you share sits under one global and cannot collide with another plugin's.
 - **A module can only import a module.** That is the real limit on `--kind=module`, for an entry or a shared package alike: `@wordpress/interactivity` is available as a script module, `@wordpress/element` is not.
-- **`webpack.config.js` is yours.** It is written once and nothing overwrites it, including [`wp zestry update`](commands/update.md). Edit it freely.
+- **`webpack.config.js` is yours.** It is written once and nothing overwrites it, including [`wp zt update`](commands/update.md). Edit it freely.
 - **The manifest is build output.** Gitignored with the rest of `build/`, regenerated every build. Never edit or commit it.
 - **Nothing registers what was never built.** A plugin that ships without running `npm run build` ships without its JavaScript.
 - **Emptiness is decided at build time, not run time.** PHP never checks a file's size; it registers what the manifest lists, and the manifest lists what survived the build.
@@ -189,5 +189,5 @@ This is why a freshly generated entry costs nothing until you write something. `
 
 - [`assets`](modules/assets/) — the module reference: asset URLs, script and style registration, entries and shared packages.
 - [`blocks`](modules/blocks/) — the third directory, which WordPress registers itself.
-- [`wp zestry make entry`](commands/make-entry.md) &nbsp;·&nbsp; [`wp zestry make shared`](commands/make-shared.md) &nbsp;·&nbsp; [`wp zestry make block`](commands/make-block.md)
+- [`wp zt make entry`](commands/make-entry.md) &nbsp;·&nbsp; [`wp zt make shared`](commands/make-shared.md) &nbsp;·&nbsp; [`wp zt make block`](commands/make-block.md)
 - [Shipping](shipping.md) — what belongs in the zip.

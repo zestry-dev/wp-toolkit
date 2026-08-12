@@ -18,11 +18,11 @@ A route file returns a `Route` value, built with the static constructor matching
 ## Adding it
 
 ```bash
-wp zestry add module rest-api
+wp zt add module rest-api
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `RestApi` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `RestApi` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -101,7 +101,7 @@ return array(
 
 ## Writing a Route
 
-A file in `routes/` returns a [`Route`](route.md) instance, which `wp zestry make route <name>` generates.
+A file in `routes/` returns a [`Route`](route.md) instance, which `wp zt make route <name>` generates.
 
 ## Related classes
 
@@ -229,4 +229,4 @@ protected function on_boot(): void {
 - [`path`](../../services/path/) — copied in alongside this one
 - [`request`](../../services/request/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module rest-api`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module rest-api`](../../commands/add-module.md) — the command that copies it

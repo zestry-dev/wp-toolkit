@@ -31,7 +31,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *
  * A file at `actions/save-profile.php` registers as
  * `wp_ajax_{plugin}-save-profile` (see {@see Ajax::get_action_slug()}).
- * `wp zestry make action <name>` generates a starting point.
+ * `wp zt make action <name>` generates a starting point.
  * The page that triggers this action gets its URL (with a nonce attached) from
  * the Ajax module: `$ajax->get_action_url( 'save-profile' )`. The request is
  * rejected before `handle()` runs if `capability_check()` returns false, or (since

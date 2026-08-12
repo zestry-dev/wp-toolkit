@@ -63,7 +63,7 @@ use Zestry\WPToolkit\Services\Request\Request;
  * ```
  *
  * @example Where the markup goes
- * A page's markup belongs in a template, and `wp zestry make page` writes one
+ * A page's markup belongs in a template, and `wp zt make page` writes one
  * alongside the class. An admin page is mostly a form — a table, a notice, a
  * second form further down — and markup assembled by concatenation stops being
  * reviewable long before it stops growing.

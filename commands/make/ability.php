@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make ability <name>`.
+ * Devtool command: `wp zt make ability <name>`.
  */
 
 declare( strict_types=1 );
@@ -51,7 +51,7 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Generate abilities/create-order.php.
-	 *     $ wp zestry make ability create-order
+	 *     $ wp zt make ability create-order
 	 *     Success: Created abilities/create-order.php
 	 *
 	 * @param array $args

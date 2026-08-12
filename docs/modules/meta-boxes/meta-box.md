@@ -55,7 +55,7 @@ return new class extends MetaBox {
 
 ## Generated starting point
 
-[`wp zestry make meta-box <name>`](../../commands/make-meta-box.md) writes this file:
+[`wp zt make meta-box <name>`](../../commands/make-meta-box.md) writes this file:
 
 ```php
 <?php

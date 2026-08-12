@@ -3,13 +3,13 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make route
+# wp zt make route
 
 Generate a new REST route.
 
 The RestApi module discovers it. On `rest_api_init` it walks your `routes/` directory at any depth, requires every file in it, and hands the `Route` each one returns to `register_rest_route()` under `{plugin-slug}/{version}`. Writing the file is the whole registration; nothing has to be declared anywhere, and subdirectories are organization only, not part of the URL.
 
-Needs the `rest-api` module, so run `wp zestry add module rest-api` first if you have not already.
+Needs the `rest-api` module, so run `wp zt add module rest-api` first if you have not already.
 
 ## Options
 
@@ -40,7 +40,7 @@ Needs the `rest-api` module, so run `wp zestry add module rest-api` first if you
 
 ```bash
 # Generate a REST route, prompting for method/version/pattern.
-$ wp zestry make route get-widget
+$ wp zt make route get-widget
 HTTP method (get, post, put, patch, delete): (default: get)
 Namespace version: (default: v1)
 URL pattern: (default: /get-widget)

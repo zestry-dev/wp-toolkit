@@ -52,7 +52,7 @@ return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
 
 ## Generated starting point
 
-[`wp zestry make route <name>`](../../commands/make-route.md) writes this file:
+[`wp zt make route <name>`](../../commands/make-route.md) writes this file:
 
 ```php
 <?php

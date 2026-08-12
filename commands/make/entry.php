@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make entry <name>`.
+ * Devtool command: `wp zt make entry <name>`.
  */
 
 declare( strict_types=1 );
@@ -30,7 +30,7 @@ return new class() extends MakeCommand {
 	 * brings it along.
 	 *
 	 * Needs the `assets` module, which brings the build configuration with it:
-	 * `wp zestry add module assets`.
+	 * `wp zt add module assets`.
 	 *
 	 * ## OPTIONS
 	 *
@@ -60,11 +60,11 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # A script for an admin screen.
-	 *     $ wp zestry make entry settings
+	 *     $ wp zt make entry settings
 	 *     Success: Created src/entries/settings (2 files)
 	 *
 	 *     # An ES module, for Interactivity API code outside a block.
-	 *     $ wp zestry make entry cart --kind=module
+	 *     $ wp zt make entry cart --kind=module
 	 *     Success: Created src/entries/cart (3 files)
 	 *
 	 * @param array $args

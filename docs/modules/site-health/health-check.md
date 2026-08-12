@@ -50,7 +50,7 @@ return new class extends HealthCheck {
 
 ## Generated starting point
 
-[`wp zestry make health-check <name>`](../../commands/make-health-check.md) writes this file:
+[`wp zt make health-check <name>`](../../commands/make-health-check.md) writes this file:
 
 ```php
 <?php

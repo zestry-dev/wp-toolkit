@@ -38,11 +38,11 @@ Abilities are worth writing even when nothing external calls them yet. One abili
 ## Adding it
 
 ```bash
-wp zestry add module abilities
+wp zt add module abilities
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `Abilities` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `Abilities` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -119,7 +119,7 @@ Abilities::class => static function ( Abilities $abilities ): void {
 
 ## Writing an Ability
 
-A file in `abilities/` returns an [`Ability`](ability.md) instance, which `wp zestry make ability <name>` generates.
+A file in `abilities/` returns an [`Ability`](ability.md) instance, which `wp zt make ability <name>` generates.
 
 ## Related classes
 
@@ -340,4 +340,4 @@ protected function on_boot(): void {
 - [`path`](../../services/path/) — copied in alongside this one
 - [`request`](../../services/request/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module abilities`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module abilities`](../../commands/add-module.md) — the command that copies it

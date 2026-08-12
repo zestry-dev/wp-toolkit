@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Devtool command: `wp zestry overwrite service <service>...`.
+ * Devtool command: `wp zt overwrite service <service>...`.
  *
- * Like `wp zestry add service`, but deliberately replaces a service already
+ * Like `wp zt add service`, but deliberately replaces a service already
  * present on disk instead of skipping it -- warns once, listing every
  * already-present entry the batch would touch, and proceeds only after a single
  * explicit confirmation covering the whole batch. Any local edits to those
@@ -20,7 +20,7 @@ return new class() extends AddCommand {
 	 * Copy one or more services into an initialized plugin, replacing any of
 	 * them (or their dependencies) already present.
 	 *
-	 * Requires `wp zestry init` to have already run in this plugin. Warns before
+	 * Requires `wp zt init` to have already run in this plugin. Warns before
 	 * overwriting anything already on disk: local edits to an already-present
 	 * service are destroyed by the copy, with no confirmation per file -- only
 	 * one confirmation for the whole resolved batch. Answering "no" cancels the
@@ -29,7 +29,7 @@ return new class() extends AddCommand {
 	 *
 	 * Reach for this to force one named service back to the source the toolkit
 	 * currently ships. To bring the whole copied tree up to date instead, run
-	 * `wp zestry update`: it re-copies everything under `Core/` -- the kernel and
+	 * `wp zt update`: it re-copies everything under `Core/` -- the kernel and
 	 * every module and service you have added -- and keeps the files you have
 	 * edited rather than discarding them.
 	 *
@@ -45,14 +45,14 @@ return new class() extends AddCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Re-copy path from the toolkit, discarding any local edits to it.
-	 *     $ wp zestry overwrite service path
+	 *     $ wp zt overwrite service path
 	 *     Warning: This will overwrite existing files for: path
 	 *     Any local changes to these files will be lost. Continue? [y/N] y
 	 *     Overwrote path
 	 *     Success: Done.
 	 *
 	 *     # Declining leaves every file untouched, including new deps.
-	 *     $ wp zestry overwrite service views
+	 *     $ wp zt overwrite service views
 	 *     Also adding required dependencies: path
 	 *     Warning: This will overwrite existing files for: views
 	 *     Any local changes to these files will be lost. Continue? [y/N] n

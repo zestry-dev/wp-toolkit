@@ -1,12 +1,12 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make block <name>`.
+ * Devtool command: `wp zt make block <name>`.
  *
- * Generates a new editor block into a project already set up with `wp zestry
- * init`. Unlike every other `make` type this writes a directory rather than a
- * single file, since a block is a `block.json` plus the scripts, styles and
- * optional PHP it points at.
+ * Generates a new editor block into a project already set up with `wp zt init`.
+ * Unlike every other `make` type this writes a directory rather than a single
+ * file, since a block is a `block.json` plus the scripts, styles and optional
+ * PHP it points at.
  */
 
 declare( strict_types=1 );
@@ -56,7 +56,7 @@ return new class() extends MakeCommand {
 	 * into `build/blocks/`, which is the directory the module walks and registers
 	 * from -- so a block that has never been built registers nothing.
 	 *
-	 * Needs the `blocks` module, so run `wp zestry add module blocks` first if you
+	 * Needs the `blocks` module, so run `wp zt add module blocks` first if you
 	 * have not already; that is also what writes the npm scripts this build
 	 * runs through.
 	 *
@@ -115,19 +115,19 @@ return new class() extends MakeCommand {
 	 *
 	 *     # Neither flag given, so both are asked for. A run with no terminal --
 	 *     # CI, a script, an agent -- must pass both, or it will hang here.
-	 *     $ wp zestry make block hero
+	 *     $ wp zt make block hero
 	 *     Render this block in PHP (dynamic)? [y/N] n
 	 *     Give this block front-end JavaScript? [y/N] n
 	 *     Success: Created src/blocks/hero (5 files)
 	 *
 	 *     # The same block, non-interactively. `--yes` is what takes the default
 	 *     # for the prompts a flag has not already answered.
-	 *     $ wp zestry make block hero --view=none --yes
+	 *     $ wp zt make block hero --view=none --yes
 	 *     Success: Created src/blocks/hero (5 files)
 	 *
 	 *     # A server-rendered block, with an Interactivity API front end. Both
 	 *     # prompts are answered by flags, so no --yes is needed.
-	 *     $ wp zestry make block toggle --dynamic --view=module
+	 *     $ wp zt make block toggle --dynamic --view=module
 	 *     Success: Created src/blocks/toggle (7 files)
 	 *
 	 *     # Nothing registers until the block is built: the Blocks module reads

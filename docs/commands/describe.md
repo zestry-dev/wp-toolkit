@@ -3,7 +3,7 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry describe
+# wp zt describe
 
 [What it cannot tell you](#what-it-cannot-tell-you) &nbsp;·&nbsp; [Options](#options) &nbsp;·&nbsp; [Examples](#examples)
 
@@ -17,7 +17,7 @@ Reads only. Nothing here edits a file, and no module is ever built.
 
 ## What it cannot tell you
 
-The directory reported for a module is its **default**. A `set_*_root()` call inside an initializer changes it, and finding that out would mean running your closures against live module instances — which this command does not do, for the same reason `wp zestry doctor` does not. A module whose entry carries an initializer is marked `configured`, so the report says where to look rather than guessing.
+The directory reported for a module is its **default**. A `set_*_root()` call inside an initializer changes it, and finding that out would mean running your closures against live module instances — which this command does not do, for the same reason `wp zt doctor` does not. A module whose entry carries an initializer is marked `configured`, so the report says where to look rather than guessing.
 
 ## Options
 
@@ -36,14 +36,14 @@ The directory reported for a module is its **default**. A `set_*_root()` call in
 
 ```bash
 # What this plugin has.
-$ wp zestry describe --installed
+$ wp zt describe --installed
 Acme\Plugin -> lib/   text domain: acme-plugin
 
 MODULES
-  ajax           actions/         AjaxAction    wp zestry make action
-  cli            commands/        Command       wp zestry make command
-  cron           schedules/       Schedule      wp zestry make schedule   NOT DECLARED
-  fields         fields/          Field         wp zestry make field
+  ajax           actions/         AjaxAction    wp zt make action
+  cli            commands/        Command       wp zt make command
+  cron           schedules/       Schedule      wp zt make schedule   NOT DECLARED
+  fields         fields/          Field         wp zt make field
       fields/ 40 files via Acme\Plugin\Abstracts\EntityField
 
 SERVICES
@@ -51,5 +51,5 @@ SERVICES
   views          views/
 
 # For a script, or an agent.
-$ wp zestry describe --format=json --installed
+$ wp zt describe --format=json --installed
 ```

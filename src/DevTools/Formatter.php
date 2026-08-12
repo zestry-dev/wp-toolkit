@@ -45,8 +45,8 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * no configuration.
  *
  * > [!IMPORTANT]
- * > **Never format a copied file.** `wp zestry add` records a hash of every file
- * > it writes, and `wp zestry update` compares against it to tell an upstream
+ * > **Never format a copied file.** `wp zt add` records a hash of every file
+ * > it writes, and `wp zt update` compares against it to tell an upstream
  * > change from a local edit. Formatting after that hash is taken would report
  * > every copied file as edited, which is the one thing the manifest exists to
  * > get right. This is for generated and edited files only.
@@ -197,7 +197,7 @@ class Formatter extends Service {
 	 * The `prettier` invocation for a plugin, or null when it cannot be run.
 	 *
 	 * Prettier applies its own defaults when a project has no configuration, so
-	 * unlike phpcbf it is run on the binary's presence alone -- `wp zestry init`
+	 * unlike phpcbf it is run on the binary's presence alone -- `wp zt init`
 	 * writes a `.prettierrc.js` re-exporting WordPress's own, and a consumer
 	 * who declined it still gets consistent files rather than none.
 	 *

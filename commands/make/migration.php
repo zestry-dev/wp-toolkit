@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make migration <name>`.
+ * Devtool command: `wp zt make migration <name>`.
  *
  * Generates a new, timestamp-prefixed database migration stub into a project
- * already set up with `wp zestry init`.
+ * already set up with `wp zt init`.
  */
 
 declare( strict_types=1 );
@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 * site, when something asks it to: `wp {slug} migrations run`, or a
 	 * `run_pending()` call from whatever trigger fits your release process.
 	 *
-	 * Needs the `migrations` module, so run `wp zestry add module migrations` first
+	 * Needs the `migrations` module, so run `wp zt add module migrations` first
 	 * if you have not already.
 	 *
 	 * ## OPTIONS
@@ -50,7 +50,7 @@ return new class() extends MakeCommand {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     $ wp zestry make migration create-books-table
+	 *     $ wp zt make migration create-books-table
 	 *     Success: Created migrations/20260115120000-create-books-table.php
 	 *
 	 * @param array $args

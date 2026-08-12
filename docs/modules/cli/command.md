@@ -13,13 +13,13 @@ Base class for WP-CLI commands, providing helper methods for common output and i
 
 A command file returns an instance of a Command subclass. When that file is discovered by `CLI`, the plugin is assigned and properties typed as a Service subclass are injected (public or protected, unless marked `#[NoInject]`) before WP-CLI invokes `handle()`. Every Module is a Service, so both kinds inject. This lets a command use plugin services without accessing global state.
 
-A file at `commands/greet.php` registers as `wp {plugin-slug} greet <name>` (see `CLI` for how subdirectories become nested command namespaces). `wp zestry make command <name>` generates a starting point. Give handle() its own docblock to document arguments for WP-CLI's `--help` output — WP-CLI parses it, so this is not just a comment:
+A file at `commands/greet.php` registers as `wp {plugin-slug} greet <name>` (see `CLI` for how subdirectories become nested command namespaces). `wp zt make command <name>` generates a starting point. Give handle() its own docblock to document arguments for WP-CLI's `--help` output — WP-CLI parses it, so this is not just a comment:
 
-`wp zestry make command <name>` generates a starting point. Properties typed as a Service subclass are injected the same way they are anywhere else, so a command needing plugin services (Path, Options, ...) declares them as public or protected typed properties rather than resolving them itself.
+`wp zt make command <name>` generates a starting point. Properties typed as a Service subclass are injected the same way they are anywhere else, so a command needing plugin services (Path, Options, ...) declares them as public or protected typed properties rather than resolving them itself.
 
 ## Generated starting point
 
-[`wp zestry make command <name>`](../../commands/make-command.md) writes this file:
+[`wp zt make command <name>`](../../commands/make-command.md) writes this file:
 
 ```php
 <?php

@@ -16,7 +16,7 @@ and your handler reads `$this->order_id` — never `$request->get_param( 'order_
 
 If you have written DTOs, value objects or form objects before, this is that: **your route or ability is the data object**, its properties are the fields, and the values arrive already checked and already the right type. Nested shapes are plain classes declared the same way, and they arrive as real objects rather than arrays. What is different from a general-purpose mapper is that the declaration is also *published* — WordPress turns it into the schema a client, or an AI agent, reads to work out what to send.
 
-The [`request`](services/request/) service does that work. Add it with `wp zestry add service request`; [`rest-api`](modules/rest-api/), [`abilities`](modules/abilities/), [`ajax`](modules/ajax/) and [`admin-pages`](modules/admin-pages/) each bring it along.
+The [`request`](services/request/) service does that work. Add it with `wp zt add service request`; [`rest-api`](modules/rest-api/), [`abilities`](modules/abilities/), [`ajax`](modules/ajax/) and [`admin-pages`](modules/admin-pages/) each bring it along.
 
 ```php
 // One declaration, three jobs:
@@ -153,7 +153,7 @@ public array $order_ids;                                        // int[]
 
 `of:` also takes an enum. One or the other is required — see [Limitations](#limitations).
 
-`LineItem` is a plain class of yours — the PSR-4 entry `wp zestry init` writes covers your whole source root, so `lib/Data/LineItem.php` autoloads with nothing else to do.
+`LineItem` is a plain class of yours — the PSR-4 entry `wp zt init` writes covers your whole source root, so `lib/Data/LineItem.php` autoloads with nothing else to do.
 
 ### Enums
 

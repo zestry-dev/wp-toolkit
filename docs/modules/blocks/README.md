@@ -10,7 +10,7 @@ Discovers `build/blocks/` &nbsp;·&nbsp; Each file returns [`Block`](block.md) &
 Discovers plugin editor blocks and registers them with WordPress.
 
 > [!NOTE]
-> **This module registers blocks; it does not help you write one.** The PHP half is what it takes care of — discovery, registration, wiring, rendering — and that is the smaller half of a block. The editor half is React against `@wordpress/block-editor`: WordPress's API, documented by WordPress. `wp zestry make block` hands you a working `edit.tsx` and stops there on purpose.
+> **This module registers blocks; it does not help you write one.** The PHP half is what it takes care of — discovery, registration, wiring, rendering — and that is the smaller half of a block. The editor half is React against `@wordpress/block-editor`: WordPress's API, documented by WordPress. `wp zt make block` hands you a working `edit.tsx` and stops there on purpose.
 >
 > So a plugin whose interface *is* blocks is mostly a JavaScript project, with this toolkit looking after its PHP end. Plan for that.
 
@@ -24,7 +24,7 @@ A block declaring WordPress's own `render` field instead is left alone entirely,
 
 ## Static or dynamic
 
-`wp zestry make block` asks, and defaults to static. Three questions settle it, in this order.
+`wp zt make block` asks, and defaults to static. Three questions settle it, in this order.
 
 **Does the output depend on anything outside the block's own attributes?** A query, an option, the current user, another post — then it is dynamic, and there is nothing left to weigh.
 
@@ -43,11 +43,11 @@ Registration reads `blocks-manifest.php` when one is present (see `wp-scripts bu
 ## Adding it
 
 ```bash
-wp zestry add module blocks
+wp zt add module blocks
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `Blocks` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `Blocks` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -83,9 +83,9 @@ return array(
 
 ## Writing a Block
 
-A file in `build/blocks/` returns a [`Block`](block.md) instance, which `wp zestry make block <name>` generates.
+A file in `build/blocks/` returns a [`Block`](block.md) instance, which `wp zt make block <name>` generates.
 
-You write it in `src/blocks/` — that is what `wp zestry make block <name>` creates and what you edit. `build/blocks/` holds the compiled output `npm run build` produces, and is the directory this module reads.
+You write it in `src/blocks/` — that is what `wp zt make block <name>` creates and what you edit. `build/blocks/` holds the compiled output `npm run build` produces, and is the directory this module reads.
 
 ## Constants
 
@@ -236,4 +236,4 @@ protected function on_boot(): void {
 - [`Block`](block.md) — what a file in `build/blocks/` returns
 - [`path`](../../services/path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module blocks`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module blocks`](../../commands/add-module.md) — the command that copies it

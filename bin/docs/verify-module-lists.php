@@ -89,7 +89,7 @@ function zestry_verify_module_lists( string $root ): array {
  * you have no reason to think exists.
  *
  * Each name is checked as written in the registry — `meta-boxes`, not "meta
- * boxes" — because that is what `wp zestry add` takes, and because a prose
+ * boxes" — because that is what `wp zt add` takes, and because a prose
  * rendering is something this cannot check and a reader cannot type.
  *
  * @param string                $root     Absolute path to the repository root.

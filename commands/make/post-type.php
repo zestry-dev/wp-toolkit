@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make post-type <name>`.
+ * Devtool command: `wp zt make post-type <name>`.
  *
  * Generates a new custom post type stub into a project already set up with
- * `wp zestry init`.
+ * `wp zt init`.
  */
 
 declare( strict_types=1 );
@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 * the singular and plural names below. Writing the file is the whole
 	 * registration; nothing has to be declared anywhere.
 	 *
-	 * Needs the `post-types` module, so run `wp zestry add module post-types` first
+	 * Needs the `post-types` module, so run `wp zt add module post-types` first
 	 * if you have not already.
 	 *
 	 * ## OPTIONS
@@ -59,12 +59,12 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Generate a post type, prompting only for the plural name.
-	 *     $ wp zestry make post-type book
+	 *     $ wp zt make post-type book
 	 *     Plural name: (default: Books)
 	 *     Success: Created post-types/book.php
 	 *
 	 *     # Generate one with both names given explicitly.
-	 *     $ wp zestry make post-type book --singular=Book --plural=Books
+	 *     $ wp zt make post-type book --singular=Book --plural=Books
 	 *     Success: Created post-types/book.php
 	 *
 	 * @param array $args

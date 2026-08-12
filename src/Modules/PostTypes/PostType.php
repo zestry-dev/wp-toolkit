@@ -50,7 +50,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * table or an option key directly.
  *
  * A file at `post-types/book.php` registers as `book`.
- * `wp zestry make post-type <name>` generates a starting point.
+ * `wp zt make post-type <name>` generates a starting point.
  *
  * @stub post-type.php.stub
  *
@@ -358,7 +358,7 @@ abstract class PostType implements PluginAware {
 	 * user-facing string in this toolkit (see `Ajax`/`AdminPages`). The
 	 * `'zestry-toolkit'` text domain here is this toolkit's own -- `Copier`
 	 * rewrites it to the consuming project's own text domain when this file
-	 * is copied via `wp zestry add post-types`/`wp zestry init`, the same way
+	 * is copied via `wp zt add post-types`/`wp zt init`, the same way
 	 * it rewrites the `Zestry\WPToolkit` namespace, so this string should never
 	 * be hand-edited to something else here. `$singular`/`$plural` are NOT
 	 * translated here -- they are runtime values from the consumer's own

@@ -50,7 +50,7 @@ return array(
 
 ## Getting the timing right
 
-The entry file has to run the plugin as it loads. This is the shape `wp zestry init` documents, and the only one that works for activation:
+The entry file has to run the plugin as it loads. This is the shape `wp zt init` documents, and the only one that works for activation:
 
 ```php
 // acme-plugin.php

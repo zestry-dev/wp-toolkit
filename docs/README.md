@@ -7,15 +7,15 @@ A toolkit for building WordPress plugins where a file in a directory *is* a feat
 ```bash
 composer require zestry-dev/wp-toolkit --dev
 
-# Write your entry file, then activate — `wp zestry` does not exist until
+# Write your entry file, then activate — `wp zt` does not exist until
 # WordPress has loaded an active plugin's vendor/autoload.php.
 wp plugin activate acme-plugin
 
-wp zestry init
-wp zestry add module cli
+wp zt init
+wp zt add module cli
 ```
 
-Run these from inside your own plugin's directory. `wp zestry` is registered by your plugin's autoloader, so the plugin has to be **active** before `init`.
+Run these from inside your own plugin's directory. `zt` is short for *zestry toolkit*, and the command is registered by your plugin's autoloader, so the plugin has to be **active** before `init`.
 
 `init` asks for a namespace, a text domain and a destination directory (default `lib`), then copies the kernel into `lib/Core/Kernel/` under your namespace. `add module` copies each feature module you want beside it, and declares it for you.
 
@@ -96,27 +96,27 @@ Almost everything is the same two steps: **add** the feature once, then **make**
 
 | I want to… | Run | Reference |
 |---|---|---|
-| Add a `wp` command | `wp zestry add module cli`<br>then `wp zestry make command greet` | [`cli`](modules/cli/) |
-| Add an admin screen | `wp zestry add module admin-pages`<br>then `wp zestry make page settings` | [`admin-pages`](modules/admin-pages/) |
-| Expose an HTTP endpoint | `wp zestry add module rest-api`<br>then `wp zestry make route widgets` | [`rest-api`](modules/rest-api/) |
-| Register a post type | `wp zestry add module post-types`<br>then `wp zestry make post-type book` | [`post-types`](modules/post-types/) |
-| Add a field to the editor | `wp zestry add module fields`<br>then `wp zestry make field acme_rating` | [`fields`](modules/fields/) |
-| Run something on a schedule | `wp zestry add module cron`<br>then `wp zestry make schedule sync` | [`cron`](modules/cron/) |
-| Create or change a table | `wp zestry add module migrations`<br>then `wp zestry make migration create-books-table` | [`migrations`](modules/migrations/) |
-| Build a block | `wp zestry add module blocks`<br>then `wp zestry make block card --dynamic --view=none`<br>then `npm run build` | [`blocks`](modules/blocks/) |
-| Give an AI agent a tool | `wp zestry add module abilities`<br>then `wp zestry make ability publish-post` | [`abilities`](modules/abilities/) |
-| Store settings | `wp zestry add module options` | [`options`](modules/options/) |
-| Render markup from a template | `wp zestry add service views`<br>then `wp zestry make view emails/receipt` | [`views`](services/views/) |
-| Share JavaScript between screens | `wp zestry add module assets`<br>then `wp zestry make shared formatting` | [JavaScript](javascript.md) |
+| Add a `wp` command | `wp zt add module cli`<br>then `wp zt make command greet` | [`cli`](modules/cli/) |
+| Add an admin screen | `wp zt add module admin-pages`<br>then `wp zt make page settings` | [`admin-pages`](modules/admin-pages/) |
+| Expose an HTTP endpoint | `wp zt add module rest-api`<br>then `wp zt make route widgets` | [`rest-api`](modules/rest-api/) |
+| Register a post type | `wp zt add module post-types`<br>then `wp zt make post-type book` | [`post-types`](modules/post-types/) |
+| Add a field to the editor | `wp zt add module fields`<br>then `wp zt make field acme_rating` | [`fields`](modules/fields/) |
+| Run something on a schedule | `wp zt add module cron`<br>then `wp zt make schedule sync` | [`cron`](modules/cron/) |
+| Create or change a table | `wp zt add module migrations`<br>then `wp zt make migration create-books-table` | [`migrations`](modules/migrations/) |
+| Build a block | `wp zt add module blocks`<br>then `wp zt make block card --dynamic --view=none`<br>then `npm run build` | [`blocks`](modules/blocks/) |
+| Give an AI agent a tool | `wp zt add module abilities`<br>then `wp zt make ability publish-post` | [`abilities`](modules/abilities/) |
+| Store settings | `wp zt add module options` | [`options`](modules/options/) |
+| Render markup from a template | `wp zt add service views`<br>then `wp zt make view emails/receipt` | [`views`](services/views/) |
+| Share JavaScript between screens | `wp zt add module assets`<br>then `wp zt make shared formatting` | [JavaScript](javascript.md) |
 
 Two that are not that shape:
 
 | I want to… | Run | Reference |
 |---|---|---|
-| Find out why nothing happened | `wp zestry doctor` | [Troubleshooting](troubleshooting.md) |
-| Take a toolkit release | `wp zestry update --dry-run` | [`wp zestry update`](commands/update.md) |
+| Find out why nothing happened | `wp zt doctor` | [Troubleshooting](troubleshooting.md) |
+| Take a toolkit release | `wp zt update --dry-run` | [`wp zt update`](commands/update.md) |
 
-Nothing needs adding up front. Reach for one when you hit what it solves — the full list is under [Reference](#documentation) below, and [`wp zestry add`](commands/add-module.md) brings along whatever the thing you asked for depends on.
+Nothing needs adding up front. Reach for one when you hit what it solves — the full list is under [Reference](#documentation) below, and [`wp zt add`](commands/add-module.md) brings along whatever the thing you asked for depends on.
 
 ## Services and modules
 
@@ -124,7 +124,7 @@ One question decides which you are writing: **does it do anything without being 
 
 A **[service](services/)** does not. It is built the first time something asks for it — a `$plugin->get()` call, or another class declaring a property of its type — and works only when called. `Path` resolves a path when asked; `Views` renders when asked. A service needs no declaration; one that takes configuration gets it from `$plugin->configure()` in your entry file.
 
-A **[module](modules/)** does. It binds a hook, registers a post type, walks a directory. Because it acts without being called, it has to be built for that to happen — so **`bootstrap.php` lists every module, and listing one is what builds it**. That file is modules only, and `wp zestry add module` writes the entry for you.
+A **[module](modules/)** does. It binds a hook, registers a post type, walks a directory. Because it acts without being called, it has to be built for that to happen — so **`bootstrap.php` lists every module, and listing one is what builds it**. That file is modules only, and `wp zt add module` writes the entry for you.
 
 Either kind reaches your code the same way. Declare a public typed property and the plugin injects it before your code runs:
 
@@ -159,12 +159,12 @@ return new class extends Command {
 - [Arguments](arguments.md) — how a route or an ability declares what it accepts, and what a caller is told.
 - [JavaScript](javascript.md) — sharing code between screens without shipping it twice.
 - [Testing](testing.md) — how to test a plugin built this way.
-- [Troubleshooting](troubleshooting.md) — including [`wp zestry doctor`](commands/doctor.md), which finds the wiring mistakes that fail silently.
+- [Troubleshooting](troubleshooting.md) — including [`wp zt doctor`](commands/doctor.md), which finds the wiring mistakes that fail silently.
 - [Shipping](shipping.md) — what to commit, what to build, what to leave out of the zip.
 
 **Reference**
 
-Every module and service name below is what you pass to `wp zestry add` — `wp zestry add module meta-boxes`, `wp zestry add service request`.
+Every module and service name below is what you pass to `wp zt add` — `wp zt add module meta-boxes`, `wp zt add service request`.
 
 - [Modules](modules/) — the ones that act on their own:
   <!-- zestry:include generator="module-names" -->
@@ -175,7 +175,7 @@ Every module and service name below is what you pass to `wp zestry add` — `wp 
   `cookie`, `db`, `globals`, `path`, `request`, `transients`, `views`
   <!-- /zestry:include -->
 - [`Plugin`](plugin.md) — the class your entry file builds, and everything it can be told to do.
-- [Command reference](commands/) — every `wp zestry` command.
+- [Command reference](commands/) — every `wp zt` command.
 - [Errors](errors.md) — every exception this toolkit throws, the message it carries, and what to do about it.
 - [Kernel reference](kernel/) — the exceptions you catch, the contracts you implement, the traits every module shares.
 
@@ -183,10 +183,10 @@ Every module and service name below is what you pass to `wp zestry add` — `wp 
 
 - **PHP 8.1 or later.**
 - **WordPress 6.9 or later** — the version this toolkit is developed and tested against.
-- **Composer**, and a working WordPress install with **WP-CLI**. `wp zestry` runs against your plugin once it is active, so the environment comes first and the toolkit goes into it.
+- **Composer**, and a working WordPress install with **WP-CLI**. `wp zt` runs against your plugin once it is active, so the environment comes first and the toolkit goes into it.
 
 ## Updates
 
 Copying is one-way: a later release of the toolkit does not reach a plugin that has already run `init`. Nothing upstream can break your plugin, and nothing upstream can fix it either.
 
-[`wp zestry update`](commands/update.md) is how you take a release when you want one. It re-copies everything under `lib/Core/` — the kernel and every module you added — and before writing anything it names the files you have edited, so a fix never arrives at the cost of your own work. Files you changed are kept unless you pass `--force`; `--dry-run` reports and stops. Everything outside `lib/Core/` is yours and is never touched.
+[`wp zt update`](commands/update.md) is how you take a release when you want one. It re-copies everything under `lib/Core/` — the kernel and every module you added — and before writing anything it names the files you have edited, so a fix never arrives at the cost of your own work. Files you changed are kept unless you pass `--force`; `--dry-run` reports and stops. Everything outside `lib/Core/` is yours and is never touched.

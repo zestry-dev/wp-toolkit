@@ -12,7 +12,7 @@
  * that installs this same package produces the *same* key, so only the
  * first plugin Composer happens to initialize would ever actually run
  * `devtool.php` — every other active plugin that also installed it would
- * silently get no `wp zestry` at all, with no way for `devtool.php` itself to
+ * silently get no `wp zt` at all, with no way for `devtool.php` itself to
  * detect or react, since its body would simply never run.
  *
  * This shim sidesteps that: its own content is identical everywhere too, so
@@ -25,7 +25,7 @@
  * (and were skipped for) their own copy of this exact shim.
  *
  * Each gate below explains itself through `WP_CLI::debug()` before returning.
- * Every one of them produces the same visible symptom -- `'zestry' is not a
+ * Every one of them produces the same visible symptom -- `'zt' is not a
  * registered wp command` -- so without that line several unrelated
  * misconfigurations are indistinguishable. Run any `wp` command with `--debug`
  * to see which one applies.
@@ -43,7 +43,7 @@
  * - Only under WP-CLI (there is no reason to build a Plugin instance, or
  *   even resolve a plugin root, on an ordinary web request).
  * - The current working directory must be inside a plugin directory under
- *   `WP_PLUGIN_DIR` — a developer runs `wp zestry init`/`add` from inside (or
+ *   `WP_PLUGIN_DIR` — a developer runs `wp zt init`/`add` from inside (or
  *   below) the plugin they are working on, exactly as they would run
  *   `composer require` there.
  * - That plugin must actually have this package installed — checked by the
@@ -69,7 +69,7 @@ $zestry_devtool_package  = is_array( $zestry_devtool_composer ) && is_string( $z
 	: null;
 
 if ( null === $zestry_devtool_package ) {
-	WP_CLI::debug( 'zestry: could not read a package name from ' . __DIR__ . '/composer.json.', 'zestry' );
+	WP_CLI::debug( 'zt: could not read a package name from ' . __DIR__ . '/composer.json.', 'zt' );
 	return;
 }
 
@@ -79,11 +79,11 @@ $zestry_devtool_cwd         = trailingslashit( wp_normalize_path( (string) getcw
 if ( ! str_starts_with( $zestry_devtool_cwd, $zestry_devtool_plugins_dir ) ) {
 	WP_CLI::debug(
 		sprintf(
-			'zestry: run this from inside your plugin directory. Current directory %s is not under %s.',
+			'zt: run this from inside your plugin directory. Current directory %s is not under %s.',
 			$zestry_devtool_cwd,
 			$zestry_devtool_plugins_dir
 		),
-		'zestry'
+		'zt'
 	);
 	return;
 }
@@ -93,8 +93,8 @@ $zestry_devtool_plugin_folder = explode( '/', $zestry_devtool_relative )[0];
 
 if ( '' === $zestry_devtool_plugin_folder ) {
 	WP_CLI::debug(
-		'zestry: run this from inside a plugin directory, not from ' . $zestry_devtool_plugins_dir . ' itself.',
-		'zestry'
+		'zt: run this from inside a plugin directory, not from ' . $zestry_devtool_plugins_dir . ' itself.',
+		'zt'
 	);
 	return;
 }
@@ -105,13 +105,13 @@ $zestry_devtool_target = $zestry_devtool_plugins_dir . $zestry_devtool_plugin_fo
 if ( ! is_file( $zestry_devtool_target ) ) {
 	WP_CLI::debug(
 		sprintf(
-			'zestry: %s does not require %s -- expected %s. Run `composer require %s --dev` in that plugin.',
+			'zt: %s does not require %s -- expected %s. Run `composer require %s --dev` in that plugin.',
 			$zestry_devtool_plugin_folder,
 			$zestry_devtool_package,
 			$zestry_devtool_target,
 			$zestry_devtool_package
 		),
-		'zestry'
+		'zt'
 	);
 	return;
 }

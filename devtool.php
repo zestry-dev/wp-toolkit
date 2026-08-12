@@ -7,9 +7,9 @@
  * `autoload.files`, which would collide across every plugin installing this
  * package — see that file for why), this builds a second, independent
  * Plugin instance — separate from whatever Plugin the *consuming* project
- * builds for its own runtime — under the slug `zestry`, so its commands are
+ * builds for its own runtime — under the slug `zt`, so its commands are
  * discovered under the {@see \Zestry\WPToolkit\Modules\CLI\CLI} module's existing
- * file-based convention and register as `wp zestry <command>` (the CLI module
+ * file-based convention and register as `wp zt <command>` (the CLI module
  * always names commands after the plugin slug, so no separate prefix
  * configuration is needed).
  *
@@ -35,7 +35,7 @@ if ( ! function_exists( 'zestry_devtool' ) ) {
 		static $plugin = null;
 
 		if ( null === $plugin ) {
-			$plugin = ( new Plugin( __FILE__, 'zestry' ) )
+			$plugin = ( new Plugin( __FILE__, 'zt' ) )
 				->configure(
 					CLI::class,
 					function ( CLI $cli ) {

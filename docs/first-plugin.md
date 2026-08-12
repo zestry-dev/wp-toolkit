@@ -4,7 +4,7 @@ One plugin, built end to end. **Acme Books** registers a `book` post type, serve
 
 Five files do the work, and the two ideas behind them are the whole toolkit: **a file in the right directory is a feature**, and a typed property is a dependency.
 
-If you have not installed the toolkit before, [Getting started](getting-started.md) covers what `wp zestry init` asks and why the code ends up in your namespace. This page assumes none of it.
+If you have not installed the toolkit before, [Getting started](getting-started.md) covers what `wp zt init` asks and why the code ends up in your namespace. This page assumes none of it.
 
 ## 1. Set up
 
@@ -14,7 +14,7 @@ Start with an empty plugin directory, `wp-content/plugins/acme-books/`. Everythi
 composer require zestry-dev/wp-toolkit --dev
 ```
 
-`wp zestry` is a WP-CLI command that lives in this package, and WordPress only loads a plugin's `vendor/autoload.php` for an **active** plugin. So the entry file and the activation come first:
+`wp zt` is a WP-CLI command that lives in this package, and WordPress only loads a plugin's `vendor/autoload.php` for an **active** plugin. So the entry file and the activation come first:
 
 ```php
 <?php
@@ -34,17 +34,17 @@ require_once __DIR__ . '/vendor/autoload.php';
 wp plugin activate acme-books
 ```
 
-Now initialize. Answer `Acme\Books` for the namespace and take the defaults for the rest — or, if you are scripting this, add the `"Acme\\Books\\": "lib/"` PSR-4 entry to `composer.json` first and run `wp zestry init --yes`, which needs it to infer the namespace from:
+Now initialize. Answer `Acme\Books` for the namespace and take the defaults for the rest — or, if you are scripting this, add the `"Acme\\Books\\": "lib/"` PSR-4 entry to `composer.json` first and run `wp zt init --yes`, which needs it to infer the namespace from:
 
 ```bash
-$ wp zestry init
+$ wp zt init
 Namespace (e.g. Vendor\MyPlugin): Acme\Books
 Text domain: (default: acme-books) acme-books
 Source directory: (default: lib) lib
 Copy the kernel into lib/Core/Kernel/ under Acme\Books? [Y/n] y
 Created bootstrap.php. Read it with `$plugin->bootstrap()` in your entry file.
 ...
-Success: Initialized. Run `wp zestry add module <name>` to copy in feature modules.
+Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
 ```
 
 That copied the kernel to `lib/Core/Kernel/`, added `"Acme\\Books\\": "lib/"` to your `composer.json`, and wrote an empty `bootstrap.php`. The `Plugin` class is now yours, at `Acme\Books\Core\Kernel\Plugin`.
@@ -52,7 +52,7 @@ That copied the kernel to `lib/Core/Kernel/`, added `"Acme\\Books\\": "lib/"` to
 `init` copies the kernel and nothing else. Add the five modules this plugin uses:
 
 ```bash
-$ wp zestry add module post-types rest-api admin-pages options log
+$ wp zt add module post-types rest-api admin-pages options log
 Also adding required dependencies: path, request, transients, cookie, views
 Added path
 Added post-types
@@ -110,7 +110,7 @@ Three details:
 
 ## 3. `bootstrap.php`
 
-`wp zestry add module` appended an entry per module. Edit it down to this:
+`wp zt add module` appended an entry per module. Edit it down to this:
 
 ```php
 <?php
@@ -147,7 +147,7 @@ return array(
 
 An entry's value is its **initializer** — the callback that configures the module before it boots. `Options` gets one here so its row is loaded with the rest of WordPress's autoloaded options, since the REST route reads a setting on every request. The other four need no configuration, so they are written bare.
 
-`Assets` and `Activation` are the two lines you do not add by hand — `wp zestry add module assets` appends the first in section 7, and `wp zestry make activation` the second in section 8. Both are shown here so the finished file is in one place.
+`Assets` and `Activation` are the two lines you do not add by hand — `wp zt add module assets` appends the first in section 7, and `wp zt make activation` the second in section 8. Both are shown here so the finished file is in one place.
 
 > [!IMPORTANT]
 > **This file is modules only, and listing one is what builds it.** A module acts on its own — it binds a hook, registers a post type, walks a directory — so it has to be built for any of that to happen.
@@ -157,7 +157,7 @@ An entry's value is its **initializer** — the callback that configures the mod
 ## 4. The post type
 
 ```bash
-$ wp zestry make post-type book --plural=Books
+$ wp zt make post-type book --plural=Books
 Success: Created post-types/book.php
 ```
 
@@ -206,7 +206,7 @@ That is the whole registration. `PostTypes` walks `post-types/` on `init`, requi
 ## 5. The REST route
 
 ```bash
-$ wp zestry make route books --method=get --version=v1 --pattern=/books
+$ wp zt make route books --method=get --version=v1 --pattern=/books
 Success: Created routes/books.php
 ```
 
@@ -310,7 +310,7 @@ The same attribute declares an [ability](modules/abilities/)'s input, because a 
 ## 6. The settings page
 
 ```bash
-$ wp zestry make page settings
+$ wp zt make page settings
 Success: Created admin-pages/settings.php
 Created views/admin-pages/settings.php
 ```
@@ -439,12 +439,12 @@ This is why nothing here declares a constructor. `Service::__construct()` is `fi
 The page works without JavaScript. Giving it some is two commands:
 
 ```bash
-$ wp zestry add module assets
+$ wp zt add module assets
 Created webpack.config.js
 Declared the src/shared/* npm workspace in package.json
 Added npm scripts: build, start
 
-$ wp zestry make entry settings
+$ wp zt make entry settings
 Success: Created src/entries/settings (2 files)
 ```
 
@@ -480,14 +480,14 @@ public function enqueue_assets(): void {
 
 That is the whole wiring. There is no `register_script()`, no `.asset.php` to read, no version string to bump, and no separate call for the stylesheet — the build wrote `build/assets-manifest.php` naming every entry it produced, and the `assets` module registered each one on `init` before any page could ask for it.
 
-`wp zestry add module assets` is what makes that possible, and the `webpack.config.js` it wrote is the load-bearing part: `@wordpress/scripts` picks entry points three mutually exclusive ways, so on a stock setup a plugin cannot have both a block and a script of its own. See **[JavaScript](javascript.md)** for the rest — shared code two screens import by name, and ES module entries.
+`wp zt add module assets` is what makes that possible, and the `webpack.config.js` it wrote is the load-bearing part: `@wordpress/scripts` picks entry points three mutually exclusive ways, so on a stock setup a plugin cannot have both a block and a script of its own. See **[JavaScript](javascript.md)** for the rest — shared code two screens import by name, and ES module entries.
 
 ## 8. ActivationHandler
 
 Rewrite rules need flushing once, when the `book` post type first appears. That is activation work, and it gets its own class:
 
 ```bash
-$ wp zestry make activation Activation
+$ wp zt make activation Activation
 Success: Created lib/Modules/Activation.php
 Declared Activation in bootstrap.php.
 ```
@@ -543,13 +543,13 @@ Flushing is enough on its own here: by the time `activate()` runs, the plugin ha
 One class of mistake in this system produces no error: a module on disk that `bootstrap.php` does not list is never built, so it discovers nothing and binds nothing, and the feature is simply absent.
 
 ```bash
-$ wp zestry doctor
+$ wp zt doctor
 zestry.json    Acme\Books -> lib/
 bootstrap.php  7 classes declared
 Success: No problems found.
 ```
 
-Seven: `PostTypes`, `RestApi`, `AdminPages`, `Assets`, `Log`, `Options`, `Activation`. It exits non-zero when it finds something, so it gates a build on its own. See [`wp zestry doctor`](commands/doctor.md) for everything it checks.
+Seven: `PostTypes`, `RestApi`, `AdminPages`, `Assets`, `Log`, `Options`, `Activation`. It exits non-zero when it finds something, so it gates a build on its own. See [`wp zt doctor`](commands/doctor.md) for everything it checks.
 
 ## 10. What you have
 
@@ -574,7 +574,7 @@ acme-books/
 │   └── entries/settings/       ← index.ts + style.scss; built to build/entries/
 ├── build/                      ← npm run build writes this; gitignored, ships in the zip
 ├── lib/
-│   ├── Core/                   ← copied in; `wp zestry update` may replace it
+│   ├── Core/                   ← copied in; `wp zt update` may replace it
 │   │   ├── Kernel/             ← Plugin, ServicesRepository, Service, Module, ActivationHandler
 │   │   ├── Modules/
 │   │   │   ├── AdminPages/
@@ -594,12 +594,12 @@ acme-books/
 └── vendor/                     ← dev only, not shipped
 ```
 
-A directory is a feature set, a file returns an object, and a public typed property is filled in before your code runs — the same three conventions in every module. Adding the next feature is one more file. Adding the next module is `wp zestry add module cron` and a file in `schedules/`.
+A directory is a feature set, a file returns an object, and a public typed property is filled in before your code runs — the same three conventions in every module. Adding the next feature is one more file. Adding the next module is `wp zt add module cron` and a file in `schedules/`.
 
 ## Next
 
 - [Modules](modules/) — the ones that act on their own, and what each one discovers
 - [Services](services/) — the ones that work when called
 - [`Plugin`](plugin.md) — `configure()`, `make()`, `wire()`, and everything else the entry file can do
-- [Command reference](commands/) — every `wp zestry` command
-- [`wp zestry update`](commands/update.md) — take a later release of the toolkit without losing your edits
+- [Command reference](commands/) — every `wp zt` command
+- [`wp zt update`](commands/update.md) — take a later release of the toolkit without losing your edits

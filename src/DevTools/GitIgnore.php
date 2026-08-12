@@ -16,7 +16,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
 /**
  * Keeps a consuming plugin's `.gitignore` covering what the toolkit generates.
  *
- * `wp zestry init` writes the file, and `wp zestry add blocks` extends it once a build
+ * `wp zt init` writes the file, and `wp zt add blocks` extends it once a build
  * directory exists to ignore. Both go through here so the two never disagree
  * about what an entry looks like.
  *

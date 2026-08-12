@@ -15,11 +15,11 @@ Only `singular_name()`/`plural_name()` are required: WordPress core itself only 
 
 A post type name is not auto-namespaced to the plugin slug, for the same reason a taxonomy, a meta key and a block name are not: WordPress caps a post type name at 20 characters (enforced by the `wp_posts.post_type` column and `register_post_type()` itself), which leaves little to no room once a realistic plugin slug prefix is added. Community convention (core itself, WooCommerce's `product`) is to pick a short, plain, globally unique name — the same responsibility you already have when naming a database table or an option key directly.
 
-A file at `post-types/book.php` registers as `book`. `wp zestry make post-type <name>` generates a starting point.
+A file at `post-types/book.php` registers as `book`. `wp zt make post-type <name>` generates a starting point.
 
 ## Generated starting point
 
-[`wp zestry make post-type <name>`](../../commands/make-post-type.md) writes this file:
+[`wp zt make post-type <name>`](../../commands/make-post-type.md) writes this file:
 
 > [!IMPORTANT]
 > **This name is not prefixed with your plugin slug, so choose it as though every plugin on the site can see it — because they can.** WordPress caps a post type name at 20 characters, which is why the slug is not added for you.

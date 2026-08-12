@@ -15,7 +15,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
 use Zestry\WPToolkit\Services\Path;
 
 /**
- * Renders the `AGENTS.md` that `wp zestry init` leaves in a consuming plugin.
+ * Renders the `AGENTS.md` that `wp zt init` leaves in a consuming plugin.
  *
  * An agent opening a plugin built this way sees a `lib/Core/` it did not write,
  * a `bootstrap.php` whose entries look optional, and a `commands/` directory
@@ -34,8 +34,8 @@ use Zestry\WPToolkit\Services\Path;
  *
  * **What is deliberately not written is a description of the plugin.** Which
  * modules are installed, which are declared, what each directory holds -- all
- * of that changes every time someone runs `wp zestry add`, and a file written once
- * at `init` would start drifting immediately. `wp zestry describe --format=json`
+ * of that changes every time someone runs `wp zt add`, and a file written once
+ * at `init` would start drifting immediately. `wp zt describe --format=json`
  * answers it from the plugin itself, so the instructions point at the command
  * rather than snapshotting its output.
  */
@@ -78,7 +78,7 @@ class AgentInstructions extends Service {
 			),
 			'',
 			\sprintf(
-				'Everything under `%1$s/%2$s/` came from the toolkit and `wp zestry update` may replace it.'
+				'Everything under `%1$s/%2$s/` came from the toolkit and `wp zt update` may replace it.'
 					. ' Everything else in `%1$s/` is yours and no command touches it.',
 				$root,
 				Copier::COPIED_SEGMENT
@@ -86,9 +86,9 @@ class AgentInstructions extends Service {
 			'',
 			'## Before you change anything',
 			'',
-			'Run `wp zestry describe --format=json` from this directory. It reports every module and service,'
+			'Run `wp zt describe --format=json` from this directory. It reports every module and service,'
 				. ' whether each is installed and declared, the directory it reads, the base class a file there'
-				. ' must return, and the `wp zestry make` that writes one.',
+				. ' must return, and the `wp zt make` that writes one.',
 			'',
 			'It is derived from this plugin rather than written down, so it cannot be out of date.'
 				. ' Nothing about which features this plugin has is repeated below, for that reason.',
@@ -104,11 +104,11 @@ class AgentInstructions extends Service {
 		$lines[] = '';
 		$lines[] = '## Doing the work';
 		$lines[] = '';
-		$lines[] = '- `wp zestry make <type> <name>` writes a working file into the directory its module discovers.'
-			. ' Run `wp zestry make` to list the types.';
-		$lines[] = '- `wp zestry add module <name>` copies a feature in and declares it. `wp zestry add service <name>`'
+		$lines[] = '- `wp zt make <type> <name>` writes a working file into the directory its module discovers.'
+			. ' Run `wp zt make` to list the types.';
+		$lines[] = '- `wp zt add module <name>` copies a feature in and declares it. `wp zt add service <name>`'
 			. ' copies one that has nothing to declare.';
-		$lines[] = '- `wp zestry doctor` reports the wiring mistakes that raise no error. Run it after changing'
+		$lines[] = '- `wp zt doctor` reports the wiring mistakes that raise no error. Run it after changing'
 			. ' `bootstrap.php` or adding a module by hand.';
 
 		return \implode( "\n", $lines ) . "\n";
@@ -198,7 +198,7 @@ class AgentInstructions extends Service {
 	 * an em dash is the citation list and goes entirely -- anchored to the end
 	 * of the line, which is what keeps an em dash *inside* a rule's own sentence
 	 * safe. What is left can still hold a link mid-sentence, the way the rule
-	 * about the copied tree names `wp zestry update` and `wp zestry overwrite`. Those
+	 * about the copied tree names `wp zt update` and `wp zt overwrite`. Those
 	 * are flattened to their text rather than dropped, since the words are the
 	 * rule.
 	 *

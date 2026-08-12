@@ -9,7 +9,7 @@ use Zestry\WPToolkit\Modules\CLI\Command;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
- * `wp zestry add <module>...`: dependency resolution, copying, and the
+ * `wp zt add <module>...`: dependency resolution, copying, and the
  * already-present skip guard.
  *
  * Exercises the real commands/add/module.php file. Path resolves toolkit source
@@ -121,7 +121,7 @@ final class AddCommandTest extends TestCase {
 	 * Prettier reads the first config name it resolves and ignores the rest, so
 	 * a second one under a different name is not a second opinion -- it is a
 	 * file that never applies, and one that reads as configuration to everyone
-	 * but Prettier. `wp zestry init` writes `.prettierrc.js`; this must find it.
+	 * but Prettier. `wp zt init` writes `.prettierrc.js`; this must find it.
 	 */
 	public function test_adding_blocks_does_not_write_a_second_prettier_config(): void {
 		file_put_contents( $this->target_plugin_dir . '/.prettierrc.js', '// mine' );
@@ -383,7 +383,7 @@ final class AddCommandTest extends TestCase {
 	}
 
 	/**
-	 * `wp zestry add service` copies a service, and declares nothing.
+	 * `wp zt add service` copies a service, and declares nothing.
 	 *
 	 * A service is built the first time something asks for it, so an entry
 	 * naming one in bootstrap.php would do nothing.
@@ -419,7 +419,7 @@ final class AddCommandTest extends TestCase {
 		$error = \WP_CLI::last( 'error' );
 		$this->assertNotNull( $error );
 		$this->assertStringContainsString( '"path" is a service, not a module', (string) $error[0] );
-		$this->assertStringContainsString( 'wp zestry add service path', (string) $error[0] );
+		$this->assertStringContainsString( 'wp zt add service path', (string) $error[0] );
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/lib/Core/Services/Path.php', 'Nothing is copied.' );
 	}
 
@@ -429,7 +429,7 @@ final class AddCommandTest extends TestCase {
 		$error = \WP_CLI::last( 'error' );
 		$this->assertNotNull( $error );
 		$this->assertStringContainsString( '"cli" is a module, not a service', (string) $error[0] );
-		$this->assertStringContainsString( 'wp zestry add module cli', (string) $error[0] );
+		$this->assertStringContainsString( 'wp zt add module cli', (string) $error[0] );
 	}
 
 	/**

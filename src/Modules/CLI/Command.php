@@ -32,11 +32,11 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *
  * A file at `commands/greet.php` registers as `wp {plugin-slug} greet <name>`
  * (see {@see CLI} for how subdirectories become nested command namespaces).
- * `wp zestry make command <name>` generates a starting point.
+ * `wp zt make command <name>` generates a starting point.
  * Give handle() its own docblock to document arguments for WP-CLI's `--help`
  * output — WP-CLI parses it, so this is not just a comment:
  *
- * `wp zestry make command <name>` generates a starting point.
+ * `wp zt make command <name>` generates a starting point.
  * Properties typed as a Service subclass are injected the same way they are
  * anywhere else, so a command needing plugin services (Path, Options, ...)
  * declares them as public or protected typed properties rather than resolving

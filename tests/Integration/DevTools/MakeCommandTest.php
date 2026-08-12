@@ -10,7 +10,7 @@ use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
- * Shared `wp zestry make <type>` flow: name normalization, generic filesystem
+ * Shared `wp zt make <type>` flow: name normalization, generic filesystem
  * collision guards, and the overwrite prompt.
  *
  * Exercised through a concrete anonymous MakeCommand subclass rather than one
@@ -51,7 +51,7 @@ final class MakeCommandTest extends TestCase {
 		);
 
 		/*
-		 * Reaching `wp zestry make` at all means WordPress loaded this plugin and
+		 * Reaching `wp zt make` at all means WordPress loaded this plugin and
 		 * its entry file ran. Some generators need the slug, which nothing on
 		 * disk records -- it is the entry file's second constructor argument --
 		 * so a fixture without a running plugin is a plugin that has none.

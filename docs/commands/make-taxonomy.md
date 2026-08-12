@@ -3,13 +3,13 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make taxonomy
+# wp zt make taxonomy
 
 Generate a new custom taxonomy.
 
 The PostTypes module discovers it. On `init` it walks your `taxonomies/` directory, requires every file in it, and hands the `Taxonomy` each one returns to `register_taxonomy()`, attached to the post types the file names. Writing the file is the whole registration; nothing has to be declared anywhere.
 
-Needs the `post-types` module — the same one that registers post types — so run `wp zestry add module post-types` first if you have not already.
+Needs the `post-types` module — the same one that registers post types — so run `wp zt add module post-types` first if you have not already.
 
 ## Options
 
@@ -44,12 +44,12 @@ Needs the `post-types` module — the same one that registers post types — so 
 
 ```bash
 # Generate a taxonomy, prompting for the plural name and object type.
-$ wp zestry make taxonomy genre
+$ wp zt make taxonomy genre
 Plural name: (default: Genres)
 Post type this taxonomy attaches to: (default: post)
 Success: Created taxonomies/genre.php
 
 # Generate one with every value given explicitly.
-$ wp zestry make taxonomy genre --singular=Genre --plural=Genres --object-type=book
+$ wp zt make taxonomy genre --singular=Genre --plural=Genres --object-type=book
 Success: Created taxonomies/genre.php
 ```

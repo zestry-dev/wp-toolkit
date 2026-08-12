@@ -26,7 +26,7 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  * resolve together when `run()` is called.
  *
  * Modules are declared in a `bootstrap.php`, which {@see bootstrap()} reads.
- * `wp zestry init` creates that file and `wp zestry add` appends to it, so a module
+ * `wp zt init` creates that file and `wp zt add` appends to it, so a module
  * is active as soon as it is copied and the entry file never has to change.
  * {@see configure()} and {@see autoload()} are public, so a plugin that prefers
  * to declare its modules in the entry file can do that instead, and the two
@@ -72,7 +72,7 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  *
  * @example The bootstrap file
  * Declares every module the plugin uses, with the configuration each requires.
- * `wp zestry init` creates the file and `wp zestry add` appends to it, so a module
+ * `wp zt init` creates the file and `wp zt add` appends to it, so a module
  * is active as soon as it is copied.
  *
  * With this in place, a file returned from `actions/save-profile.php` becomes
@@ -292,7 +292,7 @@ class Plugin {
 	 * Register and queue every module a `bootstrap.php` declares.
 	 *
 	 * The file returns one flat list, so the entry file never changes as modules
-	 * are added -- and `wp zestry add` has somewhere to register what it copies,
+	 * are added -- and `wp zt add` has somewhere to register what it copies,
 	 * meaning a module works the moment it arrives rather than after a
 	 * hand-edit:
 	 *
@@ -346,7 +346,7 @@ class Plugin {
 
 		// Recorded before the existence check, since this is the file this
 		// plugin reads declarations from whether or not it exists yet -- which
-		// is the question `wp zestry add` asks when it needs somewhere to append.
+		// is the question `wp zt add` asks when it needs somewhere to append.
 		$this->bootstrap_file = $file;
 
 		// Absent is not an error: a plugin may configure everything in its entry
@@ -374,7 +374,7 @@ class Plugin {
 	 * asked, which is where a wordpress.org-hosted plugin's translations are
 	 * installed -- so a plugin distributed that way needs no call at all.
 	 *
-	 * The text domain defaults to the plugin slug, matching what `wp zestry init`
+	 * The text domain defaults to the plugin slug, matching what `wp zt init`
 	 * writes into `zestry.json` and stamps into every copied file, so the two
 	 * cannot disagree unless a consumer deliberately changes one.
 	 *
@@ -675,7 +675,7 @@ class Plugin {
 			 * compiles nothing -- the classes load when `run()` builds them.
 			 *
 			 * A service listed here is not an error, just pointless: it gets
-			 * built a little earlier than it needed to be. `wp zestry doctor`
+			 * built a little earlier than it needed to be. `wp zt doctor`
 			 * reports it as tidying.
 			 */
 			$this->modules->set_autoload( $name );
@@ -683,14 +683,14 @@ class Plugin {
 	}
 
 	/**
-	 * Make this plugin reachable by `wp zestry`, and by nothing else.
+	 * Make this plugin reachable by `wp zt`, and by nothing else.
 	 *
 	 * The devtool commands read a plugin from its files -- `zestry.json`,
 	 * `bootstrap.php`, what is on disk -- which answers what a plugin is
 	 * *declared* to be. It cannot answer what it *became*: a slug the entry file
 	 * passed explicitly, a root an initializer moved. Those live only on the
 	 * instance WordPress just built, and that instance already exists by the
-	 * time a `wp zestry` command runs. This publishes it rather than rebuilding it.
+	 * time a `wp zt` command runs. This publishes it rather than rebuilding it.
 	 *
 	 * Guarded by `ZESTRY_DEVTOOL`, which this package's autoload shim defines only
 	 * after establishing that this is a `wp` run from inside a plugin requiring

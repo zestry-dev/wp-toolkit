@@ -18,7 +18,7 @@ Whether your plugin slug is prefixed onto that name depends on where the name la
 
 All of them extend [`Module`](module.md), whose abstract `on_boot()` is where the acting-on-its-own goes. For the things that only work when called, see [Services](../services/).
 
-Everything here is optional. `wp zestry add module <name>` copies one into your plugin, along with anything it depends on.
+Everything here is optional. `wp zt add module <name>` copies one into your plugin, along with anything it depends on.
 
 ## Every module
 
@@ -42,7 +42,7 @@ Add nothing up front. Reach for one when you hit what it solves:
 | [`rest-api`](rest-api/) | expose an HTTP endpoint | `routes/` | [`Route`](rest-api/route.md) | `path`, `request` |
 | [`site-health`](site-health/) | report a verdict on Site Health, or list values on Info | `health-checks/`, `debug-sections/` | [`HealthCheck`](site-health/health-check.md), [`DebugSection`](site-health/debug-section.md) | `path` |
 
-**`blocks` and `assets` also write build tooling outside their own tree** — npm scripts and devDependencies, a `tsconfig.json`, a `webpack.config.js`, `.gitignore` entries. Everything either writes is additive, and [`wp zestry add module`](../commands/add-module.md) lists it.
+**`blocks` and `assets` also write build tooling outside their own tree** — npm scripts and devDependencies, a `tsconfig.json`, a `webpack.config.js`, `.gitignore` entries. Everything either writes is additive, and [`wp zt add module`](../commands/add-module.md) lists it.
 
 One worth calling out: **`ajax` serves `admin-ajax.php`**, not the REST API. Reach for it when something already speaks that protocol — an existing script, a third-party integration — and `rest-api` otherwise.
 

@@ -211,7 +211,7 @@ final class PluginTest extends TestCase {
 
 	/**
 	 * The whole point: a plugin's modules are declared in one file, so its entry
-	 * file stays one line however many it uses -- and `wp zestry add` has somewhere
+	 * file stays one line however many it uses -- and `wp zt add` has somewhere
 	 * to register what it copies.
 	 */
 	public function test_bootstrap_registers_and_queues_what_the_file_declares(): void {

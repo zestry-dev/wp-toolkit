@@ -9,7 +9,7 @@ A service does nothing on its own. The plugin builds it the first time something
 
 All of them extend [`Service`](service.md), which supplies plugin access and the typed-property injection they rely on. For the things that *do* act on their own, see [Modules](../modules/).
 
-Everything here is optional. `wp zestry add service <name>` copies one into your plugin, along with anything it depends on.
+Everything here is optional. `wp zt add service <name>` copies one into your plugin, along with anything it depends on.
 
 ## Every service
 

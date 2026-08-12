@@ -18,11 +18,11 @@ Only `singular_name()`, `plural_name()` and `object_types()` are required — un
 
 Taxonomies are registered after every post type has been (see `PostTypes`), so `object_types()` can safely name any post type this same plugin discovers, in either directory, regardless of file ordering.
 
-A file at `taxonomies/genre.php` attaches to a `book` post type discovered from `post-types/book.php`. `wp zestry make taxonomy <name>` generates a starting point.
+A file at `taxonomies/genre.php` attaches to a `book` post type discovered from `post-types/book.php`. `wp zt make taxonomy <name>` generates a starting point.
 
 ## Generated starting point
 
-[`wp zestry make taxonomy <name>`](../../commands/make-taxonomy.md) writes this file:
+[`wp zt make taxonomy <name>`](../../commands/make-taxonomy.md) writes this file:
 
 > [!IMPORTANT]
 > **This name is not prefixed with your plugin slug, so choose it as though every plugin on the site can see it — because they can.** WordPress caps a taxonomy name at 32 characters, which is why the slug is not added for you.

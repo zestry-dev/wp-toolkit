@@ -6,37 +6,37 @@ This page is for the rest: the failures with no message attached. Find your symp
 
 | You see | Jump to |
 |---|---|
-| `'zestry' is not a registered wp command` | [below](#zestry-is-not-a-registered-wp-command) |
+| `'zt' is not a registered wp command` | [below](#zt-is-not-a-registered-wp-command) |
 | A module is there, and nothing it does happens | [below](#a-module-does-nothing-and-nothing-errors) |
 | `Class "Acme\Plugin\..." not found` | [below](#class-not-found) |
 | `Typed property ... must not be accessed before initialization` | [below](#an-injected-property-is-not-there) |
 | A post type's permalinks 404 | [below](#a-post-type-404s) |
 | `DiscoveryException` from a file you wrote | [below](#discoveryexception-from-a-file-you-wrote) |
 | A script or style you registered never loads | [below](#a-script-or-style-never-loads) |
-| `wp zestry update` is about to replace files you edited | [below](#wp-zestry-update-and-your-edits) |
-| `wp zestry init` says the plugin is already initialized | [below](#wp-zestry-init-refuses-to-run) |
+| `wp zt update` is about to replace files you edited | [below](#wp-zt-update-and-your-edits) |
+| `wp zt init` says the plugin is already initialized | [below](#wp-zt-init-refuses-to-run) |
 
 Run this first, whatever the symptom — it is read-only and takes a second:
 
 ```bash
-wp zestry doctor
+wp zt doctor
 ```
 
 ---
 
-## `'zestry' is not a registered wp command`
+## `'zt' is not a registered wp command`
 
 Three conditions have to hold at once, and failing any one of them produces this same line.
 
-1. **The plugin is active.** WordPress loads a plugin's `vendor/autoload.php` only for an active plugin, and that autoload is what registers `wp zestry`.
+1. **The plugin is active.** WordPress loads a plugin's `vendor/autoload.php` only for an active plugin, and that autoload is what registers `wp zt`.
 2. **The plugin requires this package.** `composer require zestry-dev/wp-toolkit --dev`, in that plugin, so that `vendor/zestry-dev/wp-toolkit/devtool.php` exists on disk.
-3. **Your working directory is inside that plugin.** `wp zestry` resolves which plugin to operate on from the current directory: the nearest ancestor sitting directly under `WP_PLUGIN_DIR`. Running from the plugins directory itself, or anywhere outside it, targets nothing.
+3. **Your working directory is inside that plugin.** `wp zt` resolves which plugin to operate on from the current directory: the nearest ancestor sitting directly under `WP_PLUGIN_DIR`. Running from the plugins directory itself, or anywhere outside it, targets nothing.
 
 ```bash
 cd wp-content/plugins/acme-plugin
 wp plugin activate acme-plugin
 composer require zestry-dev/wp-toolkit --dev
-wp zestry init
+wp zt init
 ```
 
 To find out which one failed, ask:
@@ -45,7 +45,7 @@ To find out which one failed, ask:
 wp --debug cli version
 ```
 
-Each condition explains itself through a `zestry:`-prefixed debug line — the wrong directory, the missing `vendor/zestry-dev/wp-toolkit/devtool.php`, the unreadable package name.
+Each condition explains itself through a `zt:`-prefixed debug line — the wrong directory, the missing `vendor/zestry-dev/wp-toolkit/devtool.php`, the unreadable package name.
 
 > [!NOTE]
 > One case cannot report itself. If the plugin is **inactive**, or the package is installed through a Composer path repository whose symlink does not resolve — inside a container whose mounts do not include the target, say — none of this toolkit's code runs at all, so there is nothing to log with and `--debug` stays silent. Both are fixed by making the plugin's `vendor/` genuinely reachable from where WordPress is running.
@@ -69,12 +69,12 @@ return array(
 );
 ```
 
-`wp zestry add module <name>` writes that entry for you, and so does `wp zestry make module`. A module added by hand, or one whose declaration was lost in a merge, is the case to check.
+`wp zt add module <name>` writes that entry for you, and so does `wp zt make module`. A module added by hand, or one whose declaration was lost in a merge, is the case to check.
 
-`wp zestry doctor` finds it:
+`wp zt doctor` finds it:
 
 ```bash
-$ wp zestry doctor
+$ wp zt doctor
 zestry.json    Acme\Plugin -> lib/
 bootstrap.php  6 classes declared
 
@@ -104,11 +104,11 @@ Two other causes worth ruling out once the declaration is there:
 
 | What it is | On disk | Class |
 |---|---|---|
-| The kernel (`wp zestry init`) | `lib/Core/Kernel/Plugin.php` | `Acme\Plugin\Core\Kernel\Plugin` |
-| A module you added (`wp zestry add module ajax`) | `lib/Core/Modules/Ajax/Ajax.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax` |
-| A service you added (`wp zestry add service path`) | `lib/Core/Services/Path.php` | `Acme\Plugin\Core\Services\Path` |
-| A module you wrote (`wp zestry make module`) | `lib/Modules/Shortcode.php` | `Acme\Plugin\Modules\Shortcode` |
-| A service you wrote (`wp zestry make service`) | `lib/Services/Cache.php` | `Acme\Plugin\Services\Cache` |
+| The kernel (`wp zt init`) | `lib/Core/Kernel/Plugin.php` | `Acme\Plugin\Core\Kernel\Plugin` |
+| A module you added (`wp zt add module ajax`) | `lib/Core/Modules/Ajax/Ajax.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax` |
+| A service you added (`wp zt add service path`) | `lib/Core/Services/Path.php` | `Acme\Plugin\Core\Services\Path` |
+| A module you wrote (`wp zt make module`) | `lib/Modules/Shortcode.php` | `Acme\Plugin\Modules\Shortcode` |
+| A service you wrote (`wp zt make service`) | `lib/Services/Cache.php` | `Acme\Plugin\Services\Cache` |
 
 The base classes and exceptions follow the same rule, since they are copied in:
 
@@ -119,7 +119,7 @@ use Acme\Plugin\Core\Kernel\Exceptions\ModuleException;
 use Acme\Plugin\Core\Modules\CLI\Command;
 ```
 
-`Acme\Plugin` here is whatever you answered `init`'s namespace prompt with, and `lib` whatever you answered for the root. Both are recorded in `zestry.json`; `wp zestry doctor` prints them on its first line.
+`Acme\Plugin` here is whatever you answered `init`'s namespace prompt with, and `lib` whatever you answered for the root. Both are recorded in `zestry.json`; `wp zt doctor` prints them on its first line.
 
 If the namespace is right and the class still is not found:
 
@@ -246,7 +246,7 @@ Fix the path, or drop the setter and use the default.
 > [!NOTE]
 > **A missing *default* root is not an error.** Adding `cron` before you have written your first schedule is fine: the module discovers nothing and says nothing. Only a directory named through a `set_*_root()` call and then not found throws — asking for a directory by name and getting nothing is a typo worth hearing about.
 
-`wp zestry doctor` does not check roots named inside an initializer — finding out would mean running your closures against live instances. This failure is already loud, which is why it is on this page and not in `doctor`'s output.
+`wp zt doctor` does not check roots named inside an initializer — finding out would mean running your closures against live instances. This failure is already loud, which is why it is on this page and not in `doctor`'s output.
 
 ---
 
@@ -273,7 +273,7 @@ The rule reads the same in both directions. In `$deps`, use:
 
 ---
 
-## `wp zestry update` and your edits
+## `wp zt update` and your edits
 
 Nothing is replaced without being reported first, and your edits are kept by default. Every recorded file lands in one of five states:
 
@@ -286,7 +286,7 @@ Nothing is replaced without being reported first, and your edits are kept by def
 | `conflict` | Both. | **Kept**, and named in the summary. |
 
 ```bash
-wp zestry update --dry-run
+wp zt update --dry-run
 ```
 
 `--dry-run` reports and stops, writing nothing and exiting zero whatever it finds. Run it before every update. `edited` and `conflict` files are named individually, since those are the ones something of yours is at stake in; `upstream` and `missing` are only counted.
@@ -299,7 +299,7 @@ Nothing outside `lib/Core/` is ever touched — your own `lib/Modules/` and `lib
 
 ---
 
-## `wp zestry init` refuses to run
+## `wp zt init` refuses to run
 
 ```
 Error: zestry.json already exists at /…/acme-plugin -- already initialized.
@@ -307,9 +307,9 @@ Error: zestry.json already exists at /…/acme-plugin -- already initialized.
 
 `init` is one-time: running it again would re-copy the kernel over whatever you have since edited. What you want instead is one of:
 
-- **A later release of the toolkit** — [`wp zestry update`](commands/update.md).
-- **More modules** — [`wp zestry add module <name>`](commands/add-module.md).
-- **A copied module back to its original state** — [`wp zestry overwrite module <name>`](commands/overwrite-module.md), which asks before replacing anything.
+- **A later release of the toolkit** — [`wp zt update`](commands/update.md).
+- **More modules** — [`wp zt add module <name>`](commands/add-module.md).
+- **A copied module back to its original state** — [`wp zt overwrite module <name>`](commands/overwrite-module.md), which asks before replacing anything.
 - **A genuinely fresh start** — delete `zestry.json`, `zestry.lock.json` and your root directory, then run `init` again.
 
 ---
@@ -317,5 +317,5 @@ Error: zestry.json already exists at /…/acme-plugin -- already initialized.
 ## Still stuck
 
 - [Errors](errors.md) — every exception this toolkit throws, and what each one means.
-- [`wp zestry doctor`](commands/doctor.md) — the full list of what it checks, and its machine-readable formats.
+- [`wp zt doctor`](commands/doctor.md) — the full list of what it checks, and its machine-readable formats.
 - [Getting started](getting-started.md) — the whole setup path, in order.

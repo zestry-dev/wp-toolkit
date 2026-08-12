@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make service <name>`.
+ * Devtool command: `wp zt make service <name>`.
  *
  * Generates a plain consumer Service -- something the plugin builds when
  * asked for it, in the spirit of Path/Views/Globals. Its counterpart is
- * `wp zestry make module`, for a class that has to act without being called.
+ * `wp zt make module`, for a class that has to act without being called.
  */
 
 declare( strict_types=1 );
@@ -17,11 +17,11 @@ return new class() extends MakeCommand {
 	/**
 	 * Generate a new Service subclass.
 	 *
-	 * Requires `wp zestry init` to have already run in this plugin. Like
+	 * Requires `wp zt init` to have already run in this plugin. Like
 	 * `make module`, there is no fixed conventional directory to default to, so
 	 * it goes in your own `{zestry.json root}/Services/` directory -- beside the
 	 * copied `Core/Services/` rather than inside it, since `Core/` is what
-	 * `wp zestry update` may replace and nothing you write belongs there.
+	 * `wp zt update` may replace and nothing you write belongs there.
 	 *
 	 * ## SERVICE OR MODULE?
 	 *
@@ -37,7 +37,7 @@ return new class() extends MakeCommand {
 	 * A **module** does. It binds a hook, registers a post type, walks a
 	 * directory. Because it acts on its own it has to be built for that to
 	 * happen, so it is listed in `bootstrap.php` and the plugin builds it as the
-	 * plugin loads. `wp zestry make module` generates that shape, with the
+	 * plugin loads. `wp zt make module` generates that shape, with the
 	 * `on_boot()` the base class requires.
 	 *
 	 * The line is not "is it a thing I call?" -- `Options` is something you
@@ -63,11 +63,11 @@ return new class() extends MakeCommand {
 	 *
 	 *     # Generate a service at lib/Services/Cache.php (given a project
 	 *     # initialized with root "lib").
-	 *     $ wp zestry make service Cache
+	 *     $ wp zt make service Cache
 	 *     Success: Created lib/Services/Cache.php
 	 *
 	 *     # Grouped: the directory and the namespace come from the same name.
-	 *     $ wp zestry make service Billing/Invoices
+	 *     $ wp zt make service Billing/Invoices
 	 *     Success: Created lib/Services/Billing/Invoices.php
 	 *
 	 * @param array $args

@@ -131,7 +131,7 @@ class ParentClass extends Service {
 			 */
 			throw new \InvalidArgumentException(
 				\sprintf(
-					'This plugin has no %s, so nothing here can extend it. Add the module that owns it with `wp zestry add module <name>`, then try again.',
+					'This plugin has no %s, so nothing here can extend it. Add the module that owns it with `wp zt add module <name>`, then try again.',
 					$base
 				)
 			);

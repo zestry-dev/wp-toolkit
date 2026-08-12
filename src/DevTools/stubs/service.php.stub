@@ -47,6 +47,6 @@ class {{class_name}} extends Service {
 	 *
 	 * Needs to do something without being called -- bind a hook, register a post
 	 * type, schedule a job? Then it is a module, not a service: run
-	 * `wp zestry make module {{class_name}}` instead and delete this file.
+	 * `wp zt make module {{class_name}}` instead and delete this file.
 	 */
 }

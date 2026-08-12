@@ -23,7 +23,7 @@ Because the file is required once, a helper function or a second class declared 
 
 ## Generated starting point
 
-[`wp zestry make block <name>`](../../commands/make-block.md) writes these files:
+[`wp zt make block <name>`](../../commands/make-block.md) writes these files:
 
 ### The metadata
 

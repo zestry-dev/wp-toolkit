@@ -15,7 +15,7 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  * `bootstrap.php` beside the entry file is the default and very nearly always
  * the answer. `Plugin::bootstrap()` takes any path, though, and nothing on disk
  * records which was used -- so this was assumed, and assuming it wrong is not
- * cosmetic: doctor reports every module as undeclared, and `wp zestry add`
+ * cosmetic: doctor reports every module as undeclared, and `wp zt add`
  * appends a declaration to a file the plugin never reads, copying a module in
  * and leaving it inert with no error anywhere.
  *

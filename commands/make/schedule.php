@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make schedule <name>`.
+ * Devtool command: `wp zt make schedule <name>`.
  *
- * Generates a new cron schedule stub into a project already set up with `wp
- * zestry init`.
+ * Generates a new cron schedule stub into a project already set up with
+ * `wp zt init`.
  */
 
 declare( strict_types=1 );
@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 * event is not already on the calendar. Writing the file is the whole
 	 * registration; nothing has to be declared anywhere.
 	 *
-	 * Needs the `cron` module, so run `wp zestry add module cron` first if you have
+	 * Needs the `cron` module, so run `wp zt add module cron` first if you have
 	 * not already.
 	 *
 	 * ## OPTIONS
@@ -50,11 +50,11 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Generate a daily cron schedule at schedules/cleanup.php.
-	 *     $ wp zestry make schedule cleanup
+	 *     $ wp zt make schedule cleanup
 	 *     Success: Created schedules/cleanup.php
 	 *
 	 *     # Generate a schedule with an explicit recurrence.
-	 *     $ wp zestry make schedule cleanup --recurrence=hourly
+	 *     $ wp zt make schedule cleanup --recurrence=hourly
 	 *     Success: Created schedules/cleanup.php
 	 *
 	 * @param array $args

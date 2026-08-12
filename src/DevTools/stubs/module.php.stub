@@ -46,7 +46,7 @@ class {{class_name}} extends Module {
 	 * called.
 	 *
 	 * Nothing to do here? Then this is a service, not a module: run
-	 * `wp zestry make service {{class_name}}` instead and delete this file.
+	 * `wp zt make service {{class_name}}` instead and delete this file.
 	 *
 	 * @return void
 	 */

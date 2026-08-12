@@ -23,11 +23,11 @@ A discovered file that returns anything other than a `Command` throws `Discovery
 ## Adding it
 
 ```bash
-wp zestry add module cli
+wp zt add module cli
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `CLI` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `CLI` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -51,7 +51,7 @@ return array(
 
 ## Writing a Command
 
-A file in `commands/` returns a [`Command`](command.md) instance, which `wp zestry make command <name>` generates.
+A file in `commands/` returns a [`Command`](command.md) instance, which `wp zt make command <name>` generates.
 
 ## Constants
 
@@ -180,4 +180,4 @@ protected function on_boot(): void {
 - [`Command`](command.md) — what a file in `commands/` returns
 - [`path`](../../services/path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module cli`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module cli`](../../commands/add-module.md) — the command that copies it

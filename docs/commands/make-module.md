@@ -3,7 +3,7 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make module
+# wp zt make module
 
 [Why it is declared](#why-it-is-declared) &nbsp;·&nbsp; [Options](#options) &nbsp;·&nbsp; [Examples](#examples)
 
@@ -23,7 +23,7 @@ final class Editor extends Module {
 
 Anything that has to wait for `init` goes through `Module::run_at_init()` instead, since a module can be built on either side of it.
 
-Requires `wp zestry init` to have already run in this plugin. Unlike every other `make` type, there is no fixed conventional directory to default to — a plain module is not discovered by anything — so its home is your own `{zestry.json root}/Modules/` directory, beside the copied `Core/` tree rather than inside it. That separation is the point: `Core/` is what `wp zestry update` may replace, and nothing you write belongs there.
+Requires `wp zt init` to have already run in this plugin. Unlike every other `make` type, there is no fixed conventional directory to default to — a plain module is not discovered by anything — so its home is your own `{zestry.json root}/Modules/` directory, beside the copied `Core/` tree rather than inside it. That separation is the point: `Core/` is what `wp zt update` may replace, and nothing you write belongs there.
 
 Because nothing discovers it, this is also the one `make` type that writes to your `bootstrap.php`: the new class is appended there, which is what builds it at all.
 
@@ -36,7 +36,7 @@ A module acts on its own — it binds a hook, registers a post type, walks a dir
 Shortcode::class,
 ```
 
-Its sibling `wp zestry make service` deliberately declares nothing. A service is built the moment something asks for it, so an entry naming one would do nothing but build it sooner than needed; configure one from `$plugin->configure()` in your entry file instead.
+Its sibling `wp zt make service` deliberately declares nothing. A service is built the moment something asks for it, so an entry naming one would do nothing but build it sooner than needed; configure one from `$plugin->configure()` in your entry file instead.
 
 A generated file that does not yet parse is not declared at all, since building a broken class on every request would take the site down until it is fixed. The command says so, and declaring it is one edit away once the file parses.
 
@@ -53,10 +53,10 @@ A generated file that does not yet parse is not declared at all, since building 
 ```bash
 # Generate a new module at lib/Modules/RequestLog.php (given a
 # project initialized with root "lib").
-$ wp zestry make module RequestLog
+$ wp zt make module RequestLog
 Success: Created lib/Modules/RequestLog.php
 
 # Grouped: the directory and the namespace come from the same name.
-$ wp zestry make module Services/Mailer
+$ wp zt make module Services/Mailer
 Success: Created lib/Modules/Services/Mailer.php
 ```

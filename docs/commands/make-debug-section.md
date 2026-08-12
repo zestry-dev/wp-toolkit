@@ -3,7 +3,7 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make debug-section
+# wp zt make debug-section
 
 Generate a Site Health debug section.
 
@@ -27,6 +27,6 @@ Writes a file into the plugin's `debug-sections/` directory, where the SiteHealt
 
 ```bash
 # Generate debug-sections/status.php.
-$ wp zestry make debug-section status
+$ wp zt make debug-section status
 Success: Created debug-sections/status.php
 ```

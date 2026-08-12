@@ -56,7 +56,7 @@ use Zestry\WPToolkit\Services\Path;
  * scalar it passes to a string -- `bindable: false` arrives as `""`, and every
  * field reads as bindable.
  *
- * `wp zestry add module assets` brings the build with it: a `webpack.config.js`
+ * `wp zt add module assets` brings the build with it: a `webpack.config.js`
  * that compiles three directories, each with a different owner.
  *
  * | Source | Built to | Registered by |
@@ -77,7 +77,7 @@ use Zestry\WPToolkit\Services\Path;
  * is what the `shared` segment is there to prevent.
  *
  * @example Your own script, built and registered
- * `wp zestry make entry settings` writes `src/entries/settings/`. The build
+ * `wp zt make entry settings` writes `src/entries/settings/`. The build
  * compiles it, this module registers it on `init`, and using it is one call --
  * from an admin page, a shortcode, anywhere:
  *
@@ -372,7 +372,7 @@ class Assets extends Module {
 	 *
 	 * The local name is the package directory's -- `src/shared/formatting` is
 	 * `formatting` -- not the npm name it publishes itself under. That is the
-	 * name the methods here take, and the one `wp zestry make shared` was given.
+	 * name the methods here take, and the one `wp zt make shared` was given.
 	 *
 	 * @return array<string, array<string, mixed>> Each package's build manifest, keyed by local name.
 	 * @throws DiscoveryException When a manifest is present but does not describe entries.
@@ -736,7 +736,7 @@ class Assets extends Module {
 	/**
 	 * Refuse a manifest an older build configuration wrote.
 	 *
-	 * `wp zestry update` refreshes the copied PHP but leaves `webpack.config.js`
+	 * `wp zt update` refreshes the copied PHP but leaves `webpack.config.js`
 	 * alone -- it is generated once and yours to edit -- so an updated plugin can
 	 * arrive at a manifest written to the shape before this one. Every row now
 	 * says where it came from; a row that does not is from a build that keyed by
@@ -754,7 +754,7 @@ class Assets extends Module {
 				throw new DiscoveryException(
 					\sprintf(
 						'The build manifest "%s" was written by an older build configuration. Re-run '
-							. '`wp zestry add module assets --overwrite` to refresh webpack.config.js, then rebuild.',
+							. '`wp zt add module assets --overwrite` to refresh webpack.config.js, then rebuild.',
 						$path
 					)
 				);

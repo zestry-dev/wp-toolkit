@@ -22,11 +22,11 @@ Both roots behave the same way, which is what lets a plugin with post types but 
 ## Adding it
 
 ```bash
-wp zestry add module post-types
+wp zt add module post-types
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `PostTypes` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `PostTypes` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -51,11 +51,11 @@ return array(
 
 ## Writing a PostType
 
-A file in `post-types/` returns a [`PostType`](post-type.md) instance, which `wp zestry make post-type <name>` generates.
+A file in `post-types/` returns a [`PostType`](post-type.md) instance, which `wp zt make post-type <name>` generates.
 
 ## Writing a Taxonomy
 
-A file in `taxonomies/` returns a [`Taxonomy`](taxonomy.md) instance, which `wp zestry make taxonomy <name>` generates.
+A file in `taxonomies/` returns a [`Taxonomy`](taxonomy.md) instance, which `wp zt make taxonomy <name>` generates.
 
 ## Constants
 
@@ -233,4 +233,4 @@ protected function on_boot(): void {
 - [`Taxonomy`](taxonomy.md) — what a file in `taxonomies/` returns
 - [`path`](../../services/path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module post-types`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module post-types`](../../commands/add-module.md) — the command that copies it

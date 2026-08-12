@@ -40,7 +40,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * ordering.
  *
  * A file at `taxonomies/genre.php` attaches to a `book` post type discovered
- * from `post-types/book.php`. `wp zestry make taxonomy <name>` generates a
+ * from `post-types/book.php`. `wp zt make taxonomy <name>` generates a
  * starting point.
  *
  * @stub taxonomy.php.stub

@@ -3,7 +3,7 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make activation
+# wp zt make activation
 
 Generate an activation handler.
 
@@ -26,7 +26,7 @@ Being declared matters more here than for other modules: WordPress fires the act
 
 ```bash
 # Generate lib/Modules/Activation.php and declare it.
-$ wp zestry make activation Activation
+$ wp zt make activation Activation
 Success: Created lib/Modules/Activation.php
 Declared Activation in bootstrap.php.
 ```

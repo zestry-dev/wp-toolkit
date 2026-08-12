@@ -14,19 +14,19 @@ namespace Zestry\WPToolkit\DevTools;
 use Zestry\WPToolkit\Kernel\Abstracts\Service;
 
 /**
- * Locates the plugin `wp zestry` should operate on.
+ * Locates the plugin `wp zt` should operate on.
  *
- * `wp zestry init`/`wp zestry add` run inside the DevTools plugin's own,
+ * `wp zt init`/`wp zt add` run inside the DevTools plugin's own,
  * independent Plugin instance (see devtool.php), whose own install location
  * is this package's directory — not necessarily the plugin the developer is
  * actually working in. This resolves the intended target from the current
- * working directory WP-CLI was invoked from instead: a developer runs `wp
- * zestry init`/`add` from inside (or below) the plugin they are working on,
+ * working directory WP-CLI was invoked from instead: a developer runs
+ * `wp zt init`/`add` from inside (or below) the plugin they are working on,
  * exactly as they would run `composer require` there, so the nearest
  * ancestor directory of the CWD that sits directly under `WP_PLUGIN_DIR` is
  * the plugin to target.
  *
- * This is also what makes `wp zestry` work correctly when more than one active
+ * This is also what makes `wp zt` work correctly when more than one active
  * plugin has installed `wp-toolkit`: {@see devtool-autoload.php} already
  * resolves and requires the specific `devtool.php` belonging to whichever
  * plugin the CWD is inside, so this class only ever runs in the context of
@@ -70,7 +70,7 @@ class ConsumerPlugin extends Service {
 		if ( '' === $plugin_folder ) {
 			throw new \RuntimeException(
 				\sprintf(
-					'The current directory ("%s") is not inside a plugin directory under "%s". Run `wp zestry` from inside the plugin you want to set up.',
+					'The current directory ("%s") is not inside a plugin directory under "%s". Run `wp zt` from inside the plugin you want to set up.',
 					$cwd,
 					$plugins_dir
 				)

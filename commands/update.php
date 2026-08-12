@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry update`.
+ * Devtool command: `wp zt update`.
  *
  * Brings a plugin's copied source up to the toolkit currently installed --
  * the kernel `init` wrote, plus every module and service `add` has copied
@@ -50,7 +50,7 @@ return new class() extends Command {
 	 * Re-copy the toolkit source this plugin already has.
 	 *
 	 * Copying is one-way: a later release of the toolkit does not reach a
-	 * plugin that has already run `wp zestry init`. This is how you go and get
+	 * plugin that has already run `wp zt init`. This is how you go and get
 	 * one. It looks at everything under your `Core/` directory -- the kernel,
 	 * and each module or service you have added -- and replaces it with what
 	 * the currently installed `zestry-dev/wp-toolkit` would write.
@@ -99,7 +99,7 @@ return new class() extends Command {
 	 * ## EXAMPLES
 	 *
 	 *     # See what a later release would change, before changing anything.
-	 *     $ wp zestry update --dry-run
+	 *     $ wp zt update --dry-run
 	 *     Copied from wp-toolkit 1.2.0; 1.4.0 is installed.
 	 *     3 files to update, 1 you have edited, 1 conflicted.
 	 *       conflict  lib/Core/Kernel/Abstracts/Module.php
@@ -108,12 +108,12 @@ return new class() extends Command {
 	 *
 	 *     # A module deleted from the plugin. This copies what you have, so it
 	 *     # says so rather than offering to put back what you took out.
-	 *     $ wp zestry update
-	 *     2 files removed with the "ajax" module. `wp zestry add module ajax` puts it back.
+	 *     $ wp zt update
+	 *     2 files removed with the "ajax" module. `wp zt add module ajax` puts it back.
 	 *     Success: Already up to date.
 	 *
 	 *     # Take it. Your edited files are kept.
-	 *     $ wp zestry update
+	 *     $ wp zt update
 	 *     3 files to update, 1 you have edited, 1 conflicted.
 	 *     Replace 3 files? [y/N] y
 	 *     Success: Updated 3 files. 2 kept as they are.
@@ -307,7 +307,7 @@ return new class() extends Command {
 		foreach ( $removed as $name => $paths ) {
 			$this->log(
 				sprintf(
-					'%d file%s removed with the "%s" module. `wp zestry add module %s` puts it back.',
+					'%d file%s removed with the "%s" module. `wp zt add module %s` puts it back.',
 					count( $paths ),
 					1 === count( $paths ) ? '' : 's',
 					$name,

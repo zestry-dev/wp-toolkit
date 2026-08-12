@@ -31,7 +31,7 @@ use Zestry\WPToolkit\Services\DB;
  * rather than reversing an old one in place.
  *
  * A file at `migrations/20260115120000-create-books-table.php` runs once, in
- * filename order. `wp zestry make migration <name>` generates a starting point,
+ * filename order. `wp zt make migration <name>` generates a starting point,
  * timestamp prefix included.
  * A migration doing something `dbDelta()` cannot express (a data backfill, an
  * index `dbDelta()` cannot parse, a one-off `UPDATE`) uses `$wpdb` directly --

@@ -16,7 +16,7 @@ Resource paths are contained within the plugin root: a leading separator is trim
 ## Adding it
 
 ```bash
-wp zestry add service path
+wp zt add service path
 ```
 
 ## Resolving paths and URLs
@@ -194,4 +194,4 @@ $this->get_plugin()->get( Options::class )->get( 'api_key' );
 ## See also
 
 - [`Service`](../service.md) — what every service inherits
-- [`wp zestry add service path`](../../commands/add-service.md) — the command that copies it
+- [`wp zt add service path`](../../commands/add-service.md) — the command that copies it

@@ -16,10 +16,10 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
 /**
  * Reads and writes a consuming project's `zestry.json`.
  *
- * `wp zestry init` writes this file once, recording the namespace the copied
+ * `wp zt init` writes this file once, recording the namespace the copied
  * source was rewritten to, the directory it was copied into (both relative
  * to the consuming plugin's root), and the text domain its translation calls
- * were rewritten to; `wp zestry add` reads it back to know where, under what
+ * were rewritten to; `wp zt add` reads it back to know where, under what
  * namespace, and under what text domain a further module should be copied,
  * without asking again.
  *
@@ -56,7 +56,7 @@ class ZestryConfig extends Service {
 		$path = $this->get_path( $plugin_root );
 
 		if ( ! \is_file( $path ) ) {
-			throw new \RuntimeException( 'zestry.json does not exist: ' . $path . '. Run `wp zestry init` first.' );
+			throw new \RuntimeException( 'zestry.json does not exist: ' . $path . '. Run `wp zt init` first.' );
 		}
 
 		$content = \file_get_contents( $path );

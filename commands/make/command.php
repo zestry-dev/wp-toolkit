@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make command <name>`.
+ * Devtool command: `wp zt make command <name>`.
  *
- * Generates a new WP-CLI command stub into a project already set up with `wp
- * zestry init`.
+ * Generates a new WP-CLI command stub into a project already set up with
+ * `wp zt init`.
  */
 
 declare( strict_types=1 );
@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 * `wp {slug} greet`, and nested directories become nested command
 	 * namespaces. Writing the file is the whole registration.
 	 *
-	 * Needs the `cli` module, so run `wp zestry add module cli` first if you have
+	 * Needs the `cli` module, so run `wp zt add module cli` first if you have
 	 * not already.
 	 *
 	 * ## OPTIONS
@@ -51,7 +51,7 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Generate a WP-CLI command at commands/greet.php.
-	 *     $ wp zestry make command greet
+	 *     $ wp zt make command greet
 	 *     Success: Created commands/greet.php
 	 *
 	 * @param array $args

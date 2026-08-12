@@ -16,7 +16,7 @@ A custom table is `{$wpdb->prefix}{plugin_prefix}_{name}`, so it carries both th
 ## Adding it
 
 ```bash
-wp zestry add service db
+wp zt add service db
 ```
 
 ## Naming a table
@@ -246,4 +246,4 @@ $this->get_plugin()->get( Options::class )->get( 'api_key' );
 ## See also
 
 - [`Service`](../service.md) — what every service inherits
-- [`wp zestry add service db`](../../commands/add-service.md) — the command that copies it
+- [`wp zt add service db`](../../commands/add-service.md) — the command that copies it

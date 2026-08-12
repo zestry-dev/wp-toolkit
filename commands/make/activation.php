@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make activation <name>`.
+ * Devtool command: `wp zt make activation <name>`.
  */
 
 declare( strict_types=1 );
@@ -36,7 +36,7 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Generate lib/Modules/Activation.php and declare it.
-	 *     $ wp zestry make activation Activation
+	 *     $ wp zt make activation Activation
 	 *     Success: Created lib/Modules/Activation.php
 	 *     Declared Activation in bootstrap.php.
 	 *

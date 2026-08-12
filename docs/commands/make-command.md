@@ -3,13 +3,13 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make command
+# wp zt make command
 
 Generate a new WP-CLI command.
 
 The CLI module discovers it. At boot it walks your `commands/` directory at any depth, requires every file in it, and registers the `Command` each one returns under your plugin's slug — so `commands/greet.php` becomes `wp {slug} greet`, and nested directories become nested command namespaces. Writing the file is the whole registration.
 
-Needs the `cli` module, so run `wp zestry add module cli` first if you have not already.
+Needs the `cli` module, so run `wp zt add module cli` first if you have not already.
 
 ## Options
 
@@ -29,6 +29,6 @@ Needs the `cli` module, so run `wp zestry add module cli` first if you have not 
 
 ```bash
 # Generate a WP-CLI command at commands/greet.php.
-$ wp zestry make command greet
+$ wp zt make command greet
 Success: Created commands/greet.php
 ```

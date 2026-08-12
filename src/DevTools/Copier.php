@@ -19,8 +19,8 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * and text domain.
  *
  * This is the shadcn/ui-style mechanism the whole DevTools package exists
- * for: rather than requiring `wp-toolkit` as a locked runtime dependency, `wp
- * zestry init`/`wp zestry add` (see the `commands/` directory next to devtool.php)
+ * for: rather than requiring `wp-toolkit` as a locked runtime dependency,
+ * `wp zt init`/`wp zt add` (see the `commands/` directory next to devtool.php)
  * copy the toolkit's own PHP source directly into the consuming project and
  * rewrite every `namespace Zestry\WPToolkit\...;` declaration and `use Zestry\WPToolkit\...;` import to
  * the project's own chosen namespace, and every `'zestry-toolkit'` text-domain
@@ -39,8 +39,8 @@ class Copier extends Service {
 	 * The one segment separating copied source from the consumer's own code.
 	 *
 	 * Every file this class writes lands under it -- `lib/Core/Kernel/`,
-	 * `lib/Core/Modules/Ajax/` -- while `wp zestry make` writes beside it, in
-	 * `lib/Modules/` and `lib/Services/`. So the answer to "can `wp zestry update`
+	 * `lib/Core/Modules/Ajax/` -- while `wp zt make` writes beside it, in
+	 * `lib/Modules/` and `lib/Services/`. So the answer to "can `wp zt update`
 	 * replace this file?" is the path it is in, at every use site rather than
 	 * only when the file is open, since PSR-4 puts the same segment in the
 	 * namespace.
@@ -99,7 +99,7 @@ class Copier extends Service {
 	 * What copying a directory would write, without writing any of it.
 	 *
 	 * The read-only twin of {@see copy_directory()}, keyed identically, so
-	 * `wp zestry update` can hold the current toolkit's output beside the manifest's
+	 * `wp zt update` can hold the current toolkit's output beside the manifest's
 	 * record of the last one and compare the two without touching the consumer's
 	 * files. Sharing {@see collect_files()} with the copy is what keeps the two
 	 * sets of keys in step: a traversal difference would silently report files as
@@ -158,7 +158,7 @@ class Copier extends Service {
 	 *
 	 * The rewrites are what make a copied file differ from its source, so
 	 * comparing a consumer's file against this package's own would report every
-	 * file as changed. Rendering first is what lets `wp zestry update` ask the two
+	 * file as changed. Rendering first is what lets `wp zt update` ask the two
 	 * questions that matter separately -- has the file on disk drifted from what
 	 * was copied (you edited it), and has this rendering drifted from what was
 	 * recorded (upstream changed it).
@@ -417,7 +417,7 @@ class Copier extends Service {
 	 *
 	 * `registry.php` groups entries under `services` and `modules` so it reads
 	 * like `bootstrap.php` does. Every consumer wants a flat lookup, though --
-	 * the commands take a bare name (`wp zestry add path`), and dependency
+	 * the commands take a bare name (`wp zt add path`), and dependency
 	 * resolution walks a closure that crosses the two freely: nine of the ten
 	 * modules depend on `path`, a service. Flattening once here keeps that
 	 * structure in the file without pushing a section search into every caller,
@@ -429,7 +429,7 @@ class Copier extends Service {
 	 *
 	 * A name appearing in both sections throws rather than being flattened. The
 	 * commands take a bare name, so two entries answering to one would make
-	 * `wp zestry add <name>` install whichever section happened to be read last --
+	 * `wp zt add <name>` install whichever section happened to be read last --
 	 * and each section reads correctly on its own, so nothing about the file
 	 * would look wrong. A single array could not hide this; two can.
 	 *
@@ -445,7 +445,7 @@ class Copier extends Service {
 				if ( isset( $flat[ $name ] ) ) {
 					throw new \InvalidArgumentException(
 						\sprintf(
-							'Registry name "%s" is declared in both "%s" and "%s". Every name must be unique across sections, since `wp zestry add %1$s` names no section.',
+							'Registry name "%s" is declared in both "%s" and "%s". Every name must be unique across sections, since `wp zt add %1$s` names no section.',
 							$name,
 							$flat[ $name ]['section'],
 							$section

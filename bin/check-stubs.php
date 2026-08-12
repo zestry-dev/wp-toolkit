@@ -19,7 +19,7 @@
  * consumer's plugin -- and a generated file that is flagged on its first lint
  * teaches that the toolkit's own standard is optional.
  *
- * Neither arm is about a broken plugin: `wp zestry make` runs the consumer's own
+ * Neither arm is about a broken plugin: `wp zt make` runs the consumer's own
  * formatters over what it writes, so most of this is fixed on the way out. It
  * is work the generator should not have to do, on a file that is read before it
  * is ever formatted.
@@ -132,7 +132,7 @@ if ( array() === $rendered ) {
 	exit( 1 );
 }
 
-// The config a consumer gets: `wp zestry init` writes a `.prettierrc.js`
+// The config a consumer gets: `wp zt init` writes a `.prettierrc.js`
 // re-exporting this exact package.
 file_put_contents(
 	$target . '/.prettierrc.cjs',
@@ -140,7 +140,7 @@ file_put_contents(
 );
 
 /*
- * The ruleset a consumer gets, rendered from the stub `wp zestry init` writes.
+ * The ruleset a consumer gets, rendered from the stub `wp zt init` writes.
  *
  * Not this repository's own `phpcs.xml`, which would only ever prove the stubs
  * suit *us*. A generated file lands in a consumer's plugin and is linted by
@@ -238,7 +238,7 @@ function zestry_check_prettier( string $root, string $target, array $rendered ):
  * syntax error as one unhelpful line about an unexpected token.
  *
  * Warnings count too, and that is not fussiness: phpcs exits non-zero on a
- * warning, so `wp zestry init` promising that phpcs "passes on the code you were
+ * warning, so `wp zt init` promising that phpcs "passes on the code you were
  * just handed" is false the moment a stub raises one. Counting only errors is
  * how three of them shipped -- an unused `$input` on every generated ability,
  * and every variable in a generated view reported as undefined.
@@ -323,7 +323,7 @@ function zestry_check_php( string $root, string $target, array $rendered ): arra
 /**
  * Report a sniff decided one way here and the other way in a consumer's plugin.
  *
- * `wp zestry init` writes a ruleset mirroring this repository's own, deliberately:
+ * `wp zt init` writes a ruleset mirroring this repository's own, deliberately:
  * the copied source in a consumer's tree is written to this standard, and a
  * thinner one would flag the code they were just handed. Mirroring by hand is
  * what drifts, and it did -- six exclusions were tightened here and left in the
@@ -345,7 +345,7 @@ function zestry_check_rulesets( string $root ): array {
 
 	foreach ( array_diff( $ours, $theirs ) as $missing ) {
 		$problems[] = sprintf(
-			'src/DevTools/stubs/phpcs.xml.stub — does not carry `%s`, which phpcs.xml does. A plugin `wp zestry init` sets up would be held to a different standard than the source it is given.',
+			'src/DevTools/stubs/phpcs.xml.stub — does not carry `%s`, which phpcs.xml does. A plugin `wp zt init` sets up would be held to a different standard than the source it is given.',
 			$missing
 		);
 	}

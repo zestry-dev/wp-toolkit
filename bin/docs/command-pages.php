@@ -148,7 +148,7 @@ function zestry_render_options( string $options ): string {
 }
 
 /**
- * Write one reference page per `wp zestry` command, plus the index.
+ * Write one reference page per `wp zt` command, plus the index.
  *
  * The command docblocks are already in WP-CLI's own reference format, since
  * that is what `wp help` renders. Generating from them means the published
@@ -198,7 +198,7 @@ function zestry_generate_command_pages( string $root ): int {
 			continue;
 		}
 
-		$command  = 'wp zestry ' . str_replace( '/', ' ', substr( $relative, 0, -4 ) );
+		$command  = 'wp zt ' . str_replace( '/', ' ', substr( $relative, 0, -4 ) );
 		$sections = zestry_parse_command_sections( $docblock );
 		$slug     = str_replace( '/', '-', substr( $relative, 0, -4 ) );
 
@@ -254,17 +254,19 @@ function zestry_generate_command_pages( string $root ): int {
 	/*
 	 * What actually gates availability, stated as the two separate conditions
 	 * it is. This used to say every command needs a plugin that has run
-	 * `wp zestry init` -- which cannot be true of `init` itself, the command a
+	 * `wp zt init` -- which cannot be true of `init` itself, the command a
 	 * reader arrives here to run first.
 	 */
+	$page[] = '`zt` is short for *zestry toolkit*.';
+	$page[] = '';
 	$page[] = 'Run these from inside your own plugin\'s directory, with the plugin active.';
-	$page[] = 'Every command except [`wp zestry init`](init.md) also needs that plugin to have';
+	$page[] = 'Every command except [`wp zt init`](init.md) also needs that plugin to have';
 	$page[] = 'been initialized — see [Getting started](../getting-started.md).';
 	$page[] = '';
 
 	/*
-	 * Grouped by when you reach for it, not alphabetically. Sorted, `wp zestry add
-	 * module` came first and `wp zestry init` eighth, so the one command that has
+	 * Grouped by when you reach for it, not alphabetically. Sorted, `wp zt add
+	 * module` came first and `wp zt init` eighth, so the one command that has
 	 * to run before any of the others sat in the middle of the list.
 	 */
 	$page = array_merge( $page, zestry_group_command_index( $index ) );

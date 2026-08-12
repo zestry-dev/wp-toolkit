@@ -3,13 +3,13 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make post-type
+# wp zt make post-type
 
 Generate a new custom post type.
 
 The PostTypes module discovers it. On `init` it walks your `post-types/` directory, requires every file in it, and hands the `PostType` each one returns to `register_post_type()`, with a full `labels` array built from the singular and plural names below. Writing the file is the whole registration; nothing has to be declared anywhere.
 
-Needs the `post-types` module, so run `wp zestry add module post-types` first if you have not already.
+Needs the `post-types` module, so run `wp zt add module post-types` first if you have not already.
 
 ## Options
 
@@ -41,11 +41,11 @@ Needs the `post-types` module, so run `wp zestry add module post-types` first if
 
 ```bash
 # Generate a post type, prompting only for the plural name.
-$ wp zestry make post-type book
+$ wp zt make post-type book
 Plural name: (default: Books)
 Success: Created post-types/book.php
 
 # Generate one with both names given explicitly.
-$ wp zestry make post-type book --singular=Book --plural=Books
+$ wp zt make post-type book --singular=Book --plural=Books
 Success: Created post-types/book.php
 ```

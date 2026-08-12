@@ -3,7 +3,7 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make shared
+# wp zt make shared
 
 Generate a shared JavaScript package.
 
@@ -19,7 +19,7 @@ The scope is your plugin slug. A script package registers as `{slug}-shared-{nam
 
 Run `npm install` afterwards: npm is what links the new directory into `node_modules/`, and until it has, the import resolves to nothing.
 
-Add the `assets` module to register what the build produces: `wp zestry add module assets`.
+Add the `assets` module to register what the build produces: `wp zt add module assets`.
 
 ## Options
 
@@ -45,10 +45,10 @@ Add the `assets` module to register what the build produces: `wp zestry add modu
 
 ```bash
 # A package other scripts depend on by handle.
-$ wp zestry make shared formatting --kind=script
+$ wp zt make shared formatting --kind=script
 Success: Created src/shared/formatting (2 files)
 
 # An ES module, imported by name at run time.
-$ wp zestry make shared runtime --kind=module
+$ wp zt make shared runtime --kind=module
 Success: Created src/shared/runtime (2 files)
 ```

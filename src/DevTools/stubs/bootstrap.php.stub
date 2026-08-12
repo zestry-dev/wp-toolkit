@@ -3,7 +3,7 @@
 /**
  * What this plugin uses, and how each is configured.
  *
- * `wp zestry add <name>` appends to this file, so a module works as soon as it is
+ * `wp zt add <name>` appends to this file, so a module works as soon as it is
  * copied. The entry file reads it with `$plugin->bootstrap()`.
  *
  * An entry is a class name, optionally with an initializer as its value:
@@ -21,7 +21,7 @@
  * This file is modules only, and listing one is what builds it. A module acts
  * on its own -- it binds a hook, registers a post type, walks a directory -- so
  * it has to be built for any of that to happen. Leave one out and its
- * `on_boot()` never runs, with no error to say so; `wp zestry doctor` catches that.
+ * `on_boot()` never runs, with no error to say so; `wp zt doctor` catches that.
  *
  * A service does not belong here. It is built the moment something asks for it
  * -- a `$plugin->get()`, or another class declaring a property of its type --

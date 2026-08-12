@@ -39,11 +39,11 @@ The block editor still shows classic boxes, and a post type that excludes `edito
 ## Adding it
 
 ```bash
-wp zestry add module meta-boxes
+wp zt add module meta-boxes
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `MetaBoxes` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `MetaBoxes` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -88,7 +88,7 @@ MetaBoxes::class => static function ( MetaBoxes $boxes ): void {
 
 ## Writing a MetaBox
 
-A file in `meta-boxes/` returns a [`MetaBox`](meta-box.md) instance, which `wp zestry make meta-box <name>` generates.
+A file in `meta-boxes/` returns a [`MetaBox`](meta-box.md) instance, which `wp zt make meta-box <name>` generates.
 
 ## Related classes
 
@@ -244,4 +244,4 @@ protected function on_boot(): void {
 - [`path`](../../services/path/) — copied in alongside this one
 - [`fields`](../fields/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module meta-boxes`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module meta-boxes`](../../commands/add-module.md) — the command that copies it

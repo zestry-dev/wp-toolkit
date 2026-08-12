@@ -64,7 +64,7 @@ namespace Zestry\WPToolkit\Modules\AdminPages;
  * > or failure has to render that itself, inside `render()`.
  *
  * @example Taking the full canvas
- * `wp zestry make page <name>` generates a file extending `AdminPage`. Changing
+ * `wp zt make page <name>` generates a file extending `AdminPage`. Changing
  * that one word is the entire migration -- every other method behaves exactly
  * as it did.
  *

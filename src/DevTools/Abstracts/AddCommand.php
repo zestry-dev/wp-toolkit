@@ -30,7 +30,7 @@ use Zestry\WPToolkit\DevTools\RuntimePlugin;
 /**
  * AddCommand class.
  *
- * Shared flow behind `wp zestry add <module>...` and `wp zestry overwrite
+ * Shared flow behind `wp zt add <module>...` and `wp zt overwrite
  * <module>...` (see `commands/add/`/`commands/overwrite/`): read the
  * project's zestry.json for its namespace, text domain, and destination root,
  * resolve the requested modules' transitive dependencies against the
@@ -117,7 +117,7 @@ abstract class AddCommand extends Command {
 		if ( array() === $args ) {
 			$this->error(
 				\sprintf(
-					'Specify at least one %1$s. Run `wp zestry %2$s %1$s --help` for the list.',
+					'Specify at least one %1$s. Run `wp zt %2$s %1$s --help` for the list.',
 					$singular,
 					static::get_word()
 				)
@@ -229,7 +229,7 @@ abstract class AddCommand extends Command {
 
 		/*
 		 * The declarations, not the copied files. Every copied file's hash is
-		 * recorded by the manifest as it is written, and `wp zestry update` tells
+		 * recorded by the manifest as it is written, and `wp zt update` tells
 		 * an upstream change from a local edit by comparing against it --
 		 * formatting after the fact would report all of them as edited.
 		 */
@@ -378,7 +378,7 @@ abstract class AddCommand extends Command {
 	 * produce it in a shape Assets understands: a `webpack.config.js` that
 	 * compiles `src/shared/*` once each and writes the manifest naming them.
 	 * `@wordpress/scripts` has no opinion about either, so this is the one
-	 * module whose config file is not optional -- without it, `wp zestry make
+	 * module whose config file is not optional -- without it, `wp zt make
 	 * shared` writes a workspace nothing ever builds.
 	 *
 	 * Additive like everything else here. An existing `webpack.config.js` is
@@ -429,7 +429,7 @@ abstract class AddCommand extends Command {
 
 		if ( $written ) {
 			$this->formatter->format( $plugin_root, array( $root . '/webpack.config.js' ) );
-			$this->log( 'Write shared code with `wp zestry make shared <name>`.' );
+			$this->log( 'Write shared code with `wp zt make shared <name>`.' );
 		}
 	}
 
@@ -523,7 +523,7 @@ abstract class AddCommand extends Command {
 	 *
 	 * Only the names given on the command line are checked. Dependencies cross
 	 * the boundary constantly -- every module but `log` and `options` needs
-	 * `path`, a service -- so `wp zestry add module rest-api` copying a service is
+	 * `path`, a service -- so `wp zt add module rest-api` copying a service is
 	 * correct, and refusing it would make the command useless.
 	 *
 	 * @param string[]                                                             $args     The names given on the command line.
@@ -540,7 +540,7 @@ abstract class AddCommand extends Command {
 
 			$this->error(
 				\sprintf(
-					'"%1$s" is a %2$s, not a %3$s. Run `wp zestry %4$s %2$s %1$s`.',
+					'"%1$s" is a %2$s, not a %3$s. Run `wp zt %4$s %2$s %1$s`.',
 					$name,
 					$theirs,
 					static::get_singular(),
@@ -575,7 +575,7 @@ abstract class AddCommand extends Command {
 	 * Merge the block build's scripts and devDependencies into package.json.
 	 *
 	 * The build commands come from {@see Tooling::BUILD_SCRIPTS}, which is also
-	 * what `wp zestry init` writes -- a script already defined is never rewritten,
+	 * what `wp zt init` writes -- a script already defined is never rewritten,
 	 * so two spellings would leave whichever command ran first deciding the
 	 * flags.
 	 *
@@ -867,7 +867,7 @@ abstract class AddCommand extends Command {
 			"\n",
 			array(
 				'// Extends the config @wordpress/scripts ships, widening it to the',
-				'// TypeScript files `wp zestry make block` generates. Edit freely.',
+				'// TypeScript files `wp zt make block` generates. Edit freely.',
 				"import wordpress from '@wordpress/scripts/config/eslint.config.cjs';",
 				'',
 				'export default [',
@@ -897,7 +897,7 @@ abstract class AddCommand extends Command {
 	 * command does, rather than reformatting every file the other way on each
 	 * save.
 	 *
-	 * The same file `wp zestry init` writes, from the same stub, and skipped when
+	 * The same file `wp zt init` writes, from the same stub, and skipped when
 	 * any of {@see Tooling::PRETTIER_CONFIG_FILES} is already there. Prettier
 	 * reads the first name it resolves and ignores the rest, so a second config
 	 * under a different name is not a second opinion -- it is a file that never
@@ -922,7 +922,7 @@ abstract class AddCommand extends Command {
 	}
 
 	/**
-	 * The `wp zestry <word>` this subcommand registers under, for usage messages.
+	 * The `wp zt <word>` this subcommand registers under, for usage messages.
 	 *
 	 * The verb alone -- `add` or `overwrite` -- since the kind is the word after
 	 * it and comes from {@see get_singular()}.

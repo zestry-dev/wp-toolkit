@@ -9,7 +9,7 @@ use Zestry\WPToolkit\Kernel\Plugin;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
- * The instructions `wp zestry init` leaves for an agent working in the plugin.
+ * The instructions `wp zt init` leaves for an agent working in the plugin.
  *
  * The point of them is that they are *rendered* from the toolkit's own rules
  * page rather than written a second time. A summary would be a second thing to
@@ -27,7 +27,7 @@ final class AgentInstructionsTest extends TestCase {
 		/*
 		 * Rooted at this package rather than at the throwaway plugin directory,
 		 * because the rules page it reads is this package's own. That is also
-		 * how it resolves in use: `wp zestry` builds a second Plugin entry-rooted
+		 * how it resolves in use: `wp zt` builds a second Plugin entry-rooted
 		 * here, and every devtool service comes from that one.
 		 */
 		$package_plugin = new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-agents-test' );
@@ -108,12 +108,12 @@ final class AgentInstructionsTest extends TestCase {
 	}
 
 	/**
-	 * Which modules a plugin has changes with every `wp zestry add`, so a file
+	 * Which modules a plugin has changes with every `wp zt add`, so a file
 	 * written once at `init` would start drifting immediately. The command
 	 * answers it from the plugin instead.
 	 */
 	public function test_points_at_describe_rather_than_snapshotting_it(): void {
-		$this->assertStringContainsString( 'wp zestry describe --format=json', $this->render() );
+		$this->assertStringContainsString( 'wp zt describe --format=json', $this->render() );
 	}
 
 	/**

@@ -24,7 +24,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * What no file says is what the plugin *became*. A slug can be passed to the
  * constructor and appear in no configuration at all; a discovery root can be
  * moved by a `set_*_root()` call inside an initializer. Both are decided at run
- * time, on an instance -- and by the time a `wp zestry` command runs, WordPress
+ * time, on an instance -- and by the time a `wp zt` command runs, WordPress
  * has already loaded the plugin and built it. There is nothing to construct
  * here, only something to find.
  *

@@ -23,18 +23,18 @@ That consequence is visible rather than silent. The identifier that ran is still
 The two registered commands are `wp {slug} migrations run`, which runs every pending migration and takes `--force`, and `wp {slug} migrations list`, which prints each identifier with a `ran`, `pending` or `orphaned` status and takes `--format=<table|csv|json|yaml|count>`, defaulting to `table`.
 
 > [!WARNING]
-> **Keep every migration's timestamp the same width.** Filenames are sorted as plain strings, with no numeric-aware pass, so mixing widths (some zero-padded, some not) silently sorts them wrong. `wp zestry make migration` generates a correct `YYYYMMDDHHmmss` prefix — in UTC, so migrations authored from different timezones still sort against each other correctly.
+> **Keep every migration's timestamp the same width.** Filenames are sorted as plain strings, with no numeric-aware pass, so mixing widths (some zero-padded, some not) silently sorts them wrong. `wp zt make migration` generates a correct `YYYYMMDDHHmmss` prefix — in UTC, so migrations authored from different timezones still sort against each other correctly.
 
 [Adding it](#adding-it) &nbsp;·&nbsp; [Triggering a run](#triggering-a-run) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Migration](#writing-a-migration) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
 
 ## Adding it
 
 ```bash
-wp zestry add module migrations
+wp zt add module migrations
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `Migrations` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `Migrations` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -79,7 +79,7 @@ return array(
 
 ## Writing a Migration
 
-A file in `migrations/` returns a [`Migration`](migration.md) instance, which `wp zestry make migration <name>` generates.
+A file in `migrations/` returns a [`Migration`](migration.md) instance, which `wp zt make migration <name>` generates.
 
 ## Constants
 
@@ -312,4 +312,4 @@ protected function on_boot(): void {
 - [`options`](../options/) — copied in alongside this one
 - [`cli`](../cli/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module migrations`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module migrations`](../../commands/add-module.md) — the command that copies it

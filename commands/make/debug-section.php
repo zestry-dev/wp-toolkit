@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make debug-section <name>`.
+ * Devtool command: `wp zt make debug-section <name>`.
  */
 
 declare( strict_types=1 );
@@ -37,7 +37,7 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Generate debug-sections/status.php.
-	 *     $ wp zestry make debug-section status
+	 *     $ wp zt make debug-section status
 	 *     Success: Created debug-sections/status.php
 	 *
 	 * @param array $args

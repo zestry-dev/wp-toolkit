@@ -11,13 +11,13 @@ Base class for file-based WP-Cron scheduled events.
 
 A schedule file returns a subclass instance. The Cron module wires it (assigning the shared plugin and injecting typed module properties), ensures its recurrence is scheduled with WordPress, and binds `run()` to fire when WP-Cron's pseudo-cron eventually dispatches the hook.
 
-A file at `schedules/cleanup-logs.php` registers under the hook `{plugin-slug}-cleanup-logs` (see `Cron::get_schedule_slug()`). `wp zestry make schedule <name>` generates a starting point.
+A file at `schedules/cleanup-logs.php` registers under the hook `{plugin-slug}-cleanup-logs` (see `Cron::get_schedule_slug()`). `wp zt make schedule <name>` generates a starting point.
 
 `recurrence()` returns a WordPress built-in (`'hourly'`, `'twicedaily'`, `'daily'`) or a key from `Cron::get_custom_interval_slug()`, for an interval the plugin registered itself with `Cron::add_custom_interval()`. Either way the Cron module checks the key resolves before scheduling anything, so a typo or a missing `add_custom_interval()` call fails at registration rather than silently later.
 
 ## Generated starting point
 
-[`wp zestry make schedule <name>`](../../commands/make-schedule.md) writes this file:
+[`wp zt make schedule <name>`](../../commands/make-schedule.md) writes this file:
 
 ```php
 <?php

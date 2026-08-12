@@ -10,7 +10,7 @@ Four exception classes cover every way a service or module can fail to come up. 
     └── DiscoveryException             a directory or a discovered file is wrong
 ```
 
-All four live under `Acme\Plugin\Core\Kernel\Exceptions\` once `wp zestry init` has copied the kernel into your plugin.
+All four live under `Acme\Plugin\Core\Kernel\Exceptions\` once `wp zt init` has copied the kernel into your plugin.
 
 One more sits outside that chain: [`RenamedMigrationException`](modules/migrations/), raised when a pending migration shares a timestamp with one that already ran and no longer has a file. Nothing runs when it is thrown.
 
@@ -105,7 +105,7 @@ use Acme\Plugin\Core\Kernel\Abstracts\Module;   // acts on its own
 use Acme\Plugin\Core\Kernel\Abstracts\Service;  // works when called
 ```
 
-A declaration in `bootstrap.php` whose file has since been deleted or renamed is the other common source. `wp zestry doctor` finds those before they reach a request.
+A declaration in `bootstrap.php` whose file has since been deleted or renamed is the other common source. `wp zt doctor` finds those before they reach a request.
 
 ---
 
@@ -218,7 +218,7 @@ WordPress refuses: an ability name takes only lowercase letters, digits and dash
 on either side of the `/`.
 ```
 
-Two destinations hold a filename to their own character set: an [admin page](modules/admin-pages/)'s slug goes into `?page=`, and an [ability](modules/abilities/)'s name is matched against `^[a-z0-9-]+$`. Neither is repaired for you — a name spelled for you is one you cannot find again — so rename the file. `wp zestry make` writes an acceptable name in the first place, and says when it had to.
+Two destinations hold a filename to their own character set: an [admin page](modules/admin-pages/)'s slug goes into `?page=`, and an [ability](modules/abilities/)'s name is matched against `^[a-z0-9-]+$`. Neither is repaired for you — a name spelled for you is one you cannot find again — so rename the file. `wp zt make` writes an acceptable name in the first place, and says when it had to.
 
 **WordPress refused the registration.**
 
@@ -258,7 +258,7 @@ Every one of those is thrown while your route or ability registers, not while it
 
 **`\RuntimeException` — the environment refused.** WordPress or MySQL would not do what was asked: `Could not create upload directory: …`, `Options::save() failed to persist option "acme-plugin__options_"`, `dbDelta() reported creating "wp_acme_reports", but the table does not exist.` These mean a filesystem permission, a full disk, or a database privilege — not a wiring mistake.
 
-The `wp zestry` commands throw plain `\RuntimeException` too, for a missing or malformed `zestry.json` or `zestry.lock.json` — but only under WP-CLI, never during a request your plugin serves.
+The `wp zt` commands throw plain `\RuntimeException` too, for a missing or malformed `zestry.json` or `zestry.lock.json` — but only under WP-CLI, never during a request your plugin serves.
 
 ---
 
@@ -266,4 +266,4 @@ The `wp zestry` commands throw plain `\RuntimeException` too, for a missing or m
 
 - [Troubleshooting](troubleshooting.md) — the failures that throw nothing at all.
 - [Kernel reference](kernel/) — a page per exception, plus the contracts and traits every module shares.
-- [`wp zestry doctor`](commands/doctor.md) — catches the wiring mistakes before they reach a request.
+- [`wp zt doctor`](commands/doctor.md) — catches the wiring mistakes before they reach a request.

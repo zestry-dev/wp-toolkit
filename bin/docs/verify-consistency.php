@@ -7,7 +7,7 @@
 declare( strict_types=1 );
 
 /**
- * The tools whose config files `wp zestry init` and `wp zestry add` scaffold.
+ * The tools whose config files `wp zt init` and `wp zt add` scaffold.
  *
  * Named once and used by every check here, so adding a scaffolded tool does not
  * mean remembering three regexes.
@@ -26,7 +26,7 @@ const ZESTRY_SCAFFOLDED_TOOLS = 'prettier|eslint|phpcs|phpstan|stylelint|tsconfi
  * of them at once, all found by a consumer rather than by a build:
  *
  * - `assets` was called a service on three pages after it became a module, so
- *   `wp zestry add service assets` was documented and errors.
+ *   `wp zt add service assets` was documented and errors.
  * - The `make` type list named 11 of the 20 generators, the missing half being
  *   everything added since it was written.
  * - `Zestry\WPToolkit\` appeared in consumer-facing examples -- namespaces that exist in
@@ -63,7 +63,7 @@ function zestry_verify_consistency( string $root ): array {
  *
  * The cheat sheet is billed as every command on one page, which makes it where a
  * reader looks for a flag rather than the command's own page. `--yes` was missing
- * from all six rows whose command accepts it, and `wp zestry update` prompts -- so a
+ * from all six rows whose command accepts it, and `wp zt update` prompts -- so a
  * reader who trusted the sheet found the command unrunnable unattended, and read
  * `Cancelled.` from an empty stdin.
  *
@@ -97,8 +97,8 @@ function zestry_check_cheat_sheet_flags( string $root, array $pages ): array {
 	$sheet = (string) file_get_contents( $pages['docs/cheat-sheet.md'] );
 	$rows  = array();
 
-	// Each `| [`wp zestry <command>`](<page>) | <description> |` row of the table.
-	if ( preg_match_all( '~\|\s*\[`(wp zestry [^`]+)`\]\(([^)]*)\)\s*\|([^|]*)\|~', $sheet, $matches, PREG_SET_ORDER ) ) {
+	// Each `| [`wp zt <command>`](<page>) | <description> |` row of the table.
+	if ( preg_match_all( '~\|\s*\[`(wp zt [^`]+)`\]\(([^)]*)\)\s*\|([^|]*)\|~', $sheet, $matches, PREG_SET_ORDER ) ) {
 		foreach ( $matches as $match ) {
 			$rows[ trim( $match[1] ) ] = array(
 				'page'        => basename( trim( $match[2] ) ),
@@ -334,14 +334,14 @@ function zestry_check_block_php_field( array $pages ): array {
 /**
  * Report a page filing a module under services, or the reverse.
  *
- * The distinction decides whether a name works with `wp zestry add service` or
- * `wp zestry add module`, and getting it wrong hands a reader a command that
+ * The distinction decides whether a name works with `wp zt add service` or
+ * `wp zt add module`, and getting it wrong hands a reader a command that
  * errors. It is also the toolkit's central idea, so a page contradicting it
  * teaches the wrong model before it wastes anyone's time.
  *
  * Two shapes carry the claim, and both are checked against `registry.php`:
  *
- *     ## Services                      <- a heading, or a `wp zestry add service`
+ *     ## Services                      <- a heading, or a `wp zt add service`
  *     | [`assets`](modules/assets/) |     line, sets the kind for what follows
  *
  *     - a **service** works only when you call it -- `path`, `views`, `assets`
@@ -384,7 +384,7 @@ function zestry_check_kind_claims( string $root, array $pages ): array {
 			}
 
 			// A line defining a kind states it for everything it then lists, and
-			// is checked whole rather than by column. Before the `wp zestry add`
+			// is checked whole rather than by column. Before the `wp zt add`
 			// branch below, because the definitional bullets end with exactly
 			// that command -- setting the context first skipped the very line
 			// most worth checking.
@@ -409,10 +409,10 @@ function zestry_check_kind_claims( string $root, array $pages ): array {
 			// The most literal form of the claim, and the one worth checking
 			// hardest: a command a reader will copy, paste and watch fail. Named
 			// before the context is set from it, since setting the context and
-			// moving on is what let `wp zestry add service assets` pass green.
+			// moving on is what let `wp zt add service assets` pass green.
 			$problems = array_merge( $problems, zestry_add_command_mismatches( $relative, $number + 1, $line, $sections ) );
 
-			if ( null !== $stated && str_contains( $line, 'wp zestry add ' ) ) {
+			if ( null !== $stated && str_contains( $line, 'wp zt add ' ) ) {
 				$kind = $stated;
 				continue;
 			}
@@ -464,7 +464,7 @@ function zestry_check_make_types( string $root, array $pages ): array {
 	foreach ( $pages as $relative => $path ) {
 		$markdown = (string) file_get_contents( $path );
 
-		if ( ! preg_match_all( '/wp zestry make ([a-z][a-z-]*)/', $markdown, $matches ) ) {
+		if ( ! preg_match_all( '/wp zt make ([a-z][a-z-]*)/', $markdown, $matches ) ) {
 			continue;
 		}
 
@@ -475,7 +475,7 @@ function zestry_check_make_types( string $root, array $pages ): array {
 			}
 
 			$problems[] = sprintf(
-				'%s — documents `wp zestry make %s`, which does not exist (no commands/make/%s.php)',
+				'%s — documents `wp zt make %s`, which does not exist (no commands/make/%s.php)',
 				$relative,
 				$type,
 				$type
@@ -496,7 +496,7 @@ function zestry_check_make_types( string $root, array $pages ): array {
 			}
 
 			$problems[] = sprintf(
-				'%s — never mentions `wp zestry make %s`, and this page lists every type',
+				'%s — never mentions `wp zt make %s`, and this page lists every type',
 				$index,
 				$type
 			);
@@ -517,7 +517,7 @@ function zestry_check_make_types( string $root, array $pages ): array {
  * three spellings because it asks whether a class exists. This asks who the
  * line is written for, which is why the leak passed that guard green.
  *
- * Prose may name `Zestry\WPToolkit\` freely -- describing what `wp zestry add` rewrites is
+ * Prose may name `Zestry\WPToolkit\` freely -- describing what `wp zt add` rewrites is
  * exactly the case for it -- so only fenced blocks are checked.
  *
  * @param array<string, string> $pages Repo-relative path => absolute path.
@@ -734,7 +734,7 @@ function zestry_kind_mismatches( string $relative, int $line, array $names, stri
 		}
 
 		$problems[] = sprintf(
-			'%s:%d — files `%s` under %s; registry.php has it as a %s, so `wp zestry add %s %s` errors',
+			'%s:%d — files `%s` under %s; registry.php has it as a %s, so `wp zt add %s %s` errors',
 			$relative,
 			$line,
 			$name,
@@ -903,15 +903,15 @@ function zestry_check_rules_page( string $root ): array {
 }
 
 /**
- * Report a literal `wp zestry add` naming something the other section holds.
+ * Report a literal `wp zt add` naming something the other section holds.
  *
  * The narrowest and most valuable form of a kind claim: not a name filed under
  * a heading, but a command line a reader copies, pastes and watches fail. The
  * defect that started all of this was documented exactly this way.
  *
- * A placeholder (`wp zestry add service <name>`) names nothing and is skipped, as
+ * A placeholder (`wp zt add service <name>`) names nothing and is skipped, as
  * is any word that is not a registry entry -- the run after the kind is read
- * greedily so that `wp zestry add module cli admin-pages` checks both.
+ * greedily so that `wp zt add module cli admin-pages` checks both.
  *
  * @param string                $relative The page's repo-relative path.
  * @param int                   $line     The line number, 1-indexed.

@@ -1,6 +1,6 @@
 # Stub sample values
 
-Sample values for one `wp zestry make` type's stubs, each file returning a
+Sample values for one `wp zt make` type's stubs, each file returning a
 `placeholder => value` array. They stand in for what the command would prompt
 for, so a generated page shows real code rather than a template.
 

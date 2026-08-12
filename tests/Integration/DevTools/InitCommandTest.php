@@ -8,7 +8,7 @@ use Zestry\WPToolkit\Kernel\Plugin;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
- * `wp zestry init`, run unattended against a throwaway plugin.
+ * `wp zt init`, run unattended against a throwaway plugin.
  *
  * Focused on where the recorded answers come from, since a wrong text domain
  * is the one that fails silently: the copied source's `__()` calls would name
@@ -218,7 +218,7 @@ final class InitCommandTest extends TestCase {
 		$contents = (string) file_get_contents( $this->target_plugin_dir . '/AGENTS.md' );
 
 		$this->assertStringContainsString( 'listed in `bootstrap.php`', $contents );
-		$this->assertStringContainsString( 'wp zestry describe --format=json', $contents );
+		$this->assertStringContainsString( 'wp zt describe --format=json', $contents );
 	}
 
 	/**

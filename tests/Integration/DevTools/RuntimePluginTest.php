@@ -9,7 +9,7 @@ use Zestry\WPToolkit\Kernel\Plugin;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
- * A running plugin publishing itself where `wp zestry` can find it.
+ * A running plugin publishing itself where `wp zt` can find it.
  *
  * Every other devtool reader answers from files, which describe what a plugin
  * is declared to be. This is the one channel for what it became -- a slug the

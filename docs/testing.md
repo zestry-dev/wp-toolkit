@@ -470,4 +470,4 @@ A `private` property typed as a service is **never** injected. If a test fails w
 
 - [`Plugin`](plugin.md) — `get()`, `make()`, `wire()`, `configure()` and the rest of what a test drives
 - [Modules](modules/) — each module's discovery root and its `set_*_root()` setter
-- [`wp zestry doctor`](commands/doctor.md) — the wiring mistakes that produce no error at all, and no test either
+- [`wp zt doctor`](commands/doctor.md) — the wiring mistakes that produce no error at all, and no test either

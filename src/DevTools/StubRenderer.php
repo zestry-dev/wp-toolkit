@@ -15,7 +15,7 @@ use Zestry\WPToolkit\Kernel\Helpers\Str;
 use Zestry\WPToolkit\Kernel\Abstracts\Service;
 
 /**
- * Renders a `wp zestry make` stub file into a new, ready-to-edit PHP file.
+ * Renders a `wp zt make` stub file into a new, ready-to-edit PHP file.
  *
  * Unlike {@see Copier} (which rewrites real, already-valid PHP source with a
  * `token_get_all()`-based parser), a stub is not valid PHP on its own — it

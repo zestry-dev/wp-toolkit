@@ -3,7 +3,7 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry doctor
+# wp zt doctor
 
 [What is not checked](#what-is-not-checked) &nbsp;·&nbsp; [Options](#options) &nbsp;·&nbsp; [Examples](#examples)
 
@@ -16,7 +16,7 @@ Three checks, each targeting a mistake that produces no error at runtime:
 - a declaration whose class file is gone;
 - a `zestry.json` naming a root directory that is not there.
 
-Needs an initialized plugin: with no `zestry.json` in the current directory it exits non-zero telling you to run `wp zestry init` first, and it stops the same way when `bootstrap.php` does not parse.
+Needs an initialized plugin: with no `zestry.json` in the current directory it exits non-zero telling you to run `wp zt init` first, and it stops the same way when `bootstrap.php` does not parse.
 
 Reads only. Nothing here edits a file, so it is safe to run at any point.
 
@@ -34,7 +34,7 @@ A directory named through a `set_*_root()` call inside an initializer is not ver
 
 ```bash
 # Check the plugin in the current directory.
-$ wp zestry doctor
+$ wp zt doctor
 zestry.json    Acme\Plugin -> lib/
 bootstrap.php  6 classes declared
 
@@ -46,15 +46,15 @@ bootstrap.php  6 classes declared
 Error: 1 problem found.
 
 # Nothing wrong.
-$ wp zestry doctor
+$ wp zt doctor
 Success: No problems found.
 
 # For tooling. Exits non-zero, so it gates a build on its own.
-$ wp zestry doctor --format=json
+$ wp zt doctor --format=json
 [{"file":"lib\/Core\/Modules\/Cron\/Cron.php","problem":"The \"cron\" module is copied in but never declared."}]
 
 # Same fields, easier to read over someone's shoulder.
-$ wp zestry doctor --format=yaml
+$ wp zt doctor --format=yaml
 ---
 -
   file: lib/Core/Modules/Cron/Cron.php

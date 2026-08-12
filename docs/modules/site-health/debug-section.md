@@ -53,7 +53,7 @@ return new class extends DebugSection {
 
 ## Generated starting point
 
-[`wp zestry make debug-section <name>`](../../commands/make-debug-section.md) writes this file:
+[`wp zt make debug-section <name>`](../../commands/make-debug-section.md) writes this file:
 
 ```php
 <?php

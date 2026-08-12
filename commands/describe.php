@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry describe`.
+ * Devtool command: `wp zt describe`.
  *
  * Reports what this plugin is made of -- what is installed, what is declared,
  * where each module looks and what a file there has to return. Reads only.
@@ -23,7 +23,7 @@ use Zestry\WPToolkit\Services\Path;
 return new class() extends Command {
 
 	/**
-	 * The plugin whose directory `wp zestry` was run from.
+	 * The plugin whose directory `wp zt` was run from.
 	 *
 	 * @var ConsumerPlugin
 	 */
@@ -78,7 +78,7 @@ return new class() extends Command {
 	 * The directory reported for a module is its **default**. A
 	 * `set_*_root()` call inside an initializer changes it, and finding that out
 	 * would mean running your closures against live module instances -- which
-	 * this command does not do, for the same reason `wp zestry doctor` does not.
+	 * this command does not do, for the same reason `wp zt doctor` does not.
 	 * A module whose entry carries an initializer is marked `configured`, so the
 	 * report says where to look rather than guessing.
 	 *
@@ -114,14 +114,14 @@ return new class() extends Command {
 	 * ## EXAMPLES
 	 *
 	 *     # What this plugin has.
-	 *     $ wp zestry describe --installed
+	 *     $ wp zt describe --installed
 	 *     Acme\Plugin -> lib/   text domain: acme-plugin
 	 *
 	 *     MODULES
-	 *       ajax           actions/         AjaxAction    wp zestry make action
-	 *       cli            commands/        Command       wp zestry make command
-	 *       cron           schedules/       Schedule      wp zestry make schedule   NOT DECLARED
-	 *       fields         fields/          Field         wp zestry make field
+	 *       ajax           actions/         AjaxAction    wp zt make action
+	 *       cli            commands/        Command       wp zt make command
+	 *       cron           schedules/       Schedule      wp zt make schedule   NOT DECLARED
+	 *       fields         fields/          Field         wp zt make field
 	 *           fields/ 40 files via Acme\Plugin\Abstracts\EntityField
 	 *
 	 *     SERVICES
@@ -129,7 +129,7 @@ return new class() extends Command {
 	 *       views          views/
 	 *
 	 *     # For a script, or an agent.
-	 *     $ wp zestry describe --format=json --installed
+	 *     $ wp zt describe --format=json --installed
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -142,7 +142,7 @@ return new class() extends Command {
 		$plugin_root = $this->consumer_plugin->get_plugin_root();
 
 		if ( ! $this->zestry_config->exists( $plugin_root ) ) {
-			$this->error( 'No zestry.json here. Run `wp zestry init` first.' );
+			$this->error( 'No zestry.json here. Run `wp zt init` first.' );
 			return;
 		}
 
@@ -313,7 +313,7 @@ return new class() extends Command {
 						$entry['name'],
 						'' === $entry['reads'] ? '—' : $entry['reads'],
 						'' === $entry['returns'] ? '—' : $entry['returns'],
-						'' === $entry['make'] ? '' : 'wp zestry make ' . $entry['make'],
+						'' === $entry['make'] ? '' : 'wp zt make ' . $entry['make'],
 						$entry['declared'] ? '' : '  NOT DECLARED'
 					)
 				);
@@ -330,7 +330,7 @@ return new class() extends Command {
 		}
 
 		$this->log( '' );
-		$this->log( '· = installable, not added. `wp zestry add <kind> <name>` to add one.' );
+		$this->log( '· = installable, not added. `wp zt add <kind> <name>` to add one.' );
 		$this->log( 'A directory shown is the default; an initializer may point the module elsewhere.' );
 	}
 
@@ -359,7 +359,7 @@ return new class() extends Command {
 	}
 
 	/**
-	 * Each `wp zestry make` type, keyed by the directory it writes into.
+	 * Each `wp zt make` type, keyed by the directory it writes into.
 	 *
 	 * Read off the generator itself rather than listed here: every type is one
 	 * file in `commands/make/`, and each knows its own word and its own

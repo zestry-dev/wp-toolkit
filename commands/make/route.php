@@ -1,10 +1,9 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make route <name>`.
+ * Devtool command: `wp zt make route <name>`.
  *
- * Generates a new REST route stub into a project already set up with `wp zestry
- * init`.
+ * Generates a new REST route stub into a project already set up with `wp zt init`.
  */
 
 declare( strict_types=1 );
@@ -23,7 +22,7 @@ return new class() extends MakeCommand {
 	 * nothing has to be declared anywhere, and subdirectories are organization
 	 * only, not part of the URL.
 	 *
-	 * Needs the `rest-api` module, so run `wp zestry add module rest-api` first if
+	 * Needs the `rest-api` module, so run `wp zt add module rest-api` first if
 	 * you have not already.
 	 *
 	 * ## OPTIONS
@@ -54,7 +53,7 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Generate a REST route, prompting for method/version/pattern.
-	 *     $ wp zestry make route get-widget
+	 *     $ wp zt make route get-widget
 	 *     HTTP method (get, post, put, patch, delete): (default: get)
 	 *     Namespace version: (default: v1)
 	 *     URL pattern: (default: /get-widget)

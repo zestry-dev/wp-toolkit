@@ -62,7 +62,7 @@ use Zestry\WPToolkit\Services\Path;
  * > [!WARNING]
  * > **Keep every migration's timestamp the same width.** Filenames are sorted
  * > as plain strings, with no numeric-aware pass, so mixing widths (some
- * > zero-padded, some not) silently sorts them wrong. `wp zestry make migration`
+ * > zero-padded, some not) silently sorts them wrong. `wp zt make migration`
  * > generates a correct `YYYYMMDDHHmmss` prefix -- in UTC, so migrations
  * > authored from different timezones still sort against each other correctly.
  *

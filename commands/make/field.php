@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make field <name>`.
+ * Devtool command: `wp zt make field <name>`.
  */
 
 declare( strict_types=1 );
@@ -40,7 +40,7 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Generate fields/acme-rating.php.
-	 *     $ wp zestry make field acme-rating
+	 *     $ wp zt make field acme-rating
 	 *     Success: Created fields/acme-rating.php
 	 *
 	 * @param array $args

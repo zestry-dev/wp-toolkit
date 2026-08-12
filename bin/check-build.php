@@ -3,7 +3,7 @@
 /**
  * Check the generated build configuration produces what the Assets module reads.
  *
- * `wp zestry add module assets` writes a `webpack.config.js` whose whole job is
+ * `wp zt add module assets` writes a `webpack.config.js` whose whole job is
  * to merge three source directories `@wordpress/scripts` treats as mutually
  * exclusive, and to emit a manifest naming everything it built. Nothing in this
  * repository has ever run it. `composer lint:stubs` renders every stub and asks

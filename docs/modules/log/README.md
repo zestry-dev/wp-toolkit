@@ -18,11 +18,11 @@ The levels are PSR-3's names. The PSR-3 interface is not implemented.
 ## Adding it
 
 ```bash
-wp zestry add module log
+wp zt add module log
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `Log` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zestry add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zestry doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `Log` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
 
 ```php
 // bootstrap.php
@@ -378,4 +378,4 @@ protected function on_boot(): void {
 ## See also
 
 - [`Module`](../module.md) — what every module inherits
-- [`wp zestry add module log`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add module log`](../../commands/add-module.md) — the command that copies it

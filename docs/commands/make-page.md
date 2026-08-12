@@ -3,7 +3,7 @@
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
-# wp zestry make page
+# wp zt make page
 
 Generate a new admin page.
 
@@ -13,7 +13,7 @@ The page's slug becomes `?page={plugin-slug}-{name}`, so it can hold only what a
 
 Two files, the way `make block` writes several: the page class, and the template it renders. An admin page is mostly a form — tables, fields, notices, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing. A page with one field does not need a template, and costs nothing for having one; the point is that nobody has to notice when the threshold passed.
 
-Needs the `admin-pages` module, so run `wp zestry add module admin-pages` first if you have not already. It brings `views` with it, which is what renders the template.
+Needs the `admin-pages` module, so run `wp zt add module admin-pages` first if you have not already. It brings `views` with it, which is what renders the template.
 
 ## Options
 
@@ -39,11 +39,11 @@ Needs the `admin-pages` module, so run `wp zestry add module admin-pages` first 
 
 ```bash
 # Generate an admin page and the template it renders.
-$ wp zestry make page settings
+$ wp zt make page settings
 Success: Created admin-pages/settings.php
 Created views/admin-pages/settings.php
 
 # Just the class, for a page that renders almost nothing.
-$ wp zestry make page ping --no-view
+$ wp zt make page ping --no-view
 Success: Created admin-pages/ping.php
 ```

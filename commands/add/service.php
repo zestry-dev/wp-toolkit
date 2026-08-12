@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Devtool command: `wp zestry add service <service>...`.
+ * Devtool command: `wp zt add service <service>...`.
  *
- * Copies one or more services into a project already set up with `wp zestry init`,
+ * Copies one or more services into a project already set up with `wp zt init`,
  * resolving each one's transitive dependencies against the registry first (see
  * registry.php). Every `namespace Zestry\WPToolkit\...;`/`use Zestry\WPToolkit\...;` in each copied file
  * is rewritten to the namespace zestry.json recorded during init. Never overwrites
- * a service already present on disk -- use `wp zestry overwrite service` for that.
+ * a service already present on disk -- use `wp zt overwrite service` for that.
  */
 
 declare( strict_types=1 );
@@ -19,12 +19,12 @@ return new class() extends AddCommand {
 	/**
 	 * Copy one or more services into an initialized plugin.
 	 *
-	 * Requires `wp zestry init` to have already run in this plugin (it reads
+	 * Requires `wp zt init` to have already run in this plugin (it reads
 	 * zestry.json for the namespace and destination directory chosen there). Every
 	 * `namespace Zestry\WPToolkit\...;` declaration and `use Zestry\WPToolkit\...;` import in each copied
 	 * file is rewritten to the project's own namespace. A service already
 	 * present at its destination is left untouched and logged as skipped -- run
-	 * `wp zestry overwrite service <service>` to replace it deliberately.
+	 * `wp zt overwrite service <service>` to replace it deliberately.
 	 *
 	 * Nothing is written to `bootstrap.php`. A service is built the first time
 	 * something asks for it -- a `$plugin->get()`, or another class declaring a
@@ -45,19 +45,19 @@ return new class() extends AddCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Copy a service on its own.
-	 *     $ wp zestry add service views
+	 *     $ wp zt add service views
 	 *     Also adding required dependencies: path
 	 *     Added path
 	 *     Added views
 	 *     Success: Done.
 	 *
 	 *     # Copy several in one call.
-	 *     $ wp zestry add service db globals
+	 *     $ wp zt add service db globals
 	 *     Success: Done.
 	 *
 	 *     # Naming a module here says where to find it.
-	 *     $ wp zestry add service cli
-	 *     Error: "cli" is a module, not a service. Run `wp zestry add module cli`.
+	 *     $ wp zt add service cli
+	 *     Error: "cli" is a module, not a service. Run `wp zt add module cli`.
 	 *
 	 * @param array $args
 	 * @param array $assoc_args

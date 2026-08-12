@@ -18,7 +18,7 @@ The `.php` extension is optional, and a name may address a subdirectory, so `'em
 ## Adding it
 
 ```bash
-wp zestry add service views
+wp zt add service views
 ```
 
 ## Rendering a view
@@ -57,7 +57,7 @@ is in scope. Say so at the top and you get completion for all of it,
 
 ## Rendering an admin page
 
-This is the case most plugins reach for first, and it has a shortcut: an `AdminPage` calls `$this->view()` rather than resolving this service. `wp zestry make page` writes both files, and the template gets exactly what the `render()` call names — nothing of the page itself, so its inputs are readable without opening it.
+This is the case most plugins reach for first, and it has a shortcut: an `AdminPage` calls `$this->view()` rather than resolving this service. `wp zt make page` writes both files, and the template gets exactly what the `render()` call names — nothing of the page itself, so its inputs are readable without opening it.
 
 ```php
 // admin-pages/settings.php
@@ -175,4 +175,4 @@ $this->get_plugin()->get( Options::class )->get( 'api_key' );
 
 - [`path`](../path/) — copied in alongside this one
 - [`Service`](../service.md) — what every service inherits
-- [`wp zestry add service views`](../../commands/add-service.md) — the command that copies it
+- [`wp zt add service views`](../../commands/add-service.md) — the command that copies it

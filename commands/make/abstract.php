@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Devtool command: `wp zestry make abstract <name>`.
+ * Devtool command: `wp zt make abstract <name>`.
  *
  * Generates the intermediate abstract a plugin grows once it has more than a
  * handful of files of one kind -- the class holding what every one of them
- * shares. `wp zestry make <type> --extends=` is what then points a generated
+ * shares. `wp zt make <type> --extends=` is what then points a generated
  * file at it.
  */
 
@@ -19,7 +19,7 @@ return new class() extends MakeCommand {
 	/**
 	 * Generate an intermediate abstract of your own.
 	 *
-	 * Requires `wp zestry init` to have already run in this plugin. The file
+	 * Requires `wp zt init` to have already run in this plugin. The file
 	 * lands in `{zestry.json root}/Abstracts/`, which is the first place
 	 * `--extends=` looks -- so `make field acme-rating --extends=EntityField`
 	 * finds it by the bare name afterwards.
@@ -60,15 +60,15 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # An abstract every post type file will extend.
-	 *     $ wp zestry make abstract EntityPostType --for=post-type
+	 *     $ wp zt make abstract EntityPostType --for=post-type
 	 *     Success: Created lib/Abstracts/EntityPostType.php
 	 *
 	 *     # Layered onto that one.
-	 *     $ wp zestry make abstract CuratedPostType --extends=EntityPostType
+	 *     $ wp zt make abstract CuratedPostType --extends=EntityPostType
 	 *     Success: Created lib/Abstracts/CuratedPostType.php
 	 *
 	 *     # Shared by something that is not a discovered file.
-	 *     $ wp zestry make abstract Importer
+	 *     $ wp zt make abstract Importer
 	 *     Success: Created lib/Abstracts/Importer.php
 	 *
 	 * @param array $args
@@ -157,7 +157,7 @@ return new class() extends MakeCommand {
 	 */
 	protected function after_write( string $name, string $plugin_root, array $config ): void {
 		$this->log(
-			sprintf( 'Point a file at it with `wp zestry make <type> <name> --extends=%s`.', basename( str_replace( '\\', '/', $name ) ) )
+			sprintf( 'Point a file at it with `wp zt make <type> <name> --extends=%s`.', basename( str_replace( '\\', '/', $name ) ) )
 		);
 	}
 

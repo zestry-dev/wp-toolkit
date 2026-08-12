@@ -7,7 +7,7 @@
 declare( strict_types=1 );
 
 /**
- * Every service name `wp zestry add service` accepts, comma-separated in backticks.
+ * Every service name `wp zt add service` accepts, comma-separated in backticks.
  *
  * @param string $root Absolute path to the repository root.
  * @return string
