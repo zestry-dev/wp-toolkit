@@ -34,10 +34,10 @@
  * An entry file that runs the plugin as it loads runs an initializer before
  * `init`, where a `__()` loads the text domain early enough that WordPress
  * reports `_load_textdomain_just_in_time` on every request. Anything needing
- * that later point goes in `run_at_init()`, which every module has:
+ * that later point goes in `on_wp_init()`, which every module has:
  *
  *     Blocks::class => function ( Blocks $blocks ): void {
- *         $blocks->run_at_init( function ( Blocks $module ): void {
+ *         $blocks->on_wp_init( function ( Blocks $module ): void {
  *             $module->add_categories( [ 'reports' => __( 'Reports', 'my-plugin' ) ] );
  *         } );
  *     },

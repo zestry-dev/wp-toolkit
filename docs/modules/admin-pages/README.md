@@ -123,7 +123,7 @@ Runs once, when the plugin builds the module. Abstract rather than optional: a m
 
 **Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
 
-`run_at_init()` is the way out of all three, and where anything a module registers belongs.
+`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
 
 ## Methods you can use
 
@@ -265,12 +265,12 @@ An AdminPage instance is identified by its full slug; a plain string is used as 
 
 <br>
 
-### `run_at_init( $callback )`
+### `on_wp_init( $callback )`
 
 Run a callback on `init`, or immediately if `init` has already fired.
 
 ```php
-final public function run_at_init( callable $callback ): void
+final public function on_wp_init( callable $callback ): void
 ```
 
 |  | Details |
@@ -285,7 +285,7 @@ The callback receives the module, matching the initializer signature, so a closu
 
 ```php
 protected function on_boot(): void {
-    $this->run_at_init( function ( self $module ): void {
+    $this->on_wp_init( function ( self $module ): void {
         $module->register_widgets();
     } );
 }

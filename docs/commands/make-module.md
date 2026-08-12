@@ -21,7 +21,7 @@ final class Editor extends Module {
 }
 ```
 
-Anything that has to wait for `init` goes through `Module::run_at_init()` instead, since a module can be built on either side of it.
+Anything that has to wait for `init` goes through `Module::on_wp_init()` instead, since a module can be built on either side of it.
 
 Requires `wp zt init` to have already run in this plugin. Unlike every other `make` type, there is no fixed conventional directory to default to — a plain module is not discovered by anything — so its home is your own `{zestry.json root}/Modules/` directory, beside the copied `Core/` tree rather than inside it. That separation is the point: `Core/` is what `wp zt update` may replace, and nothing you write belongs there.
 

@@ -9,7 +9,7 @@ For the absolutes alone, with the tables and the caveats stripped out, see [Rule
 **Does it do anything without being called?**
 
 - **No → [`Service`](services/service.md).** Built the first time something asks for it. Never appears in `bootstrap.php`; configure it with `$plugin->configure()` in the entry file.
-- **Yes → [`Module`](modules/module.md).** Binds a hook, registers a post type, walks a directory. Listed in `bootstrap.php` — listing it is what builds it — and `on_boot()` runs once. Defer work to `init` with `$this->run_at_init( $callback )`.
+- **Yes → [`Module`](modules/module.md).** Binds a hook, registers a post type, walks a directory. Listed in `bootstrap.php` — listing it is what builds it — and `on_boot()` runs once. Defer work to `init` with `$this->on_wp_init( $callback )`.
 
 ## Namespaces
 

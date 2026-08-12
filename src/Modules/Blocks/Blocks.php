@@ -89,7 +89,7 @@ use WP_Block_Type_Registry;
  * or to declare a block category of the plugin's own.
  *
  * An initializer runs while the plugin file loads, which is before `init` and
- * so before a text domain may be touched. {@see Module::run_at_init()} moves
+ * so before a text domain may be touched. {@see Module::on_wp_init()} moves
  * whatever needs the later point -- here the translated headings -- without the
  * caller having to know whether `init` has already passed.
  *
@@ -99,7 +99,7 @@ use WP_Block_Type_Registry;
  *     Blocks::class => static function ( Blocks $blocks ): void {
  *         $blocks->set_blocks_root( 'build/editor-blocks' );
  *
- *         $blocks->run_at_init( function ( Blocks $module ) {
+ *         $blocks->on_wp_init( function ( Blocks $module ) {
  *             $module->add_categories( [
  *                 'reports' => __( 'Reports', 'my-plugin' ),
  *                 'charts'  => [
@@ -156,7 +156,7 @@ class Blocks extends Module {
 	/**
 	 * Block categories registered via add_categories(), in declaration order.
 	 *
-	 * @var array<int, array{slug: string, title: string|callable():string, icon: string|null}>
+	 * @var array<int, array{slug: string, title: string, icon: string|null}>
 	 */
 	private array $categories = array();
 
@@ -221,19 +221,23 @@ class Blocks extends Module {
 	 * the inserter show it as a group with a title of its own.
 	 *
 	 * Keyed by slug, the same shape `bootstrap.php` uses for modules, so the
-	 * groups read as data. A plain string (or a callable returning one) is the
+	 * groups read as data. A plain string is the
 	 * title; an array carries an `icon` alongside it:
 	 *
 	 * ```php
 	 * // bootstrap.php
-	 * $blocks->add_categories(
-	 *     array(
-	 *         'reports' => __( 'Reports', 'my-plugin' ),
-	 *         'charts'  => array(
-	 *             'title' => __( 'Charts', 'my-plugin' ),
-	 *             'icon'  => 'chart-bar',
-	 *         ),
-	 *     )
+	 * $blocks->on_wp_init(
+	 *     static function ( Blocks $blocks ): void {
+	 *         $blocks->add_categories(
+	 *             array(
+	 *                 'reports' => __( 'Reports', 'my-plugin' ),
+	 *                 'charts'  => array(
+	 *                     'title' => __( 'Charts', 'my-plugin' ),
+	 *                     'icon'  => 'chart-bar',
+	 *                 ),
+	 *             )
+	 *         );
+	 *     }
 	 * );
 	 *
 	 * // src/blocks/sales/block.json
@@ -253,33 +257,24 @@ class Blocks extends Module {
 	 * of WordPress's own (`text`, `media`, `design`, `widgets`, `theme`,
 	 * `embed`) adds a second entry rather than renaming the first.
 	 *
-	 * A heading is user-visible, so it usually wants translating -- and an
-	 * initializer runs while the plugin file loads, where a `__()` loads the text
-	 * domain early enough that WordPress reports
-	 * `_load_textdomain_just_in_time` on every request. Wrap the call in
-	 * {@see Module::run_at_init()}, as the example above does, and ordinary
-	 * `__()` is correct.
-	 *
-	 * A title may also be given as a callable, resolved when the editor asks for
-	 * its categories. That covers a heading genuinely expensive to compute; for
-	 * translation alone, deferring the whole call reads better than making each
-	 * value lazy.
+	 * **Call it from {@see Module::on_wp_init()}, as the example does.** A title
+	 * is user-visible, so it usually wants translating, and an initializer runs
+	 * while the plugin file loads -- early enough that a `__()` there loads the
+	 * text domain before WordPress is ready and reports
+	 * `_load_textdomain_just_in_time` on every request. Inside `on_wp_init()`
+	 * ordinary `__()` is correct, which is why a title is a plain string and
+	 * nothing here is lazy.
 	 *
 	 * Order is kept: categories appear in the inserter after WordPress's own, in
 	 * the order declared here, and a later call appends to an earlier one.
 	 *
-	 * @param array<string, string|callable():string|array{title: string|callable():string, icon?: string|null}> $categories Titles or configuration, keyed by slug.
+	 * @param array<string, string|array{title: string, icon?: string|null}> $categories Titles or configuration, keyed by slug.
 	 * @return void
 	 * @throws \InvalidArgumentException When an entry is an array without a title.
 	 */
 	public function add_categories( array $categories ): void {
 		foreach ( $categories as $slug => $category ) {
-			/*
-			 * `is_callable` first, since a callable is legitimately an array --
-			 * `array( $object, 'method' )` -- and would otherwise be read as a
-			 * configuration array with no title.
-			 */
-			$is_config = \is_array( $category ) && ! \is_callable( $category );
+			$is_config = \is_array( $category );
 
 			if ( $is_config && ! isset( $category['title'] ) ) {
 				throw new \InvalidArgumentException(
@@ -304,19 +299,9 @@ class Blocks extends Module {
 	 * @internal
 	 */
 	public function filter_block_categories( array $categories ): array {
-		$own = array();
-
-		foreach ( $this->categories as $category ) {
-			// Resolved here rather than at registration: this is the first point
-			// after `init`, so a title given as a callable can translate.
-			$category['title'] = \is_callable( $category['title'] )
-				? (string) ( $category['title'] )()
-				: $category['title'];
-
-			$own[] = $category;
-		}
-
-		return \array_merge( $categories, $own );
+		// Appended, so this plugin's groups sit after WordPress's own in the
+		// inserter, in the order they were declared.
+		return \array_merge( $categories, $this->categories );
 	}
 
 	/**
@@ -519,7 +504,7 @@ class Blocks extends Module {
 	protected function on_boot(): void {
 		\add_filter( 'block_categories_all', array( $this, 'filter_block_categories' ) );
 
-		$this->run_at_init(
+		$this->on_wp_init(
 			static function ( self $module ): void {
 				$module->register_blocks();
 			}

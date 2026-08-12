@@ -418,7 +418,7 @@ class Ajax extends Module {
 			return;
 		}
 
-		$this->run_at_init(
+		$this->on_wp_init(
 			static function ( self $module ): void {
 				$module->register_actions();
 			}

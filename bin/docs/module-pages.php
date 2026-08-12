@@ -363,7 +363,7 @@ function zestry_public_api( string $root, string $class ): array {
 
 	/*
 	 * And the same for what the class extends. A `Module` page listed only
-	 * `run_at_init()`, because `get_plugin()` -- the accessor every module and
+	 * `on_wp_init()`, because `get_plugin()` -- the accessor every module and
 	 * service has -- is declared on `Service`, one level up. A reader of the
 	 * Module page has no reason to know that, and nothing linked them to it.
 	 */

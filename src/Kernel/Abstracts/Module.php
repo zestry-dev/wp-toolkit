@@ -76,7 +76,7 @@ namespace Zestry\WPToolkit\Kernel\Abstracts;
  * Almost everything WordPress wants registered -- a post type, a block, a
  * taxonomy -- has to be registered on `init`, and a module can be built on
  * either side of it: an entry file that runs the plugin as it loads is ahead of
- * `init`, one that runs it from a later hook is behind. {@see run_at_init()}
+ * `init`, one that runs it from a later hook is behind. {@see on_wp_init()}
  * behaves the same either way, so a module never has to care which, and a plain
  * `add_action( 'init', ... )` would silently never run in the second case.
  *
@@ -85,7 +85,7 @@ namespace Zestry\WPToolkit\Kernel\Abstracts;
  *
  * ```
  * protected function on_boot(): void {
- *     $this->run_at_init( function ( self $module ): void {
+ *     $this->on_wp_init( function ( self $module ): void {
  *         register_post_type( 'acme_report', array(
  *             'label' => __( 'Reports', 'acme-plugin' ),
  *         ) );
@@ -155,7 +155,7 @@ abstract class Module extends Service {
 	 *
 	 * ```php
 	 * protected function on_boot(): void {
-	 *     $this->run_at_init( function ( self $module ): void {
+	 *     $this->on_wp_init( function ( self $module ): void {
 	 *         $module->register_widgets();
 	 *     } );
 	 * }
@@ -164,7 +164,7 @@ abstract class Module extends Service {
 	 * @param callable(static $module): void $callback What to run.
 	 * @return void
 	 */
-	final public function run_at_init( callable $callback ): void {
+	final public function on_wp_init( callable $callback ): void {
 		/*
 		 * Wrapped rather than hooked directly: `do_action( 'init' )` passes no
 		 * arguments, which WordPress turns into a single empty string for a
@@ -200,7 +200,7 @@ abstract class Module extends Service {
 	 * asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works
 	 * -- but it runs on every request, including the ones that never needed it.
 	 *
-	 * {@see run_at_init()} is the way out of all three, and where anything a
+	 * {@see on_wp_init()} is the way out of all three, and where anything a
 	 * module registers belongs.
 	 *
 	 * @return void

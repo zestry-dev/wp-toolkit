@@ -60,7 +60,7 @@ return array(
 
 Register an initializer only to point the module at a non-default directory, or to declare a block category of the plugin's own.
 
-An initializer runs while the plugin file loads, which is before `init` and so before a text domain may be touched. `Module::run_at_init()` moves whatever needs the later point — here the translated headings — without the caller having to know whether `init` has already passed.
+An initializer runs while the plugin file loads, which is before `init` and so before a text domain may be touched. `Module::on_wp_init()` moves whatever needs the later point — here the translated headings — without the caller having to know whether `init` has already passed.
 
 ```php
 // bootstrap.php
@@ -68,7 +68,7 @@ return array(
     Blocks::class => static function ( Blocks $blocks ): void {
         $blocks->set_blocks_root( 'build/editor-blocks' );
 
-        $blocks->run_at_init( function ( Blocks $module ) {
+        $blocks->on_wp_init( function ( Blocks $module ) {
             $module->add_categories( [
                 'reports' => __( 'Reports', 'my-plugin' ),
                 'charts'  => [
@@ -121,7 +121,7 @@ Runs once, when the plugin builds the module. Abstract rather than optional: a m
 
 **Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
 
-`run_at_init()` is the way out of all three, and where anything a module registers belongs.
+`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
 
 ## Methods you can use
 
@@ -159,18 +159,22 @@ public function add_categories( array $categories ): void
 
 Call this from the module initializer. A block claims a category by naming it in its own `block.json` "category" field; declaring it here only makes the inserter show it as a group with a title of its own.
 
-Keyed by slug, the same shape `bootstrap.php` uses for modules, so the groups read as data. A plain string (or a callable returning one) is the title; an array carries an `icon` alongside it:
+Keyed by slug, the same shape `bootstrap.php` uses for modules, so the groups read as data. A plain string is the title; an array carries an `icon` alongside it:
 
 ```php
 // bootstrap.php
-$blocks->add_categories(
-    array(
-        'reports' => __( 'Reports', 'my-plugin' ),
-        'charts'  => array(
-            'title' => __( 'Charts', 'my-plugin' ),
-            'icon'  => 'chart-bar',
-        ),
-    )
+$blocks->on_wp_init(
+    static function ( Blocks $blocks ): void {
+        $blocks->add_categories(
+            array(
+                'reports' => __( 'Reports', 'my-plugin' ),
+                'charts'  => array(
+                    'title' => __( 'Charts', 'my-plugin' ),
+                    'icon'  => 'chart-bar',
+                ),
+            )
+        );
+    }
 );
 
 // src/blocks/sales/block.json
@@ -181,9 +185,7 @@ The category and the block that claims it live in two files, and only the block.
 
 A slug is registered exactly as given and is not namespaced to the plugin slug the way a hook or an option name is: it has to match what a hand-written `block.json` says verbatim, and namespacing would register `{plugin-slug}-reports` while every block still asked for `reports`. Choose slugs distinctive enough not to collide — reusing one of WordPress's own (`text`, `media`, `design`, `widgets`, `theme`, `embed`) adds a second entry rather than renaming the first.
 
-A heading is user-visible, so it usually wants translating — and an initializer runs while the plugin file loads, where a `__()` loads the text domain early enough that WordPress reports `_load_textdomain_just_in_time` on every request. Wrap the call in `Module::run_at_init()`, as the example above does, and ordinary `__()` is correct.
-
-A title may also be given as a callable, resolved when the editor asks for its categories. That covers a heading genuinely expensive to compute; for translation alone, deferring the whole call reads better than making each value lazy.
+**Call it from `Module::on_wp_init()`, as the example does.** A title is user-visible, so it usually wants translating, and an initializer runs while the plugin file loads — early enough that a `__()` there loads the text domain before WordPress is ready and reports `_load_textdomain_just_in_time` on every request. Inside `on_wp_init()` ordinary `__()` is correct, which is why a title is a plain string and nothing here is lazy.
 
 Order is kept: categories appear in the inserter after WordPress's own, in the order declared here, and a later call appends to an earlier one.
 
@@ -205,12 +207,12 @@ public function get_discovered_blocks(): array
 
 <br>
 
-### `run_at_init( $callback )`
+### `on_wp_init( $callback )`
 
 Run a callback on `init`, or immediately if `init` has already fired.
 
 ```php
-final public function run_at_init( callable $callback ): void
+final public function on_wp_init( callable $callback ): void
 ```
 
 |  | Details |
@@ -225,7 +227,7 @@ The callback receives the module, matching the initializer signature, so a closu
 
 ```php
 protected function on_boot(): void {
-    $this->run_at_init( function ( self $module ): void {
+    $this->on_wp_init( function ( self $module ): void {
         $module->register_widgets();
     } );
 }

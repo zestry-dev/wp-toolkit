@@ -343,8 +343,8 @@ final class AbilitiesTest extends TestCase {
 			array(
 				'zestry-test-billing' => 'Billing',
 				'zestry-test-reports' => array(
-					'label'       => static fn (): string => 'Reports',
-					'description' => static fn (): string => 'Reads sales figures. Changes nothing.',
+					'label'       => 'Reports',
+					'description' => 'Reads sales figures. Changes nothing.',
 				),
 			)
 		);
@@ -356,6 +356,37 @@ final class AbilitiesTest extends TestCase {
 			'Reads sales figures. Changes nothing.',
 			wp_get_ability_category( 'zestry-test-reports' )->get_description()
 		);
+	}
+
+	/**
+	 * A label is a label, whatever else in PHP answers to that name.
+	 *
+	 * A label used to be resolved through `is_callable()`, which is true for any
+	 * string naming a defined function and matches case-insensitively -- so
+	 * `Time` registered as a unix timestamp, and `Log` or `Date` raised an
+	 * `ArgumentCountError` that took every ability in the plugin with it. A
+	 * label is a plain string now, and translating one is what
+	 * {@see \Zestry\WPToolkit\Kernel\Abstracts\Module::on_wp_init()} is for.
+	 */
+	public function test_a_label_naming_a_function_is_not_called(): void {
+		$this->assertTrue( \is_callable( 'time' ), 'The premise: PHP has a one-word function by this name.' );
+
+		$abilities = $this->boot();
+		$abilities->add_categories(
+			array(
+				'zestry-test-clock' => 'Time',
+				'zestry-test-diary' => array(
+					'label'       => 'Date',
+					'description' => 'Log',
+				),
+			)
+		);
+
+		$this->register();
+
+		$this->assertSame( 'Time', wp_get_ability_category( 'zestry-test-clock' )->get_label() );
+		$this->assertSame( 'Date', wp_get_ability_category( 'zestry-test-diary' )->get_label() );
+		$this->assertSame( 'Log', wp_get_ability_category( 'zestry-test-diary' )->get_description() );
 	}
 
 	/**

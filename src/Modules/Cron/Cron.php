@@ -374,7 +374,7 @@ class Cron extends Module {
 	protected function on_boot(): void {
 		\add_filter( 'cron_schedules', array( $this, 'filter_cron_schedules' ) ); // phpcs:ignore WordPress.WP.CronInterval.ChangeDetected
 
-		$this->run_at_init(
+		$this->on_wp_init(
 			static function ( self $module ): void {
 				$module->register_schedules();
 			}

@@ -116,13 +116,17 @@ use Zestry\WPToolkit\Services\Request\Request;
  * Abilities::class => static function ( Abilities $abilities ): void {
  *     $abilities->set_abilities_root( 'src/abilities' );
  *
- *     $abilities->add_categories(
- *         array(
- *             'acme-billing' => array(
- *                 'label'       => static fn (): string => __( 'Acme billing', 'acme-plugin' ),
- *                 'description' => static fn (): string => __( 'Invoices, refunds and payment methods.', 'acme-plugin' ),
- *             ),
- *         )
+ *     $abilities->on_wp_init(
+ *         static function ( Abilities $abilities ): void {
+ *             $abilities->add_categories(
+ *                 array(
+ *                     'acme-billing' => array(
+ *                         'label'       => __( 'Acme billing', 'acme-plugin' ),
+ *                         'description' => __( 'Invoices, refunds and payment methods.', 'acme-plugin' ),
+ *                     ),
+ *                 )
+ *             );
+ *         }
  *     );
  * },
  * ```
@@ -175,7 +179,7 @@ class Abilities extends Module {
 	/**
 	 * Categories declared through add_categories(), in declaration order.
 	 *
-	 * @var array<string, array{label: string|callable(): string, description: string|callable(): string}>
+	 * @var array<string, array{label: string, description: string}>
 	 */
 	private array $categories = array();
 
@@ -211,14 +215,19 @@ class Abilities extends Module {
 	 * string is the label, and an array carries a description alongside it:
 	 *
 	 * ```php
-	 * $abilities->add_categories(
-	 *     array(
-	 *         'acme-billing' => __( 'Acme billing', 'acme-plugin' ),
-	 *         'acme-reports' => array(
-	 *             'label'       => __( 'Acme reports', 'acme-plugin' ),
-	 *             'description' => __( 'Reads sales figures. Changes nothing.', 'acme-plugin' ),
-	 *         ),
-	 *     )
+	 * // bootstrap.php
+	 * $abilities->on_wp_init(
+	 *     static function ( Abilities $abilities ): void {
+	 *         $abilities->add_categories(
+	 *             array(
+	 *                 'acme-billing' => __( 'Acme billing', 'acme-plugin' ),
+	 *                 'acme-reports' => array(
+	 *                     'label'       => __( 'Acme reports', 'acme-plugin' ),
+	 *                     'description' => __( 'Reads sales figures. Changes nothing.', 'acme-plugin' ),
+	 *                 ),
+	 *             )
+	 *         );
+	 *     }
 	 * );
 	 *
 	 * // abilities/refund-order.php
@@ -237,23 +246,21 @@ class Abilities extends Module {
 	 * distinctive enough not to collide — a category already registered by
 	 * WordPress or another plugin is left as it is rather than replaced.
 	 *
-	 * Either value may be given as a callable returning the string, resolved when
-	 * WordPress asks for its categories. That is the safe form for a `__()` call:
-	 * an initializer runs while the plugin file loads, early enough that
-	 * translating there reports `_load_textdomain_just_in_time`.
+	 * **Call it from {@see \Zestry\WPToolkit\Kernel\Abstracts\Module::on_wp_init()}, as the example
+	 * does.** A label and a description are both user-visible, so they usually
+	 * want translating, and an initializer runs while the plugin file loads --
+	 * early enough that a `__()` there loads the text domain before WordPress is
+	 * ready and reports `_load_textdomain_just_in_time` on every request. Inside
+	 * `on_wp_init()` ordinary `__()` is correct, which is why both are plain
+	 * strings and nothing here is lazy.
 	 *
-	 * @param array<string, string|callable(): string|array{label: string|callable(): string, description?: string|callable(): string}> $categories Labels or configuration, keyed by slug.
+	 * @param array<string, string|array{label: string, description?: string}> $categories Labels or configuration, keyed by slug.
 	 * @return void
 	 * @throws \InvalidArgumentException When an entry is an array without a label.
 	 */
 	public function add_categories( array $categories ): void {
 		foreach ( $categories as $slug => $category ) {
-			/*
-			 * `is_callable` first, since a callable is legitimately an array --
-			 * `array( $object, 'method' )` -- and would otherwise be read as a
-			 * configuration array with no label.
-			 */
-			$is_config = \is_array( $category ) && ! \is_callable( $category );
+			$is_config = \is_array( $category );
 
 			if ( $is_config && ! isset( $category['label'] ) ) {
 				throw new \InvalidArgumentException(
@@ -438,16 +445,14 @@ class Abilities extends Module {
 				continue;
 			}
 
-			// Resolved here rather than at declaration: this fires long after
-			// `init`, so a label given as a callable can translate.
-			$label = $this->get_resolved_string( $category['label'] );
+			$label = $category['label'];
 
 			\wp_register_ability_category(
 				$slug,
 				array(
 					'label'       => $label,
 					'description' => null !== $category['description']
-						? $this->get_resolved_string( $category['description'] )
+						? $category['description']
 						: \sprintf(
 							/* translators: %s: ability category label. */
 							\__( 'Abilities grouped under %s.', 'zestry-toolkit' ),
@@ -587,7 +592,7 @@ class Abilities extends Module {
 	 * a plugin that files everything under `site` does not leave an empty group
 	 * in every client that lists categories.
 	 *
-	 * @return array<string, array{label: string|callable(): string, description: string|callable(): string|null}>
+	 * @return array<string, array{label: string, description: string|null}>
 	 * @throws DiscoveryException When discovery fails.
 	 */
 	private function get_all_categories(): array {
@@ -644,15 +649,5 @@ class Abilities extends Module {
 	 */
 	private function is_registrable_segment( string $value ): bool {
 		return 1 === \preg_match( '/^[a-z0-9-]+$/', $value );
-	}
-
-	/**
-	 * Resolve a value that may have been given as a callable.
-	 *
-	 * @param string|callable(): string $value The declared value.
-	 * @return string
-	 */
-	private function get_resolved_string( $value ): string {
-		return \is_callable( $value ) ? (string) $value() : (string) $value;
 	}
 }

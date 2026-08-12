@@ -106,13 +106,17 @@ Group them, or read them from elsewhere
 Abilities::class => static function ( Abilities $abilities ): void {
     $abilities->set_abilities_root( 'src/abilities' );
 
-    $abilities->add_categories(
-        array(
-            'acme-billing' => array(
-                'label'       => static fn (): string => __( 'Acme billing', 'acme-plugin' ),
-                'description' => static fn (): string => __( 'Invoices, refunds and payment methods.', 'acme-plugin' ),
-            ),
-        )
+    $abilities->on_wp_init(
+        static function ( Abilities $abilities ): void {
+            $abilities->add_categories(
+                array(
+                    'acme-billing' => array(
+                        'label'       => __( 'Acme billing', 'acme-plugin' ),
+                        'description' => __( 'Invoices, refunds and payment methods.', 'acme-plugin' ),
+                    ),
+                )
+            );
+        }
     );
 },
 ```
@@ -153,7 +157,7 @@ Runs once, when the plugin builds the module. Abstract rather than optional: a m
 
 **Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
 
-`run_at_init()` is the way out of all three, and where anything a module registers belongs.
+`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
 
 ## Methods you can use
 
@@ -194,14 +198,19 @@ Every ability belongs to exactly one category, and WordPress refuses to register
 Keyed by slug, the same shape `bootstrap.php` uses for modules. A plain string is the label, and an array carries a description alongside it:
 
 ```php
-$abilities->add_categories(
-    array(
-        'acme-billing' => __( 'Acme billing', 'acme-plugin' ),
-        'acme-reports' => array(
-            'label'       => __( 'Acme reports', 'acme-plugin' ),
-            'description' => __( 'Reads sales figures. Changes nothing.', 'acme-plugin' ),
-        ),
-    )
+// bootstrap.php
+$abilities->on_wp_init(
+    static function ( Abilities $abilities ): void {
+        $abilities->add_categories(
+            array(
+                'acme-billing' => __( 'Acme billing', 'acme-plugin' ),
+                'acme-reports' => array(
+                    'label'       => __( 'Acme reports', 'acme-plugin' ),
+                    'description' => __( 'Reads sales figures. Changes nothing.', 'acme-plugin' ),
+                ),
+            )
+        );
+    }
 );
 
 // abilities/refund-order.php
@@ -214,7 +223,7 @@ The description is worth writing. A client listing categories shows it to decide
 
 A slug is registered exactly as given and is not namespaced to the plugin: WordPress's own `site` and `user` are unprefixed, and an ability naming a category has to match it verbatim. So choose slugs distinctive enough not to collide — a category already registered by WordPress or another plugin is left as it is rather than replaced.
 
-Either value may be given as a callable returning the string, resolved when WordPress asks for its categories. That is the safe form for a `__()` call: an initializer runs while the plugin file loads, early enough that translating there reports `_load_textdomain_just_in_time`.
+**Call it from `Module::on_wp_init()`, as the example does.** A label and a description are both user-visible, so they usually want translating, and an initializer runs while the plugin file loads — early enough that a `__()` there loads the text domain before WordPress is ready and reports `_load_textdomain_just_in_time` on every request. Inside `on_wp_init()` ordinary `__()` is correct, which is why both are plain strings and nothing here is lazy.
 
 <br>
 
@@ -308,12 +317,12 @@ Returns whatever the ability returned, or a `WP_Error` for any of those three fa
 
 <br>
 
-### `run_at_init( $callback )`
+### `on_wp_init( $callback )`
 
 Run a callback on `init`, or immediately if `init` has already fired.
 
 ```php
-final public function run_at_init( callable $callback ): void
+final public function on_wp_init( callable $callback ): void
 ```
 
 |  | Details |
@@ -328,7 +337,7 @@ The callback receives the module, matching the initializer signature, so a closu
 
 ```php
 protected function on_boot(): void {
-    $this->run_at_init( function ( self $module ): void {
+    $this->on_wp_init( function ( self $module ): void {
         $module->register_widgets();
     } );
 }

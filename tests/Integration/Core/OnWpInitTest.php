@@ -8,16 +8,16 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
- * Module::run_at_init(), both sides of the branch.
+ * Module::on_wp_init(), both sides of the branch.
  *
  * `Plugin::run()` does its work on `init`, so a module resolved through it is
  * already inside the action and a plain add_action() would never fire. One
  * resolved with get() from the entry file is ahead of it, and running
  * immediately would be too early. Every discovery module registers through this.
  *
- * @covers \Zestry\WPToolkit\Kernel\Abstracts\Module::run_at_init
+ * @covers \Zestry\WPToolkit\Kernel\Abstracts\Module::on_wp_init
  */
-final class RunAtInitTest extends TestCase {
+final class OnWpInitTest extends TestCase {
 
 	public function test_it_runs_immediately_when_init_has_fired(): void {
 		$module = $this->plugin->get( RunAtInitProbe::class );
@@ -29,7 +29,7 @@ final class RunAtInitTest extends TestCase {
 
 		$passed = null;
 
-		$module->run_at_init(
+		$module->on_wp_init(
 			static function ( $received ) use ( &$ran, &$passed ): void {
 				++$ran;
 				$passed = $received;
@@ -55,7 +55,7 @@ final class RunAtInitTest extends TestCase {
 		try {
 			$passed = null;
 
-			$module->run_at_init(
+			$module->on_wp_init(
 				static function ( $received ) use ( &$ran, &$passed ): void {
 					++$ran;
 					$passed = $received;

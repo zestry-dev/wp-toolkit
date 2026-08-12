@@ -770,37 +770,67 @@ final class BlocksTest extends TestCase {
 	}
 
 	/**
-	 * A category title is user-visible, so a plugin with a non-English audience
-	 * translates it -- but the initializer this is called from runs at plugin
-	 * load, where `__()` triggers `_load_textdomain_just_in_time`. A callable
-	 * moves the call to the filter, which runs after `init`.
+	 * A title is a title, whatever else in PHP answers to that name.
+	 *
+	 * A title used to be resolved through `is_callable()`, which is true for any
+	 * string naming a defined function and matches case-insensitively -- so
+	 * `Time` reached the editor as a unix timestamp, and `Log` or `Date` raised
+	 * an `ArgumentCountError` inside the filter. A title is a plain string now,
+	 * and translating one is what
+	 * {@see \Zestry\WPToolkit\Kernel\Abstracts\Module::on_wp_init()} is for.
 	 */
-	public function test_a_callable_title_is_resolved_when_the_filter_runs(): void {
-		$this->write_block( 'notice', 'zestry-test/notice' );
+	public function test_a_title_naming_a_function_is_not_called(): void {
+		$this->assertTrue( \is_callable( 'time' ), 'The premise: PHP has a one-word function by this name.' );
 
-		$called = 0;
+		$this->write_block( 'notice', 'zestry-test/notice' );
 
 		$this->boot_blocks_with_root(
 			'build/blocks',
-			static function ( Blocks $blocks ) use ( &$called ): void {
+			static function ( Blocks $blocks ): void {
 				$blocks->add_categories(
 					array(
-						'reports' => static function () use ( &$called ): string {
-							++$called;
-
-							return 'Rapports';
-						},
+						'clock' => 'Time',
+						'diary' => 'Date',
 					)
 				);
 			}
 		);
 
-		$this->assertSame( 0, $called, 'Not called while the module is being configured.' );
+		$titles = wp_list_pluck( apply_filters( 'block_categories_all', array(), null ), 'title', 'slug' );
 
-		$categories = apply_filters( 'block_categories_all', array(), null );
-		$titles     = wp_list_pluck( $categories, 'title', 'slug' );
+		$this->assertSame( 'Time', $titles['clock'] );
+		$this->assertSame( 'Date', $titles['diary'] );
+	}
 
-		$this->assertSame( 1, $called );
+	/**
+	 * A category title is user-visible, so a plugin with a non-English audience
+	 * translates it -- but the initializer this is called from runs at plugin
+	 * load, where `__()` triggers `_load_textdomain_just_in_time`. Declaring the
+	 * categories from `on_wp_init()` moves the whole call past `init`, which is
+	 * why a title is a plain string and nothing about it is lazy.
+	 */
+	public function test_categories_declared_from_on_wp_init_reach_the_editor(): void {
+		$this->write_block( 'notice', 'zestry-test/notice' );
+
+		$declared = 0;
+
+		$this->boot_blocks_with_root(
+			'build/blocks',
+			static function ( Blocks $blocks ) use ( &$declared ): void {
+				$blocks->on_wp_init(
+					static function ( Blocks $module ) use ( &$declared ): void {
+						++$declared;
+
+						$module->add_categories( array( 'reports' => 'Rapports' ) );
+					}
+				);
+			}
+		);
+
+		$this->assertSame( 1, $declared, 'init has already fired in the suite, so it runs at once.' );
+
+		$titles = wp_list_pluck( apply_filters( 'block_categories_all', array(), null ), 'title', 'slug' );
+
 		$this->assertSame( 'Rapports', $titles['reports'] );
 	}
 
@@ -818,9 +848,7 @@ final class BlocksTest extends TestCase {
 					array(
 						'reports' => 'Reports',
 						'charts'  => array(
-							'title' => static function (): string {
-								return 'Charts';
-							},
+							'title' => 'Charts',
 							'icon'  => 'chart-bar',
 						),
 					)
@@ -834,29 +862,9 @@ final class BlocksTest extends TestCase {
 		$this->assertSame( 'Reports', $by_slug['reports']['title'] );
 		$this->assertNull( $by_slug['reports']['icon'] );
 
-		// The callable form works here too, and the icon rides alongside it.
+		// The array form carries the icon alongside the title.
 		$this->assertSame( 'Charts', $by_slug['charts']['title'] );
 		$this->assertSame( 'chart-bar', $by_slug['charts']['icon'] );
-	}
-
-	/**
-	 * An array callable is a legitimate title, and must not be mistaken for a
-	 * configuration array that forgot its title.
-	 */
-	public function test_an_array_callable_is_read_as_a_title(): void {
-		$this->write_block( 'notice', 'zestry-test/notice' );
-
-		$this->boot_blocks_with_root(
-			'build/blocks',
-			static function ( Blocks $blocks ): void {
-				$blocks->add_categories( array( 'reports' => array( BlocksCategoryTitle::class, 'get' ) ) );
-			}
-		);
-
-		$categories = apply_filters( 'block_categories_all', array(), null );
-		$by_slug    = array_column( $categories, null, 'slug' );
-
-		$this->assertSame( 'From a callable', $by_slug['reports']['title'] );
 	}
 
 	public function test_a_category_array_without_a_title_is_refused(): void {
@@ -914,15 +922,5 @@ final class BlocksTest extends TestCase {
 			array_keys( $blocks->get_discovered_blocks() ),
 			'A hyphen-prefixed directory must be pruned, as it is in every other module.'
 		);
-	}
-}
-
-/**
- * A static callable for the array-callable title case.
- */
-final class BlocksCategoryTitle {
-
-	public static function get(): string {
-		return 'From a callable';
 	}
 }

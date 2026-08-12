@@ -34,7 +34,7 @@ return new class() extends MakeCommand {
 	 *     }
 	 *
 	 * Anything that has to wait for `init` goes through
-	 * {@see \Zestry\WPToolkit\Kernel\Abstracts\Module::run_at_init()} instead, since a module
+	 * {@see \Zestry\WPToolkit\Kernel\Abstracts\Module::on_wp_init()} instead, since a module
 	 * can be built on either side of it.
 	 *
 	 * Requires `wp zt init` to have already run in this plugin. Unlike every

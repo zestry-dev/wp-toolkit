@@ -392,7 +392,7 @@ class PostTypes extends Module {
 	 * @internal
 	 */
 	protected function on_boot(): void {
-		$this->run_at_init(
+		$this->on_wp_init(
 			static function ( self $module ): void {
 				$module->register_all();
 			}
