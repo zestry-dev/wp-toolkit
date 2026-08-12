@@ -144,7 +144,15 @@ return new class() extends MakeCommand {
 				'name'             => $name,
 				'title'            => $this->stub_renderer->to_title( $name ),
 				'copied_namespace' => Copier::get_target_namespace( $config['namespace'] ),
-				'text_domain'      => $config['text_domain'] ?? $name,
+				/*
+				 * The plugin's own directory name when `zestry.json` records no
+				 * text domain, because that is what WordPress loads a plugin's
+				 * translations under and what the slug defaults to. Falling back
+				 * to the page name instead stamped `settings` into the template
+				 * of a page called `settings` -- a domain nothing loads, so every
+				 * string in it went untranslated.
+				 */
+				'text_domain'      => $config['text_domain'] ?? basename( $root ),
 			)
 		);
 

@@ -831,6 +831,43 @@ final class MakeCommandTest extends TestCase {
 	}
 
 	/**
+	 * A page's template is translated under the plugin's own text domain.
+	 */
+	public function test_page_type_template_uses_the_projects_text_domain(): void {
+		$this->run_make( array( 'settings' ), array(), 'page' );
+
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
+
+		$this->assertStringContainsString( "esc_html_e( 'Saved.', 'acme-plugin' )", $view );
+	}
+
+	/**
+	 * With no text domain recorded, the plugin's directory name stands in.
+	 *
+	 * Never the page's own name, which was the old fallback: a page called
+	 * `settings` got a template translated under a `settings` domain, which
+	 * nothing loads, so every string in it stayed untranslated.
+	 */
+	public function test_page_type_template_falls_back_to_the_plugin_directory(): void {
+		file_put_contents(
+			$this->target_plugin_dir . '/zestry.json',
+			(string) json_encode(
+				array(
+					'namespace' => 'Acme\\Plugin',
+					'root'      => 'lib',
+				)
+			)
+		);
+
+		$this->run_make( array( 'settings' ), array(), 'page' );
+
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
+
+		$this->assertStringContainsString( basename( $this->target_plugin_dir ), $view );
+		$this->assertStringNotContainsString( "'settings' )", $view );
+	}
+
+	/**
 	 * The default still renders the template written beside it.
 	 */
 	public function test_page_type_renders_the_template_it_writes(): void {
