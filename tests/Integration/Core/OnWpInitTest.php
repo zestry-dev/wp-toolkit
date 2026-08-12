@@ -76,6 +76,71 @@ final class OnWpInitTest extends TestCase {
 			$GLOBALS['wp_actions']['init'] = $previous;
 		}
 	}
+
+	/**
+	 * The priority reaches `add_action()`, so a module can order itself against
+	 * another plugin's `init` callback without hand-rolling the hook and losing
+	 * the already-fired branch.
+	 */
+	public function test_the_priority_orders_the_callbacks(): void {
+		$module   = $this->plugin->get( RunAtInitProbe::class );
+		$order    = array();
+		$previous = $GLOBALS['wp_actions']['init'] ?? 0;
+
+		unset( $GLOBALS['wp_actions']['init'] );
+
+		try {
+			$module->on_wp_init(
+				static function () use ( &$order ): void {
+					$order[] = 'late';
+				},
+				20
+			);
+
+			$module->on_wp_init(
+				static function () use ( &$order ): void {
+					$order[] = 'early';
+				},
+				5
+			);
+
+			$this->assertSame( array(), $order, 'Both are hooked, neither has run.' );
+
+			do_action( 'init' );
+
+			$this->assertSame( array( 'early', 'late' ), $order, 'Priority decides, not registration order.' );
+		} finally {
+			$GLOBALS['wp_actions']['init'] = $previous;
+		}
+	}
+
+	/**
+	 * The caveat, pinned: once `init` has fired there is no queue to order in,
+	 * so the callback runs at once and the priority cannot apply. Registration
+	 * order is what decides, which is worth knowing rather than discovering.
+	 */
+	public function test_the_priority_is_moot_once_init_has_fired(): void {
+		$module = $this->plugin->get( RunAtInitProbe::class );
+		$order  = array();
+
+		$this->assertGreaterThan( 0, did_action( 'init' ) );
+
+		$module->on_wp_init(
+			static function () use ( &$order ): void {
+				$order[] = 'first-registered';
+			},
+			20
+		);
+
+		$module->on_wp_init(
+			static function () use ( &$order ): void {
+				$order[] = 'second-registered';
+			},
+			5
+		);
+
+		$this->assertSame( array( 'first-registered', 'second-registered' ), $order );
+	}
 }
 
 /**

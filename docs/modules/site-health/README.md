@@ -254,17 +254,17 @@ Namespaced the same way, and for the same reason: `debug_information` is one arr
 
 <br>
 
-### `on_wp_init( $callback )`
+### `on_wp_init( $callback, $priority )`
 
 Run a callback on `init`, or immediately if `init` has already fired.
 
 ```php
-final public function on_wp_init( callable $callback ): void
+final public function on_wp_init( callable $callback, int $priority = 10 ): void
 ```
 
 |  | Details |
 |---|---|
-| **Parameters** | `$callback` — What to run |
+| **Parameters** | `$callback` — What to run<br>`$priority` — WordPress hook priority, honoured only while `init` is still ahead |
 | **Return** | — |
 | **Throws** | — |
 
@@ -279,6 +279,8 @@ protected function on_boot(): void {
     } );
 }
 ```
+
+`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only when `init` is still ahead**, which is the case for the documented entry file, since `run()` at plugin load is well before `init`. A module resolved *after* `init` has fired runs its callback immediately, because there is no longer a queue to be ordered in — so two callbacks registered then run in the order they were registered, whatever priority each asked for. Ordering that has to hold in both cases belongs inside one callback.
 
 ## See also
 
