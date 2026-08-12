@@ -292,7 +292,7 @@ public function view( string $view, array $data = array() ): void
 
 The markup belongs in `views/`, not in a PHP string. An admin page is mostly a form — tables, fields, notices, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing. `wp zt make page` writes the template alongside the class, so there is one to render from the start.
 
-```
+```php
 public function render(): void {
     $this->view(
         'admin-pages/settings',

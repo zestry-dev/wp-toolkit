@@ -94,14 +94,16 @@ abstract class DebugSection implements PluginAware {
 	 *
 	 * Keyed by field id, in the shape WordPress reads:
 	 *
-	 *     return array(
-	 *         'api_key' => array(
-	 *             'label'   => __( 'API key', 'acme-plugin' ),
-	 *             'value'   => __( 'Set', 'acme-plugin' ),
-	 *             'debug'   => 'set',  // optional: what the copied text says
-	 *             'private' => false,  // optional: true keeps it out of the copy
-	 *         ),
-	 *     );
+	 * ```php
+	 * return array(
+	 *     'api_key' => array(
+	 *         'label'   => __( 'API key', 'acme-plugin' ),
+	 *         'value'   => __( 'Set', 'acme-plugin' ),
+	 *         'debug'   => 'set',  // optional: what the copied text says
+	 *         'private' => false,  // optional: true keeps it out of the copy
+	 *     ),
+	 * );
+	 * ```
 	 *
 	 * `label` and `value` are required; a `value` may be an array, which is
 	 * rendered as name/value pairs. `debug` replaces the value in the copied

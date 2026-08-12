@@ -67,8 +67,11 @@ return new class() extends Command {
 	/**
 	 * Check this plugin's module wiring for silent misconfiguration.
 	 *
-	 * Three checks, each targeting a mistake that produces no error at runtime:
+	 * Four checks, each targeting a mistake that produces no error at runtime:
 	 *
+	 * - a `bootstrap.php` that declares modules where nothing built any of them,
+	 *   because the entry file never reached `->bootstrap()->run()` -- so every
+	 *   module is inert, every hook unbound and every directory unread;
 	 * - a module on disk that `bootstrap.php` does not list -- never built, so
 	 *   `on_boot()` never runs and the feature is simply absent;
 	 * - a declaration whose class file is gone;

@@ -25,38 +25,40 @@ namespace Zestry\WPToolkit\Modules\RestApi;
  * structure is purely organizational, so grouping `widgets/get-one.php` beside
  * `widgets/delete-one.php` is for a human's benefit, not RestApi's.
  *
- *     use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
- *     use Acme\Plugin\Core\Modules\RestApi\Route;
- *     use Acme\Plugin\Core\Modules\RestApi\RestRoute;
+ * ```php
+ * use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+ * use Acme\Plugin\Core\Modules\RestApi\Route;
+ * use Acme\Plugin\Core\Modules\RestApi\RestRoute;
  *
- *     return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
- *         #[RequestArgument(
- *             'The widget to return.',
- *             validate: [ self::class, 'is_valid_id' ],
- *             sanitize: [ self::class, 'to_id' ]
- *         )]
- *         public int $id;
+ * return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
+ *     #[RequestArgument(
+ *         'The widget to return.',
+ *         validate: [ self::class, 'is_valid_id' ],
+ *         sanitize: [ self::class, 'to_id' ]
+ *     )]
+ *     public int $id;
  *
- *         public static function is_valid_id( $value ): bool {
- *             return is_numeric( $value );
- *         }
+ *     public static function is_valid_id( $value ): bool {
+ *         return is_numeric( $value );
+ *     }
  *
- *         public static function to_id( $value ): int {
- *             return (int) $value;
- *         }
+ *     public static function to_id( $value ): int {
+ *         return (int) $value;
+ *     }
  *
- *         public function permission_check( WP_REST_Request $request ): bool {
- *             return true;
- *         }
+ *     public function permission_check( WP_REST_Request $request ): bool {
+ *         return true;
+ *     }
  *
- *         public function handle( WP_REST_Request $request ): WP_REST_Response {
- *             return new WP_REST_Response( [ 'id' => $this->id ] );
- *         }
+ *     public function handle( WP_REST_Request $request ): WP_REST_Response {
+ *         return new WP_REST_Response( [ 'id' => $this->id ] );
+ *     }
  *
- *         public function schema(): ?array {
- *             return null;
- *         }
- *     } );
+ *     public function schema(): ?array {
+ *         return null;
+ *     }
+ * } );
+ * ```
  *
  * `{id}` in the pattern is a plain string literal here, not a filename — so,
  * unlike a folder or file name, it is never subject to WordPress.org's Plugin

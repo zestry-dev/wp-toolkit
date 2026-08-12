@@ -224,19 +224,21 @@ class Blocks extends Module {
 	 * groups read as data. A plain string (or a callable returning one) is the
 	 * title; an array carries an `icon` alongside it:
 	 *
-	 *     // bootstrap.php
-	 *     $blocks->add_categories(
-	 *         array(
-	 *             'reports' => __( 'Reports', 'my-plugin' ),
-	 *             'charts'  => array(
-	 *                 'title' => __( 'Charts', 'my-plugin' ),
-	 *                 'icon'  => 'chart-bar',
-	 *             ),
-	 *         )
-	 *     );
+	 * ```php
+	 * // bootstrap.php
+	 * $blocks->add_categories(
+	 *     array(
+	 *         'reports' => __( 'Reports', 'my-plugin' ),
+	 *         'charts'  => array(
+	 *             'title' => __( 'Charts', 'my-plugin' ),
+	 *             'icon'  => 'chart-bar',
+	 *         ),
+	 *     )
+	 * );
 	 *
-	 *     // src/blocks/sales/block.json
-	 *     { "name": "my-plugin/sales", "category": "reports" }
+	 * // src/blocks/sales/block.json
+	 * { "name": "my-plugin/sales", "category": "reports" }
+	 * ```
 	 *
 	 * The category and the block that claims it live in two files, and only the
 	 * block.json half is checked by anything -- a block naming a category that

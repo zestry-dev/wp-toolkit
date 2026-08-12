@@ -37,15 +37,17 @@ use Zestry\WPToolkit\Kernel\Plugin;
  * this trait directly (a Service or Module gets the same behavior by
  * extending the Service base class, which already uses this trait):
  *
- *     class MyAction {
- *         use WithPlugin;
+ * ```php
+ * class MyAction {
+ *     use WithPlugin;
  *
- *         public Path $path;
+ *     public Path $path;
  *
- *         public function handle(): void {
- *             $absolute = $this->path->get_plugin_path( 'some/file.php' );
- *         }
+ *     public function handle(): void {
+ *         $absolute = $this->path->get_plugin_path( 'some/file.php' );
  *     }
+ * }
+ * ```
  */
 trait WithPlugin {
 
@@ -83,7 +85,9 @@ trait WithPlugin {
 	 * runtime. For anything you use throughout the class, declare a typed
 	 * property instead and let it be injected.
 	 *
-	 *     $this->get_plugin()->get( Options::class )->get( 'api_key' );
+	 * ```php
+	 * $this->get_plugin()->get( Options::class )->get( 'api_key' );
+	 * ```
 	 *
 	 * @return Plugin The plugin instance.
 	 */

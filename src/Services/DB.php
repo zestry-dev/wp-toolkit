@@ -253,11 +253,13 @@ class DB extends Service {
 	 *
 	 * **Assign it to a variable called `$wpdb`. Do not chain off this call.**
 	 *
-	 *     $wpdb = $this->db->get_wpdb();
+	 * ```php
+	 * $wpdb = $this->db->get_wpdb();
 	 *
-	 *     $rows = $wpdb->get_results(
-	 *         $wpdb->prepare( 'SELECT * FROM %i WHERE status = %s', $this->db->get_table( 'submissions' ), 'unread' )
-	 *     );
+	 * $rows = $wpdb->get_results(
+	 *     $wpdb->prepare( 'SELECT * FROM %i WHERE status = %s', $this->db->get_table( 'submissions' ), 'unread' )
+	 * );
+	 * ```
 	 *
 	 * `WordPress.DB.PreparedSQL` is what catches a value interpolated into a query
 	 * instead of prepared, and it finds a query by the *variable name* `$wpdb` --

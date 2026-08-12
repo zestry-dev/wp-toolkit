@@ -682,13 +682,7 @@ function withShared( config ) {
 
 	/*
 	 * An entry goes to the compilation matching its own kind. Most are classic
-	 * scripts; one declaring `"kind": "module"` is built as an ES module and
-	 * can then only import what WordPress ships as a script module --
-	 * `@wordpress/interactivity` is one, `@wordpress/element` is not.
-	 *
-	 * Nothing here checks that. An import WordPress cannot serve as a module
-	 * builds cleanly and fails in the browser, so `kind: 'module'` is a claim
-	 * about what the code imports that only the code can keep.
+	 * scripts; one declaring `"kind": "module"` is built as an ES module.
 	 */
 	const own = Object.entries( ownEntries ).reduce(
 		( found, [ name, entry ] ) =>

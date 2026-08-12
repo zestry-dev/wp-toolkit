@@ -52,4 +52,7 @@ SERVICES
 
 # For a script, or an agent.
 $ wp zt describe --format=json --installed
+[{"name":"ajax","kind":"module","installed":true,"declared":true,
+  "configured":false,"reads":"actions/","returns":"AjaxAction",
+  "via":"","make":"action","file":"lib/Core/Modules/Ajax/Ajax.php"}]
 ```

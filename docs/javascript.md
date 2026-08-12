@@ -77,9 +77,7 @@ wp zt make entry cart --kind=module
 
 which adds a `package.json` saying so. It is then built as an ES module and registered with `wp_register_script_module()` — what you want for Interactivity API code that is not inside a block.
 
-The catch is what a module may import: only what WordPress itself ships as a script module. `@wordpress/interactivity` is one; `@wordpress/element` is not.
-
-**Nothing checks this.** An import WordPress cannot serve as a module builds cleanly and fails in the browser, so `kind: module` is a claim about what your code imports that only your code can keep. Reach for it when you are writing Interactivity API code, and stay on the default `script` otherwise.
+Reach for it when you are writing Interactivity API code, and stay on the default `script` otherwise.
 
 Use `enqueue_entry()` either way: it picks the right registry, so changing an entry's kind stays a one-line change in its own `package.json`.
 
@@ -116,7 +114,7 @@ The handle it registers under — `acme-plugin-shared-formatting` — and the `w
 
 `--kind=script` registers a classic script handle. It works everywhere, in every context. Reach for it unless you have a reason not to.
 
-`--kind=module` registers an ES module under the package's npm name. Modules are how the Interactivity API and the block editor's newer front-end code load, and they only import each other — a classic script cannot import one.
+`--kind=module` registers an ES module under the package's npm name. Modules are how the Interactivity API and the block editor's newer front-end code load.
 
 You can have both in one plugin; each package picks its own.
 
@@ -179,7 +177,6 @@ This is why a freshly generated entry costs nothing until you write something. `
 - **A shared directory with no `wordpress` block is an ordinary dependency.** It is bundled into whatever imports it, like anything from npm. That is the right choice when a copy costs less than a request.
 - **`npm run build` asks for three things `wp-scripts` does not do by default.** The generated scripts pass `--webpack-copy-php`, so a block's `block.php` reaches `build/`; `--experimental-modules`, without which a `"kind": "module"` package is silently skipped; and `--blocks-manifest`. You do not add these — `wp zt add module blocks` and `wp zt add module assets` write them.
 - **A global is two segments.** `[ "acmePlugin", "formatting" ]` puts a shared package on `window.acmePlugin.formatting`, so everything you share sits under one global and cannot collide with another plugin's.
-- **A module can only import a module.** That is the real limit on `--kind=module`, for an entry or a shared package alike: `@wordpress/interactivity` is available as a script module, `@wordpress/element` is not.
 - **`webpack.config.js` is yours.** It is written once and nothing overwrites it, including [`wp zt update`](commands/update.md). Edit it freely.
 - **The manifest is build output.** Gitignored with the rest of `build/`, regenerated every build. Never edit or commit it.
 - **Nothing registers what was never built.** A plugin that ships without running `npm run build` ships without its JavaScript.

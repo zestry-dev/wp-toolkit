@@ -54,8 +54,51 @@ function zestry_verify_consistency( string $root ): array {
 		zestry_check_example_slugs( $root, $pages ),
 		zestry_check_block_php_field( $pages ),
 		zestry_check_stranded_docblocks( $root ),
-		zestry_check_cheat_sheet_flags( $root, $pages )
+		zestry_check_cheat_sheet_flags( $root, $pages ),
+		zestry_check_fenced_table_cells( $pages )
 	);
+}
+
+/**
+ * Report a code fence inside a table cell, where Markdown cannot open one.
+ *
+ * A fence needs a line of its own. Inside a cell it collapses to inline code and
+ * the info string is swallowed with it, so ` ```php 'title', 'editor' ``` `
+ * renders as one inline span beginning with a literal "php".
+ *
+ * A `@param` or `@return` description is what reaches a cell, and its wrapped
+ * continuation lines carry a hanging indent that aligns them under the tag --
+ * four spaces deep, and indistinguishable from a code sample to anything
+ * counting columns. Fencing one is silent: the build passes, every link
+ * resolves, and only the rendered page shows it.
+ *
+ * Single backticks are the whole fix. A cell has room for inline code and
+ * nothing larger; anything that genuinely needs a block belongs in the
+ * description above the table.
+ *
+ * @param array<string, string> $pages Repo-relative path => absolute path.
+ * @return string[] Problems found.
+ */
+function zestry_check_fenced_table_cells( array $pages ): array {
+	$problems = array();
+
+	foreach ( $pages as $relative => $absolute ) {
+		foreach ( explode( "\n", (string) file_get_contents( $absolute ) ) as $number => $line ) {
+			if ( ! str_starts_with( ltrim( $line ), '|' ) || ! str_contains( $line, '```' ) ) {
+				continue;
+			}
+
+			$problems[] = sprintf(
+				'%s:%d: a ``` fence sits inside a table cell, which Markdown renders as inline code'
+					. ' with the info string as literal text. Use single backticks, or move the block'
+					. ' out of the table.',
+				$relative,
+				$number + 1
+			);
+		}
+	}
+
+	return $problems;
 }
 
 /**
@@ -80,7 +123,14 @@ function zestry_verify_consistency( string $root ): array {
  *
  * A row is paired with its command by the page it links to, not by name: two
  * files are called `module.php` (`add` and `overwrite`), and matching on the
- * basename alone holds each to the other's flags.
+ * basename alone holds each to the other's flags. A command no row links to is
+ * itself reported -- pairing by page means a renamed link drops a command from
+ * the sweep silently, and a guard that checks nothing still passes.
+ *
+ * One row links to `commands/` rather than to a page: `wp zt make`, which states
+ * the flags its 21 types share. It satisfies the omission check for all of them
+ * and is left out of the reverse one, since it qualifies itself in prose
+ * ("`--dir=` on every type but `module`") rather than claiming a flag outright.
  *
  * Values a row spells out (`--format=a|b`) are not claims about a second flag,
  * so only the flag name is compared.
@@ -94,20 +144,47 @@ function zestry_check_cheat_sheet_flags( string $root, array $pages ): array {
 		return array();
 	}
 
-	$sheet = (string) file_get_contents( $pages['docs/cheat-sheet.md'] );
-	$rows  = array();
+	$sheet    = (string) file_get_contents( $pages['docs/cheat-sheet.md'] );
+	$rows     = array();
+	$blanket  = '';
+	$problems = array();
 
-	// Each `| [`wp zt <command>`](<page>) | <description> |` row of the table.
-	if ( preg_match_all( '~\|\s*\[`(wp zt [^`]+)`\]\(([^)]*)\)\s*\|([^|]*)\|~', $sheet, $matches, PREG_SET_ORDER ) ) {
+	/*
+	 * Every table row linking into `commands/`, keyed by the page it links to.
+	 * The link text is not the key: the command table writes it as
+	 * `wp zt make page` and the per-type table as `page`, and both rows are a
+	 * claim about the same synopsis, so both are checked against it.
+	 *
+	 * A row is one line, and the description is the rest of that line -- cells
+	 * included, since a row spanning three of them says as much in the last as
+	 * in the first. Matching cell by cell instead reads `[^|]*` across the
+	 * newline into the row below, which pairs a command with its neighbour's
+	 * flags and drops that neighbour from the sweep entirely.
+	 */
+	if ( preg_match_all( '~\|\s*\[`([^`]+)`\]\((commands/[^)]*)\)([^\n]*)~', $sheet, $matches, PREG_SET_ORDER ) ) {
 		foreach ( $matches as $match ) {
-			$rows[ trim( $match[1] ) ] = array(
-				'page'        => basename( trim( $match[2] ) ),
-				'description' => $match[3],
+			$target = trim( $match[2] );
+
+			/*
+			 * A row linking to the directory rather than to a page describes
+			 * every command in it -- `wp zt make` states the flags its 21 types
+			 * share. Kept apart from the per-type rows: it qualifies them in
+			 * prose ("`--dir=` on every type but `module`"), so it can satisfy
+			 * the omission check without being read as a claim in reverse.
+			 */
+			if ( ! str_ends_with( $target, '.md' ) ) {
+				$blanket .= $match[3];
+				continue;
+			}
+
+			$page = basename( $target );
+
+			$rows[ $page ] = array(
+				'command'     => trim( $match[1] ),
+				'description' => ( $rows[ $page ]['description'] ?? '' ) . $match[3],
 			);
 		}
 	}
-
-	$problems = array();
 
 	foreach ( zestry_command_files( $root ) as $file ) {
 		$source = (string) file_get_contents( $file );
@@ -122,38 +199,51 @@ function zestry_check_cheat_sheet_flags( string $root, array $pages ): array {
 		// `commands/add/module.php` documents `docs/commands/add-module.md`.
 		$page = str_replace( '/', '-', substr( $relative, strlen( 'commands/' ), -strlen( '.php' ) ) ) . '.md';
 
-		foreach ( $rows as $command => $row ) {
-			if ( $row['page'] !== $page ) {
+		/*
+		 * A command with no row at all is the failure this guard exists to
+		 * catch and the one it is most likely to miss: pairing by page means a
+		 * renamed link silently drops a command from the sweep, and a guard
+		 * that checks nothing still passes.
+		 */
+		if ( ! isset( $rows[ $page ] ) ) {
+			$problems[] = sprintf(
+				'docs/cheat-sheet.md: nothing links to `commands/%s`, so %s is checked by nothing -- every flag it takes could be missing from the sheet and this guard would still pass.',
+				$page,
+				$relative
+			);
+			continue;
+		}
+
+		$row = $rows[ $page ];
+
+		foreach ( $flags as $flag ) {
+			if ( str_contains( $row['description'] . $blanket, '--' . $flag ) ) {
 				continue;
 			}
 
-			foreach ( $flags as $flag ) {
-				if ( ! str_contains( $row['description'], '--' . $flag ) ) {
-					$problems[] = sprintf(
-						'docs/cheat-sheet.md: the row for `%s` omits `--%s`, which %s accepts -- and the sheet is where a reader looks for a flag.',
-						$command,
-						$flag,
-						$relative
-					);
-				}
-			}
+			$problems[] = sprintf(
+				'docs/cheat-sheet.md: the row for `%s` omits `--%s`, which %s accepts -- and the sheet is where a reader looks for a flag.',
+				$row['command'],
+				$flag,
+				$relative
+			);
+		}
 
-			if ( ! preg_match_all( '~`--([a-z0-9-]+)~', $row['description'], $claimed ) ) {
+		if ( ! preg_match_all( '~`--([a-z0-9-]+)~', $row['description'], $claimed ) ) {
+			continue;
+		}
+
+		foreach ( array_unique( $claimed[1] ) as $flag ) {
+			if ( in_array( $flag, $flags, true ) ) {
 				continue;
 			}
 
-			foreach ( array_unique( $claimed[1] ) as $flag ) {
-				if ( in_array( $flag, $flags, true ) ) {
-					continue;
-				}
-
-				$problems[] = sprintf(
-					'docs/cheat-sheet.md: the row for `%s` offers `--%s`, which %s does not declare -- WP-CLI rejects an undeclared flag outright, so the documented command exits non-zero.',
-					$command,
-					$flag,
-					$relative
-				);
-			}
+			$problems[] = sprintf(
+				'docs/cheat-sheet.md: the row for `%s` offers `--%s`, which %s does not declare -- WP-CLI rejects an undeclared flag outright, so the documented command exits non-zero.',
+				$row['command'],
+				$flag,
+				$relative
+			);
 		}
 	}
 

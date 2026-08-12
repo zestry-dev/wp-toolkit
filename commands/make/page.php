@@ -143,15 +143,10 @@ return new class() extends MakeCommand {
 				'name'             => $name,
 				'title'            => $this->stub_renderer->to_title( $name ),
 				'copied_namespace' => Copier::get_target_namespace( $config['namespace'] ),
-				/*
-				 * The plugin's own directory name when `zestry.json` records no
-				 * text domain, because that is what WordPress loads a plugin's
-				 * translations under and what the slug defaults to. Falling back
-				 * to the page name instead stamped `settings` into the template
-				 * of a page called `settings` -- a domain nothing loads, so every
-				 * string in it went untranslated.
-				 */
-				'text_domain'      => $config['text_domain'] ?? basename( $root ),
+				// The same domain the page class itself is stamped with: the two
+				// files are one feature, and a template translated under another
+				// domain is one nothing loads.
+				'text_domain'      => self::get_text_domain( $config, $plugin_root ),
 			)
 		);
 
@@ -278,13 +273,13 @@ return new class() extends MakeCommand {
 				"\t\t\$this->view(",
 				"\t\t\t'admin-pages/" . $name . "',",
 				"\t\t\tarray(",
-				"\t\t\t\t'title'   => \$this->title(),",
-				"\t\t\t\t'action'  => \$this->get_page_url(),",
-				"\t\t\t\t'nonce'   => \$this->get_nonce_action(),",
-				"\t\t\t\t// Set by the redirect in handle_submit(). Reading a query",
-				"\t\t\t\t// argument to decide what to show needs no nonce -- nothing is",
-				"\t\t\t\t// being acted on -- which is what the ignore says.",
-				"\t\t\t\t'updated' => isset( \$_GET['updated'] ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended",
+				"\t\t\t\t'title'  => \$this->title(),",
+				"\t\t\t\t'action' => \$this->get_page_url(),",
+				"\t\t\t\t'nonce'  => \$this->get_nonce_action(),",
+				"\t\t\t\t// Left by handle_submit() before it redirected. Reads once,",
+				"\t\t\t\t// so a refresh shows no notice for a save that already",
+				"\t\t\t\t// happened.",
+				"\t\t\t\t'notice' => \$this->get_flash( '' ),",
 				"\t\t\t)",
 				"\t\t);",
 			)

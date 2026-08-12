@@ -94,14 +94,19 @@ return new class() extends AdminPage {
 	// Redirect once you have saved, rather than falling through to render():
 	// without it the browser's current request is still the POST, so a refresh
 	// resubmits the form and your user gets "Confirm Form Resubmission" instead
-	// of their page -- and a second save. Redirecting turns the result into a
-	// plain GET, which is why the notice arrives as a query argument rather
-	// than as a property set here.
+	// of their page -- and a second save.
+	//
+	// The redirect throws away everything this method knew, so anything the next
+	// request should say goes through set_flash(). It reads once, which is what
+	// keeps the notice off a refresh -- and off a bookmark, as `?updated=1` in
+	// the URL would not.
 	public function handle_submit(): void {
 		// Save $this->example. With `public Options $options;` declared above,
 		// that is $this->options->set( 'example_example', $this->example );
 
-		\wp_safe_redirect( $this->get_page_url( null, array( 'updated' => '1' ) ) );
+		$this->set_flash( \__( 'Saved.', 'acme-plugin' ) );
+
+		\wp_safe_redirect( $this->get_page_url() );
 		exit;
 	}
 
@@ -120,13 +125,13 @@ return new class() extends AdminPage {
 		$this->view(
 			'admin-pages/settings',
 			array(
-				'title'   => $this->title(),
-				'action'  => $this->get_page_url(),
-				'nonce'   => $this->get_nonce_action(),
-				// Set by the redirect in handle_submit(). Reading a query
-				// argument to decide what to show needs no nonce -- nothing is
-				// being acted on -- which is what the ignore says.
-				'updated' => isset( $_GET['updated'] ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				'title'  => $this->title(),
+				'action' => $this->get_page_url(),
+				'nonce'  => $this->get_nonce_action(),
+				// Left by handle_submit() before it redirected. Reads once,
+				// so a refresh shows no notice for a save that already
+				// happened.
+				'notice' => $this->get_flash( '' ),
 			)
 		);
 	}
@@ -345,7 +350,7 @@ public function view( string $view, array $data = array() ): void
 
 The markup belongs in `views/`, not in a PHP string. An admin page is mostly a form — tables, fields, notices, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing. `wp zt make page` writes the template alongside the class, so there is one to render from the start.
 
-```
+```php
 public function render(): void {
     $this->view(
         'admin-pages/settings',

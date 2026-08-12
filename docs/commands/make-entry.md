@@ -25,7 +25,7 @@ Needs the `assets` module, which brings the build configuration with it: `wp zt 
   The entry's name, in kebab-case, e.g. `settings`.
 
 - **`[--kind=<kind>]`**  
-  How WordPress loads it. `script` registers a classic handle and works everywhere. `module` registers an ES module, which can import only what WordPress ships as one — `@wordpress/interactivity` is, `@wordpress/element` is not.  
+  How WordPress loads it. `script` registers a classic handle and works everywhere. `module` registers an ES module, for Interactivity API code that is not inside a block.  
   Defaults to `script`.  
   Accepts `script`, `module`.
 

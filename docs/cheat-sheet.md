@@ -65,10 +65,10 @@ Add any of them with `wp zt add module <name>`; dependencies come along.
 | `entries/{name}/` | `build/entries/{name}` | `assets`, as `{slug}-{name}` | [`make entry`](commands/make-entry.md) |
 | `shared/{name}/` | `build/shared/{name}` | `assets`, under the build's handle | [`make shared`](commands/make-shared.md) |
 
-- **`wp zt add module assets` writes the build.** `webpack.config.js`, the `src/shared/*` npm workspace, and `npm run build`/`start`. Without that config `@wordpress/scripts` builds *one* of the three — adding a block silently stops `src/index.ts` being built.
+- **`wp zt add module assets` writes the build.** `webpack.config.js`, the `src/shared/*` npm workspace, and `npm run build`/`start`. Without that config `@wordpress/scripts` builds *one* of the three — adding a block silently stops `src/index` being built.
 - **`build/assets-manifest.php` is what PHP reads.** One `require`: every entry, its dependencies and version, its stylesheet, and which entries are shared packages. Build output — gitignored, never committed.
 - **Nothing empty is registered.** A stylesheet that compiles to nothing is deleted and left out of the manifest, an entry that is only a stylesheet loses the JavaScript webpack generates for it, and a block's `block.json` loses any `file:` field whose target compiled away — so no page pays for an empty `<link>` or `<script>`.
-- **An entry or a shared package can be `--kind=module`**, built as an ES module and registered with `wp_register_script_module()`. A module may only import what WordPress ships as one: `@wordpress/interactivity` yes, `@wordpress/element` no.
+- **An entry or a shared package can be `--kind=module`**, built as an ES module and registered with `wp_register_script_module()`.
 
 - **`assets` is a module because of one thing it does unasked.** Called, it composes asset URLs and registers scripts and styles. Unasked, on `init`, it registers every shared package `npm run build` compiled from `src/shared/` into `build/shared/`, so an entry that imports one can declare it as a dependency instead of bundling a copy.
 - **An admin page's markup goes in a template**, and [`make page`](commands/make-page.md) writes both files. The template gets exactly what the `render()` call names and nothing of the page itself. Echoing markup from `render()` works for something tiny and stops working sooner than it looks.
@@ -164,7 +164,7 @@ Run from inside your plugin's directory, with the plugin active.
 | [`wp zt init`](commands/init.md) | Copies the kernel; writes `zestry.json`, `zestry.lock.json`, `bootstrap.php`, the PSR-4 entry, `.gitignore`, the linter configs and `AGENTS.md`. `--no-phpcs`, `--no-eslint`, `--no-prettier`, `--no-agents`, `--yes` |
 | [`wp zt add module <name>...`](commands/add-module.md) | Copies modules and their dependencies; declares each in `bootstrap.php`. Skips what is already there. Never asks. |
 | [`wp zt add service <name>...`](commands/add-service.md) | Copies services and their dependencies. Declares nothing. Never asks. |
-| [`wp zt make <type> <name>`](commands/) | Generates one file from a stub — see the 21 types below. `--yes` on every type; `--dir=` on every type but `module`, `service` and `abstract`; `--extends=` on every type that returns a discovered file, plus `abstract`, which also takes `--for=<type>` |
+| [`wp zt make <type> <name>`](commands/) | Generates one file from a stub — see the 21 types below. `--yes` on every type; `--dir=` on every type but `module`, `service` and `abstract`; `--extends=` on every type whose file returns a base-class instance, except `route` and `block`, plus `abstract`, which also takes `--for=<type>` |
 | [`wp zt describe`](commands/describe.md) | Reports what this plugin has: each module installed, declared, the directory it reads and the base class a file there returns. `--format`, `--kind`, `--installed` |
 | [`wp zt doctor`](commands/doctor.md) | Reports the wiring mistakes that raise no error — chiefly a module on disk that nothing declares. `--format=report\|csv\|json\|yaml` |
 | [`wp zt update`](commands/update.md) | Re-copies everything under `lib/Core/` from the installed toolkit, keeping files you edited. `--dry-run`, `--force`, `--yes` |
@@ -178,14 +178,14 @@ Each type writes one file into the directory its module discovers, so the genera
 | Type | Writes to | |
 |---|---|---|
 | [`action`](commands/make-action.md) | `actions/` | an `admin-ajax.php` action |
-| [`page`](commands/make-page.md) | `admin-pages/` | an admin screen, **and its template** |
+| [`page`](commands/make-page.md) | `admin-pages/` | an admin screen, **and its template**. `--no-view`, `--views-dir=` |
 | [`view`](commands/make-view.md) | `views/` | a standalone template; a slash nests |
 | [`command`](commands/make-command.md) | `commands/` | a `wp` subcommand |
-| [`schedule`](commands/make-schedule.md) | `schedules/` | a cron event |
-| [`route`](commands/make-route.md) | `routes/` | a REST endpoint |
+| [`schedule`](commands/make-schedule.md) | `schedules/` | a cron event. `--recurrence=` |
+| [`route`](commands/make-route.md) | `routes/` | a REST endpoint. `--method=`, `--pattern=`, `--version=` |
 | [`ability`](commands/make-ability.md) | `abilities/` | an ability (WP 6.9+) |
-| [`post-type`](commands/make-post-type.md) | `post-types/` | a custom post type |
-| [`taxonomy`](commands/make-taxonomy.md) | `taxonomies/` | a taxonomy |
+| [`post-type`](commands/make-post-type.md) | `post-types/` | a custom post type. `--singular=`, `--plural=` |
+| [`taxonomy`](commands/make-taxonomy.md) | `taxonomies/` | a taxonomy. `--singular=`, `--plural=`, `--object-type=` |
 | [`field`](commands/make-field.md) | `fields/` | a meta field |
 | [`meta-box`](commands/make-meta-box.md) | `meta-boxes/` | an editor meta box |
 | [`health-check`](commands/make-health-check.md) | `health-checks/` | a Site Health **Status** test |

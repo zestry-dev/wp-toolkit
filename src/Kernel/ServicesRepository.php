@@ -30,11 +30,13 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  * was configured beforehand, queued in `bootstrap.php`, or resolved on demand
  * as a dependency of something else:
  *
- *     configure() - remember an initializer callback for later (optional)
- *     get()       - first call triggers resolution; later calls hit the cache
- *     instantiate - construct the object, wire it, cache it (if singleton),
- *                   run its initializer/configurator, then boot() it if it is
- *                   a Module
+ * ```php
+ * configure() - remember an initializer callback for later (optional)
+ * get()       - first call triggers resolution; later calls hit the cache
+ * instantiate - construct the object, wire it, cache it (if singleton),
+ *               run its initializer/configurator, then boot() it if it is
+ *               a Module
+ * ```
  *
  * configure() only stores a callback; nothing is constructed until get() (or
  * make()) is called for that class name, so the order classes are configured

@@ -191,13 +191,15 @@ abstract class Block implements PluginAware {
 	 * markup {@see render()} returns, as `data-` attributes, and read it back in
 	 * the browser:
 	 *
-	 *     // render()
-	 *     return sprintf(
-	 *         '<form %s data-endpoint="%s" data-nonce="%s"></form>',
-	 *         get_block_wrapper_attributes(),
-	 *         esc_url( rest_url( 'acme-plugin/v1/submit' ) ),
-	 *         esc_attr( wp_create_nonce( 'wp_rest' ) )
-	 *     );
+	 * ```php
+	 * // render()
+	 * return sprintf(
+	 *     '<form %s data-endpoint="%s" data-nonce="%s"></form>',
+	 *     get_block_wrapper_attributes(),
+	 *     esc_url( rest_url( 'acme-plugin/v1/submit' ) ),
+	 *     esc_attr( wp_create_nonce( 'wp_rest' ) )
+	 * );
+	 * ```
 	 *
 	 * ```js
 	 * const form = document.querySelector( '[data-endpoint]' );

@@ -103,9 +103,11 @@ abstract class RestRoute implements PluginAware {
 	 * permission check values nothing had checked. Read what you need from
 	 * `$request` in this method, and `$this->id` from `handle()` onwards:
 	 *
-	 *     public function permission_check( WP_REST_Request $request ): bool|\WP_Error {
-	 *         return current_user_can( 'edit_post', (int) $request['id'] );
-	 *     }
+	 * ```php
+	 * public function permission_check( WP_REST_Request $request ): bool|\WP_Error {
+	 *     return current_user_can( 'edit_post', (int) $request['id'] );
+	 * }
+	 * ```
 	 *
 	 * Touching `$this->id` here is a fatal, not a wrong answer. An ability is
 	 * the other way round -- there the input is bound first -- and the table on
@@ -176,8 +178,10 @@ abstract class RestRoute implements PluginAware {
 	 * are translated, so a client cannot branch on them** — the code is the only
 	 * stable thing in the response:
 	 *
-	 *     return $this->deny( __( 'Your trial has ended.', 'my-plugin' ), 'trial_expired' );
-	 *     // {"code":"trial_expired","message":"Your trial has ended.", ...}
+	 * ```php
+	 * return $this->deny( __( 'Your trial has ended.', 'my-plugin' ), 'trial_expired' );
+	 * // {"code":"trial_expired","message":"Your trial has ended.", ...}
+	 * ```
 	 *
 	 * Codes are **not** prefixed with your plugin slug, unlike the hooks and
 	 * options this toolkit registers. Those share one global namespace and
@@ -208,9 +212,11 @@ abstract class RestRoute implements PluginAware {
 	 * application password is long-lived and often sits in a script, so a route
 	 * that changes credentials or billing may want a present human:
 	 *
-	 *     if ( $this->is_application_password() ) {
-	 *         return $this->deny( __( 'This action requires an interactive session.', 'my-plugin' ) );
-	 *     }
+	 * ```php
+	 * if ( $this->is_application_password() ) {
+	 *     return $this->deny( __( 'This action requires an interactive session.', 'my-plugin' ) );
+	 * }
+	 * ```
 	 *
 	 * @return bool True when the request authenticated with an application password.
 	 */

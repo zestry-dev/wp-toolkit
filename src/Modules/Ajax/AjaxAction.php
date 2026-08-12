@@ -44,8 +44,10 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * property, the same way a route and an ability do, and read it as
  * `$this->post_id`:
  *
- *     #[RequestArgument( 'Which post to act on.' )]
- *     public int $post_id;
+ * ```php
+ * #[RequestArgument( 'Which post to act on.' )]
+ * public int $post_id;
+ * ```
  *
  * The value is checked against the property's type and bound before
  * `capability_check()` runs, so a capability decision can name what it is

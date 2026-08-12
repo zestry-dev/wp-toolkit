@@ -247,9 +247,11 @@ class Plugin {
 	 * so it can set what boot depends on. Only needed by a class that takes
 	 * configuration; anything else resolves fine without one.
 	 *
-	 *     $plugin->configure( Ajax::class, function ( Ajax $ajax ) {
-	 *         $ajax->set_actions_root( 'actions' );
-	 *     } );
+	 * ```php
+	 * $plugin->configure( Ajax::class, function ( Ajax $ajax ) {
+	 *     $ajax->set_actions_root( 'actions' );
+	 * } );
+	 * ```
 	 *
 	 * Nothing here declares a class to the plugin, and nothing here loads one:
 	 * every service and module is found by type, so this only remembers a
@@ -296,16 +298,18 @@ class Plugin {
 	 * meaning a module works the moment it arrives rather than after a
 	 * hand-edit:
 	 *
-	 *     // bootstrap.php
-	 *     return array(
-	 *         Ajax::class => static function ( Ajax $ajax ): void {
-	 *             $ajax->set_actions_root( 'actions' );
-	 *         },
-	 *         CLI::class => static function ( CLI $cli ): void {
-	 *             $cli->set_commands_root( 'commands' );
-	 *         },
-	 *         Options::class,
-	 *     );
+	 * ```php
+	 * // bootstrap.php
+	 * return array(
+	 *     Ajax::class => static function ( Ajax $ajax ): void {
+	 *         $ajax->set_actions_root( 'actions' );
+	 *     },
+	 *     CLI::class => static function ( CLI $cli ): void {
+	 *         $cli->set_commands_root( 'commands' );
+	 *     },
+	 *     Options::class,
+	 * );
+	 * ```
 	 *
 	 * An entry's value is its initializer -- the callback
 	 * {@see configure()} would take -- and an entry needing none is
@@ -321,10 +325,12 @@ class Plugin {
 	 * be. Configure one from the entry file instead, where {@see configure()}
 	 * takes the same callback:
 	 *
-	 *     ( new Plugin( __FILE__ ) )
-	 *         ->configure( DB::class, static fn ( DB $db ) => $db->set_table_prefix( 'acme' ) )
-	 *         ->bootstrap()
-	 *         ->run();
+	 * ```php
+	 * ( new Plugin( __FILE__ ) )
+	 *     ->configure( DB::class, static fn ( DB $db ) => $db->set_table_prefix( 'acme' ) )
+	 *     ->bootstrap()
+	 *     ->run();
+	 * ```
 	 *
 	 * Because every entry means one thing, nothing here has to ask what a class
 	 * *is* -- so reading this file compiles none of the classes it names. They
@@ -378,12 +384,14 @@ class Plugin {
 	 * writes into `zestry.json` and stamps into every copied file, so the two
 	 * cannot disagree unless a consumer deliberately changes one.
 	 *
-	 *     $plugin ??= ( new Plugin( __FILE__ ) )
-	 *         ->set_languages_path( 'languages' )
-	 *         ->autoload( array( AdminPages::class ) )
-	 *         ->run();
+	 * ```php
+	 * $plugin ??= ( new Plugin( __FILE__ ) )
+	 *     ->set_languages_path( 'languages' )
+	 *     ->autoload( array( AdminPages::class ) )
+	 *     ->run();
 	 *
-	 *     return $plugin;
+	 * return $plugin;
+	 * ```
 	 *
 	 * This registers a path rather than loading anything: translations load on
 	 * the first `__()` call that needs them. Calling it here, as the plugin file
@@ -432,9 +440,11 @@ class Plugin {
 	 * The configurator runs after wiring and before boot(). Use it for a second
 	 * instance of a module, such as a dedicated Options group:
 	 *
-	 *     $api_options = $plugin->make( Options::class, function ( Options $o ) {
-	 *         $o->set_group_name( 'api' );
-	 *     } );
+	 * ```php
+	 * $api_options = $plugin->make( Options::class, function ( Options $o ) {
+	 *     $o->set_group_name( 'api' );
+	 * } );
+	 * ```
 	 *
 	 * @template T of object
 	 * @param class-string<T> $name The class name to construct.
@@ -487,7 +497,9 @@ class Plugin {
 	 * into a namespace it shares with every other plugin on the site is prefixed
 	 * the same way and cannot collide.
 	 *
-	 *     do_action( $plugin->get_namespaced_name( 'import-finished' ), $count );
+	 * ```php
+	 * do_action( $plugin->get_namespaced_name( 'import-finished' ), $count );
+	 * ```
 	 *
 	 * Both halves are passed through exactly as written, so your slug and your
 	 * local name appear in the result the way you spelled them. `$glue` is what
@@ -510,14 +522,15 @@ class Plugin {
 	/**
 	 * The file this plugin reads its module declarations from.
 	 *
-	 * `bootstrap()` defaults to `bootstrap.php` beside the entry file, and takes
-	 * any other path. Nothing on disk records which was used, so a tool looking
-	 * at the plugin from outside has to guess -- and guessing wrong means
-	 * reporting every module as undeclared, or appending a declaration to a file
-	 * this plugin never reads. This is the answer.
+	 * The path `bootstrap()` read: `bootstrap.php` beside your entry file unless
+	 * you passed it another. Null until `bootstrap()` is called, which is also
+	 * the answer for a plugin declaring its modules in the entry file instead.
 	 *
-	 * Null until `bootstrap()` is called, which is also the honest answer for a
-	 * plugin declaring its modules in the entry file instead.
+	 * @rationale
+	 * Nothing on disk records which file was used, so a tool reading the plugin
+	 * from outside would have to guess -- and guessing wrong means reporting
+	 * every module as undeclared, or appending a declaration to a file this
+	 * plugin never reads. `wp zt doctor` and `wp zt make module` both ask this.
 	 *
 	 * @return string|null The path, or null when `bootstrap()` has not run.
 	 */
@@ -675,8 +688,7 @@ class Plugin {
 			 * compiles nothing -- the classes load when `run()` builds them.
 			 *
 			 * A service listed here is not an error, just pointless: it gets
-			 * built a little earlier than it needed to be. `wp zt doctor`
-			 * reports it as tidying.
+			 * built a little earlier than it needed to be.
 			 */
 			$this->modules->set_autoload( $name );
 		}

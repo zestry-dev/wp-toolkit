@@ -199,8 +199,10 @@ final class Arr {
 	 * Both arguments take a path, so a nested value needs no loop of its own.
 	 * Give `$key` to key the result by another of the row's values.
 	 *
-	 *     Arr::pluck( $orders, 'billing.email' );
-	 *     Arr::pluck( $orders, 'total', 'id' );
+	 * ```php
+	 * Arr::pluck( $orders, 'billing.email' );
+	 * Arr::pluck( $orders, 'total', 'id' );
+	 * ```
 	 *
 	 * @param array<array-key, mixed>            $rows  The rows to read.
 	 * @param string|array<int, string|int>      $value Path to the value wanted.

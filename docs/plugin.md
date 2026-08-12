@@ -357,9 +357,7 @@ public function get_bootstrap_file(): ?string
 | **Return** | The path, or null when `bootstrap()` has not run |
 | **Throws** | — |
 
-`bootstrap()` defaults to `bootstrap.php` beside the entry file, and takes any other path. Nothing on disk records which was used, so a tool looking at the plugin from outside has to guess — and guessing wrong means reporting every module as undeclared, or appending a declaration to a file this plugin never reads. This is the answer.
-
-Null until `bootstrap()` is called, which is also the honest answer for a plugin declaring its modules in the entry file instead.
+The path `bootstrap()` read: `bootstrap.php` beside your entry file unless you passed it another. Null until `bootstrap()` is called, which is also the answer for a plugin declaring its modules in the entry file instead.
 
 <br>
 

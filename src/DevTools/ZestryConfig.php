@@ -23,11 +23,13 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * namespace, and under what text domain a further module should be copied,
  * without asking again.
  *
- *     {
- *         "namespace": "Vendor\\MyPlugin",
- *         "root": "lib",
- *         "text_domain": "my-plugin"
- *     }
+ * ```php
+ * {
+ *     "namespace": "Vendor\\MyPlugin",
+ *     "root": "lib",
+ *     "text_domain": "my-plugin"
+ * }
+ * ```
  *
  * `text_domain` is optional on read. A missing value comes back as `null`,
  * which `Copier` treats as "leave text-domain strings untouched" rather than as

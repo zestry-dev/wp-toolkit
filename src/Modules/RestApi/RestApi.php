@@ -37,20 +37,22 @@ use Zestry\WPToolkit\Services\Request\Request;
  * use Acme\Plugin\Core\Modules\RestApi\RestRoute;
  *
  * return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
- *     #[RequestArgument( 'The widget to return.' )]
- *     public int $id;
+ * ```php
+ * #[RequestArgument( 'The widget to return.' )]
+ * public int $id;
  *
- *     public function permission_check( WP_REST_Request $request ): bool {
- *         return true;
- *     }
+ * public function permission_check( WP_REST_Request $request ): bool {
+ *     return true;
+ * }
  *
- *     public function handle( WP_REST_Request $request ): WP_REST_Response {
- *         return new WP_REST_Response( [ 'id' => $this->id ] );
- *     }
+ * public function handle( WP_REST_Request $request ): WP_REST_Response {
+ *     return new WP_REST_Response( [ 'id' => $this->id ] );
+ * }
  *
- *     public function schema(): ?array {
- *         return null;
- *     }
+ * public function schema(): ?array {
+ *     return null;
+ * }
+ * ```
  * } );
  *
  * @example Narrowing what a route accepts
@@ -126,9 +128,11 @@ use Zestry\WPToolkit\Services\Request\Request;
  * @setup
  * // bootstrap.php
  * return array(
- *     RestApi::class => static function ( RestApi $api ): void {
- *         $api->set_routes_root( 'routes' );
- *     },
+ * ```php
+ * RestApi::class => static function ( RestApi $api ): void {
+ *     $api->set_routes_root( 'routes' );
+ * },
+ * ```
  * );
  */
 class RestApi extends Module {
@@ -301,7 +305,9 @@ class RestApi extends Module {
 	 * it. Placeholder tokens are not substituted -- a caller that needs a
 	 * concrete URL replaces them itself, since only the caller knows the values:
 	 *
-	 *     $api->get_route_url( 'v1', '/widgets/42' );
+	 * ```php
+	 * $api->get_route_url( 'v1', '/widgets/42' );
+	 * ```
 	 *
 	 * @param string              $version The route's namespace version, e.g. `'v1'`.
 	 * @param string              $pattern The route path, e.g. `'/widgets/42'`.

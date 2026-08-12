@@ -13,7 +13,7 @@ On `init` it registers every entry and shared package the build wrote into its m
 
 **Everything that returns a handle returns a real one**, ready to hand straight to WordPress. Attaching inline code or data, adding registration metadata, and enqueueing something registered by hand are WordPress's own functions, called with that handle:
 
-```
+```php
 $handle = $assets->enqueue_entry( 'dashboard' );
 
 wp_add_inline_script(

@@ -82,15 +82,43 @@ function zestry_docblock_before( string $source, string $declaration ): ?string 
 }
 
 /**
- * Guess the language of a code block written without a fence.
+ * The body of the fence opening at a given line.
+ *
+ * Read ahead rather than buffered, because the caller emits each fence line as
+ * it reaches it and the info string has to be decided on the opening one --
+ * before any of the code it describes has been seen.
+ *
+ * An unclosed fence yields the rest of the block, which is what the renderer
+ * treats it as anyway.
+ *
+ * @param string[] $lines The docblock body, split into lines.
+ * @param int      $index Index of the opening fence.
+ * @return string The lines between this fence and its closing one.
+ */
+function zestry_fenced_body( array $lines, int $index ): string {
+	$body = array();
+
+	foreach ( array_slice( $lines, $index + 1 ) as $line ) {
+		if ( preg_match( '/^\s*```/', $line ) ) {
+			break;
+		}
+
+		$body[] = $line;
+	}
+
+	return implode( "\n", $body );
+}
+
+/**
+ * Guess the language of a code block that does not name one.
  *
  * Only what the docblocks here actually contain, and only where the answer is
  * certain: a leading `<` that is not `<?php` is markup, and `import`/`export`
  * open a statement PHP has no form of. Everything else is PHP, which is what
  * nearly every block in this source is.
  *
- * A block that needs saying explicitly can say it -- an `@setup` or `@example`
- * fence takes an info string, and that always wins over this.
+ * A block that needs saying explicitly can say it -- a fence takes an info
+ * string, and that always wins over this.
  *
  * @param string $code The block's text.
  * @return string A Markdown fence info string.
@@ -110,10 +138,13 @@ function zestry_code_language( string $code ): string {
 }
 
 /**
- * Split a docblock body into prose and its indented code example.
+ * Split a docblock body into prose and its code examples.
  *
- * A docblock example is written as a four-space indented block, the convention
- * every class in this toolkit follows. Everything else is prose.
+ * A docblock example is written inside a ``` fence, which is the convention
+ * here. The four-space indented form is also read, for the `## OPTIONS` and
+ * `## EXAMPLES` sections of a WP-CLI command -- those are printed to a terminal
+ * verbatim by `wp help`, where a fence would show up as itself. Everything else
+ * is prose.
  *
  * @param string $body A stripped docblock body.
  * @return array{prose: string, example: string|null}
@@ -145,8 +176,9 @@ function zestry_split_example( string $body ): array {
 	};
 
 	$fenced = false;
+	$lines  = explode( "\n", $body );
 
-	foreach ( explode( "\n", $body ) as $line ) {
+	foreach ( $lines as $index => $line ) {
 		/*
 		 * A ``` fence says where the code starts, so indentation inside one means
 		 * nothing but indentation. Without this the rule below fired on the
@@ -159,7 +191,20 @@ function zestry_split_example( string $body ): array {
 		if ( preg_match( '/^\s*```/', $line ) ) {
 			$flush();
 
-			$fenced   = ! $fenced;
+			$fenced = ! $fenced;
+
+			/*
+			 * An opening fence with no info string is given one, from the same
+			 * detection an indented sample gets. Passed through as written it
+			 * reaches the page bare, so the commonest way to write a sample --
+			 * a plain ``` fence, which is the convention here -- was the one
+			 * way to lose syntax highlighting, while the indented form gained
+			 * it.
+			 */
+			if ( $fenced && '' === trim( substr( ltrim( $line ), 3 ) ) ) {
+				$line = rtrim( $line ) . zestry_code_language( zestry_fenced_body( $lines, $index ) );
+			}
+
 			$blocks[] = array(
 				'type' => 'prose',
 				'text' => $line,

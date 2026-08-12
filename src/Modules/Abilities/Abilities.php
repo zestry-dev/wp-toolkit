@@ -210,20 +210,22 @@ class Abilities extends Module {
 	 * Keyed by slug, the same shape `bootstrap.php` uses for modules. A plain
 	 * string is the label, and an array carries a description alongside it:
 	 *
-	 *     $abilities->add_categories(
-	 *         array(
-	 *             'acme-billing' => __( 'Acme billing', 'acme-plugin' ),
-	 *             'acme-reports' => array(
-	 *                 'label'       => __( 'Acme reports', 'acme-plugin' ),
-	 *                 'description' => __( 'Reads sales figures. Changes nothing.', 'acme-plugin' ),
-	 *             ),
-	 *         )
-	 *     );
+	 * ```php
+	 * $abilities->add_categories(
+	 *     array(
+	 *         'acme-billing' => __( 'Acme billing', 'acme-plugin' ),
+	 *         'acme-reports' => array(
+	 *             'label'       => __( 'Acme reports', 'acme-plugin' ),
+	 *             'description' => __( 'Reads sales figures. Changes nothing.', 'acme-plugin' ),
+	 *         ),
+	 *     )
+	 * );
 	 *
-	 *     // abilities/refund-order.php
-	 *     public function category(): string {
-	 *         return 'acme-billing';
-	 *     }
+	 * // abilities/refund-order.php
+	 * public function category(): string {
+	 *     return 'acme-billing';
+	 * }
+	 * ```
 	 *
 	 * The description is worth writing. A client listing categories shows it to
 	 * decide which group to look in, so "Reads sales figures. Changes nothing."

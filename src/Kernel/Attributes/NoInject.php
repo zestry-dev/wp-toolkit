@@ -21,14 +21,16 @@ namespace Zestry\WPToolkit\Kernel\Attributes;
  * hand-built, lazily created, keyed, or test-supplied instance rather than the
  * shared one.
  *
- *     use Acme\Plugin\Core\Kernel\Attributes\NoInject;
+ * ```php
+ * use Acme\Plugin\Core\Kernel\Attributes\NoInject;
  *
- *     class Reports extends Module {
- *         public Path $path;                 // injected by the plugin
+ * class Reports extends Module {
+ *     public Path $path;                 // injected by the plugin
  *
- *         #[NoInject]
- *         private ?Options $api = null;      // managed by this class, never injected
- *     }
+ *     #[NoInject]
+ *     private ?Options $api = null;      // managed by this class, never injected
+ * }
+ * ```
  */
 #[\Attribute( \Attribute::TARGET_PROPERTY )]
 final class NoInject {

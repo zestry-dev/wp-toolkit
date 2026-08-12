@@ -193,16 +193,18 @@ abstract class Ability implements PluginAware {
 	 * instead — it *replaces* the derived one rather than adding to it, and
 	 * nothing is bound:
 	 *
-	 *     return array(
-	 *         'type'       => 'object',
-	 *         'properties' => array(
-	 *             'order_id' => array(
-	 *                 'type'        => 'integer',
-	 *                 'description' => __( 'The order to cancel.', 'acme-plugin' ),
-	 *             ),
+	 * ```php
+	 * return array(
+	 *     'type'       => 'object',
+	 *     'properties' => array(
+	 *         'order_id' => array(
+	 *             'type'        => 'integer',
+	 *             'description' => __( 'The order to cancel.', 'acme-plugin' ),
 	 *         ),
-	 *         'required'   => array( 'order_id' ),
-	 *     );
+	 *     ),
+	 *     'required'   => array( 'order_id' ),
+	 * );
+	 * ```
 	 *
 	 * An empty array means the ability takes no input at all.
 	 *

@@ -332,11 +332,15 @@ use Acme\Books\Core\Modules\AdminPages\AdminPage;
 use Acme\Books\Core\Modules\AdminPages\ParentMenu;
 use Acme\Books\Core\Modules\Log;
 use Acme\Books\Core\Modules\Options;
+use Acme\Books\Core\Services\Request\Attributes\RequestArgument;
 
 return new class extends AdminPage {
 
     public Options $options;
     public Log $log;
+
+    #[RequestArgument( 'Books per API response.', schema: array( 'minimum' => 1, 'maximum' => 100 ) )]
+    public int $per_page = 10;
 
     public function title(): string {
         return __( 'Book Settings', 'acme-books' );
@@ -351,15 +355,15 @@ return new class extends AdminPage {
     }
 
     public function handle_submit(): void {
-        // The nonce is verified by the module before this method runs.
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing
-        $per_page = isset( $_POST['per_page'] ) ? absint( wp_unslash( $_POST['per_page'] ) ) : 10;
-        $per_page = max( 1, min( 100, $per_page ) );
-
-        $this->options->set( 'per_page', $per_page );
+        $this->options->set( 'per_page', $this->per_page );
         $this->options->save();
 
-        $this->log->info( 'Book settings saved', array( 'per_page' => $per_page ) );
+        $this->log->info( 'Book settings saved', array( 'per_page' => $this->per_page ) );
+
+        $this->set_flash( __( 'Settings saved.', 'acme-books' ) );
+
+        wp_safe_redirect( $this->get_page_url() );
+        exit;
     }
 
     public function render(): void {
@@ -369,6 +373,7 @@ return new class extends AdminPage {
                 'title'    => $this->title(),
                 'action'   => $this->get_page_url(),
                 'nonce'    => $this->get_nonce_action(),
+                'notice'   => $this->get_flash( '' ),
                 'per_page' => (int) $this->options->get( 'per_page', 10 ),
             )
         );
@@ -384,10 +389,17 @@ And the template it renders:
 /** @var string $title */
 /** @var string $action */
 /** @var string $nonce */
+/** @var string $notice */
 /** @var int $per_page */
 ?>
 <div class="wrap">
     <h1><?php echo esc_html( $title ); ?></h1>
+
+    <?php if ( '' !== $notice ) : ?>
+        <div class="notice notice-success is-dismissible">
+            <p><?php echo esc_html( $notice ); ?></p>
+        </div>
+    <?php endif; ?>
 
     <form method="post" action="<?php echo esc_url( $action ); ?>">
         <?php wp_nonce_field( $nonce ); ?>
@@ -417,9 +429,13 @@ Inside any template `$this` is the [Views](services/views/) service, so a subvie
 
 `admin-pages/settings.php` registers the page slug `acme-books-settings`. Returning `'edit.php?post_type=book'` from `parent()` nests it under the Books menu the post type created; return a `ParentMenu` case such as `ParentMenu::Settings` to nest under a core menu instead, or `null` to get a top-level menu of its own.
 
-The module enforces `capability()` before anything on the page runs, verifies the nonce on every POST, and only then calls `handle_submit()` followed by `render()`. `nonce_field()` emits the matching field. There is no `add_menu_page()`, no `admin_menu` hook, and no `check_admin_referer()` to write.
+The module enforces `capability()` before anything on the page runs, verifies the nonce on every POST, and only then calls `handle_submit()`. `nonce_field()` emits the matching field. There is no `add_menu_page()`, no `admin_menu` hook, and no `check_admin_referer()` to write.
 
-`Options` writes are deferred to `shutdown` so several `set()` calls cost one database write. `save()` above forces the write early, which is what you want before a redirect or a long task.
+`#[RequestArgument]` is why `handle_submit()` reads `$this->per_page` rather than `$_POST['per_page']`. The value is checked against the type and the `minimum`/`maximum` before the method runs, so there is nothing to unslash, cast or clamp by hand — the same declaration a [route and an ability](arguments.md) use, and a submission that fails it never reaches your code.
+
+**`handle_submit()` redirects rather than falling through to `render()`.** Without that, the browser's current request is still the POST: a refresh resubmits the form and saves a second time. The redirect throws away everything the method knew, so the notice travels in `set_flash()` — which reads once, so a refresh shows nothing for a save that already happened.
+
+`Options` writes are deferred to `shutdown` so several `set()` calls cost one database write. `save()` above forces the write early, which is what you want before a redirect.
 
 ### Where the dependencies came from
 

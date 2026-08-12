@@ -760,8 +760,12 @@ final class MakeCommandTest extends TestCase {
 		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
 
 		$this->assertStringContainsString( 'wp_safe_redirect(', $page );
-		$this->assertStringContainsString( "array( 'updated' => '1' )", $page );
 		$this->assertStringContainsString( 'exit;', $page );
+
+		// The notice survives the redirect in the flash rather than in the URL,
+		// which is what keeps it off a refresh and out of a bookmark.
+		$this->assertStringContainsString( '$this->set_flash(', $page );
+		$this->assertStringNotContainsString( "'updated' => '1'", $page );
 
 		// The generated page declares what it takes rather than reaching into
 		// $_POST -- code teaches louder than the comment above it, and this is the
@@ -785,10 +789,14 @@ final class MakeCommandTest extends TestCase {
 		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
 		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
 
-		$this->assertMatchesRegularExpression( "/'updated'\s+=> isset\( \\\$_GET\['updated'\] \)/", $page );
-		$this->assertStringContainsString( 'if ( $updated )', $view );
+		$this->assertMatchesRegularExpression( "/'notice'\s+=> \\\$this->get_flash\( '' \)/", $page );
+		$this->assertStringContainsString( "if ( '' !== \$notice )", $view );
 		$this->assertStringContainsString( 'notice-success', $view );
-		$this->assertStringContainsString( '@var bool   $updated', $view );
+		$this->assertStringContainsString( '@var string $notice', $view );
+
+		// Reading a query argument to decide what to show is what the flash
+		// replaces, so neither file should be left doing it.
+		$this->assertStringNotContainsString( '$_GET', $page );
 	}
 
 	/**
@@ -831,14 +839,17 @@ final class MakeCommandTest extends TestCase {
 	}
 
 	/**
-	 * A page's template is translated under the plugin's own text domain.
+	 * A page and its template are both translated under the plugin's own text
+	 * domain -- the notice is set by the page now, and shown by the template.
 	 */
 	public function test_page_type_template_uses_the_projects_text_domain(): void {
 		$this->run_make( array( 'settings' ), array(), 'page' );
 
 		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
 
-		$this->assertStringContainsString( "esc_html_e( 'Saved.', 'acme-plugin' )", $view );
+		$this->assertStringContainsString( "esc_html_e( 'Example', 'acme-plugin' )", $view );
+		$this->assertStringContainsString( "__( 'Saved.', 'acme-plugin' )", $page );
 	}
 
 	/**

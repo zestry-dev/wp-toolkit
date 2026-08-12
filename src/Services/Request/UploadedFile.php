@@ -16,11 +16,13 @@ namespace Zestry\WPToolkit\Services\Request;
  *
  * Type an argument as one of these and the file arrives on the property:
  *
- *     #[RequestArgument( 'The image to attach.' )]
- *     public UploadedFile $image;
+ * ```php
+ * #[RequestArgument( 'The image to attach.' )]
+ * public UploadedFile $image;
  *
- *     #[RequestArgument( 'Every page of the document.', of: UploadedFile::class )]
- *     public array $pages;
+ * #[RequestArgument( 'Every page of the document.', of: UploadedFile::class )]
+ * public array $pages;
+ * ```
  *
  * **Only a route can take one.** An upload arrives as `multipart/form-data`,
  * which is not JSON and has no place in a JSON Schema — so WordPress keeps
@@ -113,11 +115,13 @@ final class UploadedFile {
 	 * Both error codes are core's own, so a client written against the media
 	 * endpoints handles yours the same way.
 	 *
-	 *     $stored = $this->image->store();
+	 * ```php
+	 * $stored = $this->image->store();
 	 *
-	 *     if ( is_wp_error( $stored ) ) {
-	 *         return $stored;
-	 *     }
+	 * if ( is_wp_error( $stored ) ) {
+	 *     return $stored;
+	 * }
+	 * ```
 	 *
 	 * `$overrides` is passed to `wp_handle_upload()`, so `mimes` narrows what is
 	 * accepted and `unique_filename_callback` names the result. `test_form` is

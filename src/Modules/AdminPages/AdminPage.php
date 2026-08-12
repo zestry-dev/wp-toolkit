@@ -118,9 +118,11 @@ abstract class AdminPage implements PluginAware {
 	 * its address, {@see capability()} is still enforced, `handle_submit()` still
 	 * runs -- but nothing lists it.
 	 *
-	 *     public function is_hidden(): bool {
-	 *         return true;
-	 *     }
+	 * ```php
+	 * public function is_hidden(): bool {
+	 *     return true;
+	 * }
+	 * ```
 	 *
 	 * {@see parent()} and {@see position()} stop meaning anything, since there is
 	 * no menu to sit in, and no other page may nest under this one.
@@ -152,13 +154,15 @@ abstract class AdminPage implements PluginAware {
 	 * a page that belongs to the network administrator on a multisite install —
 	 * settings that apply to every site, and are not a single site's to change:
 	 *
-	 *     public function menu(): AdminMenu {
-	 *         return AdminMenu::Network;
-	 *     }
+	 * ```php
+	 * public function menu(): AdminMenu {
+	 *     return AdminMenu::Network;
+	 * }
 	 *
-	 *     public function capability(): string {
-	 *         return 'manage_network_options';
-	 *     }
+	 * public function capability(): string {
+	 *     return 'manage_network_options';
+	 * }
+	 * ```
 	 *
 	 * Pick the capability to match — `manage_options` is a site administrator's,
 	 * and every site has one. A network page is inert on a single-site install.
@@ -265,17 +269,19 @@ abstract class AdminPage implements PluginAware {
 	 * everything the handler knew. This is what survives it, without going in the
 	 * URL where a bookmark would replay it:
 	 *
-	 *     public function handle_submit(): void {
-	 *         $this->options->set( 'threshold', $this->threshold );
-	 *         $this->set_flash( __( 'Settings saved.', 'acme-plugin' ) );
+	 * ```php
+	 * public function handle_submit(): void {
+	 *     $this->options->set( 'threshold', $this->threshold );
+	 *     $this->set_flash( __( 'Settings saved.', 'acme-plugin' ) );
 	 *
-	 *         wp_safe_redirect( $this->get_page_url() );
-	 *         exit;
-	 *     }
+	 *     wp_safe_redirect( $this->get_page_url() );
+	 *     exit;
+	 * }
 	 *
-	 *     public function render(): void {
-	 *         $this->view( 'admin-pages/settings', array( 'notice' => $this->get_flash( '' ) ) );
-	 *     }
+	 * public function render(): void {
+	 *     $this->view( 'admin-pages/settings', array( 'notice' => $this->get_flash( '' ) ) );
+	 * }
+	 * ```
 	 *
 	 * Anything serializable, so an array carries a notice and a count together.
 	 * Encrypted on the way out by {@see \Zestry\WPToolkit\Services\Cookie}, so nothing of it is

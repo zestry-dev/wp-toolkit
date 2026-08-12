@@ -15,10 +15,10 @@
  * nothing else tells your editor what `$this` is here.
  *
  * @var \{{copied_namespace}}\Services\Views $this
- * @var string $title   The page title.
- * @var string $action  Where this page's form posts to.
- * @var string $nonce   The nonce action scoping it.
- * @var bool   $updated Whether this is the redirect that follows a save.
+ * @var string $title  The page title.
+ * @var string $action Where this page's form posts to.
+ * @var string $nonce  The nonce action scoping it.
+ * @var string $notice What the request before this one left to say, if anything.
  */
 
 declare( strict_types=1 );
@@ -30,11 +30,11 @@ defined( 'ABSPATH' ) || exit;
 <div class="wrap">
 	<h1><?php echo esc_html( $title ); ?></h1>
 
-	<?php if ( $updated ) : ?>
-		<?php // The page reached by handle_submit()'s redirect. Saying so here ?>
-		<?php // rather than in the page class keeps the markup in one file. ?>
+	<?php if ( '' !== $notice ) : ?>
+		<?php // Left by handle_submit() before it redirected. Keeping the markup ?>
+		<?php // here rather than in the page class keeps it all in one file. ?>
 		<div class="notice notice-success is-dismissible">
-			<p><?php esc_html_e( 'Saved.', '{{text_domain}}' ); ?></p>
+			<p><?php echo esc_html( $notice ); ?></p>
 		</div>
 	<?php endif; ?>
 

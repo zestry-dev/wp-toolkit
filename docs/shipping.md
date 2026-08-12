@@ -8,7 +8,7 @@ The toolkit is not in your zip. `wp zt init` copied its kernel into `lib/Core/Ke
 composer require zestry-dev/wp-toolkit --dev
 ```
 
-After `init`, nothing in your plugin's runtime references `Zestry\WPToolkit\`: the copy was rewritten to your namespace on the way in. What stays in `vendor/zestry-dev/wp-toolkit` is the `wp zt` commands themselves — `init`, `add`, `make`, `update`, `doctor` — and those are development tools, in the same category as phpcs.
+After `init`, nothing in your plugin's runtime references `Zestry\WPToolkit\`: the copy was rewritten to your namespace on the way in. What stays in `vendor/zestry-dev/wp-toolkit` is the `wp zt` commands themselves — `init`, `add`, `make`, `describe`, `doctor`, `overwrite`, `update` — and those are development tools, in the same category as phpcs.
 
 The practical consequence: **`wp zt` disappears from a `--no-dev` install.** Run it while you are working, not while you are packaging.
 
@@ -125,7 +125,7 @@ composer lint                                    # phpcs, if init set it up
 npm run lint:js                                  # eslint, if init set it up
 npm run test:php                                 # your suite, green
 npm run build                                    # build/ from src/blocks/
-wp zt doctor                                 # wiring that fails silently
+wp zt doctor                                     # wiring that fails silently
 ```
 
 Plus the things no command can check for you:

@@ -23,13 +23,15 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * ability's input schema from it, and binds the value onto the property before
  * your handler runs.
  *
- *     use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+ * ```php
+ * use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
  *
- *     #[RequestArgument( 'The order to cancel.' )]
- *     public int $order_id;
+ * #[RequestArgument( 'The order to cancel.' )]
+ * public int $order_id;
  *
- *     #[RequestArgument( 'Whether to email the customer.' )]
- *     public bool $notify = true;
+ * #[RequestArgument( 'Whether to email the customer.' )]
+ * public bool $notify = true;
+ * ```
  *
  * So a handler reads `$this->order_id`, not `$request->get_param( 'order_id' )`
  * or `$input['order_id']`.
@@ -47,8 +49,10 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * A moment in time is a string on the wire, and WordPress already knows how to
  * check one:
  *
- *     #[RequestArgument( 'When the sale ends.' )]
- *     public \DateTimeImmutable $ends_at;      // type: string, format: date-time
+ * ```php
+ * #[RequestArgument( 'When the sale ends.' )]
+ * public \DateTimeImmutable $ends_at;      // type: string, format: date-time
+ * ```
  *
  * `format: date-time` is enforced by `rest_parse_date()` before anything binds,
  * so `handle()` gets a real date or the call never reaches it. Typing the
@@ -63,14 +67,18 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * `2026-08-04 12:00:00` is noon UTC, whatever the site's timezone is set to.
  * Converting for display is one call:
  *
- *     $this->send_at->setTimezone( wp_timezone() );
+ * ```php
+ * $this->send_at->setTimezone( wp_timezone() );
+ * ```
  *
  * For a day rather than a moment — a birthday, a due date — say so with a
  * pattern, since `date-time` has no date-only form and a `DateTimeImmutable`
  * would invent a midnight that nobody sent:
  *
- *     #[RequestArgument( 'The day it is due.', schema: array( 'pattern' => '^\d{4}-\d{2}-\d{2}$' ) )]
- *     public string $due_on;
+ * ```php
+ * #[RequestArgument( 'The day it is due.', schema: array( 'pattern' => '^\d{4}-\d{2}-\d{2}$' ) )]
+ * public string $due_on;
+ * ```
  *
  * ## Enums
  *
@@ -78,13 +86,15 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * values are listed, so WordPress rejects anything else before your code runs
  * and a caller can read what it may send:
  *
- *     enum Status: string {
- *         case Draft = 'draft';
- *         case Live  = 'live';
- *     }
+ * ```php
+ * enum Status: string {
+ *     case Draft = 'draft';
+ *     case Live  = 'live';
+ * }
  *
- *     #[RequestArgument( 'What state to put it in.' )]
- *     public Status $status;            // sends "draft", arrives as Status::Draft
+ * #[RequestArgument( 'What state to put it in.' )]
+ * public Status $status;            // sends "draft", arrives as Status::Draft
+ * ```
  *
  * A backed enum sends its backing value, which is the case for backing one:
  * the wire value is written down rather than inferred, so renaming a case does
@@ -100,28 +110,34 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * A property typed as a class becomes a nested object, built from that class's
  * own arguments, and arrives as an instance rather than an array:
  *
- *     final class Address {
+ * ```php
+ * final class Address {
  *
- *         #[RequestArgument( 'Street and number.' )]
- *         public string $line1;
+ *     #[RequestArgument( 'Street and number.' )]
+ *     public string $line1;
  *
- *         #[RequestArgument( 'Two-letter country code.', schema: array( 'pattern' => '^[A-Z]{2}$' ) )]
- *         public string $country = 'US';
- *     }
+ *     #[RequestArgument( 'Two-letter country code.', schema: array( 'pattern' => '^[A-Z]{2}$' ) )]
+ *     public string $country = 'US';
+ * }
  *
- *     #[RequestArgument( 'Where to ship it.' )]
- *     public Address $address;          // $this->address->line1
+ * #[RequestArgument( 'Where to ship it.' )]
+ * public Address $address;          // $this->address->line1
+ * ```
  *
  * PHP has no array-of-type syntax — `LineItem[]` is docblock notation, not a
  * type — so a list names its class with `of`:
  *
- *     #[RequestArgument( 'What was ordered.', of: LineItem::class )]
- *     public array $items;
+ * ```php
+ * #[RequestArgument( 'What was ordered.', of: LineItem::class )]
+ * public array $items;
+ * ```
  *
  * An array of plain values says so through the schema instead:
  *
- *     #[RequestArgument( 'The orders to cancel.', schema: array( 'items' => array( 'type' => 'integer' ) ) )]
- *     public array $order_ids;
+ * ```php
+ * #[RequestArgument( 'The orders to cancel.', schema: array( 'items' => array( 'type' => 'integer' ) ) )]
+ * public array $order_ids;
+ * ```
  *
  * One or the other is required. An array whose contents go undescribed is the
  * one hole a caller cannot read its way out of, so it throws rather than
@@ -137,8 +153,10 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * A property typed as an {@see \Zestry\WPToolkit\Services\Request\UploadedFile} takes an
  * upload, and `of: UploadedFile::class` on an `array` takes several:
  *
- *     #[RequestArgument( 'The image to attach.' )]
- *     public UploadedFile $image;
+ * ```php
+ * #[RequestArgument( 'The image to attach.' )]
+ * public UploadedFile $image;
+ * ```
  *
  * **Only a route can take one.** An upload arrives as `multipart/form-data`,
  * which JSON Schema has no type for, so WordPress keeps uploads out of a
@@ -151,8 +169,10 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * `stdClass` and `object` both mean an object whose keys are the caller's
  * business — a settings blob, a payload passed through to somewhere else:
  *
- *     #[RequestArgument( 'Whatever your client keeps here.' )]
- *     public \stdClass $meta;          // $this->meta->colour
+ * ```php
+ * #[RequestArgument( 'Whatever your client keeps here.' )]
+ * public \stdClass $meta;          // $this->meta->colour
+ * ```
  *
  * The schema is `type: object` with no fixed keys, and `schema:` can still
  * describe the parts you do know. A named class is the better choice wherever
@@ -164,8 +184,10 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * Anything JSON Schema expresses goes in `schema` — `enum` for a closed set,
  * `minimum`, `format`, `pattern`:
  *
- *     #[RequestArgument( 'How to sort.', schema: array( 'enum' => array( 'date', 'title' ) ) )]
- *     public string $order_by = 'date';
+ * ```php
+ * #[RequestArgument( 'How to sort.', schema: array( 'enum' => array( 'date', 'title' ) ) )]
+ * public string $order_by = 'date';
+ * ```
  *
  * **Prefer this to the callbacks.** WordPress enforces the schema either way,
  * and a rule stated there is one a caller can read and satisfy before calling;

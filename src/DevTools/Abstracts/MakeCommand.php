@@ -168,6 +168,7 @@ abstract class MakeCommand extends Command {
 			'copied_namespace' => Copier::get_target_namespace( $namespace ),
 			'name'             => $name,
 			'title'            => $this->stub_renderer->to_title( $name ),
+			'text_domain'      => self::get_text_domain( $config, $plugin_root ),
 		);
 
 		$values = \array_merge( $values, $this->get_extra_values( $name, $assoc_args ) );
@@ -885,4 +886,21 @@ abstract class MakeCommand extends Command {
 	 * @return string
 	 */
 	abstract protected static function get_type(): string;
+
+	/**
+	 * The text domain a generated file's translatable strings carry.
+	 *
+	 * The plugin's own directory name when `zestry.json` records no domain,
+	 * because that is what WordPress loads a plugin's translations under and
+	 * what the slug defaults to. Never the generated file's own name: a page
+	 * called `settings` would get strings translated under a `settings` domain,
+	 * which nothing loads, leaving every one of them untranslated.
+	 *
+	 * @param array{namespace: string, root: string, text_domain?: string} $config      The project's zestry.json.
+	 * @param string                                                       $plugin_root Absolute path to the plugin root.
+	 * @return string
+	 */
+	protected static function get_text_domain( array $config, string $plugin_root ): string {
+		return $config['text_domain'] ?? \basename( \rtrim( $plugin_root, '/\\' ) );
+	}
 }

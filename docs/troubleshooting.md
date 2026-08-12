@@ -93,7 +93,7 @@ Two limits on that check, so you know when to look yourself:
 
 Two other causes worth ruling out once the declaration is there:
 
-- **`run()` never happens.** `bootstrap()` only queues; `run()` builds. Check the entry file actually calls it.
+- **`run()` never happens.** `bootstrap()` only queues; `run()` builds. `doctor` reports this one too — `bootstrap.php declares 6 classes, and nothing in this plugin built any of them` means the entry file never reached `->bootstrap()->run()`.
 - **`run()` happens too late for the hook.** `run()` resolves and boots synchronously, so a module deferred to `plugins_loaded` has already missed anything that fired before it. ActivationHandler is the sharp case — see [below](#a-post-type-404s).
 
 ---

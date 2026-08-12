@@ -33,29 +33,28 @@ return array(
 
 ## A minimal route file
 
-```php
-// routes/widgets/get-one.php
-use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
-use Acme\Plugin\Core\Modules\RestApi\Route;
-use Acme\Plugin\Core\Modules\RestApi\RestRoute;
+// routes/widgets/get-one.php use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument; use Acme\Plugin\Core\Modules\RestApi\Route; use Acme\Plugin\Core\Modules\RestApi\RestRoute;
 
 return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
-    #[RequestArgument( 'The widget to return.' )]
-    public int $id;
 
-    public function permission_check( WP_REST_Request $request ): bool {
-        return true;
-    }
+```php
+#[RequestArgument( 'The widget to return.' )]
+public int $id;
 
-    public function handle( WP_REST_Request $request ): WP_REST_Response {
-        return new WP_REST_Response( [ 'id' => $this->id ] );
-    }
+public function permission_check( WP_REST_Request $request ): bool {
+    return true;
+}
 
-    public function schema(): ?array {
-        return null;
-    }
-} );
+public function handle( WP_REST_Request $request ): WP_REST_Response {
+    return new WP_REST_Response( [ 'id' => $this->id ] );
+}
+
+public function schema(): ?array {
+    return null;
+}
 ```
+
+} );
 
 ## Narrowing what a route accepts
 
@@ -90,14 +89,15 @@ A check spanning two fields belongs in `handle()` rather than here: a callback s
 
 ## Changing the defaults
 
+// bootstrap.php return array(
+
 ```php
-// bootstrap.php
-return array(
-    RestApi::class => static function ( RestApi $api ): void {
-        $api->set_routes_root( 'routes' );
-    },
-);
+RestApi::class => static function ( RestApi $api ): void {
+    $api->set_routes_root( 'routes' );
+},
 ```
+
+);
 
 ## Writing a Route
 

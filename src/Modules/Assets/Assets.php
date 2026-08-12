@@ -388,7 +388,9 @@ class Assets extends Module {
 	 * `settings`. Each is registered on `init` under the handle
 	 * {@see get_asset_slug()} returns, so using one is a single call:
 	 *
-	 *     $assets->enqueue_entry( 'settings' );
+	 * ```php
+	 * $assets->enqueue_entry( 'settings' );
+	 * ```
 	 *
 	 * An entry is a classic script unless a `package.json` beside it declares a
 	 * `kind` of `module`, which builds it as an ES module and registers it with

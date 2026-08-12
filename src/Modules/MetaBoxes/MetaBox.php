@@ -158,9 +158,11 @@ abstract class MetaBox implements PluginAware {
 	 * and `sanitize()` both apply. A key the form did not submit is left alone
 	 * rather than written empty.
 	 *
-	 *     public function fields(): array {
-	 *         return array( 'acme_rating', 'acme_blurb' );
-	 *     }
+	 * ```php
+	 * public function fields(): array {
+	 *     return array( 'acme_rating', 'acme_blurb' );
+	 * }
+	 * ```
 	 *
 	 * This covers a form whose inputs are named after the fields they edit.
 	 * {@see save()} runs afterwards for anything else — a value assembled from

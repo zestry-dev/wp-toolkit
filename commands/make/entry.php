@@ -39,9 +39,8 @@ return new class() extends MakeCommand {
 	 *
 	 * [--kind=<kind>]
 	 * : How WordPress loads it. `script` registers a classic handle and works
-	 * everywhere. `module` registers an ES module, which can import only what
-	 * WordPress ships as one -- `@wordpress/interactivity` is,
-	 * `@wordpress/element` is not. Defaults to `script`.
+	 * everywhere. `module` registers an ES module, for Interactivity API code
+	 * that is not inside a block. Defaults to `script`.
 	 * ---
 	 * default: script
 	 * options:
