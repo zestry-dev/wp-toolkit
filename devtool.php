@@ -35,13 +35,9 @@ if ( ! function_exists( 'zestry_devtool' ) ) {
 		static $plugin = null;
 
 		if ( null === $plugin ) {
+			// Nothing to configure: `commands/` is where the CLI module reads,
+			// and this package keeps its own commands exactly there.
 			$plugin = ( new Plugin( __FILE__, 'zt' ) )
-				->configure(
-					CLI::class,
-					function ( CLI $cli ) {
-						$cli->set_commands_root( 'commands' );
-					}
-				)
 				->autoload( array( CLI::class ) )
 				->run();
 		}
