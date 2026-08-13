@@ -280,6 +280,26 @@ final public function halt( int $return_code = 0 ): void
 
 <br>
 
+### `run_command( $command )`
+
+Run another WP-CLI command.
+
+```php
+final public function run_command( string $command ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$command` — The command line, without the leading `wp` |
+| **Return** | — |
+| **Throws** | — |
+
+For reaching a command WP-CLI already ships rather than reimplementing what it does — `wp config set` knows where `wp-config.php` is, where in it a constant belongs, and how to quote one, none of which is worth writing twice.
+
+Runs in this process rather than launching a second WordPress, so it costs no bootstrap and its output lands in this run's.
+
+<br>
+
 ### `read_line()`
 
 Read a single line from standard input.

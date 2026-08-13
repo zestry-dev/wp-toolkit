@@ -17,6 +17,7 @@ use Zestry\WPToolkit\Modules\Blocks\Blocks;
 use Zestry\WPToolkit\Modules\CLI\CLI;
 use Zestry\WPToolkit\Modules\Cron\Cron;
 use Zestry\WPToolkit\Modules\Fields\Fields;
+use Zestry\WPToolkit\Modules\IconsLibrary\IconsLibrary;
 use Zestry\WPToolkit\Modules\Log;
 use Zestry\WPToolkit\Modules\MetaBoxes\MetaBoxes;
 use Zestry\WPToolkit\Modules\Migrations\Migrations;
@@ -50,6 +51,13 @@ use Zestry\WPToolkit\Services\Views;
  * requesting `rest-api` also brings in `path` without the caller knowing it
  * exists.
  *
+ * `requires` is the oldest WordPress the entry works on, and is omitted by
+ * everything that works on any. It is measured against the consuming plugin's
+ * own `Requires at least:` header rather than against the WordPress a developer
+ * happens to be running: `wp zt add` refuses an entry the plugin does not
+ * promise a new enough WordPress for -- including one pulled in as a dependency
+ * -- and `wp zt doctor` reports one already on disk.
+ *
  * > [!IMPORTANT]
  * > **The section a class is filed under has to match what it extends.** The
  * > file says it here and the class says it in its `extends`; nothing enforces
@@ -63,7 +71,7 @@ use Zestry\WPToolkit\Services\Views;
  * loads none of the classes it names -- it stays plain data, read before any
  * autoloader for the *target* project necessarily exists.
  *
- * @return array<string, array<string, array{source: class-string, depends: array{services: string[], modules: string[]}}>>
+ * @return array<string, array<string, array{source: class-string, requires?: string, depends: array{services: string[], modules: string[]}}>>
  */
 return array(
 	'services' => array(
@@ -120,35 +128,35 @@ return array(
 		),
 	),
 	'modules'  => array(
-		'assets'      => array(
+		'assets'        => array(
 			'source'  => Assets::class,
 			'depends' => array(
 				'services' => array( 'path' ),
 				'modules'  => array(),
 			),
 		),
-		'log'         => array(
+		'log'           => array(
 			'source'  => Log::class,
 			'depends' => array(
 				'services' => array(),
 				'modules'  => array(),
 			),
 		),
-		'options'     => array(
+		'options'       => array(
 			'source'  => Options::class,
 			'depends' => array(
 				'services' => array(),
 				'modules'  => array(),
 			),
 		),
-		'ajax'        => array(
+		'ajax'          => array(
 			'source'  => Ajax::class,
 			'depends' => array(
 				'services' => array( 'path', 'request' ),
 				'modules'  => array(),
 			),
 		),
-		'admin-pages' => array(
+		'admin-pages'   => array(
 			'source'  => AdminPages::class,
 			'depends' => array(
 				// `views` because AdminPage::view() is the default way a page
@@ -158,70 +166,79 @@ return array(
 				'modules'  => array(),
 			),
 		),
-		'rest-api'    => array(
+		'rest-api'      => array(
 			'source'  => RestApi::class,
 			'depends' => array(
 				'services' => array( 'path', 'request' ),
 				'modules'  => array(),
 			),
 		),
-		'cli'         => array(
+		'cli'           => array(
 			'source'  => CLI::class,
 			'depends' => array(
 				'services' => array( 'path' ),
 				'modules'  => array(),
 			),
 		),
-		'cron'        => array(
+		'cron'          => array(
 			'source'  => Cron::class,
 			'depends' => array(
 				'services' => array( 'path' ),
 				'modules'  => array(),
 			),
 		),
-		'fields'      => array(
+		'fields'        => array(
 			'source'  => Fields::class,
 			'depends' => array(
 				'services' => array( 'path' ),
 				'modules'  => array(),
 			),
 		),
-		'post-types'  => array(
+		'post-types'    => array(
 			'source'  => PostTypes::class,
 			'depends' => array(
 				'services' => array( 'path' ),
 				'modules'  => array(),
 			),
 		),
-		'blocks'      => array(
+		'blocks'        => array(
 			'source'  => Blocks::class,
 			'depends' => array(
 				'services' => array( 'path' ),
 				'modules'  => array(),
 			),
 		),
-		'meta-boxes'  => array(
+		'meta-boxes'    => array(
 			'source'  => MetaBoxes::class,
 			'depends' => array(
 				'services' => array( 'path' ),
 				'modules'  => array( 'fields' ),
 			),
 		),
-		'site-health' => array(
+		'site-health'   => array(
 			'source'  => SiteHealth::class,
 			'depends' => array(
 				'services' => array( 'path' ),
 				'modules'  => array(),
 			),
 		),
-		'abilities'   => array(
-			'source'  => Abilities::class,
-			'depends' => array(
+		'abilities'     => array(
+			'source'   => Abilities::class,
+			'requires' => '6.9',
+			'depends'  => array(
 				'services' => array( 'path', 'request' ),
 				'modules'  => array(),
 			),
 		),
-		'migrations'  => array(
+		'icons-library' => array(
+			'source'   => IconsLibrary::class,
+			'requires' => '7.1',
+			'depends'  => array(
+				'services' => array( 'path' ),
+				'modules'  => array(),
+			),
+		),
+		'migrations'    => array(
 			'source'  => Migrations::class,
 			'depends' => array(
 				'services' => array( 'path', 'db' ),

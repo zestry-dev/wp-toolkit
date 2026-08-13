@@ -17,9 +17,10 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * Resolves and renders PHP view templates from the plugin directory.
  *
  * A view is an ordinary PHP file under `views/`. Each key in the data array
- * becomes a local variable inside the template. Only names beginning `__view_`
- * are reserved -- the render scope holds two of them and nothing else -- so
- * every ordinary key reaches the template, `view` and `data` included.
+ * becomes a local variable inside the template. Only names beginning
+ * `__include_` are reserved -- the render scope holds two of them and nothing
+ * else -- so every ordinary key reaches the template, `view` and `data`
+ * included.
  *
  * The `.php` extension is optional, and a name may address a subdirectory, so
  * `'emails/receipt'` and `'emails/receipt.php'` resolve to the same file. A
@@ -158,19 +159,11 @@ class Views extends Service {
 	 * `get( 'card', array( 'title' => 'Hello' ) )` makes `$title` available to
 	 * `views/card.php`. Escape the data in the template according to context.
 	 *
-	 * Only keys beginning `__view_` are reserved; the render scope holds two of
-	 * them and nothing else. Every ordinary name reaches the template, `view`
-	 * and `data` included -- rendering a subview costs no name at all, since a
-	 * template reaches this service as `$this`.
-	 *
-	 * @rationale
-	 * The include used to happen in this method's own scope, where `$view` and
-	 * `$data` are its parameters -- so `EXTR_SKIP` silently dropped a data key
-	 * by either name, and `get( 'table', array( 'data' => $rows ) )` left the
-	 * template's `$data` bound to the whole array with no warning. Both are
-	 * ordinary names for a template author to reach for. Rendering inside a
-	 * static closure whose locals are all `__view_` prefixed is what makes the
-	 * reserved set small and predictable -- keep it that way.
+	 * The including is {@see \Zestry\WPToolkit\Services\Path::include_file()}, which is
+	 * also what reserves the names: only keys beginning `__include_` are, and
+	 * every ordinary name reaches the template, `view` and `data` included.
+	 * Rendering a subview costs no name at all, since a template reaches this
+	 * service as `$this`.
 	 *
 	 * @param string               $view Logical view name.
 	 * @param array<string, mixed> $data Variables made available to the view.
@@ -178,7 +171,7 @@ class Views extends Service {
 	 * @throws \InvalidArgumentException When the views root or the view is missing, or the view resolves outside the root.
 	 */
 	public function get( string $view, array $data = array() ): string {
-		return $this->include_template( $this->normalize_view_path( $view ), $data );
+		return $this->path->include_file( $this->normalize_view_path( $view ), $data, $this )['buffer'];
 	}
 
 	/**
@@ -253,35 +246,5 @@ class Views extends Service {
 		}
 
 		return $real_view;
-	}
-
-	/**
-	 * Include a template in a scope where no data key can be swallowed.
-	 *
-	 * A closure rather than a method body, which is the whole reason this is not
-	 * inlined into {@see get()}: `EXTR_SKIP` skips any key naming a local
-	 * already in scope, so extracting in a method whose parameters are `$view`
-	 * and `$data` dropped a data key by either name. Here the only locals are
-	 * `__view_` prefixed, which is the entire reserved set -- keep it that way.
-	 *
-	 * Not static, so `$this` in a template is this service and a subview is
-	 * `$this->render( ... )` -- costing no variable name, since `$this` is the
-	 * one name `extract()` cannot create.
-	 *
-	 * @param string               $file Absolute path to a resolved template.
-	 * @param array<string, mixed> $data Variables to make available to it.
-	 * @return string The rendered output.
-	 */
-	private function include_template( string $file, array $data ): string {
-		$render = function ( string $__view_file, array $__view_data ): string {
-			\extract( $__view_data, EXTR_SKIP ); // phpcs:ignore WordPress.PHP.DontExtract.extract_extract
-
-			\ob_start();
-			include $__view_file;
-
-			return (string) \ob_get_clean();
-		};
-
-		return $render( $file, $data );
 	}
 }

@@ -225,6 +225,84 @@ class Path extends Service {
 	}
 
 	/**
+	 * Include a PHP file, keeping both halves of what it produced.
+	 *
+	 * A PHP file that is data rather than a class produces two things and PHP
+	 * throws one of them away depending on how you call it: `include` hands back
+	 * what the file returned and lets its output escape to the page, while output
+	 * buffering keeps the output and discards the return. This keeps both --
+	 * `returned` is the value, `buffer` is the output, exactly as written and not
+	 * trimmed.
+	 *
+	 * That pairing is what lets one file be a picture *and* say what it is called:
+	 * a template echoes its markup and returns `array( 'label' => __( … ) )`, so
+	 * the label is translated in the file it describes rather than derived from a
+	 * filename, which cannot be translated at all.
+	 *
+	 * `returned` is exactly what PHP reports, which for a file that returns
+	 * nothing is the integer `1` -- so check the type you expected before reading
+	 * anything out of it.
+	 *
+	 * Inside the file, `$this` is `$scope`, or this service when none is given.
+	 * {@see \Zestry\WPToolkit\Services\Views} passes itself, which is what makes a
+	 * subview `$this->render( … )` from inside a template.
+	 *
+	 * Each key in `$data` becomes a local variable. Only names beginning
+	 * `__include_` are reserved -- the scope holds two of them and nothing else --
+	 * so every ordinary key arrives, `file` and `data` included.
+	 *
+	 * The path is used as given and is not resolved against the plugin root: a
+	 * caller that took the name from anything but its own source should resolve
+	 * and contain it first, the way `Views` does before calling here.
+	 *
+	 * @rationale
+	 * Rendered inside a closure rather than in this method's own body, and every
+	 * local in it `__include_` prefixed, because `EXTR_SKIP` skips any key naming
+	 * a local already in scope -- so extracting in a method whose parameters are
+	 * `$file` and `$data` silently dropped a data key by either name. Both are
+	 * ordinary names for a template author to reach for. Keep the reserved set
+	 * exactly this small.
+	 *
+	 * The buffer is discarded on a throw rather than left open, or a file that
+	 * fails swallows the message into it and the fatal reaching the screen has
+	 * nothing in it to read.
+	 *
+	 * @param string               $file  Absolute path to an existing PHP file.
+	 * @param array<string, mixed> $data  Variables to make available to it.
+	 * @param object|null          $scope What `$this` is inside the file. Defaults to this service.
+	 * @return array{returned: mixed, buffer: string} What it returned, and what it printed.
+	 */
+	public function include_file( string $file, array $data = array(), ?object $scope = null ): array {
+		$include = function ( string $__include_file, array $__include_data ): array {
+			\extract( $__include_data, EXTR_SKIP ); // phpcs:ignore WordPress.PHP.DontExtract.extract_extract
+
+			\ob_start();
+
+			try {
+				$__include_returned = include $__include_file;
+			} catch ( \Throwable $__include_error ) {
+				\ob_end_clean();
+
+				throw $__include_error;
+			}
+
+			return array(
+				'returned' => $__include_returned,
+				'buffer'   => (string) \ob_get_clean(),
+			);
+		};
+
+		/*
+		 * Two arguments, not three: naming the scope as well would rebind what
+		 * counts as private inside the closure, and PHP refuses to do that for an
+		 * internal class -- `Closure::bind( $c, new \ArrayObject() )` works while
+		 * the three-argument form is a fatal. Nothing here needs private access;
+		 * it needs `$this` to be the caller's object.
+		 */
+		return \Closure::bind( $include, $scope ?? $this )( $file, $data );
+	}
+
+	/**
 	 * Determine whether a plugin-relative path contains a NUL byte or a
 	 * parent-directory segment.
 	 *

@@ -42,6 +42,7 @@ Add any of them with `wp zt add module <name>`; dependencies come along.
 | [`fields`](modules/fields/) | `fields/` | [`Field`](modules/fields/field.md) | `set_fields_root()` | [`make field`](commands/make-field.md) |
 | [`meta-boxes`](modules/meta-boxes/) | `meta-boxes/` | [`MetaBox`](modules/meta-boxes/meta-box.md) | `set_boxes_root()` | [`make meta-box`](commands/make-meta-box.md) |
 | [`abilities`](modules/abilities/) | `abilities/` | [`Ability`](modules/abilities/ability.md) | `set_abilities_root()` | [`make ability`](commands/make-ability.md) |
+| [`icons-library`](modules/icons-library/) | `svg-icons/` | — (a `.php` echoing the SVG and returning `array( 'label' => … )`, or a plain `.svg`) | `set_svg_icons_root()` | — |
 | [`site-health`](modules/site-health/) | `health-checks/` | [`HealthCheck`](modules/site-health/health-check.md) | `set_checks_root()` | [`make health-check`](commands/make-health-check.md) |
 | [`site-health`](modules/site-health/) | `debug-sections/` | [`DebugSection`](modules/site-health/debug-section.md) | `set_sections_root()` | [`make debug-section`](commands/make-debug-section.md) |
 | [`blocks`](modules/blocks/) | `build/blocks/` | [`Block`](modules/blocks/block.md) | `set_blocks_root()` | [`make block`](commands/make-block.md) |
@@ -167,6 +168,7 @@ Run from inside your plugin's directory, with the plugin active.
 | [`wp zt make <type> <name>`](commands/) | Generates one file from a stub — see the 21 types below. `--yes` on every type; `--dir=` on every type but `module`, `service` and `abstract`; `--extends=` on every type whose file returns a base-class instance, except `route` and `block`, plus `abstract`, which also takes `--for=<type>` |
 | [`wp zt describe`](commands/describe.md) | Reports what this plugin has: each module installed, declared, the directory it reads and the base class a file there returns. `--format`, `--kind`, `--installed` |
 | [`wp zt doctor`](commands/doctor.md) | Reports the wiring mistakes that raise no error — chiefly a module on disk that nothing declares. `--format=report\|csv\|json\|yaml` |
+| [`wp zt debug`](commands/debug.md) | Reports this plugin's own `{SLUG}_DEBUG` constant, or writes it to `wp-config.php`. Takes `on` or `off`; omit both to report. |
 | [`wp zt update`](commands/update.md) | Re-copies everything under `lib/Core/` from the installed toolkit, keeping files you edited. `--dry-run`, `--force`, `--yes` |
 | [`wp zt overwrite module <name>...`](commands/overwrite-module.md) | Like `add module`, but replaces what is already on disk after one confirmation. `--yes` |
 | [`wp zt overwrite service <name>...`](commands/overwrite-service.md) | Like `add service`, but replaces what is already on disk after one confirmation. `--yes` |

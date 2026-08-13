@@ -155,6 +155,10 @@ abstract class AddCommand extends Command {
 			return;
 		}
 
+		if ( ! $this->assert_wordpress_requirement_is_met( $resolved, $registry, $args ) ) {
+			return;
+		}
+
 		$extra = \array_diff( $resolved, $args );
 		if ( array() !== $extra ) {
 			$this->log( 'Also adding required dependencies: ' . \implode( ', ', $extra ) );
@@ -552,6 +556,91 @@ abstract class AddCommand extends Command {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Refuse anything the plugin does not promise a new enough WordPress for.
+	 *
+	 * Measured against the plugin's own `Requires at least:` header, never against
+	 * the WordPress this developer happens to be running. Those are different
+	 * questions: a laptop on trunk says nothing about the oldest site the plugin
+	 * will be installed on, and that site is where a module registering against a
+	 * missing API does its damage. The header is also the one WordPress enforces
+	 * itself, so raising it is what stops the plugin activating where it cannot
+	 * work.
+	 *
+	 * An undeclared minimum is not "old enough by default" -- a plugin promising
+	 * nothing is one WordPress will activate on anything at all -- so it fails the
+	 * same way, and says which line to add.
+	 *
+	 * Checked across the whole resolved set rather than the names that were typed,
+	 * since a dependency is written into the consumer's tree just as surely as the
+	 * thing that asked for it -- and says so, or the message names something they
+	 * never mentioned.
+	 *
+	 * Refused rather than warned about. A copied module becomes the plugin's own
+	 * source, and one whose API does not exist compiles perfectly and then reports
+	 * at every boot that it registered nothing, so the honest moment to say no is
+	 * before it is written. Nothing is copied when any one of them fails: a partial
+	 * copy would leave a `depends` half-satisfied, which is a state neither `add`
+	 * nor `update` has any way to describe.
+	 *
+	 * @param string[]                                                                                       $resolved The full resolved set, dependencies included.
+	 * @param array<string, array{source: string, section: string, depends: string[], requires: string|null}> $registry The flattened registry.
+	 * @param string[]                                                                                       $args     The names given on the command line.
+	 * @return bool False when one was refused, and the caller should stop.
+	 */
+	protected function assert_wordpress_requirement_is_met( array $resolved, array $registry, array $args ): bool {
+		$declared = $this->consumer_plugin->get_required_wordpress( $this->consumer_plugin->get_plugin_root() );
+		$unmet    = array();
+		$highest  = '0';
+
+		foreach ( $resolved as $name ) {
+			$required = $registry[ $name ]['requires'] ?? null;
+
+			if ( null === $required ) {
+				continue;
+			}
+
+			if ( null !== $declared && \version_compare( $declared, $required, '>=' ) ) {
+				continue;
+			}
+
+			$unmet[] = \sprintf(
+				'%s needs WordPress %s%s',
+				$name,
+				$required,
+				\in_array( $name, $args, true ) ? '' : ', and is required by what you asked for'
+			);
+
+			if ( \version_compare( $required, $highest, '>' ) ) {
+				$highest = $required;
+			}
+		}
+
+		if ( array() === $unmet ) {
+			// Nothing needed a version, so an absent header blocks nothing today.
+			// Still worth one line: it is the same missing fact, and the moment
+			// code is being added is when it is cheapest to write down.
+			if ( null === $declared ) {
+				$this->warning( 'This plugin does not declare a `Requires at least:` header, so WordPress will activate it on any version.' );
+			}
+
+			return true;
+		}
+
+		$this->error(
+			\sprintf(
+				'%s Nothing was copied: %s. Set `Requires at least: %s` in the entry file header, or leave these out.',
+				null === $declared
+					? 'This plugin does not declare which WordPress it needs.'
+					: \sprintf( 'This plugin declares `Requires at least: %s`.', $declared ),
+				\implode( '; ', $unmet ),
+				$highest
+			)
+		);
+
+		return false;
 	}
 
 	/**

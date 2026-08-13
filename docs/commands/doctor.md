@@ -9,14 +9,18 @@
 
 Check this plugin's module wiring for silent misconfiguration.
 
-Four checks, each targeting a mistake that produces no error at runtime:
+Six checks, each targeting a mistake that produces no error at runtime:
 
 - a `bootstrap.php` that declares modules where nothing built any of them,
 because the entry file never reached `->bootstrap()->run()` — so every module is inert, every hook unbound and every directory unread;
 - a module on disk that `bootstrap.php` does not list — never built, so
 `on_boot()` never runs and the feature is simply absent;
 - a declaration whose class file is gone;
-- a `zestry.json` naming a root directory that is not there.
+- a `zestry.json` naming a root directory that is not there;
+- no `Requires at least:` header, so WordPress will activate the plugin on
+any version it likes;
+- a module needing a newer WordPress than the plugin promises, which on an
+older site registers against an API that is not there.
 
 Needs an initialized plugin: with no `zestry.json` in the current directory it exits non-zero telling you to run `wp zt init` first, and it stops the same way when `bootstrap.php` does not parse.
 

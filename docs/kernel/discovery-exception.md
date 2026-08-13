@@ -7,7 +7,7 @@
 
 Thrown when a module's file-based discovery cannot proceed.
 
-Catch this to handle any malformed discovery layout, in any module that reads files, without also catching unrelated failures. It arrives in five shapes:
+Catch this to handle any malformed discovery layout, in any module that reads files, without also catching unrelated failures. It arrives in six shapes:
 
 - **A discovered file returned the wrong thing.** Usually a missing `return`,
 since `require` yields `1` for a file that returns nothing.
@@ -16,7 +16,9 @@ since `require` yields `1` for a file that returns nothing.
 - **Two files resolve to one registered name**, which only happens where the
 name is built from more than the filename — `reports.php` and `reports/index.php` are two paths meaning one admin page.
 - **A filename the destination could not carry**: an admin page slug a URL
-would have to encode, or an ability name outside WordPress's `[a-z0-9-]`.
+would have to encode, an ability name outside WordPress's `[a-z0-9-]`, or an icon name outside its own.
+- **A file WordPress would quietly alter rather than refuse**: an SVG icon
+drawn with anything its sanitizer removes, which registers and then renders as less than it is.
 - **WordPress refused the registration**, for the calls that report a refusal
 by returning something falsy rather than by saying anything.
 

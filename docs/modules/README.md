@@ -34,6 +34,7 @@ Add nothing up front. Reach for one when you hit what it solves:
 | [`cli`](cli/) | add a `wp` command | `commands/` | [`Command`](cli/command.md) | `path` |
 | [`cron`](cron/) | run something on a schedule | `schedules/` | [`Schedule`](cron/schedule.md) | `path` |
 | [`fields`](fields/) | register post meta, and render it on the editor | `fields/` | [`Field`](fields/field.md) | `path` |
+| [`icons-library`](icons-library/) | publish an SVG icon, for the editor and your own markup (WordPress 7.1+) | `svg-icons/` | — | `path` |
 | [`log`](log/) | record what went wrong | — | — | — |
 | [`meta-boxes`](meta-boxes/) | put a panel on the post or comment editor | `meta-boxes/` | [`MetaBox`](meta-boxes/meta-box.md) | `path`, `fields` |
 | [`migrations`](migrations/) | create or change a database table | `migrations/` | [`Migration`](migrations/migration.md) | `path`, `db`, `options`, `cli` |

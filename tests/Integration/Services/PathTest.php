@@ -193,4 +193,84 @@ final class PathTest extends TestCase {
 		$this->expectException( \InvalidArgumentException::class );
 		$path->get_plugin_path( '../escape' );
 	}
+
+
+	/**
+	 * A PHP file that is data rather than a class produces two things, and PHP
+	 * throws one away depending on how you call it. Keeping both is what lets one
+	 * file be a picture and say what it is called.
+	 */
+	public function test_include_file_keeps_both_halves(): void {
+		$file = $this->write_plugin_file(
+			'components/arrow.php',
+			"<svg><path d=\"M5 12h14\" /></svg>\n<?php\nreturn array( 'label' => 'Arrow' );"
+		);
+
+		$included = $this->path()->include_file( $file );
+
+		$this->assertSame( array( 'label' => 'Arrow' ), $included['returned'] );
+		$this->assertStringContainsString( '<svg><path d="M5 12h14" /></svg>', $included['buffer'] );
+	}
+
+	/**
+	 * PHP's own answer for a file that returns nothing, handed back as it is: a
+	 * caller checks the type it expected rather than reading a key out of `1`.
+	 */
+	public function test_include_file_reports_phps_own_answer_for_no_return(): void {
+		$file = $this->write_plugin_file( 'components/bare.php', 'JUST MARKUP' );
+
+		$this->assertSame( 1, $this->path()->include_file( $file )['returned'] );
+	}
+
+	/**
+	 * Not trimmed: whitespace is the caller's to judge, and a view is rendered
+	 * exactly as written.
+	 */
+	public function test_include_file_leaves_the_buffer_exactly_as_printed(): void {
+		$file = $this->write_plugin_file( 'components/spaced.php', "\n  SPACED  \n" );
+
+		$this->assertSame( "\n  SPACED  \n", $this->path()->include_file( $file )['buffer'] );
+	}
+
+	public function test_include_file_turns_data_keys_into_local_variables(): void {
+		$file = $this->write_plugin_file( 'components/badge.php', '<?php echo esc_html( $label );' );
+
+		$this->assertSame( 'New', $this->path()->include_file( $file, array( 'label' => 'New' ) )['buffer'] );
+	}
+
+	/**
+	 * `$this` is whatever the caller says it is, which is how a template rendered
+	 * through Views reaches Views rather than this service.
+	 */
+	public function test_include_file_binds_this_to_the_given_scope(): void {
+		$file  = $this->write_plugin_file( 'components/scoped.php', '<?php echo get_class( $this );' );
+		$scope = new \stdClass();
+
+		$this->assertSame(
+			\stdClass::class,
+			$this->path()->include_file( $file, array(), $scope )['buffer']
+		);
+	}
+
+	/**
+	 * The buffer is discarded rather than left open. Left open, the message would
+	 * be swallowed into it and the fatal reaching the screen would have nothing in
+	 * it to read.
+	 */
+	public function test_include_file_does_not_leave_a_buffer_open_on_a_throw(): void {
+		$file  = $this->write_plugin_file(
+			'components/broken.php',
+			"PARTIAL<?php throw new \\RuntimeException( 'template failed' );"
+		);
+		$depth = ob_get_level();
+
+		try {
+			$this->path()->include_file( $file );
+			$this->fail( 'The file should have thrown.' );
+		} catch ( \RuntimeException $exception ) {
+			$this->assertSame( 'template failed', $exception->getMessage() );
+		}
+
+		$this->assertSame( $depth, ob_get_level(), 'The output buffer was left open.' );
+	}
 }

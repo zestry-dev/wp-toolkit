@@ -493,3 +493,23 @@ Call this from the plugin entry file once modules are registered. It runs synchr
 An `ActivationHandler` subclass is the one case where *when* this is called is load-bearing: WordPress fires `activate_{plugin}` immediately after the entry file loads, so a `run()` deferred to a later hook is already too late to register the activation callback.
 
 **Modules boot in the order they are listed**, each fully resolved and booted before the next begins. A module that throws stops the ones after it, and nothing wraps what it threw: the toolkit's own failures are `ModuleException`s, and whatever your `on_boot()` raises arrives as itself.
+
+<br>
+
+### `get_debug_constant( $slug )`
+
+The name of a plugin's own debug constant.
+
+```php
+public static function get_debug_constant( string $slug ): string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$slug` — The plugin slug |
+| **Return** | `string` |
+| **Throws** | — |
+
+`{SLUG}_DEBUG`, upper-cased with dashes turned into underscores, so a plugin slugged `acme-crm` reads `ACME_CRM_DEBUG`. `is_plugin_debug()` is what asks whether it is set.
+
+Static, and taking the slug rather than reading its own, so tooling can name the constant for a plugin that is not running — `wp zt debug` writes this name into `wp-config.php`, and a second spelling of the rule would be a command that turns on a constant nothing reads.

@@ -613,8 +613,8 @@ class Plugin {
 	 * @return bool True if the plugin's debug constant is defined and set to true.
 	 */
 	public function is_plugin_debug(): bool {
-		$prefix        = \str_replace( '-', '_', \strtoupper( $this->get_slug() ) );
-		$constant_name = $prefix . '_DEBUG';
+		$constant_name = self::get_debug_constant( $this->get_slug() );
+
 		return \defined( $constant_name ) && \constant( $constant_name ) === true;
 	}
 
@@ -738,5 +738,24 @@ class Plugin {
 		}
 
 		$GLOBALS['zestry_runtime_plugins'][ \dirname( $this->entry_file ) ] = $this;
+	}
+
+	/**
+	 * The name of a plugin's own debug constant.
+	 *
+	 * `{SLUG}_DEBUG`, upper-cased with dashes turned into underscores, so a plugin
+	 * slugged `acme-crm` reads `ACME_CRM_DEBUG`. {@see is_plugin_debug()} is what
+	 * asks whether it is set.
+	 *
+	 * Static, and taking the slug rather than reading its own, so tooling can name
+	 * the constant for a plugin that is not running -- `wp zt debug` writes this
+	 * name into `wp-config.php`, and a second spelling of the rule would be a
+	 * command that turns on a constant nothing reads.
+	 *
+	 * @param string $slug The plugin slug.
+	 * @return string
+	 */
+	public static function get_debug_constant( string $slug ): string {
+		return \str_replace( '-', '_', \strtoupper( $slug ) ) . '_DEBUG';
 	}
 }

@@ -65,7 +65,7 @@ return new class() extends AddCommand {
 	 *
 	 * <module>...
 	 * : One or more module names to copy in.
-	 * Available modules: log, options, assets, ajax, admin-pages, rest-api, cli, cron, fields, meta-boxes, post-types, blocks, site-health, abilities, migrations.
+	 * Available modules: log, options, assets, ajax, admin-pages, rest-api, cli, cron, fields, meta-boxes, post-types, blocks, site-health, abilities, icons-library, migrations.
 	 *
 	 * ## EXAMPLES
 	 *

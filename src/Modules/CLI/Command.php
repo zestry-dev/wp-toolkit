@@ -328,6 +328,24 @@ abstract class Command extends \WP_CLI_Command implements PluginAware {
 	}
 
 	/**
+	 * Run another WP-CLI command.
+	 *
+	 * For reaching a command WP-CLI already ships rather than reimplementing what
+	 * it does -- `wp config set` knows where `wp-config.php` is, where in it a
+	 * constant belongs, and how to quote one, none of which is worth writing
+	 * twice.
+	 *
+	 * Runs in this process rather than launching a second WordPress, so it costs
+	 * no bootstrap and its output lands in this run's.
+	 *
+	 * @param string $command The command line, without the leading `wp`.
+	 * @return void
+	 */
+	final public function run_command( string $command ): void {
+		\WP_CLI::runcommand( $command, array( 'launch' => false ) );
+	}
+
+	/**
 	 * Read a single line from standard input.
 	 *
 	 * Isolated so interactive prompts can be exercised in tests by overriding this

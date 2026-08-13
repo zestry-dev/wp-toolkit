@@ -89,6 +89,10 @@ namespace {
 				self::$calls[] = array( 'debug', $message, $group );
 			}
 
+			public static function runcommand( $command, $options = array() ): void {
+				self::$calls[] = array( 'runcommand', $command, $options );
+			}
+
 			public static function halt( $code ): void {
 				self::$calls[] = array( 'halt', $code );
 			}

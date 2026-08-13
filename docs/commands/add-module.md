@@ -28,7 +28,7 @@ To copy a service on its own, use `wp zt add service <service>`.
 ## Options
 
 - **`<module>...`**  
-  One or more module names to copy in. Available modules: log, options, assets, ajax, admin-pages, rest-api, cli, cron, fields, meta-boxes, post-types, blocks, site-health, abilities, migrations.
+  One or more module names to copy in. Available modules: log, options, assets, ajax, admin-pages, rest-api, cli, cron, fields, meta-boxes, post-types, blocks, site-health, abilities, icons-library, migrations.
 
 ## Examples
 

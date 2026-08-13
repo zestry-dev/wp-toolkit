@@ -169,7 +169,7 @@ Every module and service name below is what you pass to `wp zt add` — `wp zt a
 
 - [Modules](modules/) — the ones that act on their own:
   <!-- zestry:include generator="module-names" -->
-  `abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cron`, `fields`, `log`, `meta-boxes`, `migrations`, `options`, `post-types`, `rest-api`, `site-health`
+  `abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cron`, `fields`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `post-types`, `rest-api`, `site-health`
   <!-- /zestry:include -->
 - [Services](services/) — the ones that work when you call them:
   <!-- zestry:include generator="service-names" -->

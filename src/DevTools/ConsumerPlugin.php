@@ -79,4 +79,53 @@ class ConsumerPlugin extends Service {
 
 		return $plugins_dir . $plugin_folder;
 	}
+
+	/**
+	 * The plugin's own entry file -- the one carrying its `Plugin Name:` header.
+	 *
+	 * Found the way WordPress finds it: each top-level PHP file is read in turn,
+	 * and the first one declaring a name is the plugin. Subdirectories are not
+	 * searched, because WordPress does not search them either.
+	 *
+	 * @param string $plugin_root Absolute path to the plugin's root directory.
+	 * @return string|null Absolute path, or null when nothing there declares a plugin.
+	 */
+	public function get_entry_file( string $plugin_root ): ?string {
+		foreach ( (array) \glob( \rtrim( $plugin_root, '/\\' ) . '/*.php' ) as $file ) {
+			$data = \get_file_data( (string) $file, array( 'Name' => 'Plugin Name' ) );
+
+			if ( '' !== $data['Name'] ) {
+				return (string) $file;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * The oldest WordPress this plugin says it runs on.
+	 *
+	 * Its `Requires at least:` header, which is the number WordPress itself
+	 * enforces: it refuses to activate the plugin on an older site and says why.
+	 * That makes it the only statement about versions the toolkit can trust --
+	 * the WordPress a developer happens to be running is a fact about one machine,
+	 * while this is a promise the plugin makes to every site it reaches.
+	 *
+	 * Null when nothing is declared, which is a plugin WordPress will activate
+	 * anywhere at all.
+	 *
+	 * @param string $plugin_root Absolute path to the plugin's root directory.
+	 * @return string|null The declared version, or null when none is declared.
+	 */
+	public function get_required_wordpress( string $plugin_root ): ?string {
+		$entry_file = $this->get_entry_file( $plugin_root );
+
+		if ( null === $entry_file ) {
+			return null;
+		}
+
+		$data = \get_file_data( $entry_file, array( 'RequiresWP' => 'Requires at least' ) );
+
+		return '' === $data['RequiresWP'] ? null : $data['RequiresWP'];
+	}
 }

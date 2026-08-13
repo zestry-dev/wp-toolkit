@@ -35,6 +35,11 @@ final class AddCommandTest extends TestCase {
 			$this->target_plugin_dir . '/zestry.json',
 			json_encode( array( 'namespace' => 'Acme\\Plugin', 'root' => 'lib' ), JSON_PRETTY_PRINT )
 		);
+
+		// A plugin is a directory with an entry file declaring one, and the version
+		// gate reads its header. New enough for everything in the registry, so the
+		// tests that are not about versions never meet it.
+		$this->write_entry_file( '7.1' );
 	}
 
 	public function tear_down(): void {
@@ -441,6 +446,94 @@ final class AddCommandTest extends TestCase {
 
 		$this->assertNotNull( \WP_CLI::last( 'error' ) );
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/lib/Core/Modules/CLI/CLI.php' );
+	}
+
+	/**
+	 * Measured against the plugin's own `Requires at least:` header, not against
+	 * the WordPress this developer runs: the second says nothing about the oldest
+	 * site the plugin will be installed on, which is where a module registering
+	 * against a missing API does its damage.
+	 */
+	public function test_refuses_a_module_the_plugin_promises_too_old_a_wordpress_for(): void {
+		$this->write_entry_file( '6.5' );
+
+		$this->run_add( array( 'icons-library' ) );
+
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/lib/Core/Modules/IconsLibrary/IconsLibrary.php' );
+		$this->assertStringContainsString(
+			'icons-library needs WordPress 7.1',
+			(string) \WP_CLI::last( 'error' )[0]
+		);
+	}
+
+	/**
+	 * Undeclared is not "old enough by default". A plugin promising nothing is one
+	 * WordPress will activate on anything at all, so it is the widest possible
+	 * promise rather than the absence of one.
+	 */
+	public function test_refuses_a_module_when_the_plugin_declares_no_minimum(): void {
+		$this->write_entry_file( null );
+
+		$this->run_add( array( 'icons-library' ) );
+
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/lib/Core/Modules/IconsLibrary/IconsLibrary.php' );
+		$this->assertStringContainsString(
+			'Set `Requires at least: 7.1`',
+			(string) \WP_CLI::last( 'error' )[0]
+		);
+	}
+
+	/**
+	 * Nothing at all is copied, including the dependencies that would have been
+	 * fine on their own: a half-satisfied `depends` is a state neither `add` nor
+	 * `update` has any way to describe.
+	 */
+	public function test_refusing_one_module_copies_none_of_its_dependencies(): void {
+		$this->write_entry_file( '6.5' );
+
+		$this->run_add( array( 'icons-library' ) );
+
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/lib/Core/Services/Path.php' );
+	}
+
+	public function test_copies_a_module_the_plugin_promises_a_new_enough_wordpress_for(): void {
+		$this->write_entry_file( '7.1' );
+
+		$this->run_add( array( 'icons-library' ) );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/IconsLibrary/IconsLibrary.php' );
+	}
+
+	/**
+	 * The same missing fact the doctor reports, said at the moment code is being
+	 * added -- which is when it is cheapest to write down. A warning rather than a
+	 * refusal, since nothing in this batch needed a version.
+	 */
+	public function test_warns_about_a_missing_header_even_when_nothing_needs_a_version(): void {
+		$this->write_entry_file( null );
+
+		$this->run_add( array( 'path' ), 'service' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Services/Path.php' );
+		$this->assertStringContainsString(
+			'does not declare a `Requires at least:` header',
+			(string) \WP_CLI::last( 'warning' )[0]
+		);
+	}
+
+	/**
+	 * Write the fixture plugin's entry file, with or without a declared minimum.
+	 *
+	 * @param string|null $requires_wp The `Requires at least:` value, or null to leave the header out.
+	 * @return void
+	 */
+	private function write_entry_file( ?string $requires_wp ): void {
+		$header = null === $requires_wp ? '' : "\n * Requires at least: " . $requires_wp;
+
+		file_put_contents(
+			$this->target_plugin_dir . '/acme-plugin.php',
+			"<?php\n/**\n * Plugin Name: Acme Plugin" . $header . "\n */\n"
+		);
 	}
 
 	/**

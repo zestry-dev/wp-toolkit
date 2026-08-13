@@ -62,6 +62,24 @@ final class DoctorCommandTest extends TestCase {
 			$this->target_plugin_dir . '/acme-plugin.php',
 			'acme-plugin'
 		);
+
+		$this->write_entry_file();
+	}
+
+	/**
+	 * Write the fixture plugin's entry file.
+	 *
+	 * A plugin is a directory with a file declaring one, and `Requires at least:`
+	 * is what the version checks read. Declared high enough that nothing in the
+	 * registry is out of reach here.
+	 *
+	 * @return void
+	 */
+	private function write_entry_file(): void {
+		file_put_contents(
+			$this->target_plugin_dir . '/acme-plugin.php',
+			"<?php\n/**\n * Plugin Name: Acme Plugin\n * Requires at least: 7.1\n */\n"
+		);
 	}
 
 	public function tear_down(): void {
@@ -315,6 +333,43 @@ final class DoctorCommandTest extends TestCase {
 			$this->target_plugin_dir . '/lib/Modules/' . $class_name . '.php',
 			"<?php\nnamespace Acme\\Plugin\\Modules;\nclass " . $class_name . ' extends ' . $extends . " {}\n"
 		);
+	}
+
+	/**
+	 * WordPress reads `Requires at least:` to refuse activation on a site too old
+	 * for the plugin. Without it there is nothing stopping the plugin loading
+	 * anywhere, and nothing here can tell whether a copied module would have an
+	 * API to call.
+	 */
+	public function test_a_missing_requires_at_least_header_is_reported(): void {
+		file_put_contents(
+			$this->target_plugin_dir . '/acme-plugin.php',
+			"<?php\n/**\n * Plugin Name: Acme Plugin\n */\n"
+		);
+		$this->write_bootstrap( array() );
+
+		$this->run_doctor();
+
+		$this->assertStringContainsString( 'does not declare a `Requires at least:` header', $this->stdout() );
+	}
+
+	/**
+	 * `wp zt add` refuses this outright, so reaching it means the header was
+	 * lowered afterwards -- leaving a plugin that activates on sites where the
+	 * module registers against an API that is not there.
+	 */
+	public function test_a_module_needing_more_than_the_plugin_promises_is_reported(): void {
+		file_put_contents(
+			$this->target_plugin_dir . '/acme-plugin.php',
+			"<?php\n/**\n * Plugin Name: Acme Plugin\n * Requires at least: 6.5\n */\n"
+		);
+		$this->write_registry_module( 'IconsLibrary' );
+		$this->write_bootstrap( array( '\\Acme\\Plugin\\Core\\Modules\\IconsLibrary\\IconsLibrary::class' ) );
+
+		$this->run_doctor();
+
+		$this->assertStringContainsString( '"icons-library" module needs WordPress 7.1', $this->stdout() );
+		$this->assertStringContainsString( 'Requires at least: 6.5', $this->stdout() );
 	}
 
 	/**

@@ -433,8 +433,8 @@ class Copier extends Service {
 	 * and each section reads correctly on its own, so nothing about the file
 	 * would look wrong. A single array could not hide this; two can.
 	 *
-	 * @param array<string, array<string, array{source: class-string, depends: array{services: string[], modules: string[]}}>> $registry The registry as declared.
-	 * @return array<string, array{source: class-string, depends: string[], section: string}> Keyed by entry name.
+	 * @param array<string, array<string, array{source: class-string, requires?: string, depends: array{services: string[], modules: string[]}}>> $registry The registry as declared.
+	 * @return array<string, array{source: class-string, depends: string[], section: string, requires: string|null}> Keyed by entry name.
 	 * @throws \InvalidArgumentException When one name is declared in more than one section.
 	 */
 	public static function flatten_registry( array $registry ): array {
@@ -456,12 +456,15 @@ class Copier extends Service {
 				$depends = $entry['depends'] ?? array();
 
 				$flat[ $name ] = array(
-					'source'  => $entry['source'],
-					'depends' => \array_merge(
+					'source'   => $entry['source'],
+					'depends'  => \array_merge(
 						$depends['services'] ?? array(),
 						$depends['modules'] ?? array()
 					),
-					'section' => $section,
+					'section'  => $section,
+					// Null rather than absent, so a reader never has to ask
+					// whether the key is there before asking what it says.
+					'requires' => $entry['requires'] ?? null,
 				);
 			}
 		}

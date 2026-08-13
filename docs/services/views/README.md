@@ -9,7 +9,7 @@ Reads from `views/` &nbsp;·&nbsp; Dependencies [`path`](../path/)
 
 Resolves and renders PHP view templates from the plugin directory.
 
-A view is an ordinary PHP file under `views/`. Each key in the data array becomes a local variable inside the template. Only names beginning `__view_` are reserved — the render scope holds two of them and nothing else — so every ordinary key reaches the template, `view` and `data` included.
+A view is an ordinary PHP file under `views/`. Each key in the data array becomes a local variable inside the template. Only names beginning `__include_` are reserved — the render scope holds two of them and nothing else — so every ordinary key reaches the template, `view` and `data` included.
 
 The `.php` extension is optional, and a name may address a subdirectory, so `'emails/receipt'` and `'emails/receipt.php'` resolve to the same file. A name that escapes the views root is rejected.
 
@@ -147,7 +147,7 @@ public function get( string $view, array $data = array() ): string
 
 Each key in `$data` becomes a template variable. For example, `get( 'card', array( 'title' => 'Hello' ) )` makes `$title` available to `views/card.php`. Escape the data in the template according to context.
 
-Only keys beginning `__view_` are reserved; the render scope holds two of them and nothing else. Every ordinary name reaches the template, `view` and `data` included — rendering a subview costs no name at all, since a template reaches this service as `$this`.
+The including is `Path::include_file()`, which is also what reserves the names: only keys beginning `__include_` are, and every ordinary name reaches the template, `view` and `data` included. Rendering a subview costs no name at all, since a template reaches this service as `$this`.
 
 <br>
 

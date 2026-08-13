@@ -171,6 +171,34 @@ Constructs a URL to a resource in the plugin uploads directory. Path components 
 
 <br>
 
+### `include_file( $file, $data, $scope )`
+
+Include a PHP file, keeping both halves of what it produced.
+
+```php
+public function include_file( string $file, array $data = array(), ?object $scope = null ): array
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$file` — Absolute path to an existing PHP file<br>`$data` — Variables to make available to it<br>`$scope` — What `$this` is inside the file. Defaults to this service |
+| **Return** | What it returned, and what it printed |
+| **Throws** | — |
+
+A PHP file that is data rather than a class produces two things and PHP throws one of them away depending on how you call it: `include` hands back what the file returned and lets its output escape to the page, while output buffering keeps the output and discards the return. This keeps both — `returned` is the value, `buffer` is the output, exactly as written and not trimmed.
+
+That pairing is what lets one file be a picture *and* say what it is called: a template echoes its markup and returns `array( 'label' => __( … ) )`, so the label is translated in the file it describes rather than derived from a filename, which cannot be translated at all.
+
+`returned` is exactly what PHP reports, which for a file that returns nothing is the integer `1` — so check the type you expected before reading anything out of it.
+
+Inside the file, `$this` is `$scope`, or this service when none is given. `Views` passes itself, which is what makes a subview `$this->render( … )` from inside a template.
+
+Each key in `$data` becomes a local variable. Only names beginning `__include_` are reserved — the scope holds two of them and nothing else — so every ordinary key arrives, `file` and `data` included.
+
+The path is used as given and is not resolved against the plugin root: a caller that took the name from anything but its own source should resolve and contain it first, the way `Views` does before calling here.
+
+<br>
+
 ### `get_plugin()`
 
 *Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*

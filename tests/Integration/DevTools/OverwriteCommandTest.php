@@ -37,6 +37,24 @@ final class OverwriteCommandTest extends TestCase {
 			$this->target_plugin_dir . '/zestry.json',
 			json_encode( array( 'namespace' => 'Acme\\Plugin', 'root' => 'lib' ), JSON_PRETTY_PRINT )
 		);
+
+		$this->write_entry_file();
+	}
+
+	/**
+	 * Write the fixture plugin's entry file.
+	 *
+	 * A plugin is a directory with a file declaring one, and `Requires at least:`
+	 * is what the version checks read. Declared high enough that nothing in the
+	 * registry is out of reach here.
+	 *
+	 * @return void
+	 */
+	private function write_entry_file(): void {
+		file_put_contents(
+			$this->target_plugin_dir . '/acme-plugin.php',
+			"<?php\n/**\n * Plugin Name: Acme Plugin\n * Requires at least: 7.1\n */\n"
+		);
 	}
 
 	public function tear_down(): void {

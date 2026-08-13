@@ -53,4 +53,5 @@ been initialized — see [Getting started](../getting-started.md).
 
 ## Everything else
 
+- [`wp zt debug`](debug.md) — Turn this plugin's debug mode on or off.
 - [`wp zt describe`](describe.md) — Report what this plugin has, where each module looks, and what it expects.

@@ -67,7 +67,7 @@ return new class() extends Command {
 	/**
 	 * Check this plugin's module wiring for silent misconfiguration.
 	 *
-	 * Four checks, each targeting a mistake that produces no error at runtime:
+	 * Six checks, each targeting a mistake that produces no error at runtime:
 	 *
 	 * - a `bootstrap.php` that declares modules where nothing built any of them,
 	 *   because the entry file never reached `->bootstrap()->run()` -- so every
@@ -75,7 +75,11 @@ return new class() extends Command {
 	 * - a module on disk that `bootstrap.php` does not list -- never built, so
 	 *   `on_boot()` never runs and the feature is simply absent;
 	 * - a declaration whose class file is gone;
-	 * - a `zestry.json` naming a root directory that is not there.
+	 * - a `zestry.json` naming a root directory that is not there;
+	 * - no `Requires at least:` header, so WordPress will activate the plugin on
+	 *   any version it likes;
+	 * - a module needing a newer WordPress than the plugin promises, which on an
+	 *   older site registers against an API that is not there.
 	 *
 	 * Needs an initialized plugin: with no `zestry.json` in the current directory
 	 * it exits non-zero telling you to run `wp zt init` first, and it stops the
@@ -171,6 +175,7 @@ return new class() extends Command {
 		$this->check_plugin_is_running( $plugin_root, $declarations );
 		$this->check_declared_modules( $plugin_root, $config, $declarations );
 		$this->check_undeclared_modules( $plugin_root, $config, $declarations );
+		$this->check_wordpress_version( $plugin_root, $config );
 
 		$this->report_problems( $format );
 	}
@@ -340,6 +345,72 @@ return new class() extends Command {
 			$this->add_problem(
 				sprintf( 'The "%s" module is copied in but never declared.', $name ),
 				'A module is built because bootstrap.php lists it, so one that is not listed is never built: it discovers no files and binds no hooks. Add it to bootstrap.php.',
+				$relative
+			);
+		}
+	}
+
+	/**
+	 * Flag a copied-in entry this site's WordPress is too old for.
+	 *
+	 * `wp zt add` refuses one of these outright, so arriving here means the site
+	 * moved rather than the plugin: WordPress rolled back, or a copied tree
+	 * carried to an older install. The module still loads and is still declared;
+	 * it simply has no API to call, and reports that once per boot through
+	 * `_doing_it_wrong()` -- a notice on a page nobody is reading, on a site where
+	 * the feature is quietly absent.
+	 *
+	 * Read from the same registry `add` gates on, so the two cannot disagree about
+	 * what a module needs.
+	 *
+	 * @param string                                 $plugin_root Absolute path to the plugin root.
+	 * @param array{namespace: string, root: string} $config      The project's zestry.json.
+	 * @return void
+	 */
+	private function check_wordpress_version( string $plugin_root, array $config ): void {
+		$registry   = Copier::flatten_registry( require $this->path->get_plugin_path( 'src/DevTools/registry.php' ) );
+		$namespace  = Copier::get_target_namespace( $config['namespace'] );
+		$declared   = $this->consumer_plugin->get_required_wordpress( $plugin_root );
+		$entry_file = $this->consumer_plugin->get_entry_file( $plugin_root );
+
+		if ( null === $declared ) {
+			$this->add_problem(
+				'This plugin does not declare a `Requires at least:` header.',
+				'WordPress reads that header to refuse activation on a site too old to run the plugin, so'
+					. ' without it there is nothing stopping it from loading anywhere -- and nothing here can'
+					. ' tell whether a copied module would have an API to call. Add it beside `Plugin Name:`.',
+				null === $entry_file ? null : basename( $entry_file )
+			);
+		}
+
+		foreach ( $registry as $name => $entry ) {
+			if ( null === $entry['requires'] ) {
+				continue;
+			}
+
+			if ( null !== $declared && version_compare( $declared, $entry['requires'], '>=' ) ) {
+				continue;
+			}
+
+			$class_name = $namespace . '\\' . Copier::get_relative_class( $entry['source'] );
+			$relative   = (string) $this->get_relative_class_path( $class_name, $config );
+
+			if ( ! is_file( rtrim( $plugin_root, '/\\' ) . '/' . $relative ) ) {
+				continue;
+			}
+
+			$this->add_problem(
+				sprintf(
+					'The "%s" %s needs WordPress %s, which this plugin does not promise: %s.',
+					$name,
+					rtrim( $entry['section'], 's' ),
+					$entry['requires'],
+					null === $declared
+						? 'nothing declares a minimum'
+						: sprintf( 'it declares `Requires at least: %s`', $declared )
+				),
+				'On a site older than that, the API this registers against does not exist: it binds nothing and'
+					. ' the feature is silently absent. Raise the header, or remove it.',
 				$relative
 			);
 		}

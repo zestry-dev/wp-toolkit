@@ -79,7 +79,7 @@ What you add is one of two kinds:
   <!-- /zestry:include -->
 - a **[module](modules/)** acts on its own:
   <!-- zestry:include generator="module-names" -->
-  `abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cron`, `fields`, `log`, `meta-boxes`, `migrations`, `options`, `post-types`, `rest-api`, `site-health`
+  `abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cron`, `fields`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `post-types`, `rest-api`, `site-health`
   <!-- /zestry:include -->
 
 ## 5. Wire the plugin up
