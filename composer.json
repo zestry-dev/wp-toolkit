@@ -13,6 +13,13 @@
   ],
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/zestry-dev/wp-toolkit",
+  "authors": [
+    {
+      "name": "Zestry",
+      "homepage": "https://zestry.dev/",
+      "role": "Maintainer"
+    }
+  ],
   "support": {
     "issues": "https://github.com/zestry-dev/wp-toolkit/issues",
     "source": "https://github.com/zestry-dev/wp-toolkit",
