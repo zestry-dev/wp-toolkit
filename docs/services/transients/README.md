@@ -178,6 +178,8 @@ Loud rather than silent: an over-long transient key is truncated by the database
 
 ### `get_plugin()`
 
+*Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
+
 Get the plugin this class belongs to.
 
 ```php

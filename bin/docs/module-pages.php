@@ -331,9 +331,15 @@ function zestry_parameter_list( string $parameters ): string {
  * Constructors and `private` members are never listed, nor is anything marked
  * `@internal`.
  *
+ * Each entry records the class it was **declared** on, so a page can print an
+ * inherited member short and link to the page that owns it rather than
+ * reprinting its body. Sources are read in most-derived-first order and the
+ * first declaration of a name wins, which is also what makes an override
+ * replace what it overrides instead of appearing beside it.
+ *
  * @param string $root  Absolute path to the repository root.
  * @param string $class The class name, e.g. `Ajax` or `AjaxAction`.
- * @return array<int, array{name: string, label: string, signature: string, summary: string, description: string, params: array, return: string, throws: array}>
+ * @return array<int, array{name: string, label: string, signature: string, summary: string, description: string, params: array, return: string, throws: array, origin: string}>
  */
 function zestry_public_api( string $root, string $class ): array {
 	$path = zestry_find_class_file( $root, $class );
@@ -342,60 +348,67 @@ function zestry_public_api( string $root, string $class ): array {
 		return array();
 	}
 
-	$source = (string) file_get_contents( $path );
-	$api    = array();
+	$api = array();
 
-	/*
-	 * Follow `use SomeTrait;` declarations. Module itself declares almost no
-	 * methods -- get_plugin(), set_plugin() and inject_modules() all come from
-	 * WithPlugin -- so without this its page would list nothing at all, when
-	 * those three are exactly the API every module inherits.
-	 */
-	if ( preg_match_all( '/^\s*use\s+(\w+);/m', $source, $traits ) ) {
+	// class name => source, in the order a reader would meet them: the class
+	// itself, then its own traits, then its parent and the traits that parent
+	// pulls in. `Module` declares almost nothing -- get_plugin() comes from
+	// WithPlugin and Service -- so without the last two its page lists nothing.
+	$sources = array( $class => (string) file_get_contents( $path ) );
+
+	$collect_traits = static function ( string $from ) use ( $root, $path, &$sources ): void {
+		if ( ! preg_match_all( '/^\s*use\s+(\w+);/m', $from, $traits ) ) {
+			return;
+		}
+
 		foreach ( $traits[1] as $trait ) {
 			$trait_path = zestry_find_class_file( $root, $trait );
 
-			if ( null !== $trait_path && $trait_path !== $path ) {
-				$source .= "\n" . (string) file_get_contents( $trait_path );
+			if ( null !== $trait_path && $trait_path !== $path && ! isset( $sources[ $trait ] ) ) {
+				$sources[ $trait ] = (string) file_get_contents( $trait_path );
 			}
 		}
-	}
+	};
 
-	/*
-	 * And the same for what the class extends. A `Module` page listed only
-	 * `on_wp_init()`, because `get_plugin()` -- the accessor every module and
-	 * service has -- is declared on `Service`, one level up. A reader of the
-	 * Module page has no reason to know that, and nothing linked them to it.
-	 */
-	if ( preg_match( '/^(?:abstract |final )*class \w+ extends (\w+)/m', $source, $parent ) ) {
+	$collect_traits( $sources[ $class ] );
+
+	if ( preg_match( '/^(?:abstract |final )*class \w+ extends (\w+)/m', $sources[ $class ], $parent ) ) {
 		$parent_path = zestry_find_class_file( $root, $parent[1] );
 
 		if ( null !== $parent_path && $parent_path !== $path ) {
-			$source .= "\n" . (string) file_get_contents( $parent_path );
-
-			// One more level reaches the trait a parent pulls in, which is where
-			// `get_plugin()` actually lives.
-			if ( preg_match_all( '/^\s*use\s+(\w+);/m', (string) file_get_contents( $parent_path ), $inherited ) ) {
-				foreach ( $inherited[1] as $trait ) {
-					$trait_path = zestry_find_class_file( $root, $trait );
-
-					if ( null !== $trait_path && $trait_path !== $path ) {
-						$source .= "\n" . (string) file_get_contents( $trait_path );
-					}
-				}
-			}
+			$sources[ $parent[1] ] = (string) file_get_contents( $parent_path );
+			$collect_traits( $sources[ $parent[1] ] );
 		}
 	}
 
-	preg_match_all(
-		'#/\*\*((?:(?!\*/).)*?)\*/\s*((?:final |abstract |static )*(?:public|protected)(?: static)? function (\w+)\s*(\((?:[^()]|(?4))*\))(?:\s*:\s*[^\s{;]+)?)#s',
-		$source,
-		$methods,
-		PREG_SET_ORDER
-	);
+	$methods = array();
+
+	foreach ( $sources as $origin => $source ) {
+		preg_match_all(
+			'#/\*\*((?:(?!\*/).)*?)\*/\s*((?:final |abstract |static )*(?:public|protected)(?: static)? function (\w+)\s*(\((?:[^()]|(?4))*\))(?:\s*:\s*[^\s{;]+)?)#s',
+			$source,
+			$found,
+			PREG_SET_ORDER
+		);
+
+		foreach ( $found as $match ) {
+			$methods[] = array_merge( $match, array( 'origin' => (string) $origin ) );
+		}
+	}
+
+	$declared = array();
 
 	foreach ( $methods as $method ) {
 		[ , $docblock, $signature, $name ] = $method;
+
+		// An override replaces what it overrides. Without this a page listed
+		// both -- ModernAdminPage::enqueue_assets() appeared twice, once with
+		// its own body and once with AdminPage's.
+		if ( isset( $declared[ $name ] ) ) {
+			continue;
+		}
+
+		$declared[ $name ] = true;
 
 		/*
 		 * A constructor is listed only when it takes something. Service's is
@@ -448,10 +461,67 @@ function zestry_public_api( string $root, string $class ): array {
 			'throws'      => $tags['throws'],
 			'abstract'    => $abstract,
 			'examples'    => $custom['examples'],
+			'origin'      => $method['origin'],
+			'inherited'   => $method['origin'] !== $class,
 		);
 	}
 
 	return $api;
+}
+
+/**
+ * The page that documents a class in full, as a docs-relative path.
+ *
+ * Only the classes something else inherits from are here: those are the ones a
+ * page can hand off to instead of reprinting. Anything absent is treated as
+ * having no page of its own, and is printed in full wherever it appears.
+ *
+ * @return array<string, string> Class name => path under `docs/`.
+ */
+function zestry_base_class_pages(): array {
+	return array(
+		'Module'            => 'modules/module.md',
+		'ActivationHandler' => 'modules/activation-handler.md',
+		'Service'           => 'services/service.md',
+		'WithPlugin'        => 'kernel/with-plugin.md',
+		'WithEnablement'    => 'kernel/with-enablement.md',
+		'WithFolderWalker'  => 'kernel/with-folder-walker.md',
+	);
+}
+
+/**
+ * A written page's path relative to `docs/`.
+ *
+ * @param string $file Absolute path to the page being written.
+ * @return string The path under `docs/`, or an empty string when it is not one.
+ */
+function zestry_docs_relative( string $file ): string {
+	$at = strrpos( $file, '/docs/' );
+
+	return false === $at ? '' : substr( $file, $at + strlen( '/docs/' ) );
+}
+
+/**
+ * A link from one page under `docs/` to another, by their docs-relative paths.
+ *
+ * @param string $from The linking page, e.g. `modules/cron/README.md`.
+ * @param string $to   The linked page, e.g. `modules/module.md`.
+ * @return string The relative href.
+ */
+function zestry_relative_page( string $from, string $to ): string {
+	$keep = static function ( string $part ): bool {
+		return '' !== $part && '.' !== $part;
+	};
+
+	$from_parts = array_values( array_filter( explode( '/', dirname( $from ) ), $keep ) );
+	$to_parts   = array_values( array_filter( explode( '/', $to ), $keep ) );
+
+	while ( array() !== $from_parts && count( $to_parts ) > 1 && $from_parts[0] === $to_parts[0] ) {
+		array_shift( $from_parts );
+		array_shift( $to_parts );
+	}
+
+	return str_repeat( '../', count( $from_parts ) ) . implode( '/', $to_parts );
 }
 
 /**
@@ -549,12 +619,28 @@ function zestry_render_signature_table( array $method ): array {
 /**
  * Render one method as a markdown block.
  *
- * @param array{name: string, label: string, signature: string, summary: string, description: string, params: array, return: string, throws: array} $method The method to render.
+ * An inherited member is printed in full, like any other: a reader looking up
+ * what a `Cron` can do should find `on_wp_init()` under `Cron`, not a
+ * redirection to read it somewhere else. It carries a line naming where it came
+ * from, so the page it is declared on is one click away.
+ *
+ * @param array{name: string, label: string, signature: string, summary: string, description: string, params: array, return: string, throws: array, origin?: string} $method The method to render.
  * @param string                                                                                                $level  The heading level, e.g. `###`.
+ * @param string                                                                                                $page   The page being written, relative to `docs/`.
  * @return string[] Markdown lines.
  */
-function zestry_render_method( array $method, string $level ): array {
-	$body = array();
+function zestry_render_method( array $method, string $level, string $page = '' ): array {
+	$body  = array();
+	$owner = zestry_base_class_pages()[ $method['origin'] ?? '' ] ?? null;
+
+	if ( ( $method['inherited'] ?? false ) && null !== $owner && '' !== $page ) {
+		$body[] = sprintf(
+			'*Inherited from [`%s`](%s).*',
+			$method['origin'],
+			zestry_relative_page( $page, $owner )
+		);
+		$body[] = '';
+	}
 
 	// The summary reads straight off the heading, before the declaration it
 	// describes: it says what the method is for, in the words the name abbreviates.
@@ -1175,7 +1261,7 @@ function zestry_generate_module_pages( string $root ): int {
 			$page[] = '';
 		}
 
-		$page = array_merge( $page, zestry_render_api_section( $root, $module['class'], '##' ) );
+		$page = array_merge( $page, zestry_render_api_section( $root, $module['class'], '##', $module_dir . '/README.md' ) );
 
 		/*
 		 * Every page used to end on a `| **Throws** | — |` table row, which is
@@ -1576,7 +1662,8 @@ function zestry_render_facts_table( array $module, array $sections = array() ): 
  * @param string $level The heading level for the section, e.g. `##`.
  * @return string[] Markdown lines.
  */
-function zestry_render_api_section( string $root, string $class, string $level ): array {
+function zestry_render_api_section( string $root, string $class, string $level, string $page_file = '' ): array {
+	$page      = zestry_docs_relative( $page_file );
 	$lines     = array();
 	$constants = zestry_class_constants( $root, $class );
 	$methods   = zestry_public_api( $root, $class );
@@ -1632,13 +1719,13 @@ function zestry_render_api_section( string $root, string $class, string $level )
 				count( $required )
 			);
 		$lines[] = '';
-		$lines   = array_merge( $lines, zestry_render_method_list( $required, $level ) );
+		$lines   = array_merge( $lines, zestry_render_method_list( $required, $level, $page ) );
 	}
 
 	if ( array() !== $optional ) {
 		$lines[] = array() === $required ? $level . ' Methods' : $level . ' Methods you can use';
 		$lines[] = '';
-		$lines   = array_merge( $lines, zestry_render_method_list( $optional, $level ) );
+		$lines   = array_merge( $lines, zestry_render_method_list( $optional, $level, $page ) );
 	}
 
 	return $lines;
@@ -1649,9 +1736,10 @@ function zestry_render_api_section( string $root, string $class, string $level )
  *
  * @param array<int, array<string, mixed>> $methods The methods to render.
  * @param string                           $level   The section's heading level, e.g. `##`.
+ * @param string                           $page    The page being written, relative to `docs/`.
  * @return string[] Markdown lines.
  */
-function zestry_render_method_list( array $methods, string $level ): array {
+function zestry_render_method_list( array $methods, string $level, string $page = '' ): array {
 	$lines = array();
 
 	foreach ( $methods as $index => $method ) {
@@ -1660,7 +1748,7 @@ function zestry_render_method_list( array $methods, string $level ): array {
 			$lines[] = '';
 		}
 
-		$lines = array_merge( $lines, zestry_render_method( $method, $level . '#' ) );
+		$lines = array_merge( $lines, zestry_render_method( $method, $level . '#', $page ) );
 	}
 
 	return $lines;
@@ -1775,9 +1863,11 @@ function zestry_write_base_class_page( string $root, string $output_dir, string 
 		}
 	}
 
-	$page = array_merge( $page, zestry_render_api_section( $root, $base, '##' ) );
+	$page_file = $output_dir . '/' . zestry_base_slug( $base ) . '.md';
 
-	zestry_write_page( $output_dir . '/' . zestry_base_slug( $base ) . '.md', zestry_insert_toc( $page ) );
+	$page = array_merge( $page, zestry_render_api_section( $root, $base, '##', $page_file ) );
+
+	zestry_write_page( $page_file, zestry_insert_toc( $page ) );
 }
 
 /**

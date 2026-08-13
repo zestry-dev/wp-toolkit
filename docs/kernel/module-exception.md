@@ -7,4 +7,4 @@
 
 Base exception for declaration, resolution, and boot failures.
 
-Catch this to handle any error raised while declaring, resolving, or booting a service or a module, without also catching unrelated runtime exceptions. More specific failures extend this class: Plugin throws this directly for a malformed `bootstrap.php` — one that returns something other than an array, or holds an entry naming no class. ServicesRepository throws the ModuleNotFoundException and CircularDependencyException subclasses for those particular failures, and every file-discovery module throws DiscoveryException for a layout it cannot read.
+Catch this to handle any error raised while declaring, resolving, or booting a service or a module, without also catching unrelated runtime exceptions. More specific failures extend this class: Plugin throws this directly for a malformed `bootstrap.php` — one that returns something other than an array, or holds an entry naming no class. Resolving one raises the ModuleNotFoundException and CircularDependencyException subclasses, and every file-discovery module throws DiscoveryException for a layout it cannot read.

@@ -33,7 +33,7 @@ An ability missing from the first is not registered; one missing from the second
 
 Abilities are worth writing even when nothing external calls them yet. One ability is one operation, described once, reachable from a REST client, an agent, a WP-CLI command and your own PHP through `run()` — instead of the same operation written four times.
 
-[Adding it](#adding-it) &nbsp;·&nbsp; [An ability](#an-ability) &nbsp;·&nbsp; [Calling one from your own code](#calling-one-from-your-own-code) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing an Ability](#writing-an-ability) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+[Adding it](#adding-it) &nbsp;·&nbsp; [An ability](#an-ability) &nbsp;·&nbsp; [Calling one from your own code](#calling-one-from-your-own-code) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing an Ability](#writing-an-ability) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
 ## Adding it
 
@@ -141,25 +141,7 @@ const DEFAULT_ABILITIES_ROOT = 'abilities';
 
 Where abilities are discovered, relative to the plugin root.
 
-## You must implement
-
-This one method is abstract: a subclass that does not declare it will not load.
-
-### `on_boot()`
-
-What this module does on its own.
-
-```php
-abstract protected function on_boot(): void
-```
-
-Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
-
-**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
-
-`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
-
-## Methods you can use
+## Methods
 
 ### `set_abilities_root( $root )`
 
@@ -318,6 +300,8 @@ Returns whatever the ability returned, or a `WP_Error` for any of those three fa
 <br>
 
 ### `on_wp_init( $callback, $priority )`
+
+*Inherited from [`Module`](../module.md).*
 
 Run a callback on `init`, or immediately if `init` has already fired.
 

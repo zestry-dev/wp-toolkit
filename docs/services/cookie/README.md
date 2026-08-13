@@ -282,6 +282,8 @@ Your slug joined to the local name with `_`, the separator WordPress uses for it
 
 ### `get_plugin()`
 
+*Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
+
 Get the plugin this class belongs to.
 
 ```php

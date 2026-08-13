@@ -22,23 +22,11 @@ A block declares its PHP with `"supports": { "{plugin-slug}-php": "file:./block.
 
 A block declaring WordPress's own `render` field instead is left alone entirely, and a block declaring neither is static. Both are still registered.
 
-## Static or dynamic
-
-`wp zt make block` asks, and defaults to static. Three questions settle it, in this order.
-
-**Does the output depend on anything outside the block's own attributes?** A query, an option, the current user, another post — then it is dynamic, and there is nothing left to weigh.
-
-**Is the markup settled?** Then static. It is saved into `post_content`, so it survives the plugin being deactivated, as plain HTML that still reads as the content it was. Changing it afterwards means owing a `deprecated` entry and a migration, or every post already saved shows "This block contains unexpected or invalid content".
-
-**Is the markup still moving?** Then dynamic, which is free to change forever. What it costs is that the content is not in `post_content`: deactivate the plugin and the block renders nothing at all.
-
-**Performance is not the deciding factor, and it is the usual reason given.** A dynamic block costs one PHP call per instance while `the_content` is assembled, which is not measurable next to the rest of a page load — full page caching applies either way. What costs is the work *inside* the render: a `WP_Query` per block on a page listing forty of them is the thing to avoid, and it is equally avoidable in a dynamic block.
-
-So the trade is maintenance against content ownership, not speed. A plugin that renders everything dynamically to keep its markup free is a deliberate and defensible choice; one that does it by default has usually not been asked the first question.
+A block is dynamic when it declares PHP and static when it does not: `wp zt make block --dynamic` writes the `block.php`, and asks when you leave the flag out. `Block` covers what that file returns.
 
 Registration reads `blocks-manifest.php` when one is present (see `wp-scripts build --blocks-manifest`), which spares WordPress a `block.json` read and decode per block, and walks the blocks directory when there is not.
 
-[Adding it](#adding-it) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Block](#writing-a-block) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+[Adding it](#adding-it) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Block](#writing-a-block) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
 ## Adding it
 
@@ -68,14 +56,16 @@ return array(
     Blocks::class => static function ( Blocks $blocks ): void {
         $blocks->set_blocks_root( 'build/editor-blocks' );
 
-        $blocks->on_wp_init( function ( Blocks $module ) {
-            $module->add_categories( [
-                'reports' => __( 'Reports', 'my-plugin' ),
-                'charts'  => [
-                    'title' => __( 'Charts', 'my-plugin' ),
-                    'icon'  => 'chart-bar',
-                ],
-            ] );
+        $blocks->on_wp_init( static function ( Blocks $module ): void {
+            $module->add_categories(
+                array(
+                    'reports' => __( 'Reports', 'acme-plugin' ),
+                    'charts'  => array(
+                        'title' => __( 'Charts', 'acme-plugin' ),
+                        'icon'  => 'chart-bar',
+                    ),
+                )
+            );
         } );
     },
 );
@@ -105,25 +95,7 @@ const MANIFEST_FILENAME = 'blocks-manifest.php';
 
 Filename `wp-scripts build --blocks-manifest` writes into the build root.
 
-## You must implement
-
-This one method is abstract: a subclass that does not declare it will not load.
-
-### `on_boot()`
-
-What this module does on its own.
-
-```php
-abstract protected function on_boot(): void
-```
-
-Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
-
-**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
-
-`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
-
-## Methods you can use
+## Methods
 
 ### `set_blocks_root( $blocks_root )`
 
@@ -167,9 +139,9 @@ $blocks->on_wp_init(
     static function ( Blocks $blocks ): void {
         $blocks->add_categories(
             array(
-                'reports' => __( 'Reports', 'my-plugin' ),
+                'reports' => __( 'Reports', 'acme-plugin' ),
                 'charts'  => array(
-                    'title' => __( 'Charts', 'my-plugin' ),
+                    'title' => __( 'Charts', 'acme-plugin' ),
                     'icon'  => 'chart-bar',
                 ),
             )
@@ -178,7 +150,7 @@ $blocks->on_wp_init(
 );
 
 // src/blocks/sales/block.json
-{ "name": "my-plugin/sales", "category": "reports" }
+{ "name": "acme-plugin/sales", "category": "reports" }
 ```
 
 The category and the block that claims it live in two files, and only the block.json half is checked by anything — a block naming a category that was never declared is filed under Uncategorized rather than erroring, so the two have to be kept in step by hand.
@@ -208,6 +180,8 @@ public function get_discovered_blocks(): array
 <br>
 
 ### `on_wp_init( $callback, $priority )`
+
+*Inherited from [`Module`](../module.md).*
 
 Run a callback on `init`, or immediately if `init` has already fired.
 

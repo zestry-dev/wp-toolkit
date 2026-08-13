@@ -94,6 +94,8 @@ The same rules apply to anything wired outside the lifecycle — a `Command`, an
 
 ### `get_plugin()`
 
+*Inherited from [`WithPlugin`](../kernel/with-plugin.md).*
+
 Get the plugin this class belongs to.
 
 ```php

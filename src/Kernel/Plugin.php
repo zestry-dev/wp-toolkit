@@ -55,20 +55,20 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  * are injected by type and never need it.
  *
  * ```
- * // my-plugin.php
+ * // acme-plugin.php
  * use Acme\Plugin\Core\Kernel\Plugin;
  *
  * require_once __DIR__ . '/vendor/autoload.php';
  *
- * function my_plugin(): Plugin {
+ * function acme_plugin(): Plugin {
  *     static $plugin = null;
  *
- *     $plugin ??= ( new Plugin( __FILE__, 'my-plugin' ) )->bootstrap()->run();
+ *     $plugin ??= ( new Plugin( __FILE__, 'acme-plugin' ) )->bootstrap()->run();
  *
  *     return $plugin;
  * }
  *
- * my_plugin();
+ * acme_plugin();
  * ```
  *
  * @example The bootstrap file
@@ -78,7 +78,7 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  *
  * With this in place, a file returned from `actions/save-profile.php` becomes
  * an AJAX action (see {@see \Zestry\WPToolkit\Modules\Ajax\AjaxAction}), a file returned
- * from `commands/greet.php` becomes the WP-CLI command `wp my-plugin greet`
+ * from `commands/greet.php` becomes the WP-CLI command `wp acme-plugin greet`
  * (see {@see \Zestry\WPToolkit\Modules\CLI\Command}), and a file returned from
  * `admin-pages/settings.php` becomes an admin menu page (see
  * {@see \Zestry\WPToolkit\Modules\AdminPages\AdminPage}) — none of them need registering
@@ -111,11 +111,11 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  * single file can call them directly.
  *
  * ```
- * // my-plugin.php
- * function my_plugin(): Plugin {
+ * // acme-plugin.php
+ * function acme_plugin(): Plugin {
  *     static $plugin = null;
  *
- *     $plugin ??= ( new Plugin( __FILE__, 'my-plugin' ) )
+ *     $plugin ??= ( new Plugin( __FILE__, 'acme-plugin' ) )
  *         ->configure(
  *             Ajax::class,
  *             static function ( Ajax $ajax ): void {
@@ -128,7 +128,7 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  *     return $plugin;
  * }
  *
- * my_plugin();
+ * acme_plugin();
  * ```
  */
 class Plugin {
@@ -396,7 +396,7 @@ class Plugin {
 	 * cannot disagree unless a consumer deliberately changes one.
 	 *
 	 * ```
-	 * // my-plugin.php, inside the accessor that builds the plugin.
+	 * // acme-plugin.php, inside the accessor that builds the plugin.
 	 * $plugin ??= ( new Plugin( __FILE__ ) )
 	 *     ->set_languages_path( 'languages' )
 	 *     ->bootstrap()

@@ -153,6 +153,8 @@ Only keys beginning `__view_` are reserved; the render scope holds two of them a
 
 ### `get_plugin()`
 
+*Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
+
 Get the plugin this class belongs to.
 
 ```php

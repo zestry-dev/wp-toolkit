@@ -84,7 +84,7 @@ public function deactivate( bool $network_wide ): void {
 
 ## You must implement
 
-These 3 methods are abstract: a subclass that does not declare all of them will not load.
+These 2 methods are abstract: a subclass that does not declare all of them will not load.
 
 ### `activate( $network_wide )`
 
@@ -121,22 +121,6 @@ abstract public function deactivate( bool $network_wide ): void
 | **Throws** | — |
 
 Called under the same rules as `activate()`: once per site on a network deactivation, with that site active.
-
-<br>
-
-### `on_boot()`
-
-What this module does on its own.
-
-```php
-abstract protected function on_boot(): void
-```
-
-Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
-
-**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
-
-`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
 
 ## Methods you can use
 
@@ -189,6 +173,8 @@ protected function is_network_active(): bool
 <br>
 
 ### `on_wp_init( $callback, $priority )`
+
+*Inherited from [`Module`](module.md).*
 
 Run a callback on `init`, or immediately if `init` has already fired.
 

@@ -46,7 +46,7 @@ use Zestry\WPToolkit\Services\Request\Request;
  * }
  *
  * public function handle( WP_REST_Request $request ): WP_REST_Response {
- *     return new WP_REST_Response( [ 'id' => $this->id ] );
+ *     return new WP_REST_Response( array( 'id' => $this->id ) );
  * }
  *
  * public function schema(): ?array {
@@ -294,7 +294,7 @@ class RestApi extends Module {
 	 * a JS `fetch()` or a `rest_url()` call and reproducing the join.
 	 *
 	 * @param string $version The route's own namespace version, e.g. `'v1'`.
-	 * @return string The full REST namespace, e.g. `'my-plugin/v1'`.
+	 * @return string The full REST namespace, e.g. `'acme-plugin/v1'`.
 	 */
 	public function get_rest_namespace( string $version ): string {
 		return $this->get_plugin()->get_namespaced_name( $version, '/' );

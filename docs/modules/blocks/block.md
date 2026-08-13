@@ -314,6 +314,8 @@ Read on `pre_render_block`, the first time the block is about to render, and wri
 
 ### `get_plugin()`
 
+*Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
+
 Get the plugin this class belongs to.
 
 ```php

@@ -41,34 +41,16 @@ return new class() extends MakeCommand {
 	 * other `make` type, there is no fixed conventional directory to default
 	 * to -- a plain module is not discovered by anything -- so its home is your
 	 * own `{zestry.json root}/Modules/` directory, beside the copied `Core/` tree
-	 * rather than inside it. That separation is the point: `Core/` is what
-	 * `wp zt update` may replace, and nothing you write belongs there.
+	 * rather than inside it, which `wp zt update` never touches.
 	 *
-	 * Because nothing discovers it, this is also the one `make` type that
-	 * writes to your `bootstrap.php`: the new class is appended there, which is
-	 * what builds it at all.
-	 *
-	 * ## WHY IT IS DECLARED
-	 *
-	 * A module acts on its own -- it binds a hook, registers a post type, walks
-	 * a directory -- so it has to be built for any of that to happen, and being
-	 * listed is what builds it. `on_boot()` runs then, once. Left out of the
-	 * file, nothing builds the class, `on_boot()` never runs, and there is no
-	 * error either way: the feature is simply absent, which reads as the module
-	 * being broken rather than undeclared.
-	 *
-	 *     // bootstrap.php
-	 *     Shortcode::class,
-	 *
-	 * Its sibling `wp zt make service` deliberately declares nothing. A service
-	 * is built the moment something asks for it, so an entry naming one would do
-	 * nothing but build it sooner than needed; configure one from
+	 * Because nothing discovers it, this is also the one `make` type that writes
+	 * to your `bootstrap.php`: the new class is appended there, which is what
+	 * builds it. Its sibling `wp zt make service` declares nothing, since a
+	 * service is built the moment something asks for it -- configure one from
 	 * `$plugin->configure()` in your entry file instead.
 	 *
-	 * A generated file that does not yet parse is not declared at all, since
-	 * building a broken class on every request would take the site down until it
-	 * is fixed. The command says so, and declaring it is one edit away once the
-	 * file parses.
+	 * A generated file that does not yet parse is not declared at all. The
+	 * command says so, and declaring it is one edit away once the file parses.
 	 *
 	 * ## OPTIONS
 	 *

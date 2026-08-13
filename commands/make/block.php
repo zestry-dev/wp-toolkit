@@ -87,6 +87,15 @@ return new class() extends MakeCommand {
 	 * and the `supports.{plugin-slug}-php` entry pointing at it. Without this the block is
 	 * static: its markup is whatever the editor saved. Prompted for when omitted.
 	 *
+	 * Two questions settle it. Does the output depend on anything outside the
+	 * block's own attributes -- a query, an option, the current user, another
+	 * post? Then it has to be dynamic. Otherwise, is the markup settled? Static
+	 * markup is saved into `post_content`, so it survives the plugin being
+	 * deactivated, but changing it later means owing a `deprecated` entry and a
+	 * migration or every saved post shows "This block contains unexpected or
+	 * invalid content". Dynamic markup is free to change forever, and renders
+	 * nothing at all once the plugin is gone.
+	 *
 	 * [--view=<kind>]
 	 * : Give the block front-end JavaScript. `module` writes an Interactivity
 	 * API store and registers it as a script module; `script` writes a classic

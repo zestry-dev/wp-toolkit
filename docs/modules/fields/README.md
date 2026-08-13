@@ -29,7 +29,7 @@ So unregistered meta goes through `get_post_meta()`, where you supply that knowl
 
 Nothing here renders a form. A registered field is editable in the block editor through its REST exposure, and that is the path that needs no markup. To put one on a classic editor screen instead, add the `meta-boxes` module: a `MetaBox` names the keys its form submits, and each is read, unslashed and written back through this module, so the field's `validate()` and `sanitize()` still apply.
 
-[Adding it](#adding-it) &nbsp;·&nbsp; [A field](#a-field) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Field](#writing-a-field) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+[Adding it](#adding-it) &nbsp;·&nbsp; [A field](#a-field) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Field](#writing-a-field) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
 ## Adding it
 
@@ -93,25 +93,7 @@ const DEFAULT_FIELDS_ROOT = 'fields';
 
 Where fields are discovered, relative to the plugin root.
 
-## You must implement
-
-This one method is abstract: a subclass that does not declare it will not load.
-
-### `on_boot()`
-
-What this module does on its own.
-
-```php
-abstract protected function on_boot(): void
-```
-
-Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
-
-**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
-
-`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
-
-## Methods you can use
+## Methods
 
 ### `set_fields_root( $root )`
 
@@ -302,6 +284,8 @@ A field that switched itself off is refused too, with its own message: its meta 
 <br>
 
 ### `on_wp_init( $callback, $priority )`
+
+*Inherited from [`Module`](../module.md).*
 
 Run a callback on `init`, or immediately if `init` has already fired.
 

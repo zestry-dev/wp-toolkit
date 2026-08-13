@@ -45,7 +45,7 @@ class {{class_name}} extends ActivationHandler {
 	 * rebuild, and leave the user's data alone:
 	 *
 	 * ```
-	 * wp_clear_scheduled_hook( 'my_plugin_daily' );   // yes
+	 * wp_clear_scheduled_hook( 'acme_plugin_daily' );  // yes
 	 * // $wpdb->query( 'DROP TABLE ...' );            // no, an update would wipe it
 	 * ```
 	 *

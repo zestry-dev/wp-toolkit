@@ -23,6 +23,43 @@ So a handler reads `$this->order_id`, not `$request->get_param( 'order_id' )` or
 
 **The property states both the type and whether it is required**, since PHP already made you declare both. `int` is `integer`, `float` is `number`, `bool` is `boolean`, and `?int` accepts null as well. An argument with no default is required — leaving it optional would mean a handler reading an uninitialized property, which is a PHP error rather than a missing value — and one with a default is optional, with that default published so a caller knows what leaving the key out gets them.
 
+If you have written DTOs, value objects or form objects before, this is that: your route or ability *is* the data object, its properties are the fields, and the values arrive already checked and already the right type. What differs is that the declaration is also *published* — WordPress turns it into the schema a client, or an AI agent, reads to work out what to send.
+
+## How it works
+
+Four steps, in this order, every time:
+
+1. **At registration**, your declarations become a schema. A route publishes
+it as `args` on `register_rest_route()`; an ability as its `input_schema`.
+2. **WordPress validates** the incoming values against that schema and rejects
+what does not fit — before your code runs, with its own `400`.
+3. **Your own `validate` and `sanitize` run**, for the rules a schema cannot
+state.
+4. **The values are bound** onto your properties, and your handler runs.
+
+Nothing reaches step 4 that failed an earlier one. That is the whole point of declaring rather than reading: the checking happens where a caller can see it coming.
+
+## What you can declare
+
+| Property | Schema | Arrives as |
+|---|---|---|
+| `int $count` | `integer` | `int` |
+| `float $ratio` | `number` | `float` |
+| `string $label` | `string` | `string` |
+| `bool $enabled` | `boolean` | `bool` |
+| `?int $count` | `["integer","null"]` | `int` or `null` |
+| `array $ids` + `schema: [ 'items' => [ 'type' => 'integer' ] ]` | `array` of integers | `int[]` |
+| `array $items` + `of: LineItem::class` | `array` of objects | `LineItem[]` |
+| `Address $address` | nested `object` | `Address` |
+| `stdClass $meta` or `object $meta` | `object`, no fixed keys | `stdClass` |
+| `Status $status` (enum) | `string`/`integer` + `enum` | `Status::Live` |
+| `DateTimeImmutable $when` | `string`, `format: date-time` | `DateTimeImmutable` |
+| `UploadedFile $image` | *(not in the schema)* | `UploadedFile` |
+
+Anything else is refused at registration, with a message naming the property. See **Limitations** below.
+
+Two exceptions to the required/optional rule, both on a route: a `{token}` in the URL pattern is **always required**, whatever its property says, since there is no optional path segment; and an upload is checked here rather than by WordPress, because it never appears among a request's parameters.
+
 ## Dates
 
 A moment in time is a string on the wire, and WordPress already knows how to check one:
@@ -136,9 +173,124 @@ public string $order_by = 'date';
 
 **Prefer this to the callbacks.** WordPress enforces the schema either way, and a rule stated there is one a caller can read and satisfy before calling; the same rule in a callback is one it can only discover by getting it wrong. For an AI agent choosing what to send, that is the difference between a contract and a guessing game.
 
-`validate` and `sanitize` are for what JSON Schema cannot say — that an id exists, that a date has not passed, that a slug is free.
+`validate` and `sanitize` are for what JSON Schema cannot say — that an id exists, that a date has not passed, that a slug is free:
 
-Only public and protected properties are read — the same rule `WithPlugin::inject_modules()` uses, for the same reason: reflection cannot reliably reach a private property declared on an ancestor. A private one marked with this attribute is left alone entirely, appearing in no schema and never bound.
+```php
+#[RequestArgument( 'The order to cancel.', validate: array( self::class, 'is_open_order' ) )]
+public int $order_id;
+
+public static function is_open_order( $value ): bool {
+    return acme_order_is_open( $value );
+}
+```
+
+A `pattern` is a bare regex — no delimiters, and a `#` in it is escaped for you. A check spanning **two** arguments belongs in your handler, where every property is bound at once and the error can name the combination that was wrong; a callback here sees one value in isolation.
+
+**Only public and protected properties are read.** A private one carrying this attribute is left alone entirely: it appears in no schema and is never bound.
+
+## The four surfaces are not checked identically
+
+A route, an ability, an AJAX action and an admin page all declare their input this way, but WordPress does different amounts of the work on each:
+
+| | Route | Ability | AJAX action | Admin page |
+|---|---|---|---|---|
+| Schema validated | by WordPress | by WordPress | by this service | by this service |
+| Value unslashed | by WordPress | not slashed | by this service | by this service |
+| Value cast to its type | by WordPress | by this service | by this service | by this service |
+| Your `validate` / `sanitize` | in WordPress's own slots | run before binding | run before binding | run before binding |
+| Bound before the permission check | no | yes | yes | after it |
+| A refusal reads as | `rest_invalid_param`, 400 | `ability_invalid_input` | `rest_invalid_param`, 400 | `wp_die()`, 400 |
+
+An action and a page are the two WordPress does nothing for: both are plain hooks handed the superglobals as they arrived, slashed and unchecked, so declaring arguments is how either stops reading them by hand. A page cannot answer a refusal the way the other three do — what is waiting is a browser mid-POST — so it stops with `wp_die()`, and `handle_submit()` never runs.
+
+**Where the value comes from** is the same answer on all four: the values are loaded into a `WP_REST_Request` and resolved by `get_param()`, so the JSON body wins, then the form body, then the query string. A cookie is never a parameter.
+
+An ability's input is validated and never sanitised — and that validation accepts a numeric string for an `integer`, so `"42"` is a valid thing for a caller to send. It arrives as `42` either way.
+
+## Translation, and anything else computed
+
+`__()` cannot go inside the attribute. PHP allows only constant expressions in an attribute argument, so this fails when the file is compiled, before anything of yours runs:
+
+```php
+// Fatal error: Constant expression contains invalid operations
+#[RequestArgument( __( 'The order to cancel.', 'acme-plugin' ) )]
+public int $order_id;
+```
+
+State that one argument's description in `input_schema()` on an ability, or `args()` on a route. What you write there is merged *over* the schema your declarations already give, so the property keeps its type, its required-ness, its `validate` rule and its binding — you are finishing the sentence the attribute started, not writing the schema instead of it:
+
+```php
+// Still the declaration — only the description moved.
+#[RequestArgument]
+public int $order_id;
+
+public function input_schema(): array {
+    return array(
+        'properties' => array(
+            'order_id' => array( 'description' => __( 'The order to cancel.', 'acme-plugin' ) ),
+        ),
+    );
+}
+```
+
+A route says the same through `args()`, keyed by argument name rather than nested under `properties`, because that is the shape `register_rest_route()` takes. A keyed map is merged into; a list — `required`, an `enum`, a nullable `type` — is replaced whole, so state all of it when you state any of it.
+
+The same door takes everything else an attribute cannot hold: `'enum' => get_post_types()` is a function call, and a function call is not a constant expression either. **An AJAX action and an admin page have no equivalent and need none** — nothing publishes their schema, so a rule you would have stated there belongs in `validate`.
+
+## Limitations
+
+Each is refused with a message naming the property, and never silently. All but the last two are caught while your route or ability registers, so you meet them the first time the code loads rather than the first time someone calls.
+
+| Not supported | Why | Instead |
+|---|---|---|
+| `public $thing` (untyped) | Nothing says what it is | Declare a type |
+| `int\|string $thing` | A caller cannot be told which to send | Pick one, or take a structure |
+| `mixed`, `iterable` | No JSON type corresponds | Declare the real shape, or `stdClass` for a genuinely open one |
+| `array $things` with neither `of:` nor `schema['items']` | A list whose contents go undescribed is a hole a caller cannot read its way out of | Add `of:` or `items` |
+| `of:` on anything but an array | It describes what a list holds | Remove it |
+| A class with no `#[RequestArgument]` properties | Nothing describes it | Declare its properties, or use `schema:` |
+| A `static` property | One value shared by every call at once | Make it an instance property |
+| Structures nesting more than 10 deep | A structure containing itself has no schema, only an ever-deeper one | Break the cycle |
+| `readonly` on a **route or ability** property | See below | Drop `readonly` — or move the arguments into a structure, where it works |
+| `UploadedFile` on an **ability** | Its input is JSON; an upload is multipart | Take the upload on a route |
+| `@var LineItem[]` docblocks | `getDocComment()` returns nothing when `opcache.save_comments=0` | `of: LineItem::class` |
+| `__()` in the attribute | Only constant expressions are allowed there | State it in `input_schema()` or `args()` |
+
+### Why not readonly
+
+PHP lets a `readonly` property be assigned exactly once. Your route or ability object is built **once** and answers every call for the rest of the request, so binding arguments onto it means assigning the same properties again on the next call — the assignment PHP refuses. On an ability it fails sooner still: values are bound before `permission_check()` and again before `handle()`.
+
+A structure is the opposite. It is built fresh every time, so its properties are assigned exactly once in their lifetime, which is what `readonly` asks for. If immutable arguments are what you are after, that is the shape:
+
+```php
+final class Filter {
+
+    public function __construct(
+        #[RequestArgument( 'Which page.' )]
+        public readonly int $page = 1,
+        #[RequestArgument( 'How to sort.' )]
+        public readonly string $order_by = 'date'
+    ) {}
+}
+
+// On the route or ability — not readonly, because this object is reused:
+#[RequestArgument( 'How to narrow the list.' )]
+public Filter $filter;             // $this->filter->page, and Filter is immutable
+```
+
+## Tips
+
+- **Describe every argument.** The description is optional, but whatever is
+calling reads it to decide what to send and cannot ask you.
+- **Give every optional argument a default.** It is what makes it optional,
+and it is published so a caller knows what it gets.
+- **Reach for an enum before `schema: [ 'enum' => ... ]`.** One source of
+truth, and your handler gets a case.
+- **Put shared shapes in a structure.** An `Address` declared once can be an
+argument of every route and ability that takes one.
+- **A route and an ability can share the same structures**, and often should.
+- **Unknown keys are ignored**, never refused, and names are used verbatim —
+there is no camelCase-to-snake_case conversion.
 
 ## Methods
 

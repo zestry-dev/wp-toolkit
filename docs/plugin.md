@@ -24,27 +24,27 @@ Constructs the plugin and runs it. Module declarations live in `bootstrap.php`, 
 The accessor holds the instance for anything outside the module system — a test, a template, a hand-registered callback — since modules themselves are injected by type and never need it.
 
 ```php
-// my-plugin.php
+// acme-plugin.php
 use Acme\Plugin\Core\Kernel\Plugin;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-function my_plugin(): Plugin {
+function acme_plugin(): Plugin {
     static $plugin = null;
 
-    $plugin ??= ( new Plugin( __FILE__, 'my-plugin' ) )->bootstrap()->run();
+    $plugin ??= ( new Plugin( __FILE__, 'acme-plugin' ) )->bootstrap()->run();
 
     return $plugin;
 }
 
-my_plugin();
+acme_plugin();
 ```
 
 ## The bootstrap file
 
 Declares every module the plugin uses, with the configuration each requires. `wp zt init` creates the file and `wp zt add` appends to it, so a module is active as soon as it is copied.
 
-With this in place, a file returned from `actions/save-profile.php` becomes an AJAX action (see `AjaxAction`), a file returned from `commands/greet.php` becomes the WP-CLI command `wp my-plugin greet` (see `Command`), and a file returned from `admin-pages/settings.php` becomes an admin menu page (see `AdminPage`) — none of them need registering by hand.
+With this in place, a file returned from `actions/save-profile.php` becomes an AJAX action (see `AjaxAction`), a file returned from `commands/greet.php` becomes the WP-CLI command `wp acme-plugin greet` (see `Command`), and a file returned from `admin-pages/settings.php` becomes an admin menu page (see `AdminPage`) — none of them need registering by hand.
 
 Every entry is a module, and listing one is what builds it. Its value — when it has one — is the initializer that configures it; a module needing none is written bare, as `AdminPages::class` below.
 
@@ -70,11 +70,11 @@ return array(
 `bootstrap.php` is optional. It calls `configure()` and `autoload()`, both of which are public, so a plugin that prefers a single file can call them directly.
 
 ```php
-// my-plugin.php
-function my_plugin(): Plugin {
+// acme-plugin.php
+function acme_plugin(): Plugin {
     static $plugin = null;
 
-    $plugin ??= ( new Plugin( __FILE__, 'my-plugin' ) )
+    $plugin ??= ( new Plugin( __FILE__, 'acme-plugin' ) )
         ->configure(
             Ajax::class,
             static function ( Ajax $ajax ): void {
@@ -87,7 +87,7 @@ function my_plugin(): Plugin {
     return $plugin;
 }
 
-my_plugin();
+acme_plugin();
 ```
 
 ## Constants
@@ -239,7 +239,7 @@ Only needed for a plugin shipping a `languages/` directory of its own. WordPress
 The text domain defaults to the plugin slug, matching what `wp zt init` writes into `zestry.json` and stamps into every copied file, so the two cannot disagree unless a consumer deliberately changes one.
 
 ```php
-// my-plugin.php, inside the accessor that builds the plugin.
+// acme-plugin.php, inside the accessor that builds the plugin.
 $plugin ??= ( new Plugin( __FILE__ ) )
     ->set_languages_path( 'languages' )
     ->bootstrap()

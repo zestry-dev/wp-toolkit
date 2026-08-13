@@ -386,7 +386,7 @@ class Tooling extends Service {
 	/**
 	 * Declare a workspace pattern in package.json, leaving any existing one alone.
 	 *
-	 * This is what makes `import { thing } from '@my-plugin/shared'` resolve --
+	 * This is what makes `import { thing } from '@acme-plugin/shared'` resolve --
 	 * npm links each directory matching the pattern into `node_modules/` on the
 	 * next install, so webpack, TypeScript and ESLint all find the package by
 	 * the name it gave itself, with no path aliases to keep in step.

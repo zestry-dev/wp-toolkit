@@ -24,7 +24,7 @@ exposing more than once belongs in an `Ability`, which is reachable over REST, f
 
 What is left for this module is real, though: an admin screen whose JavaScript already posts to `admin-ajax.php`, an existing plugin's action you are extending, or WordPress's own heartbeat. Choose it because something already speaks it, rather than because a form has to submit somewhere.
 
-[Adding it](#adding-it) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing an AjaxAction](#writing-an-ajaxaction) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+[Adding it](#adding-it) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing an AjaxAction](#writing-an-ajaxaction) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
 ## Adding it
 
@@ -77,25 +77,7 @@ const DEFAULT_ACTIONS_ROOT = 'actions';
 
 Default plugin-relative directory of action files.
 
-## You must implement
-
-This one method is abstract: a subclass that does not declare it will not load.
-
-### `on_boot()`
-
-What this module does on its own.
-
-```php
-abstract protected function on_boot(): void
-```
-
-Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
-
-**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
-
-`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
-
-## Methods you can use
+## Methods
 
 ### `is_ajax_request()`
 
@@ -242,6 +224,8 @@ Kept rather than rebuilt, so `get_slug_of()` compares against the same instances
 <br>
 
 ### `on_wp_init( $callback, $priority )`
+
+*Inherited from [`Module`](../module.md).*
 
 Run a callback on `init`, or immediately if `init` has already fired.
 

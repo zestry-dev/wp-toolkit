@@ -457,6 +457,8 @@ final protected function fields(): Fields
 
 ### `get_plugin()`
 
+*Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
+
 Get the plugin this class belongs to.
 
 ```php
@@ -479,6 +481,8 @@ $this->get_plugin()->get( Options::class )->get( 'api_key' );
 
 ### `is_enabled()`
 
+*Inherited from [`WithEnablement`](../../kernel/with-enablement.md).*
+
 Whether this should be registered at all.
 
 ```php
@@ -495,4 +499,4 @@ Called once, after the instance is wired and before anything is registered. Retu
 
 The default is true, so a file that says nothing registers — being on disk is the convention, and this is the exception to it.
 
-Most modules ask at discovery and drop the file there. `post-types` and `fields` ask at registration instead, so that a switched-off file still appears in what they list — a screen offering to switch a feature on can only offer what it can see. It registers nothing either way.
+It registers nothing either way.

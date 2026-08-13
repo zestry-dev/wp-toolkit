@@ -173,6 +173,8 @@ Constructs a URL to a resource in the plugin uploads directory. Path components 
 
 ### `get_plugin()`
 
+*Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
+
 Get the plugin this class belongs to.
 
 ```php

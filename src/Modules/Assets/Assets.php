@@ -65,16 +65,13 @@ use Zestry\WPToolkit\Services\Path;
  * | `src/entries/{name}/` | `{build}/entries/{name}` | this module, as `{plugin-slug}-{name}` |
  * | `src/shared/{name}/` | `{build}/shared/{name}` | this module, as `{plugin-slug}-shared-{name}` |
  *
- * That merge is the reason the config exists. `@wordpress/scripts` decides
- * entry points three mutually exclusive ways -- files listed on the command
- * line, `block.json` scanning, or the `src/index` fallback -- each of which
- * disables the others, so a plugin with one block has no supported way to build
- * a script of its own.
+ * That merge is the reason the config exists: a stock `@wordpress/scripts`
+ * setup builds one of the three and silently drops the rest. The
+ * [JavaScript](../../javascript.md) guide covers why.
  *
  * The build composes every handle, and this module reads them. An entry and a
  * shared package can therefore share a name -- `src/entries/collections` and
- * `src/shared/collections` -- without one silently displacing the other, which
- * is what the `shared` segment is there to prevent.
+ * `src/shared/collections` -- without one silently displacing the other.
  *
  * @example Your own script, built and registered
  * `wp zt make entry settings` writes `src/entries/settings/`. The build

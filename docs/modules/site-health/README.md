@@ -15,7 +15,7 @@ This is the supported way to see a site you cannot log into. A user copies the r
 
 Checks run on the Site Health screen and on the weekly cron behind it, so keep them quick and free of side effects.
 
-[Adding it](#adding-it) &nbsp;·&nbsp; [A health check](#a-health-check) &nbsp;·&nbsp; [A debug section](#a-debug-section) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a HealthCheck](#writing-a-healthcheck) &nbsp;·&nbsp; [Writing a DebugSection](#writing-a-debugsection) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+[Adding it](#adding-it) &nbsp;·&nbsp; [A health check](#a-health-check) &nbsp;·&nbsp; [A debug section](#a-debug-section) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a HealthCheck](#writing-a-healthcheck) &nbsp;·&nbsp; [Writing a DebugSection](#writing-a-debugsection) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
 ## Adding it
 
@@ -114,25 +114,7 @@ const DEFAULT_SECTIONS_ROOT = 'debug-sections';
 
 Where debug sections are discovered, relative to the plugin root.
 
-## You must implement
-
-This one method is abstract: a subclass that does not declare it will not load.
-
-### `on_boot()`
-
-What this module does on its own.
-
-```php
-abstract protected function on_boot(): void
-```
-
-Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
-
-**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
-
-`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
-
-## Methods you can use
+## Methods
 
 ### `set_checks_root( $root )`
 
@@ -255,6 +237,8 @@ Namespaced the same way, and for the same reason: `debug_information` is one arr
 <br>
 
 ### `on_wp_init( $callback, $priority )`
+
+*Inherited from [`Module`](../module.md).*
 
 Run a callback on `init`, or immediately if `init` has already fired.
 

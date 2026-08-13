@@ -80,11 +80,11 @@ class StubRenderer extends Service {
 	 * Convert a kebab-case or snake_case name into a camelCase identifier.
 	 *
 	 * A JavaScript global has to be a valid identifier, and neither a hyphen nor
-	 * a leading digit is one, so `my-plugin` becomes `myPlugin`. Anything else
+	 * a leading digit is one, so `acme-plugin` becomes `acmePlugin`. Anything else
 	 * outside `[A-Za-z0-9_$]` is dropped rather than escaped -- a name that
 	 * needed escaping would be a poor global whatever it was turned into.
 	 *
-	 * @param string $name The local name, e.g. `my-plugin`.
+	 * @param string $name The local name, e.g. `acme-plugin`.
 	 * @return string The camelCase form.
 	 */
 	public function to_camel( string $name ): string {

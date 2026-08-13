@@ -11,15 +11,13 @@ Copy one or more feature modules into an initialized plugin.
 
 Requires `wp zt init` to have already run in this plugin (it reads zestry.json for the namespace and destination directory chosen there). Resolves each requested module's dependencies before copying anything, so `rest-api`, for example, also brings in `path` without needing to be asked for by name. Every `namespace Zestry\WPToolkit\...;` declaration and `use Zestry\WPToolkit\...;` import in each copied file is rewritten to the project's own namespace. A module already present at its destination is left untouched and logged as skipped — run `wp zt overwrite module <module>` to replace it deliberately.
 
-Each copied module is also declared in the plugin's `bootstrap.php`, because copying the files is only half of adding one: a module is built because that file lists it, and until it is built it discovers nothing and binds no hooks. So a module works the moment it arrives, rather than after a hand-edit. With no `bootstrap.php` to append to, the entry line is printed for you to paste wherever the plugin declares its modules instead.
+Each copied module is also declared in the plugin's `bootstrap.php`, which is what builds it — so a module works the moment it arrives. With no `bootstrap.php` to append to, the entry line is printed for you to paste wherever the plugin declares its modules instead.
 
-Two modules write outside their own tree, because each needs a JavaScript build and a plugin that has never built JavaScript has nothing to run one with. Every file either writes is additive: anything already there is kept as it is and reported as such.
+Two modules also write build tooling outside their own tree. Everything either writes is additive: anything already there is kept as it is and reported as such.
 
 `add module blocks` writes the toolchain — the scripts and devDependencies in your package.json, a tsconfig.json, an eslint.config.mjs, a `.prettierrc.js` if you have no Prettier config already, and `build/`, `vendor/` and `node_modules/` in your .gitignore. It writes **no** `webpack.config.js`: `wp-scripts` finds every block by globbing for a `block.json` anywhere under `src/`, so blocks alone need no config file.
 
-`add module assets` writes the `webpack.config.js`, because shared packages and entries are what `wp-scripts` has no opinion about. Add both modules and you get one config that builds all three directories — blocks, entries and shared packages — which is the point of it, since `wp-scripts` otherwise picks entry points three mutually exclusive ways and each one disables the others.
-
-**The `build` and `start` scripts come from one definition, so both write the same two.** Whichever module you add first writes them; the second finds them already there and says so. Order does not decide what they contain, and adding `assets` after `blocks` cannot leave the build without a flag the other would have passed.
+`add module assets` writes the `webpack.config.js`, which is what lets one build produce all three directories — blocks, entries and shared packages. The JavaScript guide covers what it does, and why a stock `wp-scripts` setup cannot.
 
 ## Dependencies cross the two kinds
 

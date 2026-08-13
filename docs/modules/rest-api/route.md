@@ -37,7 +37,7 @@ return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
     }
 
     public function handle( WP_REST_Request $request ): WP_REST_Response {
-        return new WP_REST_Response( [ 'id' => $this->id ] );
+        return new WP_REST_Response( array( 'id' => $this->id ) );
     }
 
     public function schema(): ?array {

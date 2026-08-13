@@ -209,7 +209,7 @@ $this->assets->enqueue_entry( 'settings' );
 
 Everything JavaScript lives under `src/`, in three directories that differ only in who registers the result: `src/blocks/` (WordPress does, from `block.json`), `src/entries/` (your own scripts), and `src/shared/` (code two of them import by name, built once rather than copied into each).
 
-The build configuration matters more than it looks. `@wordpress/scripts` picks entry points three mutually exclusive ways, so on a stock setup adding one block silently stops `src/index` being built — merging them is what the generated config is for. Full detail: **[JavaScript](javascript.md)**.
+The `webpack.config.js` that came with the module is what lets one build produce all three, which a stock `@wordpress/scripts` setup cannot. Full detail: **[JavaScript](javascript.md)**.
 
 ## What is yours, and what came from the toolkit
 

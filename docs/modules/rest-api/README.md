@@ -13,7 +13,7 @@ A routes directory contains PHP files, one per route — the same file-based con
 
 A route file returns a `Route` value, built with the static constructor matching its HTTP method. It declares its own namespace version and URL pattern as plain strings, so nothing about a route comes from its file's name or location.
 
-[Adding it](#adding-it) &nbsp;·&nbsp; [A minimal route file](#a-minimal-route-file) &nbsp;·&nbsp; [Narrowing what a route accepts](#narrowing-what-a-route-accepts) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Route](#writing-a-route) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+[Adding it](#adding-it) &nbsp;·&nbsp; [A minimal route file](#a-minimal-route-file) &nbsp;·&nbsp; [Narrowing what a route accepts](#narrowing-what-a-route-accepts) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Route](#writing-a-route) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
 ## Adding it
 
@@ -46,7 +46,7 @@ public function permission_check( WP_REST_Request $request ): bool {
 }
 
 public function handle( WP_REST_Request $request ): WP_REST_Response {
-    return new WP_REST_Response( [ 'id' => $this->id ] );
+    return new WP_REST_Response( array( 'id' => $this->id ) );
 }
 
 public function schema(): ?array {
@@ -119,25 +119,7 @@ const DEFAULT_ROUTES_ROOT = 'routes';
 
 Default plugin-relative directory of route files.
 
-## You must implement
-
-This one method is abstract: a subclass that does not declare it will not load.
-
-### `on_boot()`
-
-What this module does on its own.
-
-```php
-abstract protected function on_boot(): void
-```
-
-Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
-
-**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
-
-`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
-
-## Methods you can use
+## Methods
 
 ### `set_routes_root( $routes_root )`
 
@@ -168,7 +150,7 @@ public function get_rest_namespace( string $version ): string
 |  | Details |
 |---|---|
 | **Parameters** | `$version` — The route's own namespace version, e.g. `'v1'` |
-| **Return** | The full REST namespace, e.g. `'my-plugin/v1'` |
+| **Return** | The full REST namespace, e.g. `'acme-plugin/v1'` |
 | **Throws** | — |
 
 The single source of truth for the `{plugin-slug}/{version}` shape that `register_routes()` registers under, matching the accessor every other namespacing module exposes (`Ajax::get_action_slug()`, `Cron::get_schedule_slug()`, `AdminPages::get_page_slug()`, `Assets::get_asset_slug()`). Ask for it rather than hardcoding the slug in a JS `fetch()` or a `rest_url()` call and reproducing the join.
@@ -198,6 +180,8 @@ $api->get_route_url( 'v1', '/widgets/42' );
 <br>
 
 ### `on_wp_init( $callback, $priority )`
+
+*Inherited from [`Module`](../module.md).*
 
 Run a callback on `init`, or immediately if `init` has already fired.
 

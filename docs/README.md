@@ -157,7 +157,7 @@ return new class extends Command {
 
 **Guides**
 
-- [Arguments](arguments.md) — how a route or an ability declares what it accepts, and what a caller is told.
+- [`#[RequestArgument]`](services/request/request-argument.md) — how a route or an ability declares what it accepts, and what a caller is told.
 - [JavaScript](javascript.md) — sharing code between screens without shipping it twice.
 - [Testing](testing.md) — how to test a plugin built this way.
 - [Troubleshooting](troubleshooting.md) — including [`wp zt doctor`](commands/doctor.md), which finds the wiring mistakes that fail silently.

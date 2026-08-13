@@ -121,6 +121,8 @@ protected function on_boot(): void {
 
 ### `get_plugin()`
 
+*Inherited from [`WithPlugin`](../kernel/with-plugin.md).*
+
 Get the plugin this class belongs to.
 
 ```php

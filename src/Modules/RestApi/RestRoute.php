@@ -232,7 +232,7 @@ abstract class RestRoute implements PluginAware {
 	 * stable thing in the response:
 	 *
 	 * ```
-	 * return $this->deny( __( 'Your trial has ended.', 'my-plugin' ), 'trial_expired' );
+	 * return $this->deny( __( 'Your trial has ended.', 'acme-plugin' ), 'trial_expired' );
 	 * // {"code":"trial_expired","message":"Your trial has ended.", ...}
 	 * ```
 	 *
@@ -267,7 +267,7 @@ abstract class RestRoute implements PluginAware {
 	 *
 	 * ```
 	 * if ( $this->is_application_password() ) {
-	 *     return $this->deny( __( 'This action requires an interactive session.', 'my-plugin' ) );
+	 *     return $this->deny( __( 'This action requires an interactive session.', 'acme-plugin' ) );
 	 * }
 	 * ```
 	 *

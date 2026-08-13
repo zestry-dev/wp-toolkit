@@ -237,6 +237,8 @@ Built without calling a constructor, so a structure needs no particular shape an
 
 ### `get_plugin()`
 
+*Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
+
 Get the plugin this class belongs to.
 
 ```php

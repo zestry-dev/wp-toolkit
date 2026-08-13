@@ -302,7 +302,7 @@ The namespace is `{plugin-slug}/{version}`, so the full path is `/wp-json/acme-b
 
 The property is the declaration: `string` makes WordPress reject anything else with a 400 before `handle()` runs, and the description is published to whoever is calling. `sanitize:` cleans the value on the way in, `validate:` adds a rule JSON Schema cannot state, and `schema:` adds one it can — an `enum`, a `minimum` — which is the better place for it, since a caller can read a schema and satisfy it before calling.
 
-The same attribute declares an [ability](modules/abilities/)'s input, because a route and an ability ask the same question. Every type you can declare, and every one you cannot: **[Arguments](arguments.md)**.
+The same attribute declares an [ability](modules/abilities/)'s input, because a route and an ability ask the same question. Every type you can declare, and every one you cannot: **[`#[RequestArgument]`](services/request/request-argument.md)**.
 
 > [!NOTE]
 > **A default is what makes an argument optional**, as `public string $search = ''` does. A property with no default is required, and WordPress rejects a request that omits it — which is the right answer, since a typed property with no value throws on read. A `{token}` from the URL is required whatever its property says, because there is no optional path segment.
@@ -431,7 +431,7 @@ Inside any template `$this` is the [Views](services/views/) service, so a subvie
 
 The module enforces `capability()` before anything on the page runs, verifies the nonce on every POST, and only then calls `handle_submit()`. `nonce_field()` emits the matching field. There is no `add_menu_page()`, no `admin_menu` hook, and no `check_admin_referer()` to write.
 
-`#[RequestArgument]` is why `handle_submit()` reads `$this->per_page` rather than `$_POST['per_page']`. The value is checked against the type and the `minimum`/`maximum` before the method runs, so there is nothing to unslash, cast or clamp by hand — the same declaration a [route and an ability](arguments.md) use, and a submission that fails it never reaches your code.
+`#[RequestArgument]` is why `handle_submit()` reads `$this->per_page` rather than `$_POST['per_page']`. The value is checked against the type and the `minimum`/`maximum` before the method runs, so there is nothing to unslash, cast or clamp by hand — the same declaration a [route and an ability](services/request/request-argument.md) use, and a submission that fails it never reaches your code.
 
 **`handle_submit()` redirects rather than falling through to `render()`.** Without that, the browser's current request is still the POST: a refresh resubmits the form and saves a second time. The redirect throws away everything the method knew, so the notice travels in `set_flash()` — which reads once, so a refresh shows nothing for a save that already happened.
 
@@ -496,7 +496,7 @@ public function enqueue_assets(): void {
 
 That is the whole wiring. There is no `register_script()`, no `.asset.php` to read, no version string to bump, and no separate call for the stylesheet — the build wrote `build/assets-manifest.php` naming every entry it produced, and the `assets` module registered each one on `init` before any page could ask for it.
 
-`wp zt add module assets` is what makes that possible, and the `webpack.config.js` it wrote is the load-bearing part: `@wordpress/scripts` picks entry points three mutually exclusive ways, so on a stock setup a plugin cannot have both a block and a script of its own. See **[JavaScript](javascript.md)** for the rest — shared code two screens import by name, and ES module entries.
+`wp zt add module assets` is what makes that possible, and the `webpack.config.js` it wrote is the load-bearing part — without it a plugin cannot have both a block and a script of its own. See **[JavaScript](javascript.md)** for the rest: why that is, shared code two screens import by name, and ES module entries.
 
 ## 8. ActivationHandler
 
@@ -591,7 +591,7 @@ acme-books/
 ├── build/                      ← npm run build writes this; gitignored, ships in the zip
 ├── lib/
 │   ├── Core/                   ← copied in; `wp zt update` may replace it
-│   │   ├── Kernel/             ← Plugin, ServicesRepository, Service, Module, ActivationHandler
+│   │   ├── Kernel/             ← Plugin, Service, Module, ActivationHandler, the exceptions
 │   │   ├── Modules/
 │   │   │   ├── AdminPages/
 │   │   │   ├── PostTypes/

@@ -13,7 +13,7 @@ Writes `src/entries/<name>/`, which the build compiles to `build/entries/<name>`
 $this->assets->enqueue_entry( 'settings' );
 ```
 
-This exists because `@wordpress/scripts` has no answer for it.  It decides entry points three mutually exclusive ways — files listed on the command line, `block.json` scanning, or the `src/index` fallback — so adding a single block silently stops `src/index` being built, and there is no supported way to have both. The generated `webpack.config.js` merges them.
+An entry is built by the `webpack.config.js` that `wp zt add module assets` writes, which is what lets one build produce blocks and entries together. A stock `@wordpress/scripts` setup cannot; the JavaScript guide covers why.
 
 The stylesheet beside `index.ts` is imported by it, which is what gets it built; it is registered under the same handle, so enqueuing the script brings it along.
 

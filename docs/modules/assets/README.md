@@ -37,11 +37,11 @@ wp_add_inline_script(
 | `src/entries/{name}/` | `{build}/entries/{name}` | this module, as `{plugin-slug}-{name}` |
 | `src/shared/{name}/` | `{build}/shared/{name}` | this module, as `{plugin-slug}-shared-{name}` |
 
-That merge is the reason the config exists. `@wordpress/scripts` decides entry points three mutually exclusive ways — files listed on the command line, `block.json` scanning, or the `src/index` fallback — each of which disables the others, so a plugin with one block has no supported way to build a script of its own.
+That merge is the reason the config exists: a stock `@wordpress/scripts` setup builds one of the three and silently drops the rest. The [JavaScript](../../javascript.md) guide covers why.
 
-The build composes every handle, and this module reads them. An entry and a shared package can therefore share a name — `src/entries/collections` and `src/shared/collections` — without one silently displacing the other, which is what the `shared` segment is there to prevent.
+The build composes every handle, and this module reads them. An entry and a shared package can therefore share a name — `src/entries/collections` and `src/shared/collections` — without one silently displacing the other.
 
-[Adding it](#adding-it) &nbsp;·&nbsp; [Your own script, built and registered](#your-own-script-built-and-registered) &nbsp;·&nbsp; [An asset the build did not produce](#an-asset-the-build-did-not-produce) &nbsp;·&nbsp; [Sharing code between entries](#sharing-code-between-entries) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+[Adding it](#adding-it) &nbsp;·&nbsp; [Your own script, built and registered](#your-own-script-built-and-registered) &nbsp;·&nbsp; [An asset the build did not produce](#an-asset-the-build-did-not-produce) &nbsp;·&nbsp; [Sharing code between entries](#sharing-code-between-entries) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
 ## Adding it
 
@@ -129,25 +129,7 @@ const MANIFEST_FILENAMES = array( 'assets-manifest.php', 'assets-module-manifest
 
 The build manifests the generated `webpack.config.js` writes.
 
-## You must implement
-
-This one method is abstract: a subclass that does not declare it will not load.
-
-### `on_boot()`
-
-What this module does on its own.
-
-```php
-abstract protected function on_boot(): void
-```
-
-Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
-
-**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
-
-`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
-
-## Methods you can use
+## Methods
 
 ### `set_assets_root( $assets_root )`
 
@@ -440,6 +422,8 @@ A classic script and an ES module are separate WordPress registries with separat
 <br>
 
 ### `on_wp_init( $callback, $priority )`
+
+*Inherited from [`Module`](../module.md).*
 
 Run a callback on `init`, or immediately if `init` has already fired.
 

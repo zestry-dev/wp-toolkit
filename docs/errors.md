@@ -257,7 +257,7 @@ Two families sit outside the hierarchy, so `catch ( ModuleException $e )` around
 | [`Request`](services/request/) | `A file cannot be described in a schema, so only a REST route can take one.` |
 | [`Log`](modules/log/) | `Unknown log level "verbose". Expected one of: emergency, alert, critical, error, warning, notice, info, debug.` |
 
-Every one of those is thrown while your route or ability registers, not while it answers a call, and names the property. [Arguments](arguments.md) lists what you can declare and what you cannot.
+Every one of those is thrown while your route or ability registers, not while it answers a call, and names the property. [`#[RequestArgument]`](services/request/request-argument.md) lists what you can declare and what you cannot.
 
 **`\RuntimeException` — the environment refused.** WordPress or MySQL would not do what was asked: `Could not create upload directory: …`, `Options::save() failed to persist option "acme-plugin__options_"`, `dbDelta() reported creating "wp_acme_reports", but the table does not exist.` These mean a filesystem permission, a full disk, or a database privilege — not a wiring mistake.
 

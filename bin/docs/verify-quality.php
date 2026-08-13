@@ -65,6 +65,38 @@ function zestry_documentation_pages( string $directory ): array {
 }
 
 /**
+ * Every heading anchor a page offers, read once per page and remembered.
+ *
+ * @param string $path Absolute path to the page.
+ * @return string[] The anchors, without their leading `#`.
+ */
+function zestry_page_anchors( string $path ): array {
+	static $cache = array();
+
+	if ( isset( $cache[ $path ] ) ) {
+		return $cache[ $path ];
+	}
+
+	$anchors = array();
+	$fenced  = false;
+
+	foreach ( explode( "\n", (string) file_get_contents( $path ) ) as $line ) {
+		if ( preg_match( '/^\s*```/', $line ) ) {
+			$fenced = ! $fenced;
+			continue;
+		}
+
+		if ( ! $fenced && preg_match( '/^#+\s+(.*)$/', $line, $heading ) ) {
+			$anchors[] = zestry_heading_anchor( $heading[1] );
+		}
+	}
+
+	$cache[ $path ] = $anchors;
+
+	return $anchors;
+}
+
+/**
  * Report every relative link on a page whose target does not exist.
  *
  * A dead link is the defect a reader hits hardest and an author never sees:
@@ -129,8 +161,9 @@ function zestry_check_links( string $root, string $relative, string $path, array
 				continue;
 			}
 
-			$file = strtok( $target, '#' );
-			$full = realpath( dirname( $path ) . '/' . $file );
+			$file     = strtok( $target, '#' );
+			$fragment = substr( (string) strstr( $target, '#' ), 1 );
+			$full     = realpath( dirname( $path ) . '/' . $file );
 
 			if ( false !== $full && is_dir( $full ) ) {
 				$full = realpath( $full . '/README.md' );
@@ -142,6 +175,24 @@ function zestry_check_links( string $root, string $relative, string $path, array
 					$relative,
 					$number + 1,
 					$target
+				);
+
+				continue;
+			}
+
+			/*
+			 * A cross-page `#anchor` was checked as far as the filename and no
+			 * further, so every one of the inherited-member links landed at the
+			 * top of the right page and nothing said so. A fragment that names
+			 * no heading is the same defect as a missing file, one scroll later.
+			 */
+			if ( '' !== $fragment && ! in_array( $fragment, zestry_page_anchors( $full ), true ) ) {
+				$problems[] = sprintf(
+					'%s:%d — links to %s, but #%s is not a heading on that page',
+					$relative,
+					$number + 1,
+					$target,
+					$fragment
 				);
 			}
 		}
@@ -157,13 +208,17 @@ function zestry_check_links( string $root, string $relative, string $path, array
  * @return string The anchor, without its leading `#`.
  */
 function zestry_heading_anchor( string $heading ): string {
-	// Inline markup is not part of the anchor: `` `run()` `` anchors as `run`.
-	$text = (string) preg_replace( '/[`*_]/', '', $heading );
+	// Inline markup is not part of the anchor: `` `run()` `` anchors as `run`,
+	// and a linked heading anchors as its label. `_` is deliberately not in
+	// that set: it is a word character GitHub keeps, so stripping it as an
+	// emphasis marker slugged `get_plugin()` to `getplugin` and made every
+	// underscore heading unreachable by the check below.
+	$text = (string) preg_replace( '/[`*]/', '', $heading );
 	$text = (string) preg_replace( '/\[([^\]]*)\]\([^)]*\)/', '$1', $text );
-	$text = strtolower( trim( $text ) );
-	$text = (string) preg_replace( '/[^\p{L}\p{N} \-]/u', '', $text );
 
-	return str_replace( ' ', '-', $text );
+	// The generator's own rule, so a link it writes and the check that reads it
+	// back cannot disagree about what a heading anchors to.
+	return zestry_anchor( rtrim( $text ) );
 }
 
 /**

@@ -166,7 +166,7 @@ Returning bare `false` gives the same status with WordPress's generic message; u
 Give a `$code` when a client has to tell your refusals apart. **Messages are translated, so a client cannot branch on them** — the code is the only stable thing in the response:
 
 ```php
-return $this->deny( __( 'Your trial has ended.', 'my-plugin' ), 'trial_expired' );
+return $this->deny( __( 'Your trial has ended.', 'acme-plugin' ), 'trial_expired' );
 // {"code":"trial_expired","message":"Your trial has ended.", ...}
 ```
 
@@ -194,7 +194,7 @@ Use it to *refuse* one — supporting them needs nothing from you. An applicatio
 
 ```php
 if ( $this->is_application_password() ) {
-    return $this->deny( __( 'This action requires an interactive session.', 'my-plugin' ) );
+    return $this->deny( __( 'This action requires an interactive session.', 'acme-plugin' ) );
 }
 ```
 
@@ -220,6 +220,8 @@ Identifies *which* credential was used, so you can log or revoke it. Null when t
 
 ### `get_plugin()`
 
+*Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
+
 Get the plugin this class belongs to.
 
 ```php
@@ -242,6 +244,8 @@ $this->get_plugin()->get( Options::class )->get( 'api_key' );
 
 ### `is_enabled()`
 
+*Inherited from [`WithEnablement`](../../kernel/with-enablement.md).*
+
 Whether this should be registered at all.
 
 ```php
@@ -258,4 +262,4 @@ Called once, after the instance is wired and before anything is registered. Retu
 
 The default is true, so a file that says nothing registers — being on disk is the convention, and this is the exception to it.
 
-Most modules ask at discovery and drop the file there. `post-types` and `fields` ask at registration instead, so that a switched-off file still appears in what they list — a screen offering to switch a feature on can only offer what it can see. It registers nothing either way.
+It registers nothing either way.

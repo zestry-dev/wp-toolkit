@@ -7,4 +7,4 @@
 
 Thrown when services or modules depend on each other in a cycle.
 
-Raised while resolving a class whose dependency graph re-enters that same class before it finishes resolving, which cannot be satisfied. ServicesRepository throws this from its instantiation guard, which tracks classes currently being resolved and detects the re-entry.
+Raised while resolving a class whose dependency graph re-enters that same class before it finishes resolving, which cannot be satisfied. The plugin tracks the classes it is part-way through building, and raises this the moment one of them is asked for again.
