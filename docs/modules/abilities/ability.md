@@ -86,19 +86,36 @@ return new class() extends Ability {
 	//
 	// #[RequestArgument( 'How to sort.', schema: array( 'enum' => array( 'date', 'title' ) ) )]
 	// public string $order_by = 'date';
+	//
+	// `__()` cannot go inside an attribute -- PHP allows only constant
+	// expressions there. Say a translated description in input_schema()
+	// instead, which is stated over the schema these declarations already give,
+	// so the property keeps its type, its required-ness and its binding. Drop
+	// the description from the attribute when you do, so it stays in one place:
+	//
+	// #[RequestArgument]
+	// public int $id;
+	//
+	// public function input_schema(): array {
+	//     return array(
+	//         'properties' => array(
+	//             'id' => array( 'description' => \__( 'Which one to act on.', 'acme-plugin' ) ),
+	//         ),
+	//     );
+	// }
 	#[RequestArgument( 'Which one to act on.' )]
 	public int $id;
 
 	// A short name, shown wherever abilities are listed.
 	public function label(): string {
-		return 'Example';
+		return \__( 'Example', 'acme-plugin' );
 	}
 
 	// The whole brief an AI agent gets for deciding whether to call this. Say
 	// what it does, what it does not do, and anything a reader would guess
 	// wrong from the label alone.
 	public function description(): string {
-		return 'Describe what this does, and what it deliberately does not.';
+		return \__( 'Describe what this does, and what it deliberately does not.', 'acme-plugin' );
 	}
 
 	// What running this does to the site. WordPress turns it into the HTTP
@@ -301,22 +318,28 @@ public function input_schema(): array
 
 WordPress validates against it before your code runs, so `handle()` never sees input that does not fit.
 
-By default this is built from your `RequestArgument` properties, which is the shorter way to say the same thing and binds the values onto the object as well. Override to write the schema by hand instead — it *replaces* the derived one rather than adding to it, and nothing is bound:
+The schema is built for you from your `RequestArgument` properties, which is the shorter way to say the same thing and binds the values onto the object as well. What you return here is stated *over* that rather than instead of it, so a declaration you say nothing about keeps everything it had — its type, its required-ness, its `validate:` rule, and its binding.
+
+That is what makes an argument's description translatable. PHP allows only constant expressions in an attribute argument, so `__()` cannot go inside one — leave the description off the attribute and name the property here instead, so it is still written exactly once:
 
 ```php
-return array(
-    'type'       => 'object',
-    'properties' => array(
-        'order_id' => array(
-            'type'        => 'integer',
-            'description' => __( 'The order to cancel.', 'acme-plugin' ),
+// Still the declaration: the type, the required-ness and the binding are
+// all still coming from here. Only the description moved.
+#[RequestArgument]
+public int $order_id;
+
+public function input_schema(): array {
+    return array(
+        'properties' => array(
+            'order_id' => array( 'description' => __( 'The order to cancel.', 'acme-plugin' ) ),
         ),
-    ),
-    'required'   => array( 'order_id' ),
-);
+    );
+}
 ```
 
-An empty array means the ability takes no input at all.
+A keyed map is merged into, so the rest of that property is left alone; a list — `required`, an `enum` — is replaced whole. Describe a property you never declared and it is published and validated like any other, but nothing binds it, so read that one from `$input`.
+
+Declare no properties at all and what you return here is the entire schema, written by hand. An ability that declares nothing and returns nothing takes no input.
 
 <br>
 

@@ -114,10 +114,106 @@ final class HelpersArrStrTest extends TestCase {
 
 	public function test_is_assoc_tells_a_keyed_array_from_a_list(): void {
 		$this->assertTrue( Arr::is_assoc( array( 'name' => 'A' ) ) );
-		// WordPress's definition: a string key, not an out-of-order integer one.
-		$this->assertFalse( Arr::is_assoc( array( 1 => 'a', 0 => 'b' ) ) );
+		$this->assertTrue( Arr::is_assoc( array( 1 => 'a', 0 => 'b' ) ), 'Out of order is not a list.' );
+		$this->assertTrue( Arr::is_assoc( array( 0 => 'a', 2 => 'c' ) ), 'Nor is one with a gap.' );
 		$this->assertFalse( Arr::is_assoc( array( 'a', 'b' ) ) );
 		$this->assertFalse( Arr::is_assoc( array() ), 'An empty array is a list.' );
+	}
+
+	/**
+	 * The case `wp_is_numeric_array()` gets wrong for this question, and the
+	 * reason `is_assoc()` does not use it: PHP casts a numeric string key to an
+	 * integer on the way in, so a map keyed by id arrives with no string key left
+	 * to find — and is still read by name rather than looped by position.
+	 */
+	public function test_is_assoc_reads_a_map_keyed_by_id_as_keyed(): void {
+		$by_id = array( '1' => 'a', '7' => 'b' );
+
+		$this->assertSame( array( 1, 7 ), array_keys( $by_id ), 'PHP cast both keys to integers.' );
+		$this->assertTrue( wp_is_numeric_array( $by_id ), 'Which is why core calls it numeric.' );
+		$this->assertTrue( Arr::is_assoc( $by_id ) );
+	}
+
+	public function test_replace_recursive_descends_into_a_keyed_map(): void {
+		$replaced = Arr::replace_recursive(
+			array( 'mail' => array( 'from' => array( 'name' => 'Acme', 'email' => 'no-reply@acme.test' ) ) ),
+			array( 'mail' => array( 'from' => array( 'name' => 'Acme Support' ) ) )
+		);
+
+		$this->assertSame(
+			array( 'mail' => array( 'from' => array( 'name' => 'Acme Support', 'email' => 'no-reply@acme.test' ) ) ),
+			$replaced,
+			'The sibling key is left alone.'
+		);
+	}
+
+	/**
+	 * The one thing `array_replace_recursive()` does differently, and the whole
+	 * reason this exists: it descends into lists too and replaces them by
+	 * position, so an entry further along survives a shorter replacement.
+	 */
+	public function test_replace_recursive_takes_a_list_whole(): void {
+		$given        = array( 'roles' => array( 'editor', 'author' ) );
+		$replacements = array( 'roles' => array( 'editor' ) );
+
+		$this->assertSame( array( 'roles' => array( 'editor' ) ), Arr::replace_recursive( $given, $replacements ) );
+		$this->assertSame( array( 'roles' => array( 'editor', 'author' ) ), array_replace_recursive( $given, $replacements ) );
+	}
+
+	public function test_replace_recursive_adds_a_key_that_was_not_there(): void {
+		$this->assertSame(
+			array( 'a' => 1, 'b' => 2 ),
+			Arr::replace_recursive( array( 'a' => 1 ), array( 'b' => 2 ) )
+		);
+	}
+
+	/**
+	 * A map keyed by id is a map, whatever `wp_is_numeric_array()` makes of it —
+	 * so replacing one entry leaves the others where they were.
+	 */
+	public function test_replace_recursive_descends_into_a_map_keyed_by_id(): void {
+		$this->assertSame(
+			array( 'users' => array( 1 => 'Ana', 7 => 'Bo' ) ),
+			Arr::replace_recursive(
+				array( 'users' => array( '1' => 'Ana', '7' => 'Ben' ) ),
+				array( 'users' => array( '7' => 'Bo' ) )
+			)
+		);
+	}
+
+	/**
+	 * Both sides have to be maps, which is what keeps a real list safe from a
+	 * replacement whose own keys have gaps in them — `array_filter()` leaves
+	 * exactly that behind, and it is a value set rather than an instruction.
+	 */
+	public function test_replace_recursive_takes_a_filtered_list_whole(): void {
+		$filtered = array_filter( array( 'web', 'phone', 'post' ), static fn ( string $v ): bool => 'phone' !== $v );
+
+		$this->assertSame( array( 0 => 'web', 2 => 'post' ), $filtered, 'array_filter() left a gap.' );
+		$this->assertSame(
+			array( 'enum' => array( 0 => 'web', 2 => 'post' ) ),
+			Arr::replace_recursive( array( 'enum' => array( 'web', 'phone', 'post' ) ), array( 'enum' => $filtered ) )
+		);
+	}
+
+	/**
+	 * A replacement is a value, not an instruction, wherever the two sides
+	 * disagree about shape — and an empty array is a list, so stating one is how
+	 * a key is emptied rather than a no-op.
+	 */
+	public function test_replace_recursive_states_a_value_wherever_it_cannot_descend(): void {
+		$this->assertSame(
+			array( 'a' => 'flat' ),
+			Arr::replace_recursive( array( 'a' => array( 'deep' => true ) ), array( 'a' => 'flat' ) )
+		);
+		$this->assertSame(
+			array( 'a' => array( 'deep' => true ) ),
+			Arr::replace_recursive( array( 'a' => 'flat' ), array( 'a' => array( 'deep' => true ) ) )
+		);
+		$this->assertSame(
+			array( 'a' => array() ),
+			Arr::replace_recursive( array( 'a' => array( 'deep' => true ) ), array( 'a' => array() ) )
+		);
 	}
 
 	public function test_join_path_does_not_care_which_side_carried_the_slash(): void {

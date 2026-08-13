@@ -164,6 +164,59 @@ abstract class RestRoute implements PluginAware {
 	abstract public function schema(): ?array;
 
 	/**
+	 * State the parts of an argument's schema an attribute cannot carry.
+	 *
+	 * Your {@see \Zestry\WPToolkit\Services\Request\Attributes\RequestArgument} properties
+	 * already become the `args` WordPress validates this route against, and their
+	 * values are bound before {@see handle()} runs. What you return here is stated
+	 * *over* that rather than instead of it, keyed by argument name — so an
+	 * argument you say nothing about keeps everything it had: its type, its
+	 * required-ness, its `validate:` rule, and its binding.
+	 *
+	 * The case that needs this is translation. PHP allows only constant
+	 * expressions in an attribute argument, so `__()` cannot go inside one — and a
+	 * route's descriptions are published, where a client reads them back with an
+	 * `OPTIONS` request. Leave the description off the attribute and name the
+	 * argument here instead, so it is still written exactly once:
+	 *
+	 * ```php
+	 * // Still the declaration: the type, the default and the binding are all
+	 * // still coming from here. Only the description moved.
+	 * #[RequestArgument]
+	 * public string $order_by = 'date';
+	 *
+	 * public function args(): array {
+	 *     return array(
+	 *         'order_by' => array( 'description' => __( 'How to sort.', 'acme-plugin' ) ),
+	 *     );
+	 * }
+	 * ```
+	 *
+	 * The other case is anything worked out while the request runs, which an
+	 * attribute cannot hold either: `'enum' => get_post_types()`.
+	 *
+	 * **This is `register_rest_route()`'s `args`, not an ability's
+	 * `input_schema()`**, and the shapes differ where WordPress differs: entries
+	 * are flat rather than under `properties`, `required` is a boolean on the
+	 * entry rather than a list of names beside it, and an entry may carry
+	 * `validate_callback` and `sanitize_callback`, which JSON Schema has no word
+	 * for. A nested schema written here registers parameters called `type` and
+	 * `properties`, and validates nothing.
+	 *
+	 * A keyed map is merged into and a list — an `enum`, a nullable `type` — is
+	 * replaced whole. Everything you write wins, `validate_callback` and
+	 * `sanitize_callback` included: naming one of those replaces what a declared
+	 * `validate:` wired, which is worth doing on purpose rather than by accident.
+	 * An argument with no declaration behind it is published and validated like
+	 * any other, but nothing binds it — read that one off `$request`.
+	 *
+	 * @return array<string, array<string, mixed>> Partial schemas, keyed by argument name.
+	 */
+	public function args(): array {
+		return array();
+	}
+
+	/**
 	 * Refuse the request, at the status that tells a client what to do next.
 	 *
 	 * The status comes from `rest_authorization_required_code()`: **401 when

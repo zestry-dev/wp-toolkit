@@ -261,8 +261,10 @@ class RestApi extends Module {
 				'permission_callback' => array( $instance, 'permission_check' ),
 				// A URL token is always present on a matching request -- there is
 				// no optional path segment -- so it is required whatever its
-				// property declares.
-				'args'                => $this->request->get_rest_args( $instance, $placeholders ),
+				// property declares. And args() states whatever the attribute
+				// could not hold: a translated description, or anything else
+				// this request works out rather than declares.
+				'args'                => $this->request->get_rest_args( $instance, $placeholders, $instance->args() ),
 			);
 
 			// Only publish a schema callback when the route explicitly returns one

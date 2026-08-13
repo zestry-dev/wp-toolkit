@@ -461,6 +461,66 @@ final class AbilitiesTest extends TestCase {
 	}
 
 	/**
+	 * `__()` cannot go inside an attribute, so a translated description has to be
+	 * stated in input_schema() — and stating one must not cost the declaration
+	 * everything else it gave: the type, the required-ness, the sibling argument,
+	 * and the binding.
+	 */
+	public function test_a_stated_input_schema_is_laid_over_the_declared_one(): void {
+		$this->write_ability(
+			'described',
+			'return array( \'ok\' => 42 === $this->id );',
+			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+				. "public int \$id;\n"
+				. "#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'How to run.' )]\n"
+				. "public string \$mode = 'live';\n"
+				. "public function input_schema(): array {\n"
+				. "    return array( 'properties' => array( 'id' => array( 'description' => 'Care dintre ele.' ) ) );\n"
+				. '}'
+		);
+
+		$abilities = $this->register();
+		$schema    = wp_get_ability( 'zestry-test/described' )->get_input_schema();
+
+		$this->assertSame( 'Care dintre ele.', $schema['properties']['id']['description'] );
+		$this->assertSame( 'integer', $schema['properties']['id']['type'], 'The declaration still says the type.' );
+		$this->assertSame( array( 'id' ), $schema['required'], 'And still says which are required.' );
+		$this->assertSame( 'How to run.', $schema['properties']['mode']['description'], 'A sibling is left alone.' );
+
+		$this->assertSame( array( 'ok' => true ), $abilities->run( 'described', array( 'id' => 42 ) ), 'And the value still binds.' );
+	}
+
+	/**
+	 * Translation is not the only thing an attribute cannot hold — anything worked
+	 * out while the request runs is the rest of it. A list replaces whole rather
+	 * than by position, and a name with no declaration behind it is published and
+	 * validated like any other, but never bound.
+	 */
+	public function test_a_stated_input_schema_replaces_a_list_and_may_add_a_name(): void {
+		$this->write_ability(
+			'stated',
+			'return array( \'extra\' => $input[\'extra\'] ?? null );',
+			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'How to run.', schema: array( 'enum' => array( 'live', 'test', 'stub' ) ) )]\n"
+				. "public string \$mode = 'live';\n"
+				. "public function input_schema(): array {\n"
+				. "    return array(\n"
+				. "        'properties' => array(\n"
+				. "            'mode'  => array( 'enum' => array( 'live' ) ),\n"
+				. "            'extra' => array( 'type' => 'string' ),\n"
+				. "        ),\n"
+				. "    );\n"
+				. '}'
+		);
+
+		$abilities = $this->register();
+		$schema    = wp_get_ability( 'zestry-test/stated' )->get_input_schema();
+
+		$this->assertSame( array( 'live' ), $schema['properties']['mode']['enum'], 'A list is taken whole.' );
+		$this->assertSame( 'string', $schema['properties']['extra']['type'] );
+		$this->assertSame( array( 'extra' => 'read' ), $abilities->run( 'stated', array( 'extra' => 'read' ) ) );
+	}
+
+	/**
 	 * An ability is discovered once and that instance answers every call, so what
 	 * one call binds is still on the object when the next one arrives. A nullable
 	 * argument meaning "not supplied" is how an optional one is written, which
@@ -788,8 +848,9 @@ final class AbilitiesTest extends TestCase {
 			'handle'       => "public function handle( mixed \$input ): mixed { {$execute_body} }",
 		);
 
-		// An ability declaring arguments takes the schema the base class derives
-		// from them, which is the whole point of the attribute.
+		// An ability declaring arguments takes the schema derived from them, which
+		// is the whole point of the attribute. Left in, this default would be
+		// stated *over* that and add a property no test asked for.
 		if ( str_contains( $extra, 'RequestArgument' ) ) {
 			unset( $defaults['input_schema'] );
 		}

@@ -390,7 +390,7 @@ Nothing in that JSON was written by hand. `required` came from which properties 
 public int $order_id;
 ```
 
-Everywhere else, `__()` is fine. `label()`, `description()` and a hand-written `input_schema()` are ordinary methods, and both modules register after `init`, so nothing translates too early:
+Everywhere else, `__()` is fine. `label()`, `description()`, `input_schema()` and `args()` are ordinary methods, and both modules register after `init`, so nothing translates too early:
 
 ```php
 public function description(): string {
@@ -398,24 +398,41 @@ public function description(): string {
 }
 ```
 
-So to translate an argument's own description, write that argument's schema by hand:
+So an argument's description is translated by naming that one argument — in `input_schema()` on an ability, or `args()` on a route. What you write there is stated *over* the schema your declarations already give, so the property keeps its type, its required-ness, its `validate:` rule and its binding. You are finishing the sentence the attribute started, not writing the schema instead of it.
+
+Leave the description off the attribute when you do. It is still written once, just somewhere `__()` can reach:
 
 ```php
+// Still the declaration — only the description moved.
+#[RequestArgument]
+public int $order_id;
+
 public function input_schema(): array {
     return array(
-        'type'       => 'object',
         'properties' => array(
-            'order_id' => array(
-                'type'        => 'integer',
-                'description' => __( 'The order to cancel.', 'acme-plugin' ),
-            ),
+            'order_id' => array( 'description' => __( 'The order to cancel.', 'acme-plugin' ) ),
         ),
-        'required'   => array( 'order_id' ),
     );
 }
 ```
 
-Worth weighing against what the description is for. It is read by whoever *calls* your ability — a developer, or an agent choosing between tools — not shown to the person using your plugin. English is often the right answer, and keeping the declaration is worth more than translating a string nobody in your plugin's UI will see.
+A route says the same thing through `args()`, keyed by argument name rather than nested under `properties`, because that is the shape `register_rest_route()` takes:
+
+```php
+public function args(): array {
+    return array(
+        'order_id' => array( 'description' => __( 'The order to cancel.', 'acme-plugin' ) ),
+    );
+}
+```
+
+A keyed map is merged into, so the rest of that argument is untouched. A list — `required`, an `enum`, a nullable `type` — is replaced whole, so state all of it when you state any of it.
+
+The same door lets in everything else an attribute cannot hold, translated or not. `'enum' => get_post_types()` is a function call, and a function call is not a constant expression either.
+
+**An AJAX action and an admin page have no equivalent, and need none.** Nothing publishes their schema, so no description there is ever read by anyone; a rule you would have stated belongs in `validate:`, which runs the same way and can already call whatever it likes.
+
+Whether to translate at all is still worth a thought. A description is read by whoever *calls* — a developer, or an agent choosing between tools — not by the person using your plugin, so English is often the right answer. It is now a decision about that audience rather than about what saying so costs you.
 
 ## Six behaviours that differ from a general-purpose mapper
 
@@ -431,7 +448,7 @@ Each is shaped by WordPress already shipping the validator and dictating the sch
 ## Tips
 
 - **Describe every argument.** The description is optional and `#[RequestArgument]` alone is fine for an obvious `$id`, but whatever is calling reads it to decide what to send and cannot ask you.
-- **Do not reach for `__()` inside the attribute.** PHP allows only constant expressions there, so it is a fatal error at compile time — see [Translation](#translation).
+- **An attribute argument has to be a constant expression.** So no `__()` — that is a fatal error at compile time, not a load-order problem — and no `get_post_types()` either. Both go in `input_schema()` or `args()`, stated over what your declarations already give: see [Translation](#translation).
 - **Give every optional argument a default.** It is what makes it optional, and it is published so a caller knows what it gets.
 - **Reach for an enum before `schema: [ 'enum' => ... ]`.** One source of truth, and your handler gets a case.
 - **Put shared shapes in a structure.** An `Address` declared once can be an argument of every route and ability that takes one.
@@ -455,9 +472,9 @@ Each is refused with a message naming the property, and never silently. All but 
 | `readonly` on a **route or ability** property | See [Why not readonly](#why-not-readonly) | Drop `readonly` — or move the arguments into a structure, where it works |
 | `UploadedFile` on an **ability** | Its input is JSON; an upload is multipart | Take the upload on a route |
 | `@var LineItem[]` docblocks | `getDocComment()` returns nothing when `opcache.save_comments=0`, so the shape would vanish on some servers | `of: LineItem::class` |
-| `__()` in the attribute | PHP allows only constant expressions in an attribute argument — this is a fatal error at compile time, not a load-order problem | Write that argument's [`input_schema()`](#translation) by hand |
+| `__()` in the attribute | PHP allows only constant expressions in an attribute argument — this is a fatal error at compile time, not a load-order problem | State that argument's description in [`input_schema()` or `args()`](#translation) |
 
-A value that contradicts the schema — a string where a structure belongs, `null` for an argument that does not take it — is refused when it binds, naming the argument. You only reach that by replacing a derived schema with a hand-written one that no longer matches the property it fills.
+A value that contradicts the schema — a string where a structure belongs, `null` for an argument that does not take it — is refused when it binds, naming the argument. You only reach that by stating a schema over a declaration it no longer matches: a `type` rewritten in `input_schema()` or `args()` decides what the caller may send, while the property decides what may land on it.
 
 ### Why not readonly
 

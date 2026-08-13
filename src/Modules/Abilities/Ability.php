@@ -14,7 +14,6 @@ namespace Zestry\WPToolkit\Modules\Abilities;
 use Zestry\WPToolkit\Kernel\Contracts\PluginAware;
 use Zestry\WPToolkit\Kernel\Traits\WithPlugin;
 use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
-use Zestry\WPToolkit\Services\Request\Request;
 
 /**
  * One thing your plugin can do, described well enough for something else to call it.
@@ -186,32 +185,46 @@ abstract class Ability implements PluginAware {
 	 * WordPress validates against it before your code runs, so `handle()` never
 	 * sees input that does not fit.
 	 *
-	 * By default this is built from your
+	 * The schema is built for you from your
 	 * {@see \Zestry\WPToolkit\Services\Request\Attributes\RequestArgument} properties, which
 	 * is the shorter way to say the same thing and binds the values onto the
-	 * object as well. Override to write the schema by hand
-	 * instead — it *replaces* the derived one rather than adding to it, and
-	 * nothing is bound:
+	 * object as well. What you return here is stated *over* that rather than
+	 * instead of it, so a declaration you say nothing about keeps everything it
+	 * had — its type, its required-ness, its `validate:` rule, and its binding.
+	 *
+	 * That is what makes an argument's description translatable. PHP allows only
+	 * constant expressions in an attribute argument, so `__()` cannot go inside
+	 * one — leave the description off the attribute and name the property here
+	 * instead, so it is still written exactly once:
 	 *
 	 * ```php
-	 * return array(
-	 *     'type'       => 'object',
-	 *     'properties' => array(
-	 *         'order_id' => array(
-	 *             'type'        => 'integer',
-	 *             'description' => __( 'The order to cancel.', 'acme-plugin' ),
+	 * // Still the declaration: the type, the required-ness and the binding are
+	 * // all still coming from here. Only the description moved.
+	 * #[RequestArgument]
+	 * public int $order_id;
+	 *
+	 * public function input_schema(): array {
+	 *     return array(
+	 *         'properties' => array(
+	 *             'order_id' => array( 'description' => __( 'The order to cancel.', 'acme-plugin' ) ),
 	 *         ),
-	 *     ),
-	 *     'required'   => array( 'order_id' ),
-	 * );
+	 *     );
+	 * }
 	 * ```
 	 *
-	 * An empty array means the ability takes no input at all.
+	 * A keyed map is merged into, so the rest of that property is left alone; a
+	 * list — `required`, an `enum` — is replaced whole. Describe a property you
+	 * never declared and it is published and validated like any other, but
+	 * nothing binds it, so read that one from `$input`.
+	 *
+	 * Declare no properties at all and what you return here is the entire schema,
+	 * written by hand. An ability that declares nothing and returns nothing takes
+	 * no input.
 	 *
 	 * @return array<string, mixed>
 	 */
 	public function input_schema(): array {
-		return $this->get_plugin()->get( Request::class )->get_schema( $this );
+		return array();
 	}
 
 	/**

@@ -12,6 +12,7 @@ namespace Zestry\WPToolkit\Services\Request;
 \defined( 'ABSPATH' ) || exit;
 
 use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Helpers\Arr;
 use Zestry\WPToolkit\Services\Request\Attributes\RequestArgument;
 
 /**
@@ -115,12 +116,40 @@ class Request extends Service {
 	/**
 	 * The JSON Schema object describing everything an object accepts.
 	 *
-	 * @param object|string $target The object, or the class name of a structure.
+	 * `$overrides` is a partial schema stated on top of the derived one, for the
+	 * parts an attribute cannot carry. PHP allows only constant expressions in an
+	 * attribute argument, so `__()` -- and anything else worked out while the
+	 * request runs -- has to be said here instead. Anything you state wins;
+	 * everything you leave out keeps whatever the declarations gave it, including
+	 * the binding and the validation they wired.
+	 *
+	 * A keyed map is merged into, so naming one property's `description` leaves
+	 * the rest of that property alone:
+	 *
+	 * ```php
+	 * $request->get_schema(
+	 *     $ability,
+	 *     array(
+	 *         'properties' => array(
+	 *             'order_id' => array( 'description' => __( 'The order to cancel.', 'acme-plugin' ) ),
+	 *         ),
+	 *     )
+	 * );
+	 * ```
+	 *
+	 * A **list is replaced whole** — `required`, an `enum`, a nullable `type`.
+	 * Stating `enum => array( 'web' )` gives you exactly that, rather than your
+	 * entry laid over the first of the derived ones. That is
+	 * {@see \Zestry\WPToolkit\Kernel\Helpers\Arr::replace_recursive()}, where the rule and its
+	 * reason are written out.
+	 *
+	 * @param object|string        $target    The object, or the class name of a structure.
+	 * @param array<string, mixed> $overrides A partial schema stated over the derived one.
 	 * @return array<string, mixed> A schema, or an empty array when nothing is declared.
 	 * @throws \InvalidArgumentException When an argument cannot be described.
 	 */
-	public function get_schema( object|string $target ): array {
-		return $this->get_object_schema( $target, 0 );
+	public function get_schema( object|string $target, array $overrides = array() ): array {
+		return Arr::replace_recursive( $this->get_object_schema( $target, 0 ), $overrides );
 	}
 
 	/**
@@ -131,14 +160,22 @@ class Request extends Service {
 	 * argument's `validate`/`sanitize` are wired into WordPress's own slots here,
 	 * so a route's failures are reported the way every other route reports them.
 	 *
-	 * @param object   $target   The wired route.
-	 * @param string[] $required Names required regardless of their default — a route's URL tokens.
+	 * `$overrides` is keyed by argument name rather than nested under
+	 * `properties`, matching the flat shape it merges into — see
+	 * {@see get_schema()} for what merging does and does not replace. A name with
+	 * no declaration behind it is added rather than dropped: that is still a
+	 * parameter WordPress validates, read off the request rather than off a
+	 * property.
+	 *
+	 * @param object                              $target    The wired route.
+	 * @param string[]                            $required  Names required regardless of their default — a route's URL tokens.
+	 * @param array<string, array<string, mixed>> $overrides Partial schemas stated over the derived ones, keyed by argument name.
 	 * @return array<string, array<string, mixed>>
 	 * @throws \InvalidArgumentException When an argument cannot be described.
 	 *
 	 * @internal
 	 */
-	public function get_rest_args( object $target, array $required = array() ): array {
+	public function get_rest_args( object $target, array $required = array(), array $overrides = array() ): array {
 		$args = array();
 
 		foreach ( $this->get_arguments( $target ) as $name => [ $property, $argument ] ) {
@@ -214,6 +251,18 @@ class Request extends Service {
 			}
 
 			$args[ $name ] = $arg;
+		}
+
+		/*
+		 * Stated last, so one rule covers every key: what you write here wins.
+		 * That includes the callbacks above, which is the only way to replace what
+		 * a declared `validate:` wired -- and the reason naming one is worth
+		 * meaning.
+		 */
+		foreach ( $overrides as $name => $override ) {
+			$args[ $name ] = isset( $args[ $name ] )
+				? Arr::replace_recursive( $args[ $name ], $override )
+				: $override;
 		}
 
 		return $args;

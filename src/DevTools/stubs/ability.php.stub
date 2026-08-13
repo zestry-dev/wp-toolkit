@@ -27,19 +27,36 @@ return new class() extends Ability {
 	//
 	// #[RequestArgument( 'How to sort.', schema: array( 'enum' => array( 'date', 'title' ) ) )]
 	// public string $order_by = 'date';
+	//
+	// `__()` cannot go inside an attribute -- PHP allows only constant
+	// expressions there. Say a translated description in input_schema()
+	// instead, which is stated over the schema these declarations already give,
+	// so the property keeps its type, its required-ness and its binding. Drop
+	// the description from the attribute when you do, so it stays in one place:
+	//
+	// #[RequestArgument]
+	// public int $id;
+	//
+	// public function input_schema(): array {
+	//     return array(
+	//         'properties' => array(
+	//             'id' => array( 'description' => \__( 'Which one to act on.', '{{text_domain}}' ) ),
+	//         ),
+	//     );
+	// }
 	#[RequestArgument( 'Which one to act on.' )]
 	public int $id;
 
 	// A short name, shown wherever abilities are listed.
 	public function label(): string {
-		return '{{title}}';
+		return \__( '{{title}}', '{{text_domain}}' );
 	}
 
 	// The whole brief an AI agent gets for deciding whether to call this. Say
 	// what it does, what it does not do, and anything a reader would guess
 	// wrong from the label alone.
 	public function description(): string {
-		return 'Describe what this does, and what it deliberately does not.';
+		return \__( 'Describe what this does, and what it deliberately does not.', '{{text_domain}}' );
 	}
 
 	// What running this does to the site. WordPress turns it into the HTTP

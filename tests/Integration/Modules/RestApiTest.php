@@ -295,6 +295,78 @@ final class RestApiTest extends TestCase {
 		);
 	}
 
+	/**
+	 * `__()` cannot go inside an attribute, and a route's descriptions are
+	 * published — a client reads them back with an `OPTIONS` request. args() is
+	 * where that sentence gets finished, and stating one part of an argument must
+	 * leave the rest of the declaration standing.
+	 */
+	public function test_args_states_what_the_attribute_could_not_hold(): void {
+		$this->write_route(
+			'get',
+			'widgets',
+			'v1',
+			'/widgets/{id}',
+			"#[RequestArgument( 'The widget to return.' )]\npublic int \$id;\n"
+				. "#[RequestArgument( 'How to sort.', schema: array( 'enum' => array( 'date', 'title', 'slug' ) ) )]\n"
+				. "public string \$order_by = 'date';\n"
+				. "public function args(): array {\n"
+				. "    return array(\n"
+				. "        'id'       => array( 'description' => 'Widgetul cerut.' ),\n"
+				. "        'order_by' => array( 'enum' => array( 'date' ) ),\n"
+				. "    );\n"
+				. "}\n"
+				. $this->open_get_returning_id()
+		);
+		$this->boot_and_discover();
+
+		$args = $GLOBALS['wp_rest_server']->get_routes()['/zestry-test/v1/widgets/(?P<id>[^/]+)'][0]['args'];
+
+		$this->assertSame( 'Widgetul cerut.', $args['id']['description'] );
+		$this->assertSame( 'integer', $args['id']['type'], 'The declaration still says the type.' );
+		$this->assertTrue( $args['id']['required'], 'And a URL token is still required.' );
+		$this->assertSame( array( 'date' ), $args['order_by']['enum'], 'A list is taken whole.' );
+		$this->assertSame( 'date', $args['order_by']['default'], 'The rest of that argument is left alone.' );
+
+		$request  = new WP_REST_Request( 'GET', '/zestry-test/v1/widgets/42' );
+		$response = $GLOBALS['wp_rest_server']->dispatch( $request );
+
+		$this->assertSame( array( 'id' => 42 ), $response->get_data(), 'And the value still binds.' );
+	}
+
+	/**
+	 * A name args() describes but no property declares is still a parameter
+	 * WordPress validates — it simply binds nowhere, so the route reads it off
+	 * the request.
+	 */
+	public function test_args_may_describe_a_parameter_no_property_declares(): void {
+		$this->write_route(
+			'get',
+			'gizmos',
+			'v1',
+			'/gizmos',
+			"public function args(): array { return array( 'page' => array( 'type' => 'integer', 'minimum' => 1 ) ); }\n"
+				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
+				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { return new WP_REST_Response( [ 'page' => \$request->get_param( 'page' ) ] ); }\n"
+				. 'public function schema(): ?array { return null; }'
+		);
+		$this->boot_and_discover();
+
+		$this->assertSame(
+			1,
+			$GLOBALS['wp_rest_server']->get_routes()['/zestry-test/v1/gizmos'][0]['args']['page']['minimum']
+		);
+
+		$request = new WP_REST_Request( 'GET', '/zestry-test/v1/gizmos' );
+		$request->set_query_params( array( 'page' => '0' ) );
+
+		$this->assertGreaterThanOrEqual(
+			400,
+			$GLOBALS['wp_rest_server']->dispatch( $request )->get_status(),
+			'WordPress enforces it like any other arg.'
+		);
+	}
+
 	public function test_a_string_builtin_callable_is_passed_directly_without_argument_count_error(): void {
 		// 'is_numeric' and 'absint' each declare exactly one parameter --
 		// RestApi must forward only the value, not WordPress's full 3-tuple.

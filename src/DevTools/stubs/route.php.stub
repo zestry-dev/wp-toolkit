@@ -35,6 +35,21 @@ return Route::{{method}}(
 		// public static function is_known( $value ): bool {
 		//     return null !== acme_find_widget( $value );
 		// }
+		//
+		// `__()` cannot go inside an attribute -- PHP allows only constant
+		// expressions there. Say a translated description in args() instead,
+		// which is stated over the schema the declarations already give, so the
+		// property keeps its type, its required-ness and its binding. Drop the
+		// description from the attribute when you do, so it stays in one place:
+		//
+		// #[RequestArgument]
+		// public int $id;
+		//
+		// public function args(): array {
+		//     return array(
+		//         'id' => array( 'description' => \__( 'The widget to return.', '{{text_domain}}' ) ),
+		//     );
+		// }
 
 		// Authorization check, run before handle(). Return false or a WP_Error
 		// to reject the request. Replace 'manage_options' with whatever

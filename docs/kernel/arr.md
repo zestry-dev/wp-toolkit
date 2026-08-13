@@ -228,7 +228,51 @@ public static function is_assoc( array $data ): bool
 
 The question worth asking before deciding how to walk something WordPress handed you: a numbered list is looped, a keyed array is read by name.
 
-WordPress's own `wp_is_numeric_array()` answers it, so "associative" means here exactly what it means in core: **at least one key is a string**. That differs from PHP's `array_is_list()` on an array whose integer keys are out of order — `array( 1 => 'a', 0 => 'b' )` is numeric to WordPress and not a list to PHP. Reach for `array_is_list()` directly when the order is what you are asking about.
+"Numbered" is PHP's `array_is_list()` — the keys `0, 1, 2…` in that order and nothing else — so anything a positional read would get wrong is associative here: keys with gaps in them, keys out of order, and the case that catches people out, **a map keyed by id**. PHP casts a numeric string key to an integer on the way in, so by the time you see `array( '1' => 'a', '7' => 'b' )` every key is an integer, and it is still something you read by name rather than loop by position.
+
+WordPress's own `wp_is_numeric_array()` asks something narrower — whether *any* key is a string — and so calls that same id-keyed map numeric. Reach for it directly when a string key is genuinely what you are asking about.
+
+An empty array is a list, and so is not associative.
+
+<br>
+
+### `replace_recursive( $data, $replacements )`
+
+Replace values into a nested array, descending only into keyed maps.
+
+```php
+public static function replace_recursive( array $data, array $replacements ): array
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$data` — The array to replace into<br>`$replacements` — The values to state over it |
+| **Return** | `array` |
+| **Throws** | — |
+
+The merge for anything shaped like configuration: state the one value you are changing, at the depth it lives at, and everything beside it is left exactly as it was.
+
+```php
+$settings = Arr::replace_recursive(
+    array(
+        'mail'  => array( 'from' => array( 'name' => 'Acme', 'email' => 'no-reply@acme.test' ) ),
+        'roles' => array( 'editor', 'author' ),
+    ),
+    array(
+        'mail'  => array( 'from' => array( 'name' => 'Acme Support' ) ),
+        'roles' => array( 'editor' ),
+    )
+);
+
+// The `email` beside the renamed `name` survives, and `roles` is exactly
+// array( 'editor' ).
+```
+
+PHP's own `array_replace_recursive()` is the same idea with one difference: it descends into **lists** as well, and replaces them by position. `array( 'editor' )` over `array( 'editor', 'author' )` leaves both there, because nothing replaced index 1 — so a value you meant to drop is still in the array, with nothing said about it. Here a list is a value, taken as written.
+
+"Keyed map" is `is_assoc()`, so a map keyed by id is descended into as readily as one keyed by name, and an empty array is a list — replacing with one empties that key rather than merging into nothing.
+
+Both sides have to be maps for either to be descended into, which is what keeps a real list safe from a replacement with holes in its keys: `array_filter()` leaves gaps, and its result stated over `array( 'a', 'b' )` is still taken whole.
 
 <br>
 

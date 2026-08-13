@@ -536,7 +536,11 @@ class Abilities extends Module {
 
 			// Omitted rather than empty: an empty schema is a schema, and would
 			// describe an ability that accepts or returns nothing at all.
-			$input_schema = $ability->input_schema();
+			//
+			// The declarations are the schema, and input_schema() is stated over
+			// them -- which is the only way to reach the parts an attribute cannot
+			// carry, a translated description first among them.
+			$input_schema = $this->request->get_schema( $ability, $ability->input_schema() );
 			if ( array() !== $input_schema ) {
 				$args['input_schema'] = $input_schema;
 			}

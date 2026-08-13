@@ -207,4 +207,17 @@ final class HelpersLaravelParityTest extends TestCase {
 		$this->assertSame( array( 'Taylor' ), Arr::wrap( array( 'Taylor' ) ) );
 		$this->assertSame( array(), Arr::wrap( null ) );
 	}
+
+	/**
+	 * `SupportArrTest::testIsAssoc()`, in full. Laravel's is `! array_is_list()`
+	 * and so is ours, which is what makes the awkward rows — an integer key out
+	 * of order, one that does not start at zero — answer the same on both sides.
+	 */
+	public function test_arr_is_assoc_matches_laravel(): void {
+		$this->assertTrue( Arr::is_assoc( array( 'a' => 'a', 0 => 'b' ) ) );
+		$this->assertTrue( Arr::is_assoc( array( 1 => 'a', 0 => 'b' ) ) );
+		$this->assertTrue( Arr::is_assoc( array( 1 => 'a', 2 => 'b' ) ) );
+		$this->assertFalse( Arr::is_assoc( array( 0 => 'a', 1 => 'b' ) ) );
+		$this->assertFalse( Arr::is_assoc( array( 'a', 'b' ) ) );
+	}
 }

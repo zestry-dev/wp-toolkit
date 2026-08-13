@@ -80,19 +80,36 @@ Public and protected only, the same rule module injection uses: reflection canno
 
 <br>
 
-### `get_schema( $target )`
+### `get_schema( $target, $overrides )`
 
 The JSON Schema object describing everything an object accepts.
 
 ```php
-public function get_schema( object|string $target ): array
+public function get_schema( object|string $target, array $overrides = array() ): array
 ```
 
 |  | Details |
 |---|---|
-| **Parameters** | `$target` — The object, or the class name of a structure |
+| **Parameters** | `$target` — The object, or the class name of a structure<br>`$overrides` — A partial schema stated over the derived one |
 | **Return** | A schema, or an empty array when nothing is declared |
 | **Throws** | `InvalidArgumentException` — When an argument cannot be described |
+
+`$overrides` is a partial schema stated on top of the derived one, for the parts an attribute cannot carry. PHP allows only constant expressions in an attribute argument, so `__()` — and anything else worked out while the request runs — has to be said here instead. Anything you state wins; everything you leave out keeps whatever the declarations gave it, including the binding and the validation they wired.
+
+A keyed map is merged into, so naming one property's `description` leaves the rest of that property alone:
+
+```php
+$request->get_schema(
+    $ability,
+    array(
+        'properties' => array(
+            'order_id' => array( 'description' => __( 'The order to cancel.', 'acme-plugin' ) ),
+        ),
+    )
+);
+```
+
+A **list is replaced whole** — `required`, an `enum`, a nullable `type`. Stating `enum => array( 'web' )` gives you exactly that, rather than your entry laid over the first of the derived ones. That is `Arr::replace_recursive()`, where the rule and its reason are written out.
 
 <br>
 
