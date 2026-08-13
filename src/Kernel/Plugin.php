@@ -652,11 +652,25 @@ class Plugin {
 	/**
 	 * Register and queue every module a bootstrap file declares.
 	 *
-	 * Two entry shapes, because a module with nothing to configure still has to
-	 * be listed for it to be built: `Foo::class => $initializer` gives a string
-	 * key and a callable, `Foo::class,` gives an integer key and the class name
-	 * as the value. Either shape queues the class; the callable, when there is
-	 * one, is registered as its initializer first.
+	 * Three entry shapes, because a module with nothing to configure still has to
+	 * be listed for it to be built:
+	 *
+	 * ```
+	 * CLI::class,                                    // bare: boot as the plugin loads
+	 * Ajax::class => static fn ( Ajax $a ) => …,     // configured, boot as the plugin loads
+	 * Options::class => array(                       // configured, boot on a hook
+	 *     'boots_on'    => 'init',
+	 *     'priority'    => 10,
+	 *     'before_boot' => static function ( Options $options ): void { … },
+	 * ),
+	 * ```
+	 *
+	 * Every shape queues the class. `before_boot` is registered as its
+	 * initializer and runs immediately before `on_boot()`, which is what makes a
+	 * `__()` in there safe once a hook is named. `boots_on` lives here and nowhere
+	 * else -- this file is where a plugin says what it starts and when, so a
+	 * default on the class would make a bare listing boot on a hook the file
+	 * never mentions. `wp zt add` writes it for a module that needs one.
 	 *
 	 * Nothing here loads a class. Registering an initializer only stores a
 	 * closure against a name, and queueing only remembers a name, so a file
@@ -671,19 +685,37 @@ class Plugin {
 	 */
 	private function declare_all( array $entries ): void {
 		foreach ( $entries as $key => $value ) {
-			$name        = \is_string( $key ) ? $key : $value;
-			$initializer = \is_string( $key ) ? $value : null;
+			$name  = \is_string( $key ) ? $key : $value;
+			$entry = \is_string( $key ) ? $value : null;
 
 			if ( ! \is_string( $name ) || '' === $name ) {
 				throw new ModuleException( 'Bootstrap entries must name a class.' );
 			}
 
+			$initializer = \is_array( $entry ) ? ( $entry['before_boot'] ?? null ) : $entry;
+
 			if ( null !== $initializer && ! \is_callable( $initializer ) ) {
-				throw new ModuleException( 'Bootstrap entry for ' . $name . ' must be a callable, or omitted.' );
+				throw new ModuleException(
+					'Bootstrap entry for ' . $name . ' must be a callable, an array, or omitted.'
+				);
 			}
 
 			if ( null !== $initializer ) {
 				$this->configure( $name, $initializer );
+			}
+
+			/*
+			 * Read from the entry, and only from the entry. A default on the class
+			 * would make a bare listing boot on a hook this file never mentions --
+			 * and asking the class would autoload every module to read a constant,
+			 * the exact cost this file is shaped to avoid.
+			 */
+			if ( \is_array( $entry ) && isset( $entry['boots_on'] ) ) {
+				$this->modules->set_boot_hook(
+					$name,
+					(string) $entry['boots_on'],
+					isset( $entry['priority'] ) ? (int) $entry['priority'] : null
+				);
 			}
 
 			/*

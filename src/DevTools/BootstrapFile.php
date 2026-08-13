@@ -38,19 +38,30 @@ class BootstrapFile extends Service {
 	 * Declare a module, unless it is already in the file.
 	 *
 	 * @param string      $plugin_root Absolute path to the consuming plugin's root.
-	 * @param string      $class_name       Fully qualified module class name, without a leading separator.
+	 * @param string      $class_name  Fully qualified module class name, without a leading separator.
 	 * @param string|null $config      The configuration array's contents, or null for `array()`.
+	 * @param string|null $hook        The hook it boots on, or null to boot as the plugin loads.
+	 * @param int         $priority    The priority that hook binds at.
 	 * @return DeclarationResult What was written, or why nothing was.
 	 */
-	public function declare_module( string $plugin_root, string $class_name, ?string $config = null ): DeclarationResult {
-		return $this->declare_modules( $plugin_root, array( $class_name => $config ) );
+	public function declare_module( string $plugin_root, string $class_name, ?string $config = null, ?string $hook = null, int $priority = 10 ): DeclarationResult {
+		return $this->declare_modules(
+			$plugin_root,
+			array(
+				$class_name => array(
+					'config'   => $config,
+					'hook'     => $hook,
+					'priority' => $priority,
+				),
+			)
+		);
 	}
 
 	/**
 	 * Declare several modules in one pass.
 	 *
 	 * @param string                     $plugin_root Absolute path to the consuming plugin's root.
-	 * @param array<class-string, string|null> $classes Configuration contents keyed by class name.
+	 * @param array<class-string, array{config: string|null, hook: string|null, priority: int}> $classes How to write each entry, keyed by class name.
 	 * @return DeclarationResult What was written, or why nothing was.
 	 */
 	public function declare_modules( string $plugin_root, array $classes ): DeclarationResult {
@@ -65,19 +76,24 @@ class BootstrapFile extends Service {
 		$new_uses = array();
 		$addition = '';
 
-		foreach ( $classes as $class_name => $config ) {
+		foreach ( $classes as $class_name => $entry ) {
 			if ( $this->has_module( $contents, $imports, $class_name ) ) {
 				continue;
 			}
 
+			$reference = $this->resolve_reference( $class_name, $imports, $new_uses );
+			$config    = $entry['config'] ?? null;
+			$hook      = $entry['hook'] ?? null;
+
 			/*
-			 * The entry itself is bare -- its value would be an initializer, and
-			 * `add` has none to supply. Any commented configuration the caller
-			 * passed goes above it, showing what the module can be given without
-			 * standing between it and being built.
+			 * A module with nothing to say is written bare -- its value would be
+			 * an initializer, and `add` has none to supply. One that names a boot
+			 * hook is written in full, because `bootstrap.php` is the only place
+			 * that timing lives: suggested in a comment, a module that cannot work
+			 * before `init` would be listed as though it could.
 			 */
 			$addition .= ( null === $config || '' === $config ? '' : $config )
-				. "\t" . $this->resolve_reference( $class_name, $imports, $new_uses ) . "::class,\n";
+				. $this->get_entry_body( $reference, $hook, $entry['priority'] ?? 10 );
 		}
 
 		if ( '' === $addition ) {
@@ -204,13 +220,20 @@ class BootstrapFile extends Service {
 	 * class cannot see, so a short name would depend on an import that may not
 	 * be there.
 	 *
-	 * @param string      $class_name  Fully qualified module class name.
-	 * @param string|null $config The configuration array's contents, or null for `array()`.
+	 * A module that names a boot hook is written in the long form, which is the
+	 * only place that timing lives -- so it has to be written rather than
+	 * suggested in a comment, or a module that cannot work before `init` would be
+	 * listed as though it could.
+	 *
+	 * @param string      $class_name Fully qualified module class name.
+	 * @param string|null $config     The configuration array's contents, or null for `array()`.
+	 * @param string|null $hook       The hook it boots on, or null to boot as the plugin loads.
+	 * @param int         $priority   The priority that hook binds at; 10 is left unwritten.
 	 * @return string
 	 */
-	public function get_entry_line( string $class_name, ?string $config = null ): string {
+	public function get_entry_line( string $class_name, ?string $config = null, ?string $hook = null, int $priority = 10 ): string {
 		return ( null === $config || '' === $config ? '' : $config )
-			. "\t\\" . $class_name . '::class,';
+			. \rtrim( $this->get_entry_body( '\\' . $class_name, $hook, $priority ), "\n" );
 	}
 
 	/**
@@ -228,6 +251,32 @@ class BootstrapFile extends Service {
 		$root = \rtrim( $plugin_root, '/\\' ) . '/';
 
 		return \str_starts_with( $path, $root ) ? \substr( $path, \strlen( $root ) ) : $path;
+	}
+
+	/**
+	 * One entry, in the shortest shape that says everything true about it.
+	 *
+	 * @param string      $reference The class reference to write, imported or fully qualified.
+	 * @param string|null $hook      The hook it boots on, or null to boot as the plugin loads.
+	 * @param int         $priority  The priority that hook binds at.
+	 * @return string
+	 */
+	private function get_entry_body( string $reference, ?string $hook, int $priority ): string {
+		if ( null === $hook ) {
+			return "\t" . $reference . "::class,\n";
+		}
+
+		// 10 is WordPress's own default, so writing it would be one more line
+		// saying what leaving it out already says.
+		$lines = array( "\t" . $reference . '::class => array(', "\t\t'boots_on' => '" . $hook . "'," );
+
+		if ( 10 !== $priority ) {
+			$lines[] = "\t\t'priority' => " . $priority . ',';
+		}
+
+		$lines[] = "\t),";
+
+		return \implode( "\n", $lines ) . "\n";
 	}
 
 	/**

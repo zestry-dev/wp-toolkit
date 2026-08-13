@@ -296,9 +296,12 @@ abstract class AddCommand extends Command {
 			// segment too deep the moment it became two.
 			$class_name = $namespace . '\\' . Copier::get_relative_class( $source );
 
-			$declared_names[]       = $name;
-			$classes[ $class_name ] = $this->get_bootstrap_config(
-				$this->path->get_plugin_path( 'src/' . Copier::get_relative_source( $source ) )
+			$source_path      = $this->path->get_plugin_path( 'src/' . Copier::get_relative_source( $source ) );
+			$declared_names[] = $name;
+
+			$classes[ $class_name ] = \array_merge(
+				array( 'config' => $this->get_bootstrap_config( $source_path ) ),
+				$this->get_boot_timing( $source_path )
 			);
 		}
 
@@ -311,8 +314,10 @@ abstract class AddCommand extends Command {
 		if ( ! $this->bootstrap_file->exists( $plugin_root ) ) {
 			$this->log( 'No bootstrap.php found. Declare these modules in your entry file:' );
 
-			foreach ( $classes as $class_name => $config ) {
-				$this->log( $this->bootstrap_file->get_entry_line( $class_name, $config ) );
+			foreach ( $classes as $class_name => $entry ) {
+				$this->log(
+					$this->bootstrap_file->get_entry_line( $class_name, $entry['config'], $entry['hook'], $entry['priority'] )
+				);
 			}
 
 			return;
@@ -337,9 +342,46 @@ abstract class AddCommand extends Command {
 		// above, so the recovery is one paste either way.
 		$this->warning( 'Could not write to bootstrap.php. Declare these modules by hand:' );
 
-		foreach ( $classes as $class_name => $config ) {
-			$this->log( $this->bootstrap_file->get_entry_line( $class_name, $config ) );
+		foreach ( $classes as $class_name => $entry ) {
+			$this->log(
+				$this->bootstrap_file->get_entry_line( $class_name, $entry['config'], $entry['hook'], $entry['priority'] )
+			);
 		}
+	}
+
+	/**
+	 * When a module says it has to boot, read from its own docblock.
+	 *
+	 * `@setup-hook` names the hook and `@setup-hook-priority` the priority, and a
+	 * module saying neither boots as the plugin loads. Read from the source
+	 * rather than from a runtime constant, for the reason `bootstrap.php` keeps
+	 * the timing in the first place: a default on the class would make a bare
+	 * entry boot on a hook the file never mentions.
+	 *
+	 * @param string $source_path Absolute path to the module's own source.
+	 * @return array{hook: string|null, priority: int}
+	 */
+	protected function get_boot_timing( string $source_path ): array {
+		$file = \is_dir( $source_path )
+			? $source_path . '/' . \basename( $source_path ) . '.php'
+			: $source_path;
+
+		if ( ! \is_file( $file ) ) {
+			return array(
+				'hook'     => null,
+				'priority' => 10,
+			);
+		}
+
+		$source = (string) \file_get_contents( $file );
+
+		\preg_match( '/^\s*\*\s*@setup-hook\s+(\S+)/m', $source, $hook );
+		\preg_match( '/^\s*\*\s*@setup-hook-priority\s+(\d+)/m', $source, $priority );
+
+		return array(
+			'hook'     => $hook[1] ?? null,
+			'priority' => isset( $priority[1] ) ? (int) $priority[1] : 10,
+		);
 	}
 
 	/**

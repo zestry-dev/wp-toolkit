@@ -95,26 +95,28 @@ The filename stays the default, and stays the thing to reach for. A declared nam
 
 ## Changing the defaults
 
-Read them from elsewhere, or group them
+Group them
 
 ```php
-IconsLibrary::class => static function ( IconsLibrary $icons ): void {
-    $icons->on_wp_init(
-        static function ( IconsLibrary $icons ): void {
-            $icons->set_default_collection_details(
-                __( 'Acme icons', 'acme-plugin' ),
-                __( 'Everything Acme draws.', 'acme-plugin' )
-            );
+IconsLibrary::class => array(
+    'boots_on'    => 'init',
+    'priority'    => 100,
+    'before_boot' => static function ( IconsLibrary $icons ): void {
+        $icons->set_default_collection_details(
+            __( 'Acme icons', 'acme-plugin' ),
+            __( 'Everything Acme draws.', 'acme-plugin' )
+        );
 
-            $icons->add_collections(
-                array( 'acme-brand' => __( 'Acme brand', 'acme-plugin' ) )
-            );
-        }
-    );
-},
+        $icons->add_collections(
+            array( 'acme-brand' => __( 'Acme brand', 'acme-plugin' ) )
+        );
+    },
+),
 ```
 
-You have one collection already, slugged with your plugin slug and labelled `{slug} icons` until you say otherwise. Both calls are inside `on_wp_init()` because a label is read by a person and wants translating, which an initializer runs too early to do.
+You have one collection already, slugged with your plugin slug and labelled `{slug} icons` until you say otherwise. `before_boot` runs on the hook, right before the module registers anything — which is what makes the `__()` calls safe, and why this module names a hook at all.
+
+Late on `init` because it goes after WordPress's own registries, built at 0 and 10, and after any other plugin registering a collection an icon of yours might name.
 
 ## Constants
 
@@ -170,7 +172,7 @@ return array(
 
 A slug is registered exactly as given and is not namespaced to the plugin, matching WordPress's own unprefixed `core` — so choose slugs distinctive enough not to collide. One another plugin already registered is left as it is rather than replaced, and an icon may file itself under it.
 
-**Call it from `Module::on_wp_init()`, as the example does.** A label and a description are both user-visible, so they want translating, and an initializer runs while the plugin file loads — early enough that a `__()` there reports `_load_textdomain_just_in_time` on every request.
+**Call it from the entry's `before_boot`, as the example does.** A label and a description are both user-visible, so they want translating, and `before_boot` runs on the boot hook rather than at plugin load, where a `__()` reports `_load_textdomain_just_in_time` on every request.
 
 <br>
 
@@ -192,7 +194,7 @@ Its slug is your plugin slug and stays that way — this is the label a designer
 
 The description is empty by default and stays out of the registration entirely when it is: an absent description is honest, where a generated sentence occupies the space a real one would go in.
 
-**Call it from `Module::on_wp_init()`**, for the reason `add_collections()` gives — both of these are read by a person, so both want translating.
+**Call it from the entry's `before_boot`**, for the reason `add_collections()` gives — both of these are read by a person, so both want translating.
 
 <br>
 

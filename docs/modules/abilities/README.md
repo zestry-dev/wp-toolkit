@@ -103,21 +103,22 @@ if ( is_wp_error( $result ) ) {
 Group them
 
 ```php
-Abilities::class => static function ( Abilities $abilities ): void {
-    $abilities->on_wp_init(
-        static function ( Abilities $abilities ): void {
-            $abilities->add_categories(
-                array(
-                    'acme-billing' => array(
-                        'label'       => __( 'Acme billing', 'acme-plugin' ),
-                        'description' => __( 'Invoices, refunds and payment methods.', 'acme-plugin' ),
-                    ),
-                )
-            );
-        }
-    );
-},
+Abilities::class => array(
+    'boots_on'    => 'init',
+    'before_boot' => static function ( Abilities $abilities ): void {
+        $abilities->add_categories(
+            array(
+                'acme-billing' => array(
+                    'label'       => __( 'Acme billing', 'acme-plugin' ),
+                    'description' => __( 'Invoices, refunds and payment methods.', 'acme-plugin' ),
+                ),
+            )
+        );
+    },
+),
 ```
+
+`before_boot` runs on the hook, right before the module registers anything, which is what makes the `__()` calls safe — an initializer running at plugin load would report `_load_textdomain_just_in_time` on every request.
 
 ## Writing an Ability
 
@@ -185,7 +186,7 @@ The description is worth writing. A client listing categories shows it to decide
 
 A slug is registered exactly as given and is not namespaced to the plugin: WordPress's own `site` and `user` are unprefixed, and an ability naming a category has to match it verbatim. So choose slugs distinctive enough not to collide — a category already registered by WordPress or another plugin is left as it is rather than replaced.
 
-**Call it from `Module::on_wp_init()`, as the example does.** A label and a description are both user-visible, so they usually want translating, and an initializer runs while the plugin file loads — early enough that a `__()` there loads the text domain before WordPress is ready and reports `_load_textdomain_just_in_time` on every request. Inside `on_wp_init()` ordinary `__()` is correct, which is why both are plain strings and nothing here is lazy.
+**Call it from the entry's `before_boot`, as the example does.** A label and a description are both user-visible, so they usually want translating, and an initializer running at plugin load would load the text domain before WordPress is ready, reporting `_load_textdomain_just_in_time` on every request. `before_boot` runs on the boot hook, where ordinary `__()` is correct — which is why both are plain strings and nothing here is lazy.
 
 <br>
 

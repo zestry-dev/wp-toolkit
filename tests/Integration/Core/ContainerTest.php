@@ -129,6 +129,75 @@ final class ContainerTest extends TestCase {
 		}
 	}
 
+	/**
+	 * The whole point of naming a hook: the entry's `before_boot` runs on it too,
+	 * immediately before the module boots -- so a `__()` in there is safe, where
+	 * an initializer running at plugin load is not.
+	 */
+	public function test_boots_on_defers_the_module_and_its_configuration(): void {
+		$this->plugin->bootstrap( $this->write_bootstrap() )->run();
+
+		$this->assertSame( array(), $GLOBALS['zestry_boot_order'] ?? array() );
+
+		do_action( 'zestry_test_boot_hook' );
+
+		$this->assertSame(
+			array( 'before_boot', 'on_boot' ),
+			$GLOBALS['zestry_boot_order'],
+			'Configuration runs immediately before boot, on the hook.'
+		);
+	}
+
+	/**
+	 * Building it early would bind it on the wrong side of whatever it was
+	 * declared to follow, and a module that boots at the wrong moment reports
+	 * nothing -- it registers into a registry nobody has filled.
+	 */
+	public function test_asking_for_a_deferred_module_before_its_hook_throws(): void {
+		$this->plugin->bootstrap( $this->write_bootstrap() )->run();
+
+		$this->expectException( ModuleException::class );
+		$this->expectExceptionMessage( 'zestry_test_boot_hook' );
+
+		$this->plugin->get( DeferredBooter::class );
+	}
+
+	/**
+	 * A hook that has already fired would defer forever, so the declaration reads
+	 * as "not before" rather than "exactly then".
+	 */
+	public function test_a_hook_that_already_fired_boots_immediately(): void {
+		do_action( 'zestry_test_boot_hook' );
+
+		$this->plugin->bootstrap( $this->write_bootstrap() )->run();
+
+		$this->assertTrue( $this->plugin->get( DeferredBooter::class )->is_booted() );
+	}
+
+	/**
+	 * Write a bootstrap file declaring the deferred module in the long form.
+	 *
+	 * @return string Absolute path to the file.
+	 */
+	private function write_bootstrap(): string {
+		$GLOBALS['zestry_boot_order'] = array();
+
+		$file = $this->plugin_dir . '/bootstrap.php';
+
+		file_put_contents(
+			$file,
+			"<?php\nreturn array(\n"
+				. "\t'" . str_replace( '\\', '\\\\', DeferredBooter::class ) . "' => array(\n"
+				. "\t\t'boots_on' => 'zestry_test_boot_hook',\n"
+				. "\t\t'before_boot' => static function ( \$module ): void {\n"
+				. "\t\t\t\$GLOBALS['zestry_boot_order'][] = 'before_boot';\n"
+				. "\t\t},\n"
+				. "\t),\n);\n"
+		);
+
+		return $file;
+	}
+
 	public function test_bootable_module_is_booted_once_after_resolution(): void {
 		$module = $this->plugin->get( BootCounter::class );
 
@@ -196,6 +265,13 @@ final class BootCounter extends Module {
 
 	protected function on_boot(): void {
 		++self::$boot_count;
+	}
+}
+
+final class DeferredBooter extends Module {
+
+	protected function on_boot(): void {
+		$GLOBALS['zestry_boot_order'][] = 'on_boot';
 	}
 }
 

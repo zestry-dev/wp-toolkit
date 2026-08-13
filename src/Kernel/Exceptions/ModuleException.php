@@ -55,4 +55,34 @@ class ModuleException extends \RuntimeException {
 			)
 		);
 	}
+
+	/**
+	 * The message raised when a module is asked for before its hook fires.
+	 *
+	 * A module that names a boot hook has said it cannot do its work before one
+	 * -- registering into a WordPress registry that does not exist yet, or
+	 * following other plugins onto the same hook. Building it early would bind
+	 * it on the wrong side of whatever it was waiting for.
+	 *
+	 * Refused rather than built early, because early is exactly what the
+	 * declaration ruled out, and a module that boots at the wrong moment reports
+	 * nothing: it registers into a registry nobody has filled, and the feature is
+	 * simply absent.
+	 *
+	 * @param string $module The module class asked for.
+	 * @param string $hook   The hook it boots on.
+	 * @return self
+	 *
+	 * @internal
+	 */
+	public static function not_booted_yet( string $module, string $hook ): self {
+		return new self(
+			\sprintf(
+				'%1$s boots on `%2$s`, which has not fired yet. Ask for it from `%2$s` or later, or give its'
+					. ' `bootstrap.php` entry a `boots_on` this plugin can live with.',
+				$module,
+				$hook
+			)
+		);
+	}
 }

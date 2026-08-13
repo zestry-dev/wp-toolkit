@@ -85,6 +85,23 @@ class ServicesRepository {
 	private array $resolving = array();
 
 	/**
+	 * Boot hooks the bootstrap entries named, keyed by class.
+	 *
+	 * @var array<class-string, array{hook: string, priority: int|null}>
+	 */
+	private array $boot_hooks = array();
+
+	/**
+	 * Modules waiting for their hook, and the hook each is waiting for.
+	 *
+	 * Read by {@see get()} so asking for one too early says which hook it is
+	 * waiting on rather than quietly building it ahead of time.
+	 *
+	 * @var array<class-string, string>
+	 */
+	private array $deferred = array();
+
+	/**
 	 * Construct the repository for a single plugin.
 	 *
 	 * @param Plugin $plugin The plugin this repository resolves modules for.
@@ -137,6 +154,17 @@ class ServicesRepository {
 			return $this->resolved[ $name ];
 		}
 
+		/*
+		 * Waiting for a hook that has not fired. Building it now would boot it
+		 * early -- binding on the wrong side of the thing it was declared to
+		 * follow -- so this says which hook it is waiting on instead. `run()`
+		 * clears the entry as the hook fires, and a module resolved during its
+		 * own boot is already cached above, so this cannot fire on itself.
+		 */
+		if ( isset( $this->deferred[ $name ] ) ) {
+			throw ModuleException::not_booted_yet( $name, $this->deferred[ $name ] );
+		}
+
 		// Cache the singleton so that dependencies resolved during its own boot
 		// (for example an AJAX action wired while the Ajax module boots) receive
 		// the in-flight instance instead of triggering a false circular-dependency.
@@ -179,6 +207,26 @@ class ServicesRepository {
 	}
 
 	/**
+	 * Name the hook a queued module boots on.
+	 *
+	 * Called by {@see \Zestry\WPToolkit\Kernel\Plugin::bootstrap()} for an entry
+	 * that declared `boots_on`.
+	 *
+	 * @param class-string $name     Module class name.
+	 * @param string       $hook     The hook to boot on.
+	 * @param int|null     $priority The priority, or null for WordPress's default.
+	 * @return $this
+	 */
+	public function set_boot_hook( string $name, string $hook, ?int $priority = null ): self {
+		$this->boot_hooks[ $name ] = array(
+			'hook'     => $hook,
+			'priority' => $priority,
+		);
+
+		return $this;
+	}
+
+	/**
 	 * Queue a module to resolve when the plugin's run() is called.
 	 *
 	 * Duplicate class names are ignored, so multiple setup paths can request the
@@ -205,8 +253,56 @@ class ServicesRepository {
 	 */
 	public function run_autoload(): void {
 		foreach ( $this->to_autoload as $name ) {
-			$this->get( $name );
+			[ $hook, $priority ] = $this->get_boot_timing( $name );
+
+			if ( null === $hook ) {
+				$this->get( $name );
+				continue;
+			}
+
+			/*
+			 * Already been and gone -- an entry file run from a late hook, or a
+			 * test. Deferring to a hook that has fired is deferring forever, so
+			 * this builds now and the declaration reads as "not before".
+			 */
+			if ( \did_action( $hook ) ) {
+				$this->get( $name );
+				continue;
+			}
+
+			$this->deferred[ $name ] = $hook;
+
+			\add_action(
+				$hook,
+				function () use ( $name ): void {
+					unset( $this->deferred[ $name ] );
+					$this->get( $name );
+				},
+				$priority
+			);
 		}
+	}
+
+	/**
+	 * When a queued module boots, and at what priority.
+	 *
+	 * From the bootstrap entry and nowhere else. A module could hold its own
+	 * default in a constant, and then a bare entry would boot on a hook for
+	 * reasons the file never says -- `bootstrap.php` is where a plugin declares
+	 * what it starts and when, so it is the whole answer. `wp zt add` writes the
+	 * hook into the entry for a module that needs one.
+	 *
+	 * @param class-string $name The queued class name.
+	 * @return array{0: string|null, 1: int}
+	 */
+	private function get_boot_timing( string $name ): array {
+		if ( ! isset( $this->boot_hooks[ $name ] ) ) {
+			return array( null, 10 );
+		}
+
+		$declared = $this->boot_hooks[ $name ];
+
+		return array( $declared['hook'], $declared['priority'] ?? 10 );
 	}
 
 	/**

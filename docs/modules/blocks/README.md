@@ -46,17 +46,15 @@ return array(
 
 ## Changing the defaults
 
-Register an initializer only to point the module at a non-default directory, or to declare a block category of the plugin's own.
-
-An initializer runs while the plugin file loads, which is before `init` and so before a text domain may be touched. `Module::on_wp_init()` moves whatever needs the later point — here the translated headings — without the caller having to know whether `init` has already passed.
+Group them in the inserter
 
 ```php
 // bootstrap.php
 return array(
-    Blocks::class => static function ( Blocks $blocks ): void {
-
-        $blocks->on_wp_init( static function ( Blocks $module ): void {
-            $module->add_categories(
+    Blocks::class => array(
+        'boots_on'    => 'init',
+        'before_boot' => static function ( Blocks $blocks ): void {
+            $blocks->add_categories(
                 array(
                     'reports' => __( 'Reports', 'acme-plugin' ),
                     'charts'  => array(
@@ -65,10 +63,12 @@ return array(
                     ),
                 )
             );
-        } );
-    },
+        },
+    ),
 );
 ```
+
+`before_boot` runs on the hook, right before the module registers anything. That is what makes the `__()` calls safe: an initializer running at plugin load is before `init`, and touching a text domain there reports `_load_textdomain_just_in_time` on every request.
 
 ## Writing a Block
 
@@ -138,7 +138,7 @@ The category and the block that claims it live in two files, and only the block.
 
 A slug is registered exactly as given and is not namespaced to the plugin slug the way a hook or an option name is: it has to match what a hand-written `block.json` says verbatim, and namespacing would register `{plugin-slug}-reports` while every block still asked for `reports`. Choose slugs distinctive enough not to collide — reusing one of WordPress's own (`text`, `media`, `design`, `widgets`, `theme`, `embed`) adds a second entry rather than renaming the first.
 
-**Call it from `Module::on_wp_init()`, as the example does.** A title is user-visible, so it usually wants translating, and an initializer runs while the plugin file loads — early enough that a `__()` there loads the text domain before WordPress is ready and reports `_load_textdomain_just_in_time` on every request. Inside `on_wp_init()` ordinary `__()` is correct, which is why a title is a plain string and nothing here is lazy.
+**Call it from the entry's `before_boot`, as the example does.** A title is user-visible, so it usually wants translating, and an initializer runs while the plugin file loads — early enough that a `__()` there loads the text domain before WordPress is ready and reports `_load_textdomain_just_in_time` on every request. Inside `on_wp_init()` ordinary `__()` is correct, which is why a title is a plain string and nothing here is lazy.
 
 Order is kept: categories appear in the inserter after WordPress's own, in the order declared here, and a later call appends to an earlier one.
 

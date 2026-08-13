@@ -111,28 +111,34 @@ use Zestry\WPToolkit\Services\Path;
  * name is a second place the answer lives, so it earns its keep only when the
  * file cannot be called what the icon is.
  *
- * @setup Read them from elsewhere, or group them
+ * @setup-hook init
+ * @setup-hook-priority 100
+ * @setup Group them
  * ```
- * IconsLibrary::class => static function ( IconsLibrary $icons ): void {
- *     $icons->on_wp_init(
- *         static function ( IconsLibrary $icons ): void {
- *             $icons->set_default_collection_details(
- *                 __( 'Acme icons', 'acme-plugin' ),
- *                 __( 'Everything Acme draws.', 'acme-plugin' )
- *             );
+ * IconsLibrary::class => array(
+ *     'boots_on'    => 'init',
+ *     'priority'    => 100,
+ *     'before_boot' => static function ( IconsLibrary $icons ): void {
+ *         $icons->set_default_collection_details(
+ *             __( 'Acme icons', 'acme-plugin' ),
+ *             __( 'Everything Acme draws.', 'acme-plugin' )
+ *         );
  *
- *             $icons->add_collections(
- *                 array( 'acme-brand' => __( 'Acme brand', 'acme-plugin' ) )
- *             );
- *         }
- *     );
- * },
+ *         $icons->add_collections(
+ *             array( 'acme-brand' => __( 'Acme brand', 'acme-plugin' ) )
+ *         );
+ *     },
+ * ),
  * ```
  *
  * You have one collection already, slugged with your plugin slug and labelled
- * `{slug} icons` until you say otherwise. Both calls are inside `on_wp_init()`
- * because a label is read by a person and wants translating, which an
- * initializer runs too early to do.
+ * `{slug} icons` until you say otherwise. `before_boot` runs on the hook, right
+ * before the module registers anything -- which is what makes the `__()` calls
+ * safe, and why this module names a hook at all.
+ *
+ * Late on `init` because it goes after WordPress's own registries, built at 0
+ * and 10, and after any other plugin registering a collection an icon of yours
+ * might name.
  */
 class IconsLibrary extends Module {
 
@@ -215,11 +221,10 @@ class IconsLibrary extends Module {
 	 * enough not to collide. One another plugin already registered is left as it
 	 * is rather than replaced, and an icon may file itself under it.
 	 *
-	 * **Call it from {@see \Zestry\WPToolkit\Kernel\Abstracts\Module::on_wp_init()}, as the
-	 * example does.** A label and a description are both user-visible, so they
-	 * want translating, and an initializer runs while the plugin file loads --
-	 * early enough that a `__()` there reports `_load_textdomain_just_in_time` on
-	 * every request.
+	 * **Call it from the entry's `before_boot`, as the example does.** A label and
+	 * a description are both user-visible, so they want translating, and
+	 * `before_boot` runs on the boot hook rather than at plugin load, where a
+	 * `__()` reports `_load_textdomain_just_in_time` on every request.
 	 *
 	 * @param array<string, string|array{label: string, description?: string}> $collections Labels or configuration, keyed by slug.
 	 * @return void
@@ -253,9 +258,9 @@ class IconsLibrary extends Module {
 	 * entirely when it is: an absent description is honest, where a generated
 	 * sentence occupies the space a real one would go in.
 	 *
-	 * **Call it from {@see \Zestry\WPToolkit\Kernel\Abstracts\Module::on_wp_init()}**, for the
-	 * reason {@see add_collections()} gives -- both of these are read by a person,
-	 * so both want translating.
+	 * **Call it from the entry's `before_boot`**, for the reason
+	 * {@see add_collections()} gives -- both of these are read by a person, so
+	 * both want translating.
 	 *
 	 * @param string $label       What the picker calls this collection.
 	 * @param string $description One sentence under it, or '' for none.

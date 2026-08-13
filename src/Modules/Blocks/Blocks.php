@@ -57,22 +57,15 @@ use WP_Block_Type_Registry;
  * `wp-scripts build --blocks-manifest`), which spares WordPress a `block.json`
  * read and decode per block, and walks the blocks directory when there is not.
  *
- * @setup
- * Register an initializer only to point the module at a non-default directory,
- * or to declare a block category of the plugin's own.
- *
- * An initializer runs while the plugin file loads, which is before `init` and
- * so before a text domain may be touched. {@see Module::on_wp_init()} moves
- * whatever needs the later point -- here the translated headings -- without the
- * caller having to know whether `init` has already passed.
- *
+ * @setup-hook init
+ * @setup Group them in the inserter
  * ```
  * // bootstrap.php
  * return array(
- *     Blocks::class => static function ( Blocks $blocks ): void {
- *
- *         $blocks->on_wp_init( static function ( Blocks $module ): void {
- *             $module->add_categories(
+ *     Blocks::class => array(
+ *         'boots_on'    => 'init',
+ *         'before_boot' => static function ( Blocks $blocks ): void {
+ *             $blocks->add_categories(
  *                 array(
  *                     'reports' => __( 'Reports', 'acme-plugin' ),
  *                     'charts'  => array(
@@ -81,10 +74,15 @@ use WP_Block_Type_Registry;
  *                     ),
  *                 )
  *             );
- *         } );
- *     },
+ *         },
+ *     ),
  * );
  * ```
+ *
+ * `before_boot` runs on the hook, right before the module registers anything.
+ * That is what makes the `__()` calls safe: an initializer running at plugin
+ * load is before `init`, and touching a text domain there reports
+ * `_load_textdomain_just_in_time` on every request.
  */
 class Blocks extends Module {
 
@@ -197,7 +195,7 @@ class Blocks extends Module {
 	 * of WordPress's own (`text`, `media`, `design`, `widgets`, `theme`,
 	 * `embed`) adds a second entry rather than renaming the first.
 	 *
-	 * **Call it from {@see Module::on_wp_init()}, as the example does.** A title
+	 * **Call it from the entry's `before_boot`, as the example does.** A title
 	 * is user-visible, so it usually wants translating, and an initializer runs
 	 * while the plugin file loads -- early enough that a `__()` there loads the
 	 * text domain before WordPress is ready and reports

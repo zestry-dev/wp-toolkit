@@ -333,7 +333,15 @@ abstract class MakeCommand extends Command {
 			return;
 		}
 
-		if ( DeclarationResult::Declared === $this->bootstrap_file->declare_module( $plugin_root, $class ) ) {
+		/*
+		 * Written bare, with the other shape shown above it. A module you wrote
+		 * boots as the plugin loads unless you say otherwise, and there is no way
+		 * for this command to know whether yours needs a hook -- but the long form
+		 * is where that would go, and nothing else would tell you it exists.
+		 */
+		$hint = "\t// " . $class_name . "::class => array( 'boots_on' => 'init' ),\n";
+
+		if ( DeclarationResult::Declared === $this->bootstrap_file->declare_module( $plugin_root, $class, $hint ) ) {
 			// An edited file is worth formatting for the same reason a generated
 			// one is: the appended entry lands in someone else's file, and should
 			// not be the line that makes their lint fail.
