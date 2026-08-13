@@ -517,19 +517,19 @@ class Abilities extends Module {
 					return $ability->permission_check( $input );
 				},
 				'meta'                => \array_merge(
-					/*
-					 * Written rather than left to be derived. Recent WordPress
-					 * seeds `show_in_rest` from `public`, and one that does not
-					 * leaves a public ability off the REST API with nothing said
-					 * -- a 404 reading as a mistyped name. First in the merge, so
-					 * meta() can still say `show_in_rest => false` and offer an
-					 * ability to an MCP adapter while keeping it off REST.
-					 */
-					array( 'show_in_rest' => $ability->is_public() ),
 					$ability->meta(),
 					array(
-						'annotations' => $ability->effect()->get_annotations(),
-						'public'      => $ability->is_public(),
+						'annotations'  => $ability->effect()->get_annotations(),
+						'public'       => $ability->is_public(),
+						/*
+						 * Written rather than left to be derived. WordPress 7.1
+						 * resolves `$meta['show_in_rest'] ?? $meta['public'] ?? false`;
+						 * 6.9 seeds nothing, and there a public ability is left
+						 * off the REST API with nothing said -- a 404 reading as
+						 * a mistyped name. Writing it is what makes
+						 * is_shown_in_rest() the answer on either version.
+						 */
+						'show_in_rest' => $ability->is_shown_in_rest(),
 					)
 				),
 			);

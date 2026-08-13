@@ -202,10 +202,10 @@ final class AbilitiesTest extends TestCase {
 	}
 
 	/**
-	 * Written rather than left to WordPress to derive. Recent WordPress seeds
-	 * `show_in_rest` from `public`; one that does not would leave a public
-	 * ability off the REST API, answering with a 404 that reads as a mistyped
-	 * name.
+	 * Written rather than left to WordPress to derive. WordPress 7.1 seeds
+	 * `show_in_rest` from `public`; 6.9 does not, and there a public ability
+	 * would be left off the REST API, answering with a 404 that reads as a
+	 * mistyped name.
 	 */
 	public function test_show_in_rest_is_written_rather_than_inferred(): void {
 		$this->write_ability( 'shared', "return array( 'ok' => true );", 'public function is_public(): bool { return true; }' );
@@ -278,15 +278,16 @@ final class AbilitiesTest extends TestCase {
 	}
 
 	/**
-	 * `show_in_rest` follows `public` unless meta() says otherwise, which is how
-	 * an ability is offered to an MCP adapter while staying off the REST API.
+	 * `show_in_rest` follows `public` unless is_shown_in_rest() says otherwise,
+	 * which is how an ability is offered to an MCP adapter while staying off the
+	 * REST API.
 	 */
-	public function test_meta_can_keep_a_public_ability_off_the_rest_api(): void {
+	public function test_an_ability_can_be_public_and_stay_off_the_rest_api(): void {
 		$this->write_ability(
 			'mcp-only',
 			"return array( 'ok' => true );",
 			"public function is_public(): bool { return true; }\n"
-				. "public function meta(): array { return array( 'show_in_rest' => false ); }"
+				. 'public function is_shown_in_rest(): bool { return false; }'
 		);
 
 		$this->register();

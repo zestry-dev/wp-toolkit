@@ -234,6 +234,22 @@ abstract class Ability implements PluginAware {
 	 * rather than something the caller has to guess at. Worth writing even when
 	 * the shape feels obvious to you: it is not obvious to the thing calling.
 	 *
+	 * A wide result is worth letting the caller narrow, which WordPress's own
+	 * abilities do with an optional `fields`. Declare it like any other
+	 * argument, and an agent that needs two of your twenty properties reads
+	 * two:
+	 *
+	 * ```
+	 * #[RequestArgument(
+	 *     'Which properties to return. All of them, if you leave it out.',
+	 *     schema: array( 'items' => array( 'type' => 'string', 'enum' => array( 'id', 'title', 'status' ) ) )
+	 * )]
+	 * public array $fields = array( 'id', 'title', 'status' );
+	 * ```
+	 *
+	 * The `enum` is what refuses a name you do not have, so `handle()` can
+	 * filter on `$this->fields` without checking it first.
+	 *
 	 * @return array<string, mixed>
 	 */
 	public function output_schema(): array {
@@ -280,15 +296,32 @@ abstract class Ability implements PluginAware {
 	}
 
 	/**
+	 * Whether this ability is exposed through the REST API.
+	 *
+	 * Follows {@see is_public()}, since an ability offered to outside callers is
+	 * normally offered over HTTP as well.
+	 *
+	 * Return false from a public ability to separate the two: it stays available
+	 * to any MCP adapter installed on the site and disappears from
+	 * `wp-json/wp-abilities/v1/abilities`.
+	 *
+	 * @return bool
+	 */
+	public function is_shown_in_rest(): bool {
+		return $this->is_public();
+	}
+
+	/**
 	 * Anything else WordPress or an adapter should record about this ability.
 	 *
 	 * An escape hatch for the parts of `meta` that have no method of their own,
-	 * merged underneath the ones that do — `annotations` always comes from
-	 * {@see effect()} and `public` from {@see is_public()}.
+	 * merged underneath the ones that do — `annotations` comes from
+	 * {@see effect()}, `public` from {@see is_public()} and `show_in_rest` from
+	 * {@see is_shown_in_rest()}.
 	 *
-	 * The useful one is `show_in_rest`, which otherwise follows `public`.
-	 * Returning `array( 'show_in_rest' => false )` from a public ability offers
-	 * it to MCP adapters while keeping it off the REST API.
+	 * What you put here is queryable from WordPress 7.1 on, which filters on
+	 * meta: `wp_get_abilities( array( 'meta' => array( 'group' => 'billing' ) ) )`
+	 * returns the abilities that declared it.
 	 *
 	 * @return array<string, mixed>
 	 */
