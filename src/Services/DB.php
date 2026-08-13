@@ -253,7 +253,7 @@ class DB extends Service {
 	 *
 	 * **Assign it to a variable called `$wpdb`. Do not chain off this call.**
 	 *
-	 * ```php
+	 * ```
 	 * $wpdb = $this->db->get_wpdb();
 	 *
 	 * $rows = $wpdb->get_results(

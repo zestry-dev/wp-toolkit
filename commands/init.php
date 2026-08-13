@@ -5,8 +5,9 @@
  *
  * One-time setup for a consuming plugin: asks for a target namespace, a text
  * domain, and a destination directory (relative to the plugin's own root),
- * copies the kernel (Plugin, Service, Module, the PluginAware contract, the
- * shared traits) into `{root}/Core/Kernel/` -- with every
+ * copies the kernel (Plugin, Service, Module, ActivationHandler, the exceptions,
+ * the PluginAware contract, the shared traits, attributes and helpers) into
+ * `{root}/Core/Kernel/` -- with every
  * `namespace Zestry\WPToolkit\...;`/`use Zestry\WPToolkit\...;` rewritten to the chosen namespace, and
  * every `'zestry-toolkit'` text-domain string literal rewritten to the chosen text
  * domain -- then writes `zestry.json` recording those choices, `zestry.lock.json`
@@ -93,7 +94,8 @@ return new class() extends Command {
 	 * rewritten to, the text domain its translation calls should be rewritten
 	 * to, and the directory (relative to your plugin's root) to copy it into,
 	 * then copies the kernel -- Plugin, Service, Module, ActivationHandler, the
-	 * PluginAware contract, and the shared traits every class needs -- into
+	 * exceptions your plugin catches, the PluginAware contract, and the shared
+	 * traits, attributes and helpers every class needs -- into
 	 * `{root}/Core/Kernel/`.
 	 *
 	 * Four files are written around that copy: `zestry.json`, recording the three
@@ -200,7 +202,7 @@ return new class() extends Command {
 	 *     Added to package.json: eslint, @wordpress/eslint-plugin, prettier, ...
 	 *     Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
 	 *
-	 *     # Unattended, taking every inferred default and setting up all three.
+	 *     # Unattended, taking every inferred default and setting up all four.
 	 *     $ wp zt init --yes
 	 *     Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
 	 *
@@ -268,7 +270,7 @@ return new class() extends Command {
 		// this wrote from one the consumer has since edited.
 		$this->manifest->record( $plugin_root, $written );
 		$this->update_composer_autoload( $plugin_root, $composer_path, $composer, $namespace, $root );
-		$this->write_bootstrap_file( $plugin_root );
+		$this->write_bootstrap_file( $plugin_root, $text_domain );
 		$this->write_gitignore( $plugin_root );
 		$this->offer_tooling( $plugin_root, $root, $text_domain, $assoc_args );
 
@@ -838,9 +840,10 @@ return new class() extends Command {
 	 * has since made in it.
 	 *
 	 * @param string $plugin_root Absolute path to the consuming plugin's root.
+	 * @param string $text_domain The text domain the copied source was rewritten to.
 	 * @return void
 	 */
-	private function write_bootstrap_file( string $plugin_root ): void {
+	private function write_bootstrap_file( string $plugin_root, string $text_domain ): void {
 		$destination = rtrim( $plugin_root, '/\\' ) . '/bootstrap.php';
 
 		if ( is_file( $destination ) ) {
@@ -850,7 +853,12 @@ return new class() extends Command {
 
 		$stub = $this->path->get_plugin_path( 'src/DevTools/stubs/bootstrap.php.stub' );
 
-		if ( false === file_put_contents( $destination, (string) file_get_contents( $stub ) ) ) {
+		// Rendered rather than copied: the file's one sample calls `__()`, and a
+		// domain that is not this plugin's is one the linters `init` is about to
+		// write would flag the moment someone uncommented it.
+		$contents = $this->stub_renderer->render( $stub, array( 'text_domain' => $text_domain ) );
+
+		if ( false === file_put_contents( $destination, $contents ) ) {
 			$this->warning( 'Failed to write bootstrap.php -- create it yourself, returning an empty array.' );
 			return;
 		}

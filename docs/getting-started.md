@@ -121,7 +121,7 @@ That is the whole file, and it stays this size however many modules you add. The
 
 declare( strict_types=1 );
 
-defined( 'ABSPATH' ) || exit;
+\defined( 'ABSPATH' ) || exit;
 
 use Acme\Plugin\Core\Modules\AdminPages\AdminPages;
 use Acme\Plugin\Core\Modules\CLI\CLI;

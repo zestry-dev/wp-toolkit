@@ -203,7 +203,7 @@ final class Str {
 	 * leading slash on the *first* segment is kept, since that is the difference
 	 * between an absolute path and a relative one.
 	 *
-	 * ```php
+	 * ```
 	 * Str::join_path( $plugin_root, 'views/', '/emails/receipt.php' );
 	 * ```
 	 *

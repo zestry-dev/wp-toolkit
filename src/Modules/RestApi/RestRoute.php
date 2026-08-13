@@ -103,7 +103,7 @@ abstract class RestRoute implements PluginAware {
 	 * permission check values nothing had checked. Read what you need from
 	 * `$request` in this method, and `$this->id` from `handle()` onwards:
 	 *
-	 * ```php
+	 * ```
 	 * public function permission_check( WP_REST_Request $request ): bool|\WP_Error {
 	 *     return current_user_can( 'edit_post', (int) $request['id'] );
 	 * }
@@ -179,7 +179,7 @@ abstract class RestRoute implements PluginAware {
 	 * `OPTIONS` request. Leave the description off the attribute and name the
 	 * argument here instead, so it is still written exactly once:
 	 *
-	 * ```php
+	 * ```
 	 * // Still the declaration: the type, the default and the binding are all
 	 * // still coming from here. Only the description moved.
 	 * #[RequestArgument]
@@ -231,7 +231,7 @@ abstract class RestRoute implements PluginAware {
 	 * are translated, so a client cannot branch on them** — the code is the only
 	 * stable thing in the response:
 	 *
-	 * ```php
+	 * ```
 	 * return $this->deny( __( 'Your trial has ended.', 'my-plugin' ), 'trial_expired' );
 	 * // {"code":"trial_expired","message":"Your trial has ended.", ...}
 	 * ```
@@ -265,7 +265,7 @@ abstract class RestRoute implements PluginAware {
 	 * application password is long-lived and often sits in a script, so a route
 	 * that changes credentials or billing may want a present human:
 	 *
-	 * ```php
+	 * ```
 	 * if ( $this->is_application_password() ) {
 	 *     return $this->deny( __( 'This action requires an interactive session.', 'my-plugin' ) );
 	 * }

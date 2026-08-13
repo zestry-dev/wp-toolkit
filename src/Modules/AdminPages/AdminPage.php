@@ -118,7 +118,7 @@ abstract class AdminPage implements PluginAware {
 	 * its address, {@see capability()} is still enforced, `handle_submit()` still
 	 * runs -- but nothing lists it.
 	 *
-	 * ```php
+	 * ```
 	 * public function is_hidden(): bool {
 	 *     return true;
 	 * }
@@ -154,7 +154,7 @@ abstract class AdminPage implements PluginAware {
 	 * a page that belongs to the network administrator on a multisite install —
 	 * settings that apply to every site, and are not a single site's to change:
 	 *
-	 * ```php
+	 * ```
 	 * public function menu(): AdminMenu {
 	 *     return AdminMenu::Network;
 	 * }
@@ -269,7 +269,7 @@ abstract class AdminPage implements PluginAware {
 	 * everything the handler knew. This is what survives it, without going in the
 	 * URL where a bookmark would replay it:
 	 *
-	 * ```php
+	 * ```
 	 * public function handle_submit(): void {
 	 *     $this->options->set( 'threshold', $this->threshold );
 	 *     $this->set_flash( __( 'Settings saved.', 'acme-plugin' ) );

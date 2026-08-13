@@ -173,10 +173,12 @@ return new class extends Command {
 **A directory you named does not exist.**
 
 ```
-Commands root directory does not exist: /…/acme-plugin/cli/commands
+Commands root directory does not exist: /…/acme-plugin/cli/commands.
+`set_commands_root()` named it, so create that directory or correct the path in
+the initializer. (A default root that is absent is not an error.)
 ```
 
-Each module names its own root, so the message says which one threw:
+Each module names its own root, so the message begins by saying which one threw:
 
 | Module | Message prefix |
 |---|---|
@@ -209,13 +211,14 @@ Your filenames register as written, so this only happens where a name is built f
 
 ```
 The admin page "Monthly Report.php" would register as "acme-plugin-Monthly Report",
-which cannot appear in a URL as `?page=acme-plugin-Monthly Report`.
+which cannot appear in a URL as `?page=acme-plugin-Monthly Report`. Rename the file
+using only letters, digits, `-`, `_`, `.` or `~`.
 ```
 
 ```
 The ability "create_order.php" would register as "acme-plugin/create_order", which
 WordPress refuses: an ability name takes only lowercase letters, digits and dashes
-on either side of the `/`.
+on either side of the `/`. Rename the file.
 ```
 
 Two destinations hold a filename to their own character set: an [admin page](modules/admin-pages/)'s slug goes into `?page=`, and an [ability](modules/abilities/)'s name is matched against `^[a-z0-9-]+$`. Neither is repaired for you — a name spelled for you is one you cannot find again — so rename the file. `wp zt make` writes an acceptable name in the first place, and says when it had to.

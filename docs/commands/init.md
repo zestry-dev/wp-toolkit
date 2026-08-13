@@ -9,7 +9,7 @@
 
 Set up a plugin to receive wp-toolkit source.
 
-One-time, interactive setup for the plugin that required `wp-toolkit` as a Composer dependency. Prompts for the namespace the copied source should be rewritten to, the text domain its translation calls should be rewritten to, and the directory (relative to your plugin's root) to copy it into, then copies the kernel — Plugin, Service, Module, ActivationHandler, the PluginAware contract, and the shared traits every class needs — into `{root}/Core/Kernel/`.
+One-time, interactive setup for the plugin that required `wp-toolkit` as a Composer dependency. Prompts for the namespace the copied source should be rewritten to, the text domain its translation calls should be rewritten to, and the directory (relative to your plugin's root) to copy it into, then copies the kernel — Plugin, Service, Module, ActivationHandler, the exceptions your plugin catches, the PluginAware contract, and the shared traits, attributes and helpers every class needs — into `{root}/Core/Kernel/`.
 
 Four files are written around that copy: `zestry.json`, recording the three choices above; `zestry.lock.json`, recording the hash of every copied file as it was written, which is what later lets `wp zt update` tell an edit of yours from an upstream change; `bootstrap.php`, the file your modules are declared in; and `.gitignore`, covering the directories that are built rather than authored. It then adds a matching PSR-4 autoload entry to your own composer.json and shells out to `composer dump-autoload`, so the copied classes load without a further step.
 
@@ -76,7 +76,7 @@ Wrote .prettierignore
 Added to package.json: eslint, @wordpress/eslint-plugin, prettier, ...
 Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
 
-# Unattended, taking every inferred default and setting up all three.
+# Unattended, taking every inferred default and setting up all four.
 $ wp zt init --yes
 Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
 

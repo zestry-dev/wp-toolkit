@@ -19,7 +19,9 @@ namespace {{class_namespace}};
  * injects once. Leave abstract what each one has to decide for itself, and the
  * generator fills those in:
  *
- *     wp zt make {{type}} example --extends={{class_name}}
+ * ```bash
+ * wp zt make {{type}} example --extends={{class_name}}
+ * ```
  */
 abstract class {{class_name}}{{extends}} {
 

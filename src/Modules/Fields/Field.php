@@ -205,7 +205,7 @@ abstract class Field implements PluginAware {
 	 * WP-CLI alike. That is {@see validate()} reading {@see get_schema()}, and it
 	 * is why turning REST off does not turn the constraints off with it.
 	 *
-	 * ```php
+	 * ```
 	 * public function is_shown_in_rest(): bool|array {
 	 *     return array( 'schema' => array( 'minimum' => 1, 'maximum' => 5 ) );
 	 * }
@@ -287,7 +287,7 @@ abstract class Field implements PluginAware {
 	 * Override to add a rule a schema cannot express, and call
 	 * {@see check_schema()} if you still want the declared keywords enforced:
 	 *
-	 * ```php
+	 * ```
 	 * public function validate( mixed $value ): bool|\WP_Error {
 	 *     $checked = $this->check_schema( $value );
 	 *

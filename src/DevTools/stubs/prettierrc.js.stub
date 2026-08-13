@@ -5,10 +5,12 @@
  * and tracks the package rather than duplicating its options. Spread it to
  * override one:
  *
- *     module.exports = {
- *         ...require( '@wordpress/prettier-config' ),
- *         useTabs: false,
- *     };
+ * ```js
+ * module.exports = {
+ *     ...require( '@wordpress/prettier-config' ),
+ *     useTabs: false,
+ * };
+ * ```
  *
  * `module.exports` means this file is CommonJS. If package.json ever declares
  * `"type": "module"`, rename this to `.prettierrc.cjs` -- Node reads a plain

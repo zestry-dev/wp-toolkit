@@ -16,7 +16,7 @@ namespace Zestry\WPToolkit\Services\Request;
  *
  * Type an argument as one of these and the file arrives on the property:
  *
- * ```php
+ * ```
  * #[RequestArgument( 'The image to attach.' )]
  * public UploadedFile $image;
  *
@@ -115,7 +115,7 @@ final class UploadedFile {
 	 * Both error codes are core's own, so a client written against the media
 	 * endpoints handles yours the same way.
 	 *
-	 * ```php
+	 * ```
 	 * $stored = $this->image->store();
 	 *
 	 * if ( is_wp_error( $stored ) ) {

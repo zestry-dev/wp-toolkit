@@ -94,7 +94,7 @@ abstract class DebugSection implements PluginAware {
 	 *
 	 * Keyed by field id, in the shape WordPress reads:
 	 *
-	 * ```php
+	 * ```
 	 * return array(
 	 *     'api_key' => array(
 	 *         'label'   => __( 'API key', 'acme-plugin' ),

@@ -23,7 +23,7 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * ability's input schema from it, and binds the value onto the property before
  * your handler runs.
  *
- * ```php
+ * ```
  * use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
  *
  * #[RequestArgument( 'The order to cancel.' )]
@@ -49,7 +49,7 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * A moment in time is a string on the wire, and WordPress already knows how to
  * check one:
  *
- * ```php
+ * ```
  * #[RequestArgument( 'When the sale ends.' )]
  * public \DateTimeImmutable $ends_at;      // type: string, format: date-time
  * ```
@@ -67,7 +67,7 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * `2026-08-04 12:00:00` is noon UTC, whatever the site's timezone is set to.
  * Converting for display is one call:
  *
- * ```php
+ * ```
  * $this->send_at->setTimezone( wp_timezone() );
  * ```
  *
@@ -75,7 +75,7 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * pattern, since `date-time` has no date-only form and a `DateTimeImmutable`
  * would invent a midnight that nobody sent:
  *
- * ```php
+ * ```
  * #[RequestArgument( 'The day it is due.', schema: array( 'pattern' => '^\d{4}-\d{2}-\d{2}$' ) )]
  * public string $due_on;
  * ```
@@ -86,7 +86,7 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * values are listed, so WordPress rejects anything else before your code runs
  * and a caller can read what it may send:
  *
- * ```php
+ * ```
  * enum Status: string {
  *     case Draft = 'draft';
  *     case Live  = 'live';
@@ -110,7 +110,7 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * A property typed as a class becomes a nested object, built from that class's
  * own arguments, and arrives as an instance rather than an array:
  *
- * ```php
+ * ```
  * final class Address {
  *
  *     #[RequestArgument( 'Street and number.' )]
@@ -127,14 +127,14 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * PHP has no array-of-type syntax — `LineItem[]` is docblock notation, not a
  * type — so a list names its class with `of`:
  *
- * ```php
+ * ```
  * #[RequestArgument( 'What was ordered.', of: LineItem::class )]
  * public array $items;
  * ```
  *
  * An array of plain values says so through the schema instead:
  *
- * ```php
+ * ```
  * #[RequestArgument( 'The orders to cancel.', schema: array( 'items' => array( 'type' => 'integer' ) ) )]
  * public array $order_ids;
  * ```
@@ -153,7 +153,7 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * A property typed as an {@see \Zestry\WPToolkit\Services\Request\UploadedFile} takes an
  * upload, and `of: UploadedFile::class` on an `array` takes several:
  *
- * ```php
+ * ```
  * #[RequestArgument( 'The image to attach.' )]
  * public UploadedFile $image;
  * ```
@@ -169,7 +169,7 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * `stdClass` and `object` both mean an object whose keys are the caller's
  * business — a settings blob, a payload passed through to somewhere else:
  *
- * ```php
+ * ```
  * #[RequestArgument( 'Whatever your client keeps here.' )]
  * public \stdClass $meta;          // $this->meta->colour
  * ```
@@ -184,7 +184,7 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * Anything JSON Schema expresses goes in `schema` — `enum` for a closed set,
  * `minimum`, `format`, `pattern`:
  *
- * ```php
+ * ```
  * #[RequestArgument( 'How to sort.', schema: array( 'enum' => array( 'date', 'title' ) ) )]
  * public string $order_by = 'date';
  * ```

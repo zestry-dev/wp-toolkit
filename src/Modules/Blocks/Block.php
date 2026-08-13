@@ -191,7 +191,7 @@ abstract class Block implements PluginAware {
 	 * markup {@see render()} returns, as `data-` attributes, and read it back in
 	 * the browser:
 	 *
-	 * ```php
+	 * ```
 	 * // render()
 	 * return sprintf(
 	 *     '<form %s data-endpoint="%s" data-nonce="%s"></form>',

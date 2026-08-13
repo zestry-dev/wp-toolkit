@@ -197,7 +197,7 @@ abstract class Ability implements PluginAware {
 	 * one — leave the description off the attribute and name the property here
 	 * instead, so it is still written exactly once:
 	 *
-	 * ```php
+	 * ```
 	 * // Still the declaration: the type, the required-ness and the binding are
 	 * // all still coming from here. Only the description moved.
 	 * #[RequestArgument]

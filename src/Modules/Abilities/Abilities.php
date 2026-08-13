@@ -214,7 +214,7 @@ class Abilities extends Module {
 	 * Keyed by slug, the same shape `bootstrap.php` uses for modules. A plain
 	 * string is the label, and an array carries a description alongside it:
 	 *
-	 * ```php
+	 * ```
 	 * // bootstrap.php
 	 * $abilities->on_wp_init(
 	 *     static function ( Abilities $abilities ): void {

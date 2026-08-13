@@ -25,7 +25,7 @@ namespace Zestry\WPToolkit\Modules\RestApi;
  * structure is purely organizational, so grouping `widgets/get-one.php` beside
  * `widgets/delete-one.php` is for a human's benefit, not RestApi's.
  *
- * ```php
+ * ```
  * use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
  * use Acme\Plugin\Core\Modules\RestApi\Route;
  * use Acme\Plugin\Core\Modules\RestApi\RestRoute;

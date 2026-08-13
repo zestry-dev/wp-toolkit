@@ -44,8 +44,10 @@ class {{class_name}} extends ActivationHandler {
 	 * to debug a conflict, or by accident -- so undo what costs nothing to
 	 * rebuild, and leave the user's data alone:
 	 *
-	 *     wp_clear_scheduled_hook( 'my_plugin_daily' );   // yes
-	 *     // $wpdb->query( 'DROP TABLE ...' );            // no, an update would wipe it
+	 * ```
+	 * wp_clear_scheduled_hook( 'my_plugin_daily' );   // yes
+	 * // $wpdb->query( 'DROP TABLE ...' );            // no, an update would wipe it
+	 * ```
 	 *
 	 * @param bool $network_wide Whether the plugin was deactivated network-wide.
 	 * @return void

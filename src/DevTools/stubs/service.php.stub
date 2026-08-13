@@ -29,15 +29,17 @@ class {{class_name}} extends Service {
 	 * it from `configure()` in your entry file. The callback runs once, when the
 	 * service is first built:
 	 *
-	 *     public function set_api_key( string $key ): void { ... }
+	 * ```
+	 * public function set_api_key( string $key ): void { ... }
 	 *
-	 *     // my-plugin.php
-	 *     ( new Plugin( __FILE__ ) )
-	 *         ->configure( {{class_name}}::class, static function ( {{class_name}} $service ): void {
-	 *             $service->set_api_key( 'abc123' );
-	 *         } )
-	 *         ->bootstrap()
-	 *         ->run();
+	 * // my-plugin.php
+	 * ( new Plugin( __FILE__ ) )
+	 *     ->configure( {{class_name}}::class, static function ( {{class_name}} $service ): void {
+	 *         $service->set_api_key( 'abc123' );
+	 *     } )
+	 *     ->bootstrap()
+	 *     ->run();
+	 * ```
 	 *
 	 * The constructor is final and takes no arguments, so that setter is how
 	 * configuration arrives. A class that wants constructor arguments is a value

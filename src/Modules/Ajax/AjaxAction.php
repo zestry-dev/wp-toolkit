@@ -44,7 +44,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * property, the same way a route and an ability do, and read it as
  * `$this->post_id`:
  *
- * ```php
+ * ```
  * #[RequestArgument( 'Which post to act on.' )]
  * public int $post_id;
  * ```

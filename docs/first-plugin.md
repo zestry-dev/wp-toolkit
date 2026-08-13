@@ -122,7 +122,7 @@ Three details:
 declare( strict_types=1 );
 
 // Loaded by the plugin, never requested directly.
-defined( 'ABSPATH' ) || exit;
+\defined( 'ABSPATH' ) || exit;
 
 use Acme\Books\Core\Modules\AdminPages\AdminPages;
 use Acme\Books\Core\Modules\Assets\Assets;
@@ -172,7 +172,7 @@ The generated file carries every overridable method with a comment explaining it
 declare( strict_types=1 );
 
 // Loaded by WordPress, never requested directly.
-defined( 'ABSPATH' ) || exit;
+\defined( 'ABSPATH' ) || exit;
 
 use Acme\Books\Core\Modules\PostTypes\PostType;
 
@@ -221,7 +221,7 @@ A route file returns a `Route` — the HTTP method, the namespace version, the U
 declare( strict_types=1 );
 
 // Loaded by WordPress, never requested directly.
-defined( 'ABSPATH' ) || exit;
+\defined( 'ABSPATH' ) || exit;
 
 use Acme\Books\Core\Modules\Log;
 use Acme\Books\Core\Modules\Options;
@@ -326,7 +326,7 @@ Two files. The class decides *what* the page is — its title, who may see it, w
 declare( strict_types=1 );
 
 // Loaded by WordPress, never requested directly.
-defined( 'ABSPATH' ) || exit;
+\defined( 'ABSPATH' ) || exit;
 
 use Acme\Books\Core\Modules\AdminPages\AdminPage;
 use Acme\Books\Core\Modules\AdminPages\ParentMenu;
@@ -524,7 +524,7 @@ declare( strict_types=1 );
 namespace Acme\Books\Modules;
 
 // Loaded by WordPress, never requested directly.
-defined( 'ABSPATH' ) || exit;
+\defined( 'ABSPATH' ) || exit;
 
 use Acme\Books\Core\Kernel\Abstracts\ActivationHandler;
 use Acme\Books\Core\Modules\Log;

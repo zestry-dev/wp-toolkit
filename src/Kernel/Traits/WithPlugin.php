@@ -37,7 +37,7 @@ use Zestry\WPToolkit\Kernel\Plugin;
  * this trait directly (a Service or Module gets the same behavior by
  * extending the Service base class, which already uses this trait):
  *
- * ```php
+ * ```
  * class MyAction {
  *     use WithPlugin;
  *
@@ -85,7 +85,7 @@ trait WithPlugin {
 	 * runtime. For anything you use throughout the class, declare a typed
 	 * property instead and let it be injected.
 	 *
-	 * ```php
+	 * ```
 	 * $this->get_plugin()->get( Options::class )->get( 'api_key' );
 	 * ```
 	 *

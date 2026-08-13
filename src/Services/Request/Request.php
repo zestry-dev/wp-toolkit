@@ -126,7 +126,7 @@ class Request extends Service {
 	 * A keyed map is merged into, so naming one property's `description` leaves
 	 * the rest of that property alone:
 	 *
-	 * ```php
+	 * ```
 	 * $request->get_schema(
 	 *     $ability,
 	 *     array(

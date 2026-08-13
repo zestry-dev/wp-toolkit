@@ -432,15 +432,15 @@ The same door lets in everything else an attribute cannot hold, translated or no
 
 **An AJAX action and an admin page have no equivalent, and need none.** Nothing publishes their schema, so no description there is ever read by anyone; a rule you would have stated belongs in `validate:`, which runs the same way and can already call whatever it likes.
 
-Whether to translate at all is still worth a thought. A description is read by whoever *calls* — a developer, or an agent choosing between tools — not by the person using your plugin, so English is often the right answer. It is now a decision about that audience rather than about what saying so costs you.
+Whether to translate at all is still worth a thought. A description is read by whoever *calls* — a developer, or an agent choosing between tools — not by the person using your plugin, so English is often the right answer.
 
 ## Six behaviours that differ from a general-purpose mapper
 
 Each is shaped by WordPress already shipping the validator and dictating the schema format:
 
 - **A constructor is never called.** A structure is built without one and its properties are assigned, so a constructor that enforces an invariant does not run and cannot reject anything. Put the rule in `validate:` or your handler.
-- **Unknown keys are ignored**, as Symfony ignores them. Valinor refuses them by default; nothing here does.
-- **`object` is allowed.** Valinor refuses it as too permissive, but WordPress passes arbitrary payloads around constantly, and JSON Schema has a word for one. Use a named class wherever the shape is known.
+- **Unknown keys are ignored**, never refused. A caller sending a field your structure does not declare gets no error for it.
+- **`object` is allowed**, where a stricter mapper would refuse it as too permissive — WordPress passes arbitrary payloads around constantly, and JSON Schema has a word for one. Use a named class wherever the shape is known.
 - **Names are used verbatim.** There is no camelCase-to-snake_case conversion: an argument is called what the property is called, which is the WordPress convention anyway.
 - **A keyed map of structures is not built.** `of:` describes a list. A JSON object whose *values* are structures arrives as an array — describe it with `schema: array( 'additionalProperties' => ... )` and convert it in your handler.
 - **Every refusal is reported at once**, not the first one, matching what WordPress answers a route with.

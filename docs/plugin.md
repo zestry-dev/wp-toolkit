@@ -7,11 +7,11 @@
 
 [The entry file](#the-entry-file) &nbsp;·&nbsp; [The bootstrap file](#the-bootstrap-file) &nbsp;·&nbsp; [Declaring modules in the entry file instead](#declaring-modules-in-the-entry-file-instead) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods)
 
-Coordinates plugin-wide services and module initialization.
+The one object your plugin builds, in its entry file.
 
-The plugin owns the module repository and provides plugin metadata to modules while keeping module construction in one place. Modules are registered during plugin setup, resolved once when first requested, and can be queued to resolve together when `run()` is called.
+It holds every service and module the plugin uses, builds each the first time it is needed, and answers what the plugin knows about itself — its slug, its own directory, the headers its entry file declares. Nothing else has to be constructed by hand: a class asks for another by declaring a typed property, and this is what fills it in.
 
-Modules are declared in a `bootstrap.php`, which `bootstrap()` reads. `wp zt init` creates that file and `wp zt add` appends to it, so a module is active as soon as it is copied and the entry file never has to change. `configure()` and `autoload()` are public, so a plugin that prefers to declare its modules in the entry file can do that instead, and the two approaches can be combined.
+Modules are declared in a `bootstrap.php`, which `bootstrap()` reads and `run()` builds and boots. `wp zt init` creates that file and `wp zt add` appends to it, so a module is active as soon as it is copied and the entry file never has to change. `configure()` and `autoload()` are public, so a plugin that prefers to declare its modules in the entry file can do that instead, and the two approaches can be combined.
 
 A `Service` is never declared there: it resolves on demand through `get()`, or is injected into another class by type. One that takes configuration is given it with `configure()` in the entry file.
 
@@ -70,14 +70,24 @@ return array(
 `bootstrap.php` is optional. It calls `configure()` and `autoload()`, both of which are public, so a plugin that prefers a single file can call them directly.
 
 ```php
-$plugin ??= ( new Plugin( __FILE__, 'my-plugin' ) )
-    ->configure( Ajax::class, function ( Ajax $ajax ) {
-        $ajax->set_actions_root( 'actions' );
-    } )
-    ->autoload( [ Ajax::class ] )
-    ->run();
+// my-plugin.php
+function my_plugin(): Plugin {
+    static $plugin = null;
 
-return $plugin;
+    $plugin ??= ( new Plugin( __FILE__, 'my-plugin' ) )
+        ->configure(
+            Ajax::class,
+            static function ( Ajax $ajax ): void {
+                $ajax->set_actions_root( 'actions' );
+            }
+        )
+        ->autoload( array( Ajax::class ) )
+        ->run();
+
+    return $plugin;
+}
+
+my_plugin();
 ```
 
 ## Constants
@@ -229,12 +239,11 @@ Only needed for a plugin shipping a `languages/` directory of its own. WordPress
 The text domain defaults to the plugin slug, matching what `wp zt init` writes into `zestry.json` and stamps into every copied file, so the two cannot disagree unless a consumer deliberately changes one.
 
 ```php
+// my-plugin.php, inside the accessor that builds the plugin.
 $plugin ??= ( new Plugin( __FILE__ ) )
     ->set_languages_path( 'languages' )
-    ->autoload( array( AdminPages::class ) )
+    ->bootstrap()
     ->run();
-
-return $plugin;
 ```
 
 This registers a path rather than loading anything: translations load on the first `__()` call that needs them. Calling it here, as the plugin file loads, is therefore both early enough and not too early — what WordPress warns about is *using* a translation before `init`, not registering where they live.

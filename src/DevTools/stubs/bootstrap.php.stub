@@ -8,10 +8,12 @@
  *
  * An entry is a class name, optionally with an initializer as its value:
  *
- *     Cron::class,                                    // no configuration
- *     Cron::class => function ( Cron $cron ): void {  // configured
- *         $cron->set_schedules_root( 'jobs' );
- *     },
+ * ```
+ * Cron::class,                                    // no configuration
+ * Cron::class => function ( Cron $cron ): void {  // configured
+ *     $cron->set_schedules_root( 'jobs' );
+ * },
+ * ```
  *
  * The initializer runs when the class is first built, before a module boots:
  * the place to call a `set_*_root()` or anything else it needs. Everything
@@ -36,11 +38,13 @@
  * reports `_load_textdomain_just_in_time` on every request. Anything needing
  * that later point goes in `on_wp_init()`, which every module has:
  *
- *     Blocks::class => function ( Blocks $blocks ): void {
- *         $blocks->on_wp_init( function ( Blocks $module ): void {
- *             $module->add_categories( [ 'reports' => __( 'Reports', 'my-plugin' ) ] );
- *         } );
- *     },
+ * ```
+ * Blocks::class => function ( Blocks $blocks ): void {
+ *     $blocks->on_wp_init( function ( Blocks $module ): void {
+ *         $module->add_categories( array( 'reports' => __( 'Reports', '{{text_domain}}' ) ) );
+ *     } );
+ * },
+ * ```
  */
 
 declare( strict_types=1 );

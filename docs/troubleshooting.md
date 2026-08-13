@@ -231,7 +231,9 @@ return new class extends AjaxAction {
 **A directory you named does not exist.**
 
 ```
-Actions root directory does not exist: /…/acme-plugin/ajax-actions
+Actions root directory does not exist: /…/acme-plugin/ajax-actions.
+`set_actions_root()` named it, so create that directory or correct the path in
+the initializer. (A default root that is absent is not an error.)
 ```
 
 This one only ever comes from a root you asked for by name:

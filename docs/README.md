@@ -56,7 +56,7 @@ acme_plugin();
 
 declare( strict_types=1 );
 
-defined( 'ABSPATH' ) || exit;
+\defined( 'ABSPATH' ) || exit;
 
 use Acme\Plugin\Core\Modules\CLI\CLI;
 
@@ -71,7 +71,7 @@ return array(
 
 declare( strict_types=1 );
 
-defined( 'ABSPATH' ) || exit;
+\defined( 'ABSPATH' ) || exit;
 
 use Acme\Plugin\Core\Modules\CLI\Command;
 
@@ -109,10 +109,11 @@ Almost everything is the same two steps: **add** the feature once, then **make**
 | Render markup from a template | `wp zt add service views`<br>then `wp zt make view emails/receipt` | [`views`](services/views/) |
 | Share JavaScript between screens | `wp zt add module assets`<br>then `wp zt make shared formatting` | [JavaScript](javascript.md) |
 
-Two that are not that shape:
+Three that are not that shape:
 
 | I want to… | Run | Reference |
 |---|---|---|
+| See what this plugin already has | `wp zt describe --installed` | [`wp zt describe`](commands/describe.md) |
 | Find out why nothing happened | `wp zt doctor` | [Troubleshooting](troubleshooting.md) |
 | Take a toolkit release | `wp zt update --dry-run` | [`wp zt update`](commands/update.md) |
 

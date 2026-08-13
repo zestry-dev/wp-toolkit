@@ -14,11 +14,27 @@ namespace Zestry\WPToolkit\Kernel\Exceptions;
 /**
  * Thrown when a module's file-based discovery cannot proceed.
  *
- * Covers both halves of the discovery convention every file-discovery module
- * shares: a configured root directory that does not exist, and a discovered
- * file that returns something other than the base class that module expects.
  * Catch this to handle any malformed discovery layout, in any module that reads
- * files, without also catching unrelated failures.
+ * files, without also catching unrelated failures. It arrives in five shapes:
+ *
+ * - **A discovered file returned the wrong thing.** Usually a missing `return`,
+ *   since `require` yields `1` for a file that returns nothing.
+ * - **A root directory named by a `set_*_root()` call does not exist.** A
+ *   *default* root that is absent is not an error: the module discovers nothing
+ *   and says nothing.
+ * - **Two files resolve to one registered name**, which only happens where the
+ *   name is built from more than the filename -- `reports.php` and
+ *   `reports/index.php` are two paths meaning one admin page.
+ * - **A filename the destination could not carry**: an admin page slug a URL
+ *   would have to encode, or an ability name outside WordPress's `[a-z0-9-]`.
+ * - **WordPress refused the registration**, for the calls that report a refusal
+ *   by returning something falsy rather than by saying anything.
+ *
+ * **A name is refused, never repaired.** Neither naming failure above rewrites
+ * your filename into something acceptable: a name spelled for you is a name you
+ * cannot find again, and the file would keep looking like working code. Rename
+ * the file -- `wp zt make` writes an acceptable name in the first place, and
+ * says when it had to.
  *
  * Extends {@see ModuleException}, and therefore `\RuntimeException`: a discovery
  * failure depends on which files exist on disk and what they return at boot, not
@@ -26,6 +42,10 @@ namespace Zestry\WPToolkit\Kernel\Exceptions;
  * registration, resolution and boot failures it happens alongside, so one
  * `catch ( ModuleException $e )` around boot covers every way a module can fail
  * to come up.
+ *
+ * Writing a discovery module of your own? {@see missing_root()} and
+ * {@see name_collision()} raise the same two sentences the built-in modules do,
+ * so yours fails the way the rest of the plugin already does.
  *
  * @rationale
  * The SPL argument for `\RuntimeException` over `\InvalidArgumentException`:
@@ -49,24 +69,20 @@ class DiscoveryException extends ModuleException {
 	 * broken code rather than as a refused registration, which is the most
 	 * expensive way for this to fail.
 	 *
-	 * Each module tests the return WordPress actually gives it, because they
-	 * differ; the sentence they raise is here, so it is one sentence rather than
-	 * several that drift.
-	 *
 	 * **Only where WordPress is silent.** `register_post_type()`,
 	 * `register_taxonomy()` and `register_block_type()` refuse without saying
 	 * anything, so a module that does not check leaves the feature absent and
 	 * unexplained. `register_meta()`, `register_rest_route()` and
 	 * `wp_register_ability()` call `_doing_it_wrong()` on every refusal they can
-	 * make -- checking those as well would turn a notice WordPress chose into a
-	 * fatal that takes the site down, and say the same thing twice. Verified
-	 * against core rather than assumed; the modules that do not check say so
-	 * where the call is.
+	 * make, so those are left to say it themselves rather than turning a notice
+	 * WordPress chose into a fatal that takes the site down.
 	 *
 	 * @param string $kind   What was being registered, e.g. `post type`.
 	 * @param string $name   The name, which is the file's name.
 	 * @param string $reason WordPress's own message, when it gave one.
 	 * @return self
+	 *
+	 * @internal
 	 */
 	public static function registration_refused( string $kind, string $name, string $reason = '' ): self {
 		return new self(
@@ -154,6 +170,8 @@ class DiscoveryException extends ModuleException {
 	 * @param string $file The discovered path, relative to the abilities root.
 	 * @param string $name The full name it asked to register under.
 	 * @return self
+	 *
+	 * @internal
 	 */
 	public static function unregistrable_ability_name( string $file, string $name ): self {
 		return new self(
@@ -183,6 +201,8 @@ class DiscoveryException extends ModuleException {
 	 * @param string $file The discovered path, relative to the pages root.
 	 * @param string $slug The slug it asked to register under.
 	 * @return self
+	 *
+	 * @internal
 	 */
 	public static function unsafe_page_slug( string $file, string $slug ): self {
 		return new self(

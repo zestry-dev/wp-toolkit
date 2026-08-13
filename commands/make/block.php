@@ -91,7 +91,9 @@ return new class() extends MakeCommand {
 	 * : Give the block front-end JavaScript. `module` writes an Interactivity
 	 * API store and registers it as a script module; `script` writes a classic
 	 * script that runs against the rendered markup; `none` writes neither.
-	 * Prompted for when omitted.
+	 * Prompted for when omitted -- as two questions, since the choice between
+	 * `script` and `module` only arises once you have said you want JavaScript
+	 * at all.
 	 *
 	 * The two are not interchangeable source: the Interactivity API is itself a
 	 * script module, and a classic script cannot depend on one -- so each mode
@@ -119,6 +121,14 @@ return new class() extends MakeCommand {
 	 *     Render this block in PHP (dynamic)? [y/N] n
 	 *     Give this block front-end JavaScript? [y/N] n
 	 *     Success: Created src/blocks/hero (5 files)
+	 *
+	 *     # Saying yes to the JavaScript asks which kind, since `--view` was
+	 *     # not given. Answering here is the same as passing --view=module.
+	 *     $ wp zt make block hero
+	 *     Render this block in PHP (dynamic)? [y/N] n
+	 *     Give this block front-end JavaScript? [y/N] y
+	 *     Use the Interactivity API? [Y/n] y
+	 *     Success: Created src/blocks/hero (6 files)
 	 *
 	 *     # The same block, non-interactively. `--yes` is what takes the default
 	 *     # for the prompts a flag has not already answered.

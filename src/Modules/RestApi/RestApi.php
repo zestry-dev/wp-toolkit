@@ -37,7 +37,7 @@ use Zestry\WPToolkit\Services\Request\Request;
  * use Acme\Plugin\Core\Modules\RestApi\RestRoute;
  *
  * return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
- * ```php
+ * ```
  * #[RequestArgument( 'The widget to return.' )]
  * public int $id;
  *
@@ -128,7 +128,7 @@ use Zestry\WPToolkit\Services\Request\Request;
  * @setup
  * // bootstrap.php
  * return array(
- * ```php
+ * ```
  * RestApi::class => static function ( RestApi $api ): void {
  *     $api->set_routes_root( 'routes' );
  * },
@@ -307,7 +307,7 @@ class RestApi extends Module {
 	 * it. Placeholder tokens are not substituted -- a caller that needs a
 	 * concrete URL replaces them itself, since only the caller knows the values:
 	 *
-	 * ```php
+	 * ```
 	 * $api->get_route_url( 'v1', '/widgets/42' );
 	 * ```
 	 *

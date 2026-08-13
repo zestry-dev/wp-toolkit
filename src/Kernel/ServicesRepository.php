@@ -30,7 +30,7 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  * was configured beforehand, queued in `bootstrap.php`, or resolved on demand
  * as a dependency of something else:
  *
- * ```php
+ * ```
  * configure() - remember an initializer callback for later (optional)
  * get()       - first call triggers resolution; later calls hit the cache
  * instantiate - construct the object, wire it, cache it (if singleton),

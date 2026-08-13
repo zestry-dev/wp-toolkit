@@ -199,7 +199,7 @@ final class Arr {
 	 * Both arguments take a path, so a nested value needs no loop of its own.
 	 * Give `$key` to key the result by another of the row's values.
 	 *
-	 * ```php
+	 * ```
 	 * Arr::pluck( $orders, 'billing.email' );
 	 * Arr::pluck( $orders, 'total', 'id' );
 	 * ```
@@ -299,7 +299,7 @@ final class Arr {
 	 * are changing, at the depth it lives at, and everything beside it is left
 	 * exactly as it was.
 	 *
-	 * ```php
+	 * ```
 	 * $settings = Arr::replace_recursive(
 	 *     array(
 	 *         'mail'  => array( 'from' => array( 'name' => 'Acme', 'email' => 'no-reply@acme.test' ) ),

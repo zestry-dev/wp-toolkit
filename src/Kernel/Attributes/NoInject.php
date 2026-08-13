@@ -21,7 +21,7 @@ namespace Zestry\WPToolkit\Kernel\Attributes;
  * hand-built, lazily created, keyed, or test-supplied instance rather than the
  * shared one.
  *
- * ```php
+ * ```
  * use Acme\Plugin\Core\Kernel\Attributes\NoInject;
  *
  * class Reports extends Module {

@@ -18,19 +18,20 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleException;
 use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
 
 /**
- * Coordinates plugin-wide services and module initialization.
+ * The one object your plugin builds, in its entry file.
  *
- * The plugin owns the module repository and provides plugin metadata to
- * modules while keeping module construction in one place. Modules are registered
- * during plugin setup, resolved once when first requested, and can be queued to
- * resolve together when `run()` is called.
+ * It holds every service and module the plugin uses, builds each the first time
+ * it is needed, and answers what the plugin knows about itself -- its slug, its
+ * own directory, the headers its entry file declares. Nothing else has to be
+ * constructed by hand: a class asks for another by declaring a typed property,
+ * and this is what fills it in.
  *
- * Modules are declared in a `bootstrap.php`, which {@see bootstrap()} reads.
- * `wp zt init` creates that file and `wp zt add` appends to it, so a module
- * is active as soon as it is copied and the entry file never has to change.
- * {@see configure()} and {@see autoload()} are public, so a plugin that prefers
- * to declare its modules in the entry file can do that instead, and the two
- * approaches can be combined.
+ * Modules are declared in a `bootstrap.php`, which {@see bootstrap()} reads and
+ * {@see run()} builds and boots. `wp zt init` creates that file and `wp zt add`
+ * appends to it, so a module is active as soon as it is copied and the entry
+ * file never has to change. {@see configure()} and {@see autoload()} are public,
+ * so a plugin that prefers to declare its modules in the entry file can do that
+ * instead, and the two approaches can be combined.
  *
  * A {@see \Zestry\WPToolkit\Kernel\Abstracts\Service} is never declared there: it resolves on
  * demand through {@see get()}, or is injected into another class by type. One
@@ -110,14 +111,24 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  * single file can call them directly.
  *
  * ```
- * $plugin ??= ( new Plugin( __FILE__, 'my-plugin' ) )
- *     ->configure( Ajax::class, function ( Ajax $ajax ) {
- *         $ajax->set_actions_root( 'actions' );
- *     } )
- *     ->autoload( [ Ajax::class ] )
- *     ->run();
+ * // my-plugin.php
+ * function my_plugin(): Plugin {
+ *     static $plugin = null;
  *
- * return $plugin;
+ *     $plugin ??= ( new Plugin( __FILE__, 'my-plugin' ) )
+ *         ->configure(
+ *             Ajax::class,
+ *             static function ( Ajax $ajax ): void {
+ *                 $ajax->set_actions_root( 'actions' );
+ *             }
+ *         )
+ *         ->autoload( array( Ajax::class ) )
+ *         ->run();
+ *
+ *     return $plugin;
+ * }
+ *
+ * my_plugin();
  * ```
  */
 class Plugin {
@@ -247,7 +258,7 @@ class Plugin {
 	 * so it can set what boot depends on. Only needed by a class that takes
 	 * configuration; anything else resolves fine without one.
 	 *
-	 * ```php
+	 * ```
 	 * $plugin->configure( Ajax::class, function ( Ajax $ajax ) {
 	 *     $ajax->set_actions_root( 'actions' );
 	 * } );
@@ -298,7 +309,7 @@ class Plugin {
 	 * meaning a module works the moment it arrives rather than after a
 	 * hand-edit:
 	 *
-	 * ```php
+	 * ```
 	 * // bootstrap.php
 	 * return array(
 	 *     Ajax::class => static function ( Ajax $ajax ): void {
@@ -325,7 +336,7 @@ class Plugin {
 	 * be. Configure one from the entry file instead, where {@see configure()}
 	 * takes the same callback:
 	 *
-	 * ```php
+	 * ```
 	 * ( new Plugin( __FILE__ ) )
 	 *     ->configure( DB::class, static fn ( DB $db ) => $db->set_table_prefix( 'acme' ) )
 	 *     ->bootstrap()
@@ -384,13 +395,12 @@ class Plugin {
 	 * writes into `zestry.json` and stamps into every copied file, so the two
 	 * cannot disagree unless a consumer deliberately changes one.
 	 *
-	 * ```php
+	 * ```
+	 * // my-plugin.php, inside the accessor that builds the plugin.
 	 * $plugin ??= ( new Plugin( __FILE__ ) )
 	 *     ->set_languages_path( 'languages' )
-	 *     ->autoload( array( AdminPages::class ) )
+	 *     ->bootstrap()
 	 *     ->run();
-	 *
-	 * return $plugin;
 	 * ```
 	 *
 	 * This registers a path rather than loading anything: translations load on
@@ -440,7 +450,7 @@ class Plugin {
 	 * The configurator runs after wiring and before boot(). Use it for a second
 	 * instance of a module, such as a dedicated Options group:
 	 *
-	 * ```php
+	 * ```
 	 * $api_options = $plugin->make( Options::class, function ( Options $o ) {
 	 *     $o->set_group_name( 'api' );
 	 * } );
@@ -497,7 +507,7 @@ class Plugin {
 	 * into a namespace it shares with every other plugin on the site is prefixed
 	 * the same way and cannot collide.
 	 *
-	 * ```php
+	 * ```
 	 * do_action( $plugin->get_namespaced_name( 'import-finished' ), $count );
 	 * ```
 	 *

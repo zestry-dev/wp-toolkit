@@ -5,7 +5,9 @@
  * `build/entries/{{name}}`, and the `assets` module registers it on `init` --
  * so loading it anywhere in PHP is one call, with no registration first:
  *
- *     $this->assets->enqueue_entry( '{{name}}' );
+ * ```php
+ * $this->assets->enqueue_entry( '{{name}}' );
+ * ```
  *
  * Whatever this file imports comes with it, including the stylesheet beside it.
  * Import a shared package by name and it is declared as a dependency rather

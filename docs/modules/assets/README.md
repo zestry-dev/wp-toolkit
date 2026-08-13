@@ -163,7 +163,7 @@ public function set_assets_root( string $assets_root ): void
 | **Return** | — |
 | **Throws** | — |
 
-Call this from `configure()` in your entry file, before anything first asks for the service, to override the default `assets` directory.
+Call this from the module initializer before the plugin boots the module to override the default `assets` directory.
 
 <br>
 
@@ -181,7 +181,7 @@ public function set_build_root( string $build_root ): void
 | **Return** | — |
 | **Throws** | — |
 
-Call this from `configure()` in your entry file, before anything first asks for the service, to override the default `build` directory.
+Call this from the module initializer before the plugin boots the module to override the default `build` directory.
 
 <br>
 

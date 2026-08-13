@@ -23,7 +23,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * namespace, and under what text domain a further module should be copied,
  * without asking again.
  *
- * ```php
+ * ```
  * {
  *     "namespace": "Vendor\\MyPlugin",
  *     "root": "lib",

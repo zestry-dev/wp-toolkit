@@ -132,7 +132,7 @@ abstract class Command extends \WP_CLI_Command implements PluginAware {
 	 *
 	 * @example Reading a flag away from handle()
 	 *
-	 * ```php
+	 * ```
 	 * public function handle( array $args, array $assoc_args ): void {
 	 *     $this->purge();
 	 * }

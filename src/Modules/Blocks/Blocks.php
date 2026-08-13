@@ -224,7 +224,7 @@ class Blocks extends Module {
 	 * groups read as data. A plain string is the
 	 * title; an array carries an `icon` alongside it:
 	 *
-	 * ```php
+	 * ```
 	 * // bootstrap.php
 	 * $blocks->on_wp_init(
 	 *     static function ( Blocks $blocks ): void {

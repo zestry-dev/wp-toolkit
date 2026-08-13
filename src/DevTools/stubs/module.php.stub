@@ -24,12 +24,14 @@ class {{class_name}} extends Module {
 	 * anything this needs comes in through a `set_*()` called from its entry in
 	 * bootstrap.php, whose value is the initializer:
 	 *
-	 *     public function set_api_key( string $key ): void { ... }
+	 * ```
+	 * public function set_api_key( string $key ): void { ... }
 	 *
-	 *     // bootstrap.php
-	 *     {{class_name}}::class => static function ( {{class_name}} $module ): void {
-	 *         $module->set_api_key( 'abc123' );
-	 *     },
+	 * // bootstrap.php
+	 * {{class_name}}::class => static function ( {{class_name}} $module ): void {
+	 *     $module->set_api_key( 'abc123' );
+	 * },
+	 * ```
 	 *
 	 * A class that wants constructor arguments is a value object, not a module.
 	 * Make it a plain class; if it also needs the plugin, have it implement

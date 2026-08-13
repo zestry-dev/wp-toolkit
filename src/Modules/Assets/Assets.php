@@ -158,10 +158,14 @@ class Assets extends Module {
 	 * paths, `dependencies` and `version` from the extraction plugin, and a
 	 * `global` for a shared script.
 	 *
-	 * That the key is the handle is the point. Composing one here as well would
-	 * be a second opinion about a name the build has already written into every
-	 * importer's own `.asset.php`, and the two silently disagreeing is how an
-	 * entry and a shared package of the same name used to end up claiming one
+	 * That the key is the handle is the point: the build has already written
+	 * that name into every importer's own `.asset.php`, so reading it back is
+	 * what keeps the two halves agreeing.
+	 *
+	 * @rationale
+	 * Composing a handle here as well would be a second opinion about a name
+	 * the build already decided, and the two silently disagreeing is how an
+	 * entry and a shared package of the same name ended up claiming one
 	 * registration.
 	 */
 	const MANIFEST_FILENAMES = array( 'assets-manifest.php', 'assets-module-manifest.php' );
@@ -200,8 +204,8 @@ class Assets extends Module {
 	/**
 	 * Set the plugin-relative directory that contains asset files.
 	 *
-	 * Call this from `configure()` in your entry file, before anything first
-	 * asks for the service, to override the default `assets` directory.
+	 * Call this from the module initializer before the plugin boots the module
+	 * to override the default `assets` directory.
 	 *
 	 * @param string $assets_root Plugin-relative directory of asset files.
 	 * @return void
@@ -214,8 +218,8 @@ class Assets extends Module {
 	 * Set the plugin-relative directory that contains `@wordpress/scripts`
 	 * build output.
 	 *
-	 * Call this from `configure()` in your entry file, before anything first
-	 * asks for the service, to override the default `build` directory.
+	 * Call this from the module initializer before the plugin boots the module
+	 * to override the default `build` directory.
 	 *
 	 * @param string $build_root Plugin-relative directory of build output.
 	 * @return void
@@ -388,7 +392,7 @@ class Assets extends Module {
 	 * `settings`. Each is registered on `init` under the handle
 	 * {@see get_asset_slug()} returns, so using one is a single call:
 	 *
-	 * ```php
+	 * ```
 	 * $assets->enqueue_entry( 'settings' );
 	 * ```
 	 *

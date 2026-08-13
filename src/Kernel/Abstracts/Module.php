@@ -153,7 +153,7 @@ abstract class Module extends Service {
 	 * The callback receives the module, matching the initializer signature, so a
 	 * closure declared elsewhere needs no `use` to reach it:
 	 *
-	 * ```php
+	 * ```
 	 * protected function on_boot(): void {
 	 *     $this->on_wp_init( function ( self $module ): void {
 	 *         $module->register_widgets();
