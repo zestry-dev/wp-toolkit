@@ -97,12 +97,12 @@ final class AdminPagesTest extends TestCase {
 	 * @param string $class_body PHP body of the anonymous AdminPage subclass.
 	 * @return void
 	 */
-	private function write_page( string $name, string $class_body ): void {
+	private function write_page( string $name, string $class_body, string $base = 'AdminPage' ): void {
 		$this->write_plugin_file(
 			"admin-pages/{$name}.php",
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\AdminPages\\AdminMenu;\n"
 				. "use Zestry\\WPToolkit\\Modules\\AdminPages\\AdminPage;\nuse Zestry\\WPToolkit\\Modules\\AdminPages\\ParentMenu;\n"
-				. "return new class extends AdminPage {\n{$class_body}\n};\n"
+				. "return new class extends {$base} {\n{$class_body}\n};\n"
 		);
 	}
 
@@ -826,6 +826,30 @@ final class AdminPagesTest extends TestCase {
 
 		$this->assertTrue( $GLOBALS['zestry_assets_ran'], 'enqueue_assets() ran for the current page.' );
 		unset( $GLOBALS['zestry_assets_ran'] );
+	}
+
+	public function test_a_page_declaring_the_critical_styles_contract_has_them_enqueued(): void {
+		// The contract is what the module dispatches on, so a page implementing
+		// it gets its critical styles whether or not it overrides
+		// enqueue_assets() -- which is the whole point of separating the two.
+		$this->write_page(
+			'critical',
+			"public function title(): string { return 'Critical'; }\n"
+				. "public function capability(): string { return 'manage_options'; }\n"
+				. "public function enqueue_critical_styles(): void { \$GLOBALS['zestry_critical_ran'] = true; }\n"
+				. "public function enqueue_assets(): void {}\n"
+				. 'public function render(): void {}',
+			'\\Zestry\\WPToolkit\\Modules\\AdminPages\\ModernAdminPage'
+		);
+		$this->admin_pages();
+		do_action( 'admin_menu' );
+
+		$GLOBALS['zestry_critical_ran'] = false;
+		$_GET['page']                   = 'zestry-test-critical';
+		do_action( 'admin_enqueue_scripts', 'toplevel_page_zestry-test-critical' );
+
+		$this->assertTrue( $GLOBALS['zestry_critical_ran'], 'The module called enqueue_critical_styles().' );
+		unset( $GLOBALS['zestry_critical_ran'] );
 	}
 
 	public function test_admin_body_class_is_added_for_the_current_page(): void {

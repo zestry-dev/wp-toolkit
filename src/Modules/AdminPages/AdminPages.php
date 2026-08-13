@@ -13,6 +13,7 @@ namespace Zestry\WPToolkit\Modules\AdminPages;
 
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
+use Zestry\WPToolkit\Modules\AdminPages\Contracts\RendersCriticalStyles;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
 use Zestry\WPToolkit\Services\Path;
 use Zestry\WPToolkit\Services\Request\Request;
@@ -51,7 +52,7 @@ use Zestry\WPToolkit\Services\Request\Request;
  * <?php
  * return new class() extends AdminPage {
  *     public function title(): string {
- *         return __( 'Settings', 'my-plugin' );
+ *         return __( 'Settings', 'acme-plugin' );
  *     }
  *     public function capability(): string {
  *         return 'manage_options';
@@ -499,9 +500,20 @@ class AdminPages extends Module {
 			'admin_enqueue_scripts',
 			function (): void {
 				$page = $this->get_current_page();
-				if ( null !== $page ) {
-					$page->enqueue_assets();
+
+				if ( null === $page ) {
+					return;
 				}
+
+				// Before the page's own assets, and separately from them: a page
+				// whose styles must beat first paint says so by implementing the
+				// contract, rather than by remembering a `parent::` call inside
+				// an enqueue_assets() it was going to override anyway.
+				if ( $page instanceof RendersCriticalStyles ) {
+					$page->enqueue_critical_styles();
+				}
+
+				$page->enqueue_assets();
 			}
 		);
 

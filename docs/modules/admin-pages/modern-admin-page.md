@@ -9,31 +9,24 @@
 
 An AdminPage that gives a custom UI the whole admin canvas.
 
-Extend this instead of `AdminPage` when a page renders its own full-width application shell — a JS-driven interface, a custom dashboard — rather than the usual WordPress `.wrap` layout. Everything `AdminPage` offers is unchanged: title, capability, menu placement, nonce-verified POST handling, module injection, and discovery from the same `admin-pages/` directory. The only difference is a critical-CSS reset of wp-admin's own chrome, so adopting it is a one-word edit to an existing page's `extends` clause.
+Extend this instead of `AdminPage` when a page renders its own full-width application shell — a JS-driven interface, a custom dashboard — rather than the usual WordPress `.wrap` layout. Everything `AdminPage` offers is unchanged: title, capability, menu placement, nonce-verified POST handling, module injection, and discovery from the same `admin-pages/` directory. Adopting it is a one-word edit to an existing page's `extends` clause.
 
-The reset is inlined into `<head>` on core's always-registered `common` stylesheet handle rather than requested as a file of its own, so it applies before first paint: the page never renders in the default layout and then jumps once its stylesheet arrives. It is also strictly scoped — every rule sits behind the `{plugin-slug}-admin-page` body class that `AdminPages` adds only while one of this plugin's own pages is being displayed, so no other screen in wp-admin is touched.
-
-What it changes:
+The difference is a CSS reset, inlined before first paint so the page never renders in the default layout and then jumps. It applies only while one of this plugin's own pages is displayed, and no other screen in wp-admin is touched. What it changes:
 
 - `#wpcontent` and `#wpbody-content` lose their padding, so the page starts
 at the viewport edge and gets the full width, collapsed sidebar included.
+- The background is white, and a short page still fills the screen rather
+than ending in grey.
+- `.wrap` and the content wrapper lose their margins, and everything inside
+them is `border-box`.
+- `#wpfooter` is hidden.
+- `#wpwrap` scrolls on its own below 782px, which stops a mobile layout
+trapping content.
 
-- The body and `#wpbody-content` are forced white, and `#wpbody-content`
-gets a `min-height` of the viewport less the admin bar, so a short page still fills the screen instead of ending in grey.
-
-- `.wrap` and the module's own content wrapper lose their margins, and
-everything inside them switches to `border-box` sizing.
-
-- `#wpfooter` — the "Thank you for creating with WordPress" line and the
-version number — is hidden.
-
-- `#wpwrap` scrolls on its own below 782px and reverts to the browser's own
-scrolling above it, which is what stops a mobile layout trapping content.
-
-A page extending this needs no wrapper markup of its own: `AdminPages` already wraps whatever `render()` echoes in a `.{plugin-slug}-admin-page-content` div, and that div is the one element the reset deliberately spares.
+Write no wrapper markup of your own: `AdminPages` already wraps whatever `render()` echoes in a `.{plugin-slug}-admin-page-content` div, which is the one element the reset spares.
 
 > [!IMPORTANT]
-> **Admin notices do not appear on these pages.** Every direct `div` child of `#wpbody-content` except the content wrapper and `#screen-meta` is hidden, which is what keeps another plugin's "Your license has expired" banner from landing in the middle of a custom layout — but it hides your own just as effectively. `add_settings_error()` and anything hooked to `admin_notices` will not be seen, so a page that needs to report success or failure has to render that itself, inside `render()`.
+> **Admin notices do not appear on these pages.** Everything `#wpbody-content` holds except your content and `#screen-meta` is hidden, yours included — so `add_settings_error()` and anything hooked to `admin_notices` goes unseen. A page that reports success or failure has to render that itself, in `render()`.
 
 ## Taking the full canvas
 
@@ -43,7 +36,7 @@ A page extending this needs no wrapper markup of its own: `AdminPages` already w
 <?php
 return new class() extends ModernAdminPage {
     public function title(): string {
-        return __( 'Dashboard', 'my-plugin' );
+        return __( 'Dashboard', 'acme-plugin' );
     }
     public function capability(): string {
         return 'manage_options';
@@ -51,20 +44,18 @@ return new class() extends ModernAdminPage {
     public function render(): void {
         // No .wrap and no wrapper div: the module supplies the container,
         // and a .wrap here would only have its margins reset anyway.
-        echo '<div id="my-plugin-app"></div>';
+        echo '<div id="acme-plugin-app"></div>';
     }
 };
 ```
 
 ## Adding the page's own assets
 
-`enqueue_assets()` is where the reset is injected, so a subclass overriding it must call the parent. Leave the call out and the page loads with wp-admin's chrome intact — which looks like this class silently not working, rather than like a missing line.
+Override `enqueue_assets()`, which runs only while this page is being displayed. The reset is not in it, so there is no `parent::` call to make.
 
 ```php
 public function enqueue_assets(): void {
-    parent::enqueue_assets();
-
-    wp_enqueue_script( 'my-plugin-dashboard' );
+    wp_enqueue_script( 'acme-plugin-dashboard' );
 }
 ```
 
@@ -113,18 +104,6 @@ abstract public function render(): void
 ```
 
 ## Methods you can use
-
-### `enqueue_assets()`
-
-Enqueue this page's critical-CSS reset.
-
-```php
-public function enqueue_assets(): void
-```
-
-Overrides AdminPage::enqueue_assets(), so — per that method's contract — it only runs when this page is the one being displayed, not on every admin request. A subclass that also needs its own scripts/styles should override this method and call `parent::enqueue_assets()` to keep the reset.
-
-<br>
 
 ### `menu_title()`
 
@@ -512,6 +491,8 @@ final protected function get_base_css_classname(): string
 
 ### `get_plugin()`
 
+*Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
+
 Get the plugin this class belongs to.
 
 ```php
@@ -534,6 +515,8 @@ $this->get_plugin()->get( Options::class )->get( 'api_key' );
 
 ### `is_enabled()`
 
+*Inherited from [`WithEnablement`](../../kernel/with-enablement.md).*
+
 Whether this should be registered at all.
 
 ```php
@@ -550,4 +533,4 @@ Called once, after the instance is wired and before anything is registered. Retu
 
 The default is true, so a file that says nothing registers — being on disk is the convention, and this is the exception to it.
 
-Most modules ask at discovery and drop the file there. `post-types` and `fields` ask at registration instead, so that a switched-off file still appears in what they list — a screen offering to switch a feature on can only offer what it can see. It registers nothing either way.
+It registers nothing either way.

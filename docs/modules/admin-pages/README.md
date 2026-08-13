@@ -11,7 +11,7 @@ Discovers plugin admin pages and registers them in the WordPress admin menu.
 
 A pages directory contains PHP files named after the page, such as `admin-pages/settings.php`, each returning an AdminPage instance. On an admin request the module wires each page, registers it via the appropriate WordPress menu function (top-level, a core submenu chosen by its ParentMenu, or a custom parent), and dispatches to the page's render() when it is viewed — enforcing the page capability first. A POST is handled a step earlier, on `load-{$hook}`, so a page can still redirect after saving.
 
-[Adding it](#adding-it) &nbsp;·&nbsp; [A minimal page file](#a-minimal-page-file) &nbsp;·&nbsp; [Where the markup goes](#where-the-markup-goes) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing an AdminPage](#writing-an-adminpage) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use) &nbsp;·&nbsp; [See also](#see-also)
+[Adding it](#adding-it) &nbsp;·&nbsp; [A minimal page file](#a-minimal-page-file) &nbsp;·&nbsp; [Where the markup goes](#where-the-markup-goes) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing an AdminPage](#writing-an-adminpage) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
 ## Adding it
 
@@ -37,7 +37,7 @@ The actual authoring surface for most developers is not this class but the page 
 <?php
 return new class() extends AdminPage {
     public function title(): string {
-        return __( 'Settings', 'my-plugin' );
+        return __( 'Settings', 'acme-plugin' );
     }
     public function capability(): string {
         return 'manage_options';
@@ -96,6 +96,7 @@ Shipped with this module, and written against directly:
 
 - [`AdminMenu`](admin-menu.md) — enum, which of WordPress's admin menus a page belongs to
 - [`ParentMenu`](parent-menu.md) — enum, the built-in WordPress menus an AdminPage can be nested under
+- [`RendersCriticalStyles`](renders-critical-styles.md) — interface, a page with styles that have to be inlined before first paint
 
 ## Constants
 
@@ -107,25 +108,7 @@ const DEFAULT_PAGES_ROOT = 'admin-pages';
 
 Default plugin-relative directory of page files.
 
-## You must implement
-
-This one method is abstract: a subclass that does not declare it will not load.
-
-### `on_boot()`
-
-What this module does on its own.
-
-```php
-abstract protected function on_boot(): void
-```
-
-Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
-
-**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
-
-`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
-
-## Methods you can use
+## Methods
 
 ### `set_pages_root( $pages_root )`
 
@@ -266,6 +249,8 @@ An AdminPage instance is identified by its full slug; a plain string is used as 
 <br>
 
 ### `on_wp_init( $callback, $priority )`
+
+*Inherited from [`Module`](../module.md).*
 
 Run a callback on `init`, or immediately if `init` has already fired.
 
