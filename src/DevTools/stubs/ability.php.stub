@@ -106,10 +106,8 @@ return new class() extends Ability {
 		return array( 'ok' => true );
 	}
 
-	// Anything a Module or Service can be injected into this can too: declare
-	// a typed public property, above, and do the real work.
-	//
-	// public Options $options;
+	// Declare a typed public property, above, to have a service injected. A
+	// module is asked for instead: `$this->get_plugin()->get( Options::class )`.
 
 	// File this under a category other than your plugin's own -- one of
 	// WordPress's ('site', 'user'), or one you declared with

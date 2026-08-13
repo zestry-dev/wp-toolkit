@@ -640,7 +640,7 @@ class Request extends Service {
 
 		try {
 			// No setAccessible() call: relies on PHP 8.1+ implicit accessibility,
-			// the same as WithPlugin::inject_modules().
+			// the same as WithPlugin::_inject_services().
 			$property->setValue( $target, $value );
 		} catch ( \TypeError $e ) {
 			throw new \InvalidArgumentException(

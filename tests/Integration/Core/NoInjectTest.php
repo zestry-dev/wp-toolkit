@@ -15,10 +15,10 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  * Behavior of the #[NoInject] attribute and the injection pass that honors it.
  *
  * The attribute class itself is empty, so its meaning lives entirely in
- * WithPlugin::inject_modules(): the pass must skip a #[NoInject] property while
+ * WithPlugin::_inject_services(): the pass must skip a #[NoInject] property while
  * still injecting an unmarked one. To keep the #[NoInject] "skip" branch honest
  * (a skip is only meaningful next to the branches that do inject or skip for
- * other reasons), this file drives every branch of inject_modules() and both
+ * other reasons), this file drives every branch of _inject_services() and both
  * plugin accessors it relies on.
  *
  * @covers \Zestry\WPToolkit\Kernel\Attributes\NoInject
@@ -72,7 +72,7 @@ final class NoInjectTest extends TestCase {
 	}
 
 	/**
-	 * Drives every non-injecting branch of inject_modules() in one probe so the
+	 * Drives every non-injecting branch of _inject_services() in one probe so the
 	 * #[NoInject] skip is verified alongside the other reasons a property is left
 	 * alone: no type, builtin scalar, union type, and a non-module class type.
 	 * Only the two unmarked module-typed properties (one non-nullable, one
@@ -166,7 +166,7 @@ final class NoInjectProbe extends Service {
 }
 
 /**
- * One property per branch of WithPlugin::inject_modules().
+ * One property per branch of WithPlugin::_inject_services().
  */
 final class InjectionBranchProbe extends Service {
 

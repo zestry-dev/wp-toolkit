@@ -28,7 +28,7 @@ Reads only. Nothing here edits a file, so it is safe to run at any point.
 
 ## What is not checked
 
-A directory named through a `set_*_root()` call inside an initializer is not verified: finding out would mean running that closure against a live module instance, and this command never builds your plugin. You will hear about that one anyway — a root named by a setter and then not found throws a `DiscoveryException` naming the exact path.
+Whether a module's directory holds anything. Every module reads one fixed directory, so this command can see them all — but an empty one is what a module looks like before its first file is written, which is ordinary and not worth failing a build over.
 
 ## Options
 

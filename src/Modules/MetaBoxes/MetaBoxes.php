@@ -102,11 +102,6 @@ class MetaBoxes extends Module {
 	public Path $path;
 
 	/**
-	 * @var Fields
-	 */
-	public Fields $fields;
-
-	/**
 	 * Discovered boxes by screen type, then identifier.
 	 *
 	 * Nested because an identifier is unique only within a screen: the post edit
@@ -366,7 +361,7 @@ class MetaBoxes extends Module {
 			// Unslashed, not sanitised: the field's own sanitize() runs inside
 			// WordPress's write, and its validate() inside Fields::set().
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-			$this->fields->set( $object_id, $key, \wp_unslash( $_POST[ $key ] ), $this->get_meta_type( $box ) );
+			$this->fields()->set( $object_id, $key, \wp_unslash( $_POST[ $key ] ), $this->get_meta_type( $box ) );
 		}
 	}
 
@@ -426,5 +421,18 @@ class MetaBoxes extends Module {
 		$this->get_plugin()->wire( $instance );
 
 		return $instance;
+	}
+
+	/**
+	 * The fields module, asked for where it is needed.
+	 *
+	 * Not a property: building a module boots it, and a declaration would hide
+	 * that behind a type name. Meta is written through it so a box's value
+	 * passes the same guards a field registers.
+	 *
+	 * @return Fields
+	 */
+	private function fields(): Fields {
+		return $this->get_plugin()->get( Fields::class );
 	}
 }

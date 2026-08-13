@@ -46,8 +46,6 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *
  * return new class extends DebugSection {
  *
- *     public Options $options;
- *
  *     public function label(): string {
  *         return __( 'Acme', 'acme-plugin' );
  *     }

@@ -215,8 +215,7 @@ final class CronTest extends TestCase {
 	public function test_a_schedule_can_reference_a_registered_custom_interval(): void {
 		$this->write_schedule(
 			'custom',
-			"public function recurrence(): string { return \$this->cron->get_custom_interval_slug( 'every_15_minutes' ); }\n"
-				. "public \\Zestry\\WPToolkit\\Modules\\Cron\\Cron \$cron;\n"
+			"public function recurrence(): string { return \$this->get_plugin()->get( \\Zestry\\WPToolkit\\Modules\\Cron\\Cron::class )->get_custom_interval_slug( 'every_15_minutes' ); }\n"
 				. 'public function run(): void {}'
 		);
 

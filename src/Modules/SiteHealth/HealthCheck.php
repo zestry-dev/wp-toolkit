@@ -41,8 +41,6 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *
  * return new class extends HealthCheck {
  *
- *     public Options $options;
- *
  *     public function label(): string {
  *         return __( 'Acme API key', 'acme-plugin' );
  *     }

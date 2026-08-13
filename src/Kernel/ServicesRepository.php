@@ -174,7 +174,7 @@ class ServicesRepository {
 	 */
 	public function wire( PluginAware $instance ): PluginAware {
 		$instance->set_plugin( $this->plugin );
-		$instance->inject_modules();
+		$instance->_inject_services();
 		return $instance;
 	}
 
@@ -253,7 +253,7 @@ class ServicesRepository {
 	 */
 	private function instantiate( string $name, ?callable $configurator = null, bool $cache = false ): object {
 		// No dependency graph is ever built: cycle detection rides the PHP call
-		// stack. wire() -> inject_modules() -> get() -> instantiate() recurses
+		// stack. wire() -> _inject_services() -> get() -> instantiate() recurses
 		// per typed property, and $resolving marks a class for the duration of
 		// its own call, so re-entry means a cycle rather than a stack overflow.
 		if ( isset( $this->resolving[ $name ] ) ) {

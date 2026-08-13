@@ -53,8 +53,6 @@ A PHP timeout can still cut `run_pending()` off partway through a batch (some mi
 
 ```php
 class MyActivation extends ActivationHandler {
-    public Migrations $migrations;
-
     public function activate( bool $network_wide ): void {
         $this->migrations->run_pending();
     }

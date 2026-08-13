@@ -120,7 +120,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithPlugin;
  *
  * The same rules apply to anything wired outside the lifecycle -- a `Command`,
  * an `AjaxAction`, a `Route` -- since all of them run through the same
- * `inject_modules()` pass.
+ * `_inject_services()` pass.
  */
 abstract class Service implements PluginAware {
 

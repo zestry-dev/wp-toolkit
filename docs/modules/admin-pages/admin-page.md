@@ -101,7 +101,7 @@ return new class() extends AdminPage {
 	// keeps the notice off a refresh -- and off a bookmark, as `?updated=1` in
 	// the URL would not.
 	public function handle_submit(): void {
-		// Save $this->example. With `public Options $options;` declared above,
+		// Save $this->example. With `$this->get_plugin()->get( Options::class )`,
 		// that is $this->options->set( 'example_example', $this->example );
 
 		$this->set_flash( \__( 'Saved.', 'acme-plugin' ) );
@@ -584,7 +584,7 @@ final public function get_plugin(): Plugin
 | **Return** | The plugin instance |
 | **Throws** | — |
 
-Use it to reach something you did not declare a property for — a module you need in one method only, or one you look up by a name computed at runtime. For anything you use throughout the class, declare a typed property instead and let it be injected.
+How you reach a module, always: building one boots it, so the cost belongs at the call rather than hidden in a property declaration. Also how you reach a service you look up by a name computed at runtime.
 
 ```php
 $this->get_plugin()->get( Options::class )->get( 'api_key' );

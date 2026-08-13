@@ -11,19 +11,27 @@ namespace Zestry\WPToolkit\Kernel\Traits;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Exceptions\ModuleException;
 use Zestry\WPToolkit\Kernel\Attributes\NoInject;
 use Zestry\WPToolkit\Kernel\Plugin;
 
 /**
  * Provides plugin access and automatic dependency injection.
  *
- * Satisfies the PluginAware contract. A class using the trait requests a
- * service or a module by declaring a public or protected property typed as
- * that class -- for example `public Path $path;` -- which the plugin populates
- * via inject_modules() after set_plugin() runs. The type only has to be a
- * Service subclass, which every Module is, so both kinds are injected the same
- * way. Private properties are never injected (reflection cannot reach a private
+ * Satisfies the PluginAware contract. A class using the trait asks for a service
+ * by declaring a public or protected property typed as it -- for example
+ * `public Path $path;` -- which the plugin populates via _inject_services()
+ * after set_plugin() runs.
+ *
+ * **Services only.** A service is built when something asks for it and does
+ * nothing else, so a property is an honest way to ask. A module *boots* when it
+ * is built, and a property declaration hides that behind a type name -- so one
+ * typed as a Module throws, naming the property and the call to use instead.
+ * Ask for a module where you need it: `$this->get_plugin()->get( Options::class )`.
+ *
+ * Private properties are never injected (reflection cannot reach a private
  * property declared on an ancestor class). Mark a property with #[NoInject] to
  * exclude it from injection.
  *
@@ -56,7 +64,7 @@ trait WithPlugin {
 	 *
 	 * Left uninitialized until set_plugin() runs; it is the caller's
 	 * responsibility to call set_plugin() before get_plugin() or
-	 * inject_modules() are used, since PHP will throw on read of an
+	 * _inject_services() are used, since PHP will throw on read of an
 	 * uninitialized typed property rather than returning a default.
 	 *
 	 * @var Plugin
@@ -80,10 +88,9 @@ trait WithPlugin {
 	/**
 	 * Get the plugin this class belongs to.
 	 *
-	 * Use it to reach something you did not declare a property for -- a module
-	 * you need in one method only, or one you look up by a name computed at
-	 * runtime. For anything you use throughout the class, declare a typed
-	 * property instead and let it be injected.
+	 * How you reach a module, always: building one boots it, so the cost belongs
+	 * at the call rather than hidden in a property declaration. Also how you reach
+	 * a service you look up by a name computed at runtime.
 	 *
 	 * ```
 	 * $this->get_plugin()->get( Options::class )->get( 'api_key' );
@@ -103,13 +110,13 @@ trait WithPlugin {
 	 * before the initializer, command, or action handler runs.
 	 *
 	 * A property is injected when it is public or protected and typed as a
-	 * Service subclass, which includes every Module. Private ones never are, and
-	 * `#[NoInject]` opts one out. Scalars, unions, untyped properties and any
-	 * other class type are left alone as caller-owned state.
+	 * Service that is not a Module. Private ones never are, and `#[NoInject]`
+	 * opts one out. Scalars, unions, untyped properties and any other class type
+	 * are left alone as caller-owned state.
 	 *
 	 * @internal
 	 */
-	final public function inject_modules(): void {
+	final public function _inject_services(): void {
 		// Public and protected only: reflection cannot reach a private property
 		// declared on an ancestor class, so injecting private would work on the
 		// declaring class and silently fail in every subclass.
@@ -134,14 +141,29 @@ trait WithPlugin {
 
 			$type_name = $type->getName();
 
-			// Service, so both kinds inject: a Module is a Service that also
-			// acts on its own, and a property typed as either is wired the same.
 			if ( ! \is_subclass_of( $type_name, Service::class ) ) {
 				continue;
 			}
 
 			if ( $property->getAttributes( NoInject::class ) ) {
 				continue;
+			}
+
+			/*
+			 * Services only. A Service is built when something asks for it and
+			 * does nothing else, so a property is an honest way to ask. A Module
+			 * *boots* when it is built -- it binds hooks, walks a directory,
+			 * registers with WordPress -- and a property declaration hides that
+			 * behind a type name: the reader sees a dependency where the runtime
+			 * sees a whole feature coming up.
+			 *
+			 * Thrown rather than skipped. Skipping would leave a typed property
+			 * uninitialized, and the first read of it fatals with PHP's own
+			 * message about initialization, which names neither the module nor
+			 * the reason.
+			 */
+			if ( \is_subclass_of( $type_name, Module::class ) ) {
+				throw ModuleException::module_property( static::class, $property->getName(), $type_name );
 			}
 
 			// No setAccessible() call: relies on PHP 8.1+ implicit accessibility.

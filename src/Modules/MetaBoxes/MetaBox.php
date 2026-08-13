@@ -37,8 +37,6 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *
  * return new class extends MetaBox {
  *
- *     public Fields $fields;
- *
  *     public function title(): string {
  *         return __( 'Book details', 'acme-plugin' );
  *     }

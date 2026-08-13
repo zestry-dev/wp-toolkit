@@ -19,9 +19,8 @@ return new class() extends MetaBox {
 	// stores each user's collapsed and hidden preferences against that id, so
 	// renaming the file quietly resets them for everyone.
 
-	// Declare a public typed property to have a service or module injected,
-	// e.g. the Fields module to read and write registered post meta:
-	// public Fields $fields;
+	// Declare a public typed property to have a service injected. A module is
+	// asked for instead: `$this->get_plugin()->get( Fields::class )`.
 
 	public function title(): string {
 		return '{{title}}';

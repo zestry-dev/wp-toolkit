@@ -89,17 +89,44 @@ final class ContainerTest extends TestCase {
 	}
 
 	public function test_self_reference_during_boot_does_not_false_cycle(): void {
-		// Regression for the #1 bug: a module that wires a dependent
-		// referencing the module during its own boot must resolve cleanly and hand
-		// the dependent the in-flight instance.
+		// Regression for the #1 bug: a module that wires a dependent asking for
+		// the module during its own boot must resolve cleanly and hand back the
+		// in-flight instance. The singleton is cached before the initializer and
+		// boot run, which is what makes the re-entrant get() safe.
 		$module = $this->plugin->get( SelfWiringBooter::class );
 
 		$this->assertTrue( $module->is_booted() );
 		$this->assertSame(
 			$module,
-			$module->wired_dependent()->booter,
+			$module->wired_dependent()->booter(),
 			'The dependent wired during boot must receive the in-flight instance.'
 		);
+	}
+
+	/**
+	 * Injection is for services. Building a module boots it -- binding hooks,
+	 * walking a directory, registering with WordPress -- and a property
+	 * declaration hides all of that behind a type name.
+	 */
+	public function test_a_property_typed_as_a_module_is_refused(): void {
+		$this->expectException( ModuleException::class );
+		$this->expectExceptionMessage( '$booter' );
+
+		$this->plugin->wire( new ModuleInjectingDependent() );
+	}
+
+	/**
+	 * Thrown rather than skipped: skipping would leave the typed property
+	 * uninitialized, and the first read of it fatals with PHP's own message
+	 * about initialization, which names neither the module nor the reason.
+	 */
+	public function test_the_refusal_names_the_call_to_use_instead(): void {
+		try {
+			$this->plugin->wire( new ModuleInjectingDependent() );
+			$this->fail( 'Wiring should have refused the module property.' );
+		} catch ( ModuleException $exception ) {
+			$this->assertStringContainsString( 'get( SelfWiringBooter::class )', $exception->getMessage() );
+		}
 	}
 
 	public function test_bootable_module_is_booted_once_after_resolution(): void {
@@ -172,11 +199,20 @@ final class BootCounter extends Module {
 	}
 }
 
-final class SelfWiringDependent implements PluginAware {
+final class ModuleInjectingDependent implements PluginAware {
 
 	use \Zestry\WPToolkit\Kernel\Traits\WithPlugin;
 
 	public SelfWiringBooter $booter;
+}
+
+final class SelfWiringDependent implements PluginAware {
+
+	use \Zestry\WPToolkit\Kernel\Traits\WithPlugin;
+
+	public function booter(): SelfWiringBooter {
+		return $this->get_plugin()->get( SelfWiringBooter::class );
+	}
 }
 
 final class SelfWiringBooter extends Module {

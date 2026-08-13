@@ -25,11 +25,6 @@ use Zestry\WPToolkit\Modules\CLI\Command;
 class RunMigrationsCommand extends Command {
 
 	/**
-	 * @var Migrations
-	 */
-	public Migrations $migrations;
-
-	/**
 	 * Run every pending migration.
 	 *
 	 * Runs nothing at all when a pending migration looks like a rename of one
@@ -66,17 +61,17 @@ class RunMigrationsCommand extends Command {
 	 * @return void
 	 */
 	public function handle( array $args, array $assoc_args ): void {
-		$before = $this->migrations->get_ran_migrations();
+		$before = $this->migrations()->get_ran_migrations();
 		$force  = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
 
 		try {
-			$this->migrations->run_pending( $force );
+			$this->migrations()->run_pending( $force );
 		} catch ( \Throwable $exception ) {
 			$this->error( $exception->getMessage() );
 			return;
 		}
 
-		$ran_count = \count( $this->migrations->get_ran_migrations() ) - \count( $before );
+		$ran_count = \count( $this->migrations()->get_ran_migrations() ) - \count( $before );
 
 		if ( 0 === $ran_count ) {
 			$this->success( 'Already up to date -- nothing to run.' );
@@ -90,5 +85,17 @@ class RunMigrationsCommand extends Command {
 				1 === $ran_count ? '' : 's'
 			)
 		);
+	}
+
+	/**
+	 * The module that registered this command.
+	 *
+	 * Not a property: building a module boots it, and a declaration would hide
+	 * that behind a type name.
+	 *
+	 * @return Migrations
+	 */
+	private function migrations(): Migrations {
+		return $this->get_plugin()->get( Migrations::class );
 	}
 }

@@ -27,7 +27,7 @@ abstract class {{class_name}}{{extends}} {
 
 	// Declare a public or protected typed property to have a service injected
 	// into every file extending this, e.g.:
-	// public Options $options;
+	// public Path $path;
 
 	// An abstract method here is one each file must answer. A concrete one is an
 	// answer they all share, and the reason this class exists.

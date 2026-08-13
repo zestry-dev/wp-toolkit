@@ -24,7 +24,7 @@ use Zestry\WPToolkit\Kernel\Plugin;
  *
  * "Wiring" an object means performing both steps this interface exposes, in
  * order: assign the shared plugin with set_plugin(), then populate the object's
- * declared Service-typed properties with inject_modules(), which needs the
+ * declared service-typed properties with _inject_services(), which needs the
  * plugin already assigned to resolve them. Plugin::wire() and the module
  * repository perform exactly this sequence for every plugin-aware object they
  * construct, whether it is a registered module, a CLI command, or an AJAX
@@ -36,7 +36,7 @@ interface PluginAware {
 	/**
 	 * Assign the shared plugin instance.
 	 *
-	 * The first half of wiring. Must run before inject_modules(), which reads
+	 * The first half of wiring. Must run before _inject_services(), which reads
 	 * the plugin assigned here to resolve the object's declared dependencies.
 	 *
 	 * @param Plugin $plugin The plugin instance.
@@ -59,5 +59,5 @@ interface PluginAware {
 	 *
 	 * @return void
 	 */
-	public function inject_modules(): void;
+	public function _inject_services(): void;
 }

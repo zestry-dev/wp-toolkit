@@ -24,8 +24,6 @@ use WP_Post;
 
 return new class extends MetaBox {
 
-    public Fields $fields;
-
     public function title(): string {
         return __( 'Book details', 'acme-plugin' );
     }
@@ -79,9 +77,8 @@ return new class() extends MetaBox {
 	// stores each user's collapsed and hidden preferences against that id, so
 	// renaming the file quietly resets them for everyone.
 
-	// Declare a public typed property to have a service or module injected,
-	// e.g. the Fields module to read and write registered post meta:
-	// public Fields $fields;
+	// Declare a public typed property to have a service injected. A module is
+	// asked for instead: `$this->get_plugin()->get( Fields::class )`.
 
 	public function title(): string {
 		return 'Example';
@@ -355,7 +352,7 @@ final public function get_plugin(): Plugin
 | **Return** | The plugin instance |
 | **Throws** | — |
 
-Use it to reach something you did not declare a property for — a module you need in one method only, or one you look up by a name computed at runtime. For anything you use throughout the class, declare a typed property instead and let it be injected.
+How you reach a module, always: building one boots it, so the cost belongs at the call rather than hidden in a property declaration. Also how you reach a service you look up by a name computed at runtime.
 
 ```php
 $this->get_plugin()->get( Options::class )->get( 'api_key' );

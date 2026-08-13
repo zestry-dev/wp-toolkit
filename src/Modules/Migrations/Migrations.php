@@ -84,8 +84,6 @@ use Zestry\WPToolkit\Services\Path;
  *
  * ```
  * class MyActivation extends ActivationHandler {
- *     public Migrations $migrations;
- *
  *     public function activate( bool $network_wide ): void {
  *         $this->migrations->run_pending();
  *     }
@@ -127,13 +125,6 @@ class Migrations extends Module {
 	 * @var Path
 	 */
 	public Path $path;
-
-	/**
-	 * Options module injected by the plugin to track which migrations have run.
-	 *
-	 * @var Options
-	 */
-	public Options $options;
 
 	/**
 	 * Every migration identifier -- its filename without the `.php` extension,
@@ -500,6 +491,6 @@ class Migrations extends Module {
 	 * @return Options
 	 */
 	private function get_migrations_options(): Options {
-		return $this->options->group( self::OPTIONS_GROUP_NAME );
+		return $this->get_plugin()->get( Options::class )->group( self::OPTIONS_GROUP_NAME );
 	}
 }

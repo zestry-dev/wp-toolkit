@@ -7,6 +7,7 @@ namespace Zestry\WPToolkit\Tests\Integration\Modules;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Modules\Migrations\ListMigrationsCommand;
 use Zestry\WPToolkit\Modules\Migrations\Migrations;
+use Zestry\WPToolkit\Modules\Options;
 use Zestry\WPToolkit\Modules\Migrations\RenamedMigrationException;
 use Zestry\WPToolkit\Modules\Migrations\RunMigrationsCommand;
 use Zestry\WPToolkit\Tests\Support\TestCase;
@@ -44,7 +45,7 @@ final class MigrationsTest extends TestCase {
 		$this->write_migration( '20260101000000-first', "\$GLOBALS['zestry_migration_runs'] = ( \$GLOBALS['zestry_migration_runs'] ?? 0 ) + 1;" );
 
 		$GLOBALS['zestry_migration_runs'] = 0;
-		$this->boot_migrations_with_root( 'migrations' );
+		$this->plugin->get( Migrations::class );
 
 		$this->assertSame( 0, $GLOBALS['zestry_migration_runs'], 'Booting the module must not itself run migrations.' );
 		unset( $GLOBALS['zestry_migration_runs'] );
@@ -56,7 +57,7 @@ final class MigrationsTest extends TestCase {
 		$this->write_migration( '20260101000000-first', "\$GLOBALS['zestry_migration_order'][] = 'first';" );
 
 		$GLOBALS['zestry_migration_order'] = array();
-		$this->boot_migrations_with_root( 'migrations' )->run_pending();
+		$this->plugin->get( Migrations::class )->run_pending();
 
 		$this->assertSame( array( 'first', 'second' ), $GLOBALS['zestry_migration_order'] );
 		unset( $GLOBALS['zestry_migration_order'] );
@@ -65,7 +66,7 @@ final class MigrationsTest extends TestCase {
 	public function test_run_pending_is_callable_directly_for_activation_or_manual_use(): void {
 		$this->write_migration( '20260101000000-first', "\$GLOBALS['zestry_migration_runs'] = ( \$GLOBALS['zestry_migration_runs'] ?? 0 ) + 1;" );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 
 		$GLOBALS['zestry_migration_runs'] = 0;
 		$migrations->run_pending();
@@ -81,7 +82,7 @@ final class MigrationsTest extends TestCase {
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'boom' );
 
-		$this->boot_migrations_with_root( 'migrations' )->run_pending();
+		$this->plugin->get( Migrations::class )->run_pending();
 	}
 
 	public function test_a_migration_file_returning_the_wrong_type_throws(): void {
@@ -90,14 +91,14 @@ final class MigrationsTest extends TestCase {
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'must return an instance of' );
 
-		$this->boot_migrations_with_root( 'migrations' )->run_pending();
+		$this->plugin->get( Migrations::class )->run_pending();
 	}
 
 	public function test_get_discovered_migrations_lists_identifiers_in_filename_order_regardless_of_run_state(): void {
 		$this->write_migration( '20260102000000-second', '' );
 		$this->write_migration( '20260101000000-first', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		$this->assertSame(
@@ -110,7 +111,7 @@ final class MigrationsTest extends TestCase {
 	public function test_run_pending_clears_running_since_on_normal_completion(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		$this->assertNull(
@@ -122,7 +123,7 @@ final class MigrationsTest extends TestCase {
 	public function test_run_pending_leaves_running_since_set_when_a_migration_throws(): void {
 		$this->write_migration( '20260101000000-broken', "throw new \\RuntimeException( 'boom' );" );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 
 		try {
 			$migrations->run_pending();
@@ -140,7 +141,7 @@ final class MigrationsTest extends TestCase {
 		$this->write_migration( '20260101000000-first', "\$GLOBALS['zestry_migration_runs'] = ( \$GLOBALS['zestry_migration_runs'] ?? 0 ) + 1;" );
 
 		$GLOBALS['zestry_migration_runs'] = 0;
-		$this->boot_migrations_with_root( 'migrations' )->maybe_resume_interrupted_run();
+		$this->plugin->get( Migrations::class )->maybe_resume_interrupted_run();
 
 		$this->assertSame( 0, $GLOBALS['zestry_migration_runs'] );
 		unset( $GLOBALS['zestry_migration_runs'] );
@@ -149,7 +150,7 @@ final class MigrationsTest extends TestCase {
 	public function test_maybe_resume_interrupted_run_leaves_a_fresh_running_since_alone(): void {
 		$this->write_migration( '20260101000000-first', "\$GLOBALS['zestry_migration_runs'] = ( \$GLOBALS['zestry_migration_runs'] ?? 0 ) + 1;" );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$this->set_migrations_option( $migrations, 'running_since', time() );
 
 		$GLOBALS['zestry_migration_runs'] = 0;
@@ -165,7 +166,7 @@ final class MigrationsTest extends TestCase {
 		$this->write_migration( '20260101000000-first', '' );
 		$this->write_migration( '20260102000000-second', "\$GLOBALS['zestry_migration_runs'] = ( \$GLOBALS['zestry_migration_runs'] ?? 0 ) + 1;" );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$this->set_migrations_option( $migrations, 'ran', array( '20260101000000-first' ) );
 		$this->set_migrations_option( $migrations, 'running_since', time() - ( 10 * MINUTE_IN_SECONDS ) );
 
@@ -188,7 +189,7 @@ final class MigrationsTest extends TestCase {
 	public function test_on_boot_registers_migrations_run_and_migrations_list_commands_under_wp_cli(): void {
 		$this->define_wp_cli();
 
-		$this->boot_migrations_with_root( 'migrations' );
+		$this->plugin->get( Migrations::class );
 
 		$registered = array_column(
 			array_filter(
@@ -222,7 +223,7 @@ final class MigrationsTest extends TestCase {
 		// No commands/ directory is written at all.
 		$this->assertDirectoryDoesNotExist( $this->plugin_dir . '/commands' );
 
-		$this->boot_migrations_with_root( 'migrations' );
+		$this->plugin->get( Migrations::class );
 
 		$registered = array_column(
 			array_filter(
@@ -244,8 +245,10 @@ final class MigrationsTest extends TestCase {
 	public function test_run_migrations_command_runs_pending_and_reports_the_count(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$command             = new RunMigrationsCommand();
-		$command->migrations = $this->boot_migrations_with_root( 'migrations' );
+		$this->plugin->get( Migrations::class );
+
+		$command = new RunMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array() );
 
@@ -255,11 +258,12 @@ final class MigrationsTest extends TestCase {
 	public function test_run_migrations_command_reports_already_up_to_date(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
-		$command             = new RunMigrationsCommand();
-		$command->migrations = $migrations;
+
+		$command = new RunMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array() );
 
@@ -269,8 +273,10 @@ final class MigrationsTest extends TestCase {
 	public function test_run_migrations_command_reports_a_failing_migration_as_an_error_rather_than_throwing(): void {
 		$this->write_migration( '20260101000000-broken', "throw new \\RuntimeException( 'boom' );" );
 
-		$command             = new RunMigrationsCommand();
-		$command->migrations = $this->boot_migrations_with_root( 'migrations' );
+		$this->plugin->get( Migrations::class );
+
+		$command = new RunMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array() );
 
@@ -280,14 +286,15 @@ final class MigrationsTest extends TestCase {
 	public function test_list_migrations_command_reports_ran_and_pending_status(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		// Written only after the first migration already ran, so it stays pending.
 		$this->write_migration( '20260102000000-second', '' );
 
-		$command             = new ListMigrationsCommand();
-		$command->migrations = $migrations;
+
+		$command = new ListMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array() );
 
@@ -313,8 +320,10 @@ final class MigrationsTest extends TestCase {
 	public function test_list_migrations_command_honors_the_format_flag(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$command             = new ListMigrationsCommand();
-		$command->migrations = $this->boot_migrations_with_root( 'migrations' );
+		$this->plugin->get( Migrations::class );
+
+		$command = new ListMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array( 'format' => 'json' ) );
 
@@ -325,8 +334,10 @@ final class MigrationsTest extends TestCase {
 	public function test_list_migrations_command_reports_when_none_are_found(): void {
 		mkdir( $this->plugin_dir . '/migrations', 0777, true );
 
-		$command             = new ListMigrationsCommand();
-		$command->migrations = $this->boot_migrations_with_root( 'migrations' );
+		$this->plugin->get( Migrations::class );
+
+		$command = new ListMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array() );
 
@@ -347,7 +358,7 @@ final class MigrationsTest extends TestCase {
 				. "        \$this->db_delta( \"CREATE TABLE {\$table} (\\n id bigint(20) unsigned NOT NULL auto_increment,\\n PRIMARY KEY  (id)\\n) \" . \$this->get_charset_collate() . ';' );"
 		);
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$table      = $this->plugin->get( \Zestry\WPToolkit\Services\DB::class )->get_table( 'probe' );
 
 		try {
@@ -378,7 +389,7 @@ final class MigrationsTest extends TestCase {
 				. "        \$this->db_delta( \"CREATE TABLE {\$table} (\\n id notatype(20) NOT NULL\\n) \" . \$this->get_charset_collate() . ';' );"
 		);
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 
 		$GLOBALS['wpdb']->suppress_errors( true );
 
@@ -402,13 +413,14 @@ final class MigrationsTest extends TestCase {
 	public function test_list_reports_a_renamed_migration_as_pending_and_orphaned(): void {
 		$this->write_migration( '20260101000000-create-submissions-table', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		$this->rename_migration( '20260101000000-create-submissions-table', '20260101000000-create-submissions-tables' );
 
-		$command             = new ListMigrationsCommand();
-		$command->migrations = $migrations;
+
+		$command = new ListMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array() );
 
@@ -432,13 +444,14 @@ final class MigrationsTest extends TestCase {
 	public function test_list_reports_a_deleted_migration_as_orphaned(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		unlink( $this->plugin_dir . '/migrations/20260101000000-first.php' );
 
-		$command             = new ListMigrationsCommand();
-		$command->migrations = $migrations;
+
+		$command = new ListMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array() );
 
@@ -463,14 +476,15 @@ final class MigrationsTest extends TestCase {
 	public function test_orphans_come_after_every_on_disk_migration_however_they_sort(): void {
 		$this->write_migration( '20260101000000-earliest', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		unlink( $this->plugin_dir . '/migrations/20260101000000-earliest.php' );
 		$this->write_migration( '20260909000000-later', '' );
 
-		$command             = new ListMigrationsCommand();
-		$command->migrations = $migrations;
+
+		$command = new ListMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array() );
 
@@ -484,11 +498,12 @@ final class MigrationsTest extends TestCase {
 		$this->write_migration( '20260101000000-first', '' );
 		$this->write_migration( '20260102000000-second', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
-		$command             = new ListMigrationsCommand();
-		$command->migrations = $migrations;
+
+		$command = new ListMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array() );
 
@@ -501,13 +516,14 @@ final class MigrationsTest extends TestCase {
 	public function test_orphans_reach_every_format(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		unlink( $this->plugin_dir . '/migrations/20260101000000-first.php' );
 
-		$command             = new ListMigrationsCommand();
-		$command->migrations = $migrations;
+
+		$command = new ListMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array( 'format' => 'json' ) );
 
@@ -525,7 +541,7 @@ final class MigrationsTest extends TestCase {
 	public function test_run_refuses_a_probable_rename_and_runs_nothing(): void {
 		$this->write_migration( '20260101000000-create-submissions-table', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		$this->rename_migration( '20260101000000-create-submissions-table', '20260101000000-create-submissions-tables' );
@@ -552,7 +568,7 @@ final class MigrationsTest extends TestCase {
 	public function test_a_probable_rename_stops_unrelated_pending_migrations_too(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		$this->rename_migration( '20260101000000-first', '20260101000000-first-table' );
@@ -570,7 +586,7 @@ final class MigrationsTest extends TestCase {
 	public function test_force_runs_a_probable_rename_and_leaves_the_orphan_recorded(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		$this->rename_migration( '20260101000000-first', '20260101000000-first-table' );
@@ -601,7 +617,7 @@ final class MigrationsTest extends TestCase {
 	public function test_a_deleted_migration_does_not_block_an_unrelated_run(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		unlink( $this->plugin_dir . '/migrations/20260101000000-first.php' );
@@ -620,7 +636,7 @@ final class MigrationsTest extends TestCase {
 		$this->write_migration( '20260101000000-first', '' );
 		$this->write_migration( '20260202000000-second', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		$this->rename_migration( '20260101000000-first', '20260101000000-first-table' );
@@ -644,7 +660,7 @@ final class MigrationsTest extends TestCase {
 	public function test_maybe_resume_interrupted_run_proceeds_despite_a_probable_rename(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		$this->rename_migration( '20260101000000-first', '20260101000000-first-table' );
@@ -658,13 +674,14 @@ final class MigrationsTest extends TestCase {
 	public function test_run_migrations_command_reports_a_probable_rename_as_an_error(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		$this->rename_migration( '20260101000000-first', '20260101000000-first-table' );
 
-		$command             = new RunMigrationsCommand();
-		$command->migrations = $migrations;
+
+		$command = new RunMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array() );
 
@@ -677,13 +694,14 @@ final class MigrationsTest extends TestCase {
 	public function test_run_migrations_command_honors_the_force_flag(): void {
 		$this->write_migration( '20260101000000-first', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		$this->rename_migration( '20260101000000-first', '20260101000000-first-table' );
 
-		$command             = new RunMigrationsCommand();
-		$command->migrations = $migrations;
+
+		$command = new RunMigrationsCommand();
+		$this->plugin->wire( $command );
 
 		$command->handle( array(), array( 'force' => true ) );
 
@@ -699,7 +717,7 @@ final class MigrationsTest extends TestCase {
 	public function test_an_identifier_without_a_timestamp_is_never_a_probable_rename(): void {
 		$this->write_migration( 'create-submissions-table', '' );
 
-		$migrations = $this->boot_migrations_with_root( 'migrations' );
+		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
 		$this->rename_migration( 'create-submissions-table', 'create-submissions-tables' );
@@ -741,25 +759,6 @@ final class MigrationsTest extends TestCase {
 	}
 
 	/**
-	 * Register Migrations with an initializer pointing it at $root, then
-	 * resolve it. Resolution wires the module and boots it, which only
-	 * registers the migrations run/list WP-CLI commands (under WP-CLI) --
-	 * it does not itself walk the migrations directory or run anything.
-	 *
-	 * @param string $root Plugin-relative migrations directory.
-	 * @return Migrations The resolved module.
-	 */
-	private function boot_migrations_with_root( string $root ): Migrations {
-		$this->plugin->configure(
-			Migrations::class,
-			static function ( Migrations $migrations ) use ( $root ): void {
-			}
-		);
-
-		return $this->plugin->get( Migrations::class );
-	}
-
-	/**
 	 * Read a value from Migrations' own dedicated Options group directly, the
 	 * same group `get_migrations_options()` resolves internally, so a test can
 	 * observe running_since without a public accessor for it.
@@ -769,7 +768,7 @@ final class MigrationsTest extends TestCase {
 	 * @return mixed
 	 */
 	private function migrations_option( Migrations $migrations, string $key ) {
-		return $migrations->options->group( Migrations::OPTIONS_GROUP_NAME )->get( $key );
+		return $this->plugin->get( Options::class )->group( Migrations::OPTIONS_GROUP_NAME )->get( $key );
 	}
 
 	/**
@@ -783,7 +782,7 @@ final class MigrationsTest extends TestCase {
 	 * @return void
 	 */
 	private function set_migrations_option( Migrations $migrations, string $key, $value ): void {
-		$group = $migrations->options->group( Migrations::OPTIONS_GROUP_NAME );
+		$group = $this->plugin->get( Options::class )->group( Migrations::OPTIONS_GROUP_NAME );
 		$group->set( $key, $value );
 		$group->save();
 	}

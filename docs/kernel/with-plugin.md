@@ -7,7 +7,11 @@
 
 Provides plugin access and automatic dependency injection.
 
-Satisfies the PluginAware contract. A class using the trait requests a service or a module by declaring a public or protected property typed as that class — for example `public Path $path;` — which the plugin populates via inject_modules() after set_plugin() runs. The type only has to be a Service subclass, which every Module is, so both kinds are injected the same way. Private properties are never injected (reflection cannot reach a private property declared on an ancestor class). Mark a property with #[NoInject] to exclude it from injection.
+Satisfies the PluginAware contract. A class using the trait asks for a service by declaring a public or protected property typed as it — for example `public Path $path;` — which the plugin populates via _inject_services() after set_plugin() runs.
+
+**Services only.** A service is built when something asks for it and does nothing else, so a property is an honest way to ask. A module *boots* when it is built, and a property declaration hides that behind a type name — so one typed as a Module throws, naming the property and the call to use instead. Ask for a module where you need it: `$this->get_plugin()->get( Options::class )`.
+
+Private properties are never injected (reflection cannot reach a private property declared on an ancestor class). Mark a property with #[NoInject] to exclude it from injection.
 
 Declare injected dependencies `public` by convention: every module and DevTools command in this toolkit does, which keeps a module's dependencies uniformly inspectable. `protected` is equally supported by the mechanism and is the right choice only when a subclass hierarchy genuinely needs the dependency hidden from callers.
 
@@ -41,7 +45,7 @@ final public function get_plugin(): Plugin
 | **Return** | The plugin instance |
 | **Throws** | — |
 
-Use it to reach something you did not declare a property for — a module you need in one method only, or one you look up by a name computed at runtime. For anything you use throughout the class, declare a typed property instead and let it be injected.
+How you reach a module, always: building one boots it, so the cost belongs at the call rather than hidden in a property declaration. Also how you reach a service you look up by a name computed at runtime.
 
 ```php
 $this->get_plugin()->get( Options::class )->get( 'api_key' );

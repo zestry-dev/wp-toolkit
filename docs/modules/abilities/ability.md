@@ -165,10 +165,8 @@ return new class() extends Ability {
 		return array( 'ok' => true );
 	}
 
-	// Anything a Module or Service can be injected into this can too: declare
-	// a typed public property, above, and do the real work.
-	//
-	// public Options $options;
+	// Declare a typed public property, above, to have a service injected. A
+	// module is asked for instead: `$this->get_plugin()->get( Options::class )`.
 
 	// File this under a category other than your plugin's own -- one of
 	// WordPress's ('site', 'user'), or one you declared with
@@ -485,7 +483,7 @@ final public function get_plugin(): Plugin
 | **Return** | The plugin instance |
 | **Throws** | — |
 
-Use it to reach something you did not declare a property for — a module you need in one method only, or one you look up by a name computed at runtime. For anything you use throughout the class, declare a typed property instead and let it be injected.
+How you reach a module, always: building one boots it, so the cost belongs at the call rather than hidden in a property declaration. Also how you reach a service you look up by a name computed at runtime.
 
 ```php
 $this->get_plugin()->get( Options::class )->get( 'api_key' );

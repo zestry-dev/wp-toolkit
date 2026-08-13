@@ -25,11 +25,6 @@ use Zestry\WPToolkit\Modules\CLI\Command;
 class ListMigrationsCommand extends Command {
 
 	/**
-	 * @var Migrations
-	 */
-	public Migrations $migrations;
-
-	/**
 	 * List every discovered migration and whether it has run.
 	 *
 	 * Three statuses, all answering the same question -- will `migrations run`
@@ -71,7 +66,7 @@ class ListMigrationsCommand extends Command {
 	 * @return void
 	 */
 	public function handle( array $args, array $assoc_args ): void {
-		$ran = $this->migrations->get_ran_migrations();
+		$ran = $this->migrations()->get_ran_migrations();
 
 		$items = \array_map(
 			static function ( string $identifier ) use ( $ran ): array {
@@ -80,13 +75,13 @@ class ListMigrationsCommand extends Command {
 					'status'     => \in_array( $identifier, $ran, true ) ? 'ran' : 'pending',
 				);
 			},
-			$this->migrations->get_discovered_migrations()
+			$this->migrations()->get_discovered_migrations()
 		);
 
 		// Appended rather than merged and re-sorted: an orphan has no file to
 		// sort against, and keeping them in the order they ran is the only
 		// ordering the ran-list can supply.
-		foreach ( $this->migrations->get_orphaned_migrations() as $identifier ) {
+		foreach ( $this->migrations()->get_orphaned_migrations() as $identifier ) {
 			$items[] = array(
 				'identifier' => $identifier,
 				'status'     => 'orphaned',
@@ -96,5 +91,17 @@ class ListMigrationsCommand extends Command {
 		$format = \WP_CLI\Utils\get_flag_value( $assoc_args, 'format', 'table' );
 
 		\WP_CLI\Utils\format_items( $format, $items, array( 'identifier', 'status' ) );
+	}
+
+	/**
+	 * The module that registered this command.
+	 *
+	 * Not a property: building a module boots it, and a declaration would hide
+	 * that behind a type name.
+	 *
+	 * @return Migrations
+	 */
+	private function migrations(): Migrations {
+		return $this->get_plugin()->get( Migrations::class );
 	}
 }
