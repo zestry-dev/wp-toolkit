@@ -16,9 +16,6 @@ Needs the `migrations` module, so run `wp zt add module migrations` first if you
 - **`<name>`**  
   The local description, e.g. 'create-books-table'. The file is written to `migrations/{timestamp}-{name}.php`, and that timestamp prefix is what makes migrations run in the order they were created. Never rename a migration that may already have run somewhere — the whole filename is its identity, so a renamed one reads as never having run. `migrations run` refuses when it spots that, but only once it has already happened.
 
-- **`[--dir=<dir>]`**  
-  Write into this plugin-relative directory instead of `migrations` — pass it when you have pointed Migrations's migrations root somewhere other than its default.
-
 - **`[--yes]`**  
   Overwrite an existing file without asking, for an unattended run.
 

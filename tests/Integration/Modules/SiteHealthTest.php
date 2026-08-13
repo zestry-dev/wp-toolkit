@@ -104,19 +104,6 @@ final class SiteHealthTest extends TestCase {
 		$this->assertSame( array(), $this->boot()->filter_site_status_tests( array() ) );
 	}
 
-	/**
-	 * A directory named by hand and then missing is a typo worth failing on.
-	 */
-	public function test_a_named_directory_that_is_missing_throws(): void {
-		$module = $this->plugin->get( SiteHealth::class );
-		$module->set_checks_root( 'nowhere' );
-
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Health checks root directory does not exist' );
-
-		$module->get_discovered_checks();
-	}
-
 	public function test_a_file_returning_the_wrong_type_throws(): void {
 		file_put_contents( $this->plugin_dir . '/health-checks/bad.php', "<?php\nreturn 'nope';\n" );
 
@@ -254,15 +241,6 @@ final class SiteHealthTest extends TestCase {
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'must return an instance of' );
 		$this->boot()->filter_debug_information( array() );
-	}
-
-	public function test_a_missing_sections_directory_named_by_hand_throws(): void {
-		$health = $this->boot();
-		$health->set_sections_root( 'nowhere' );
-
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Debug sections root directory does not exist' );
-		$health->filter_debug_information( array() );
 	}
 
 	/**

@@ -385,14 +385,6 @@ final class AdminPagesTest extends TestCase {
 		$this->assertContains( 'zestry-test-under-tools', $children, 'Registered under the verbatim WP menu slug.' );
 	}
 
-	public function test_missing_pages_directory_throws(): void {
-		$this->admin_pages()->set_pages_root( 'no-such-pages-dir' );
-
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Pages root directory does not exist' );
-		do_action( 'admin_menu' );
-	}
-
 	public function test_a_page_file_returning_the_wrong_type_throws(): void {
 		$this->write_plugin_file( 'admin-pages/bad.php', "<?php\nreturn 42;\n" );
 

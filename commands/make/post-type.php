@@ -34,10 +34,6 @@ return new class() extends MakeCommand {
 	 * slug (WordPress caps a post type name at 20 characters), so pick
 	 * something short and globally unique.
 	 *
-	 * [--dir=<dir>]
-	 * : Write into this plugin-relative directory instead of `post-types` --
-	 * pass it when you have pointed PostTypes's post types root somewhere other
-	 * than its default.
 	 *
 	 * [--singular=<singular>]
 	 * : The singular display name, e.g. 'Book'. Defaults to the title-cased

@@ -18,9 +18,6 @@ WordPress matches both halves of a block name against `^[a-z0-9-]+$`, so a name 
 - **`<name>`**  
   The local name, e.g. 'hero'. Becomes the directory (`src/blocks/{name}/`) and the second half of the block's own name, `{plugin-slug}/{name}`. **The slug, not the text domain.** The two are answered separately and are often equal, so it is worth checking which you have: the module decides a block is yours by comparing the namespace in its name against your slug, and looks for its PHP under a `supports.{plugin-slug}-php` entry. A block namespaced anything else registers, works in the editor, and renders nothing on the front end.
 
-- **`[--dir=<dir>]`**  
-  Write into this plugin-relative directory instead of `src/blocks` — note this is the *source* directory `wp-scripts` compiles from, not the built one the Blocks module discovers.
-
 - **`[--dynamic]`**  
   Render the block in PHP. Adds a `block.php` returning a Block subclass, and the `supports.{plugin-slug}-php` entry pointing at it. Without this the block is static: its markup is whatever the editor saved. Prompted for when omitted. Two questions settle it. Does the output depend on anything outside the block's own attributes — a query, an option, the current user, another post? Then it has to be dynamic. Otherwise, is the markup settled? Static markup is saved into `post_content`, so it survives the plugin being deactivated, but changing it later means owing a `deprecated` entry and a migration or every saved post shows "This block contains unexpected or invalid content". Dynamic markup is free to change forever, and renders nothing at all once the plugin is gone.
 

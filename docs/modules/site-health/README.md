@@ -73,14 +73,7 @@ return new class extends DebugSection {
 
 ## Changing the defaults
 
-Point it at different directories
-
-```php
-SiteHealth::class => static function ( SiteHealth $health ): void {
-    $health->set_checks_root( 'diagnostics' );
-    $health->set_sections_root( 'diagnostics/info' );
-},
-```
+`SiteHealth` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( SiteHealth::class )`, or declare a property of its type and have it injected.
 
 ## Writing a HealthCheck
 
@@ -98,59 +91,23 @@ Shipped with this module, and written against directly:
 
 ## Constants
 
-### `DEFAULT_CHECKS_ROOT`
+### `CHECKS_ROOT`
 
 ```php
-const DEFAULT_CHECKS_ROOT = 'health-checks';
+const CHECKS_ROOT = 'health-checks';
 ```
 
 Where checks are discovered, relative to the plugin root.
 
-### `DEFAULT_SECTIONS_ROOT`
+### `SECTIONS_ROOT`
 
 ```php
-const DEFAULT_SECTIONS_ROOT = 'debug-sections';
+const SECTIONS_ROOT = 'debug-sections';
 ```
 
 Where debug sections are discovered, relative to the plugin root.
 
 ## Methods
-
-### `set_checks_root( $root )`
-
-Read checks from a different directory.
-
-```php
-public function set_checks_root( string $root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$root` — Directory relative to the plugin root |
-| **Return** | — |
-| **Throws** | — |
-
-Call this before the module boots — from its `bootstrap.php` entry. Naming a directory that does not exist is an error and throws at boot, where leaving the default alone and having no such directory simply means you have no checks yet.
-
-<br>
-
-### `set_sections_root( $root )`
-
-Read debug sections from a different directory.
-
-```php
-public function set_sections_root( string $root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$root` — Directory relative to the plugin root |
-| **Return** | — |
-| **Throws** | — |
-
-The same rules as `set_checks_root()`: call it before the module boots, and a directory named here and then missing throws.
-
-<br>
 
 ### `get_discovered_checks()`
 
@@ -164,7 +121,7 @@ public function get_discovered_checks(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | Wired instances keyed by identifier |
-| **Throws** | `DiscoveryException` — When a directory named by set_checks_root() does not exist, or a file returns the wrong value |
+| **Throws** | `DiscoveryException` — When a file returns the wrong value |
 
 <br>
 
@@ -180,7 +137,7 @@ public function get_discovered_sections(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | Wired instances keyed by identifier |
-| **Throws** | `DiscoveryException` — When a directory named by set_sections_root() does not exist, or a file returns the wrong value |
+| **Throws** | `DiscoveryException` — When a file returns the wrong value |
 
 <br>
 

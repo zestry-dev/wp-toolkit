@@ -43,7 +43,7 @@ return new class() extends MakeCommand {
 	 * : The class name, e.g. 'EntityField'. Becomes both the filename
 	 * (`{name}.php`) and the class name -- give it exactly as it should appear
 	 * after `abstract class`. Qualify it to group: `Fields/EntityField` writes
-	 * `Abstracts/Fields/EntityField.php`. There is no `--dir`, since PSR-4 ties
+	 * `Abstracts/Fields/EntityField.php`. The destination is fixed, since PSR-4 ties
 	 * a namespace to one directory and the name decides both.
 	 *
 	 * [--for=<type>]
@@ -127,10 +127,6 @@ return new class() extends MakeCommand {
 	 */
 	protected function get_default_dir( array $config ): string {
 		return trim( $config['root'], '/\\' ) . '/Abstracts';
-	}
-
-	protected function allows_custom_dir(): bool {
-		return false;
 	}
 
 	/**

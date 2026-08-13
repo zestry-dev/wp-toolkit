@@ -99,8 +99,6 @@ Read them from elsewhere, or group them
 
 ```php
 IconsLibrary::class => static function ( IconsLibrary $icons ): void {
-    $icons->set_svg_icons_root( 'assets/svg-icons' );
-
     $icons->on_wp_init(
         static function ( IconsLibrary $icons ): void {
             $icons->set_default_collection_details(
@@ -120,33 +118,15 @@ You have one collection already, slugged with your plugin slug and labelled `{sl
 
 ## Constants
 
-### `DEFAULT_SVG_ICONS_ROOT`
+### `SVG_ICONS_ROOT`
 
 ```php
-const DEFAULT_SVG_ICONS_ROOT = 'svg-icons';
+const SVG_ICONS_ROOT = 'svg-icons';
 ```
 
 Where icons are discovered, relative to the plugin root.
 
 ## Methods
-
-### `set_svg_icons_root( $root )`
-
-Read icons from a different directory.
-
-```php
-public function set_svg_icons_root( string $root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$root` — Directory relative to the plugin root |
-| **Return** | — |
-| **Throws** | — |
-
-Call this before the module boots — from its `bootstrap.php` entry. Naming a directory that does not exist is an error and throws, where leaving the default alone and having no such directory simply means you have no icons yet.
-
-<br>
 
 ### `add_collections( $collections )`
 
@@ -228,7 +208,7 @@ public function get_discovered_icons(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | `array` |
-| **Throws** | `DiscoveryException` — When a directory named by set_svg_icons_root() does not exist, or a name cannot be registered |
+| **Throws** | `DiscoveryException` — When a name cannot be registered |
 
 <br>
 

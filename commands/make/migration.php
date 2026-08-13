@@ -35,10 +35,6 @@ return new class() extends MakeCommand {
 	 * its identity, so a renamed one reads as never having run. `migrations
 	 * run` refuses when it spots that, but only once it has already happened.
 	 *
-	 * [--dir=<dir>]
-	 * : Write into this plugin-relative directory instead of `migrations` --
-	 * pass it when you have pointed Migrations's migrations root somewhere
-	 * other than its default.
 	 *
 	 * [--yes]
 	 * : Overwrite an existing file without asking, for an unattended run.

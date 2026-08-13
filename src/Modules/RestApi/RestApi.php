@@ -125,15 +125,6 @@ use Zestry\WPToolkit\Services\Request\Request;
  * (see {@see RestRoute::schema()}) is published only when the route returns
  * one.
  *
- * @setup
- * // bootstrap.php
- * return array(
- * ```
- * RestApi::class => static function ( RestApi $api ): void {
- *     $api->set_routes_root( 'routes' );
- * },
- * ```
- * );
  */
 class RestApi extends Module {
 
@@ -142,7 +133,7 @@ class RestApi extends Module {
 	/**
 	 * Default plugin-relative directory of route files.
 	 */
-	const DEFAULT_ROUTES_ROOT = 'routes';
+	const ROUTES_ROOT = 'routes';
 
 	/**
 	 * Path module injected by the plugin to resolve the routes directory.
@@ -160,42 +151,6 @@ class RestApi extends Module {
 	public Request $request;
 
 	/**
-	 * Plugin-relative directory of route files.
-	 *
-	 * @var string
-	 */
-	private string $routes_root = self::DEFAULT_ROUTES_ROOT;
-
-	/**
-	 * Whether the directory above was named deliberately.
-	 *
-	 * A missing directory means two different things. Named by
-	 * {@see set_routes_root()} and absent: a typo, and registering nothing
-	 * silently would hide it. Never named, and the default is absent: this
-	 * plugin has none of these yet, which is ordinary -- adding the module
-	 * before writing the first file should not take the site down.
-	 *
-	 * @var bool
-	 */
-	private bool $routes_root_was_set = false;
-
-	/**
-	 * Set the plugin-relative directory that contains route files.
-	 *
-	 * Call this from the module initializer before the plugin boots the module
-	 * to override the default `routes` directory. The root is read inside the
-	 * `rest_api_init` callback, so a call made after that hook has run has no
-	 * effect on the routes already registered.
-	 *
-	 * @param string $routes_root Plugin-relative directory of route files.
-	 * @return void
-	 */
-	public function set_routes_root( string $routes_root ): void {
-		$this->routes_root         = $routes_root;
-		$this->routes_root_was_set = true;
-	}
-
-	/**
 	 * Discover route files, wire them, and register each with WordPress.
 	 *
 	 * Runs on `rest_api_init`, the hook WordPress itself uses to collect every
@@ -205,23 +160,19 @@ class RestApi extends Module {
 	 * every request that reaches `rest_api_init`.
 	 *
 	 * @return void
-	 * @throws DiscoveryException When a routes directory named by set_routes_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 * @throws \InvalidArgumentException When a route's placeholder-to-property binding is invalid.
 	 *
 	 * @internal
 	 */
 	public function register_routes(): void {
-		$root_dir = $this->path->get_plugin_path( $this->routes_root );
+		$root_dir = $this->path->get_plugin_path( self::ROUTES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
-			if ( ! $this->routes_root_was_set ) {
-				return;
-			}
-
-			throw DiscoveryException::missing_root( 'Routes', $root_dir, 'set_routes_root()' );
+			return;
 		}
 
 		$files = $this->walk_folder( $root_dir, array( 'php' ), 0 );

@@ -16,9 +16,6 @@ Needs the `rest-api` module, so run `wp zt add module rest-api` first if you hav
 - **`<name>`**  
   The local name, e.g. 'get-widget'. Becomes the filename (`{name}.php`) under `routes/`.
 
-- **`[--dir=<dir>]`**  
-  Write into this plugin-relative directory instead of `routes` — pass it when you have pointed RestApi's routes root somewhere other than its default.
-
 - **`[--method=<method>]`**  
   The HTTP method: get, post, put, patch, or delete. Prompted for when not given.
 

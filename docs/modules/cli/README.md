@@ -16,7 +16,7 @@ Command files can be organized in subdirectories. A file at `commands/cache/clea
 > [!IMPORTANT]
 > **A name can be a command or a namespace, never both.** WP-CLI does not allow a command to have subcommands, so `commands/cache.php` cannot sit alongside a `commands/cache/` directory. Pick one: either `cache` is a command, or it is the namespace holding `cache clear`. Discovery checks this before loading anything and throws `\InvalidArgumentException` naming both files if they collide, which aborts the `wp` invocation.
 
-A discovered file that returns anything other than a `Command` throws `DiscoveryException`, as does a commands directory you named yourself with `set_commands_root()` that does not exist.
+A discovered file that returns anything other than a `Command` throws `DiscoveryException`, as does a commands directory you named yourself with a file beneath `commands/` that returns something other than a Command.
 
 [Adding it](#adding-it) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Command](#writing-a-command) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
@@ -38,16 +38,7 @@ return array(
 
 ## Changing the defaults
 
-Register an initializer only to point the module at a non-default directory.
-
-```php
-// bootstrap.php
-return array(
-    CLI::class => static function ( CLI $cli ): void {
-        $cli->set_commands_root( 'cli/commands' );
-    },
-);
-```
+`CLI` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( CLI::class )`, or declare a property of its type and have it injected.
 
 ## Writing a Command
 
@@ -55,35 +46,15 @@ A file in `commands/` returns a [`Command`](command.md) instance, which `wp zt m
 
 ## Constants
 
-### `DEFAULT_COMMANDS_ROOT`
+### `COMMANDS_ROOT`
 
 ```php
-const DEFAULT_COMMANDS_ROOT = 'commands';
+const COMMANDS_ROOT = 'commands';
 ```
 
 Default plugin-relative directory of command files.
 
 ## Methods
-
-### `set_commands_root( $commands_root )`
-
-Set the plugin-relative directory that contains command files.
-
-```php
-public function set_commands_root( string $commands_root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$commands_root` — Plugin-relative directory of command files |
-| **Return** | — |
-| **Throws** | `DiscoveryException` — When the directory named here does not exist at boot, or a file beneath it returns something other than a Command instance |
-
-Call this from the module initializer before the plugin boots the module to override the default `commands` directory.
-
-Naming a directory is what makes its absence fatal. Discovery runs at `init`, and if the directory you name here is not there it throws a `DiscoveryException` then — so a typo in your initializer fails loud on every `wp` invocation rather than registering nothing and leaving you to wonder why your commands are missing. The *default* `commands` directory being absent is deliberately not an error: a plugin that has not written its first command yet should still boot.
-
-<br>
 
 ### `register_command( $name, $instance )`
 

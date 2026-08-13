@@ -296,40 +296,6 @@ final class PostTypesTest extends TestCase {
 		$post_types->get_post_type_of( $instance );
 	}
 
-	public function test_missing_post_types_directory_throws(): void {
-		mkdir( $this->plugin_dir . '/taxonomies', 0777, true );
-
-		$this->plugin->configure(
-			PostTypes::class,
-			function ( PostTypes $post_types ): void {
-				$post_types->set_post_types_root( 'does-not-exist' );
-				$post_types->set_taxonomies_root( 'taxonomies' );
-			}
-		);
-
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Post types root directory does not exist' );
-
-		$this->plugin->get( PostTypes::class );
-	}
-
-	public function test_missing_taxonomies_directory_throws(): void {
-		mkdir( $this->plugin_dir . '/post-types', 0777, true );
-
-		$this->plugin->configure(
-			PostTypes::class,
-			function ( PostTypes $post_types ): void {
-				$post_types->set_post_types_root( 'post-types' );
-				$post_types->set_taxonomies_root( 'does-not-exist' );
-			}
-		);
-
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Taxonomies root directory does not exist' );
-
-		$this->plugin->get( PostTypes::class );
-	}
-
 	/**
 	 * A plugin registering post types but no taxonomies is ordinary, and this
 	 * is the only module with a second root -- so the default `taxonomies/`
@@ -347,7 +313,6 @@ final class PostTypesTest extends TestCase {
 		$this->plugin->configure(
 			PostTypes::class,
 			static function ( PostTypes $post_types ): void {
-				$post_types->set_post_types_root( 'post-types' );
 			}
 		);
 
@@ -430,8 +395,6 @@ final class PostTypesTest extends TestCase {
 		$this->plugin->configure(
 			PostTypes::class,
 			static function ( PostTypes $post_types ) use ( $post_types_root, $taxonomies_root ): void {
-				$post_types->set_post_types_root( $post_types_root );
-				$post_types->set_taxonomies_root( $taxonomies_root );
 			}
 		);
 

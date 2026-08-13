@@ -77,10 +77,6 @@ return new class() extends MakeCommand {
 	 * namespaced anything else registers, works in the editor, and renders
 	 * nothing on the front end.
 	 *
-	 * [--dir=<dir>]
-	 * : Write into this plugin-relative directory instead of `src/blocks` --
-	 * note this is the *source* directory `wp-scripts` compiles from, not the
-	 * built one the Blocks module discovers.
 	 *
 	 * [--dynamic]
 	 * : Render the block in PHP. Adds a `block.php` returning a Block subclass,

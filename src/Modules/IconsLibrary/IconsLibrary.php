@@ -114,8 +114,6 @@ use Zestry\WPToolkit\Services\Path;
  * @setup Read them from elsewhere, or group them
  * ```
  * IconsLibrary::class => static function ( IconsLibrary $icons ): void {
- *     $icons->set_svg_icons_root( 'assets/svg-icons' );
- *
  *     $icons->on_wp_init(
  *         static function ( IconsLibrary $icons ): void {
  *             $icons->set_default_collection_details(
@@ -143,26 +141,12 @@ class IconsLibrary extends Module {
 	/**
 	 * Where icons are discovered, relative to the plugin root.
 	 */
-	const DEFAULT_SVG_ICONS_ROOT = 'svg-icons';
+	const SVG_ICONS_ROOT = 'svg-icons';
 
 	/**
 	 * @var Path
 	 */
 	public Path $path;
-
-	/**
-	 * The directory icons are read from.
-	 *
-	 * @var string
-	 */
-	private string $svg_icons_root = self::DEFAULT_SVG_ICONS_ROOT;
-
-	/**
-	 * Whether the root above was named rather than defaulted.
-	 *
-	 * @var bool
-	 */
-	private bool $svg_icons_root_was_set = false;
 
 	/**
 	 * Discovered icons as local name => absolute path, once the directory has been walked.
@@ -191,25 +175,6 @@ class IconsLibrary extends Module {
 	 * @var array<string, string>
 	 */
 	private array $registered = array();
-
-	/**
-	 * Read icons from a different directory.
-	 *
-	 * Call this before the module boots -- from its `bootstrap.php` entry. Naming
-	 * a directory that does not exist is an error and throws, where leaving the
-	 * default alone and having no such directory simply means you have no icons
-	 * yet.
-	 *
-	 * @param string $root Directory relative to the plugin root.
-	 * @return void
-	 */
-	public function set_svg_icons_root( string $root ): void {
-		$this->svg_icons_root         = \trim( $root, '/\\' );
-		$this->svg_icons_root_was_set = true;
-
-		// Anything already read came from the old directory.
-		$this->discovered = null;
-	}
 
 	/**
 	 * Declare icon collections of your own.
@@ -307,26 +272,22 @@ class IconsLibrary extends Module {
 	 * Every discovered icon, as local name => absolute path.
 	 *
 	 * @return array<string, string>
-	 * @throws DiscoveryException When a directory named by set_svg_icons_root() does not exist, or a name cannot be registered.
+	 * @throws DiscoveryException When a name cannot be registered.
 	 */
 	public function get_discovered_icons(): array {
 		if ( null !== $this->discovered ) {
 			return $this->discovered;
 		}
 
-		$root_dir = $this->path->get_plugin_path( $this->svg_icons_root );
+		$root_dir = $this->path->get_plugin_path( self::SVG_ICONS_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
-			if ( ! $this->svg_icons_root_was_set ) {
-				$this->discovered = array();
+			$this->discovered = array();
 
-				return $this->discovered;
-			}
-
-			throw DiscoveryException::missing_root( 'SVG icons', $root_dir, 'set_svg_icons_root()' );
+			return $this->discovered;
 		}
 
 		$this->discovered = array();

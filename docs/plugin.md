@@ -55,12 +55,10 @@ use Acme\Plugin\Core\Modules\Ajax\Ajax;
 use Acme\Plugin\Core\Modules\CLI\CLI;
 
 return array(
-    Ajax::class => static function ( Ajax $ajax ): void {
-        $ajax->set_actions_root( 'actions' );
+    Cron::class => static function ( Cron $cron ): void {
+        $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
     },
-    CLI::class => static function ( CLI $cli ): void {
-        $cli->set_commands_root( 'commands' );
-    },
+    Ajax::class,
     AdminPages::class,
 );
 ```
@@ -76,12 +74,12 @@ function acme_plugin(): Plugin {
 
     $plugin ??= ( new Plugin( __FILE__, 'acme-plugin' ) )
         ->configure(
-            Ajax::class,
-            static function ( Ajax $ajax ): void {
-                $ajax->set_actions_root( 'actions' );
+            Cron::class,
+            static function ( Cron $cron ): void {
+                $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
             }
         )
-        ->autoload( array( Ajax::class ) )
+        ->autoload( array( Cron::class ) )
         ->run();
 
     return $plugin;
@@ -144,7 +142,7 @@ Either kind: what is stored is a callback against a class name, and the two are 
 
 ```php
 $plugin->configure( Ajax::class, function ( Ajax $ajax ) {
-    $ajax->set_actions_root( 'actions' );
+    $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
 } );
 ```
 
@@ -190,10 +188,7 @@ The file returns one flat list, so the entry file never changes as modules are a
 // bootstrap.php
 return array(
     Ajax::class => static function ( Ajax $ajax ): void {
-        $ajax->set_actions_root( 'actions' );
-    },
-    CLI::class => static function ( CLI $cli ): void {
-        $cli->set_commands_root( 'commands' );
+        $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
     },
     Options::class,
 );

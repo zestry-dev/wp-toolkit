@@ -91,32 +91,22 @@ $assets->register_script( 'legacy', 'legacy.js', array( $assets->get_shared_hand
 
 ## Changing the defaults
 
-Configure the module only to point it at directories other than the defaults. The build directory (`build` by default) is separate and independently configurable — it is not required to live inside the configured assets directory, since `@wordpress/scripts` projects commonly build straight to their own top-level `build/`.
-
-```php
-// bootstrap.php
-return array(
-    Assets::class => static function ( Assets $assets ): void {
-        $assets->set_assets_root( 'resources' );
-        $assets->set_build_root( 'dist' );
-    },
-);
-```
+`Assets` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( Assets::class )`, or declare a property of its type and have it injected.
 
 ## Constants
 
-### `DEFAULT_ASSETS_ROOT`
+### `ASSETS_ROOT`
 
 ```php
-const DEFAULT_ASSETS_ROOT = 'assets';
+const ASSETS_ROOT = 'assets';
 ```
 
 Default plugin-relative directory of asset files.
 
-### `DEFAULT_BUILD_ROOT`
+### `BUILD_ROOT`
 
 ```php
-const DEFAULT_BUILD_ROOT = 'build';
+const BUILD_ROOT = 'build';
 ```
 
 Default plugin-relative directory of `@wordpress/scripts` build output.
@@ -130,42 +120,6 @@ const MANIFEST_FILENAMES = array( 'assets-manifest.php', 'assets-module-manifest
 The build manifests the generated `webpack.config.js` writes.
 
 ## Methods
-
-### `set_assets_root( $assets_root )`
-
-Set the plugin-relative directory that contains asset files.
-
-```php
-public function set_assets_root( string $assets_root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$assets_root` — Plugin-relative directory of asset files |
-| **Return** | — |
-| **Throws** | — |
-
-Call this from the module initializer before the plugin boots the module to override the default `assets` directory.
-
-<br>
-
-### `set_build_root( $build_root )`
-
-Set the plugin-relative directory that contains `@wordpress/scripts` build output.
-
-```php
-public function set_build_root( string $build_root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$build_root` — Plugin-relative directory of build output |
-| **Return** | — |
-| **Throws** | — |
-
-Call this from the module initializer before the plugin boots the module to override the default `build` directory.
-
-<br>
 
 ### `get_build_root()`
 

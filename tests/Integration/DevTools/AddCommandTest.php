@@ -227,29 +227,10 @@ final class AddCommandTest extends TestCase {
 		// none to supply.
 		$this->assertStringContainsString( 'RestApi::class,', $bootstrap );
 
-		// What it *can* be given is shown commented above, so the configuration
-		// is discoverable without standing between the module and being built.
-		// The variable name comes from the module's own @setup block, so it is
-		// the one its documentation already uses -- not a lowercased class name.
-		$this->assertStringContainsString(
-			'// RestApi::class => static function ( RestApi $api ): void {',
-			$bootstrap
-		);
-		$this->assertStringContainsString( "//     \$api->set_routes_root( '' );", $bootstrap );
-
-		// Path came along as a dependency, but it is a Service: built the moment
-		// something asks for it, so declaring it would do nothing.
-		$this->assertStringNotContainsString( 'Path::class', $bootstrap );
-
-		// Referenced by its short name, so the file carries the import that
-		// binds it.
-		$this->assertStringContainsString( 'use Acme\\Plugin\\Core\\Modules\\RestApi\\RestApi;', $bootstrap );
-		$this->assertStringEndsWith( ");\n", $bootstrap, 'The array is still closed.' );
-
-		// One tab, matching the flat array it is appended to: the commented
-		// configuration sits directly above the entry it belongs to.
-		$this->assertStringContainsString( "\n\t// RestApi::class =>", $bootstrap );
-		$this->assertStringContainsString( "\n\tRestApi::class,", $bootstrap );
+		// Nothing is written above it any more: with the directories fixed, a
+		// module has no configuration to suggest, and an empty commented block
+		// would be a heading over nothing.
+		$this->assertStringNotContainsString( '//', $bootstrap );
 	}
 
 	/**

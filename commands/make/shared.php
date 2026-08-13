@@ -59,8 +59,6 @@ return new class() extends MakeCommand {
 	 *   - module
 	 * ---
 	 *
-	 * [--dir=<dir>]
-	 * : Write somewhere other than `src/shared/`, relative to the plugin root.
 	 *
 	 * [--yes]
 	 * : Overwrite an existing file without asking, and take the default for

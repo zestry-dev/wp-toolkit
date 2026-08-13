@@ -53,7 +53,7 @@ return new class() extends MakeCommand {
 	 * kebab-case local name; give it exactly as it should appear after `class`.
 	 * Group related services by qualifying the name: `Billing/Invoices` writes
 	 * `Services/Billing/Invoices.php` declaring `{namespace}\Services\Billing`.
-	 * There is no `--dir`, since PSR-4 ties a namespace to one directory and
+	 * The destination is fixed, since PSR-4 ties a namespace to one directory and
 	 * the name decides both.
 	 *
 	 * [--yes]
@@ -106,10 +106,6 @@ return new class() extends MakeCommand {
 	 */
 	protected function get_default_dir( array $config ): string {
 		return trim( $config['root'], '/\\' ) . '/Services';
-	}
-
-	protected function allows_custom_dir(): bool {
-		return false;
 	}
 
 	/**

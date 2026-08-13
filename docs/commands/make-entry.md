@@ -29,9 +29,6 @@ Needs the `assets` module, which brings the build configuration with it: `wp zt 
   Defaults to `script`.  
   Accepts `script`, `module`.
 
-- **`[--dir=<dir>]`**  
-  Write somewhere other than `src/entries/`, relative to the plugin root. The module reads `{build}/entries/`, so an entry written elsewhere is yours to register.
-
 - **`[--yes]`**  
   Overwrite an existing file without asking, for an unattended run.
 

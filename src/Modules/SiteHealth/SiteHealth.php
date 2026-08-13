@@ -72,13 +72,6 @@ use Zestry\WPToolkit\Services\Path;
  * };
  * ```
  *
- * @setup Point it at different directories
- * ```
- * SiteHealth::class => static function ( SiteHealth $health ): void {
- *     $health->set_checks_root( 'diagnostics' );
- *     $health->set_sections_root( 'diagnostics/info' );
- * },
- * ```
  */
 class SiteHealth extends Module {
 
@@ -87,31 +80,17 @@ class SiteHealth extends Module {
 	/**
 	 * Where checks are discovered, relative to the plugin root.
 	 */
-	const DEFAULT_CHECKS_ROOT = 'health-checks';
+	const CHECKS_ROOT = 'health-checks';
 
 	/**
 	 * Where debug sections are discovered, relative to the plugin root.
 	 */
-	const DEFAULT_SECTIONS_ROOT = 'debug-sections';
+	const SECTIONS_ROOT = 'debug-sections';
 
 	/**
 	 * @var Path
 	 */
 	public Path $path;
-
-	/**
-	 * The directory checks are read from.
-	 *
-	 * @var string
-	 */
-	private string $checks_root = self::DEFAULT_CHECKS_ROOT;
-
-	/**
-	 * Whether the root above was named rather than defaulted.
-	 *
-	 * @var bool
-	 */
-	private bool $checks_root_was_set = false;
 
 	/**
 	 * Discovered checks by identifier, once the directory has been walked.
@@ -124,20 +103,6 @@ class SiteHealth extends Module {
 	private ?array $discovered = null;
 
 	/**
-	 * The directory debug sections are read from.
-	 *
-	 * @var string
-	 */
-	private string $sections_root = self::DEFAULT_SECTIONS_ROOT;
-
-	/**
-	 * Whether the root above was named rather than defaulted.
-	 *
-	 * @var bool
-	 */
-	private bool $sections_root_was_set = false;
-
-	/**
 	 * Discovered sections by identifier, once the directory has been walked.
 	 *
 	 * @var array<string, DebugSection>|null
@@ -145,56 +110,14 @@ class SiteHealth extends Module {
 	private ?array $discovered_sections = null;
 
 	/**
-	 * Read checks from a different directory.
-	 *
-	 * Call this before the module boots — from its `bootstrap.php` entry. Naming
-	 * a directory that does not exist is an error and throws at boot, where
-	 * leaving the default alone and having no such directory simply means you
-	 * have no checks yet.
-	 *
-	 * @param string $root Directory relative to the plugin root.
-	 * @return void
-	 */
-	public function set_checks_root( string $root ): void {
-		$this->checks_root         = \trim( $root, '/\\' );
-		$this->checks_root_was_set = true;
-
-		// Anything already read came from the old directory.
-		$this->discovered = null;
-	}
-
-	/**
-	 * Read debug sections from a different directory.
-	 *
-	 * The same rules as {@see set_checks_root()}: call it before the module
-	 * boots, and a directory named here and then missing throws.
-	 *
-	 * @param string $root Directory relative to the plugin root.
-	 * @return void
-	 */
-	public function set_sections_root( string $root ): void {
-		$this->sections_root         = \trim( $root, '/\\' );
-		$this->sections_root_was_set = true;
-
-		// Anything already read came from the old directory.
-		$this->discovered_sections = null;
-	}
-
-	/**
 	 * Every discovered check, keyed by the identifier it registers under.
 	 *
 	 * @return array<string, HealthCheck> Wired instances keyed by identifier.
-	 * @throws DiscoveryException When a directory named by set_checks_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 */
 	public function get_discovered_checks(): array {
 		if ( null === $this->discovered ) {
-			$this->discovered = $this->get_discovered(
-				$this->checks_root,
-				$this->checks_root_was_set,
-				HealthCheck::class,
-				'Health checks',
-				'set_checks_root()'
-			);
+			$this->discovered = $this->get_discovered( self::CHECKS_ROOT, HealthCheck::class, 'Health checks' );
 		}
 
 		return $this->discovered;
@@ -204,17 +127,11 @@ class SiteHealth extends Module {
 	 * Every discovered debug section, keyed by the identifier it registers under.
 	 *
 	 * @return array<string, DebugSection> Wired instances keyed by identifier.
-	 * @throws DiscoveryException When a directory named by set_sections_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 */
 	public function get_discovered_sections(): array {
 		if ( null === $this->discovered_sections ) {
-			$this->discovered_sections = $this->get_discovered(
-				$this->sections_root,
-				$this->sections_root_was_set,
-				DebugSection::class,
-				'Debug sections',
-				'set_sections_root()'
-			);
+			$this->discovered_sections = $this->get_discovered( self::SECTIONS_ROOT, DebugSection::class, 'Debug sections' );
 		}
 
 		return $this->discovered_sections;
@@ -373,22 +290,14 @@ class SiteHealth extends Module {
 	 * @param bool   $was_set  Whether that root was named rather than defaulted.
 	 * @param string $expected The base class each file must return an instance of.
 	 * @param string $label    What to call the directory when something is wrong.
-	 * @param string $setter   The setter that names it, for the message when it is missing.
 	 * @return array<string, HealthCheck|DebugSection> Wired instances keyed by identifier.
-	 * @throws DiscoveryException When a named directory does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 */
-	private function get_discovered( string $root, bool $was_set, string $expected, string $label, string $setter ): array {
+	private function get_discovered( string $root, string $expected, string $label ): array {
 		$root_dir = $this->path->get_plugin_path( $root );
 
 		if ( ! \is_dir( $root_dir ) ) {
-			// Never named, and the default is absent: this plugin has none of
-			// these yet. Only a directory asked for by name is missing in the
-			// sense worth throwing over.
-			if ( ! $was_set ) {
-				return array();
-			}
-
-			throw DiscoveryException::missing_root( $label, $root_dir, $setter );
+			return array();
 		}
 
 		$instances = array();

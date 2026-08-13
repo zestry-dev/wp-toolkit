@@ -43,7 +43,6 @@ final class BlocksTest extends TestCase {
 		$this->plugin->configure(
 			Blocks::class,
 			static function ( Blocks $blocks ) use ( $root, $configure ): void {
-				$blocks->set_blocks_root( $root );
 				if ( null !== $configure ) {
 					$configure( $blocks );
 				}
@@ -688,13 +687,6 @@ final class BlocksTest extends TestCase {
 			$rendered,
 			'A block declaring `render` must render through WordPress, untouched by this module.'
 		);
-	}
-
-	public function test_discovery_of_a_missing_root_throws(): void {
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Blocks root directory does not exist' );
-
-		$this->boot_blocks_with_root( 'build/nowhere' );
 	}
 
 	/**

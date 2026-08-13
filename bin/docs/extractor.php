@@ -1084,7 +1084,7 @@ function zestry_build_toc( array $lines, int $min = 2, int $max = 3 ): array {
 		 * link still points at the heading's own anchor, which is built from the
 		 * full heading text.
 		 *
-		 * Constants keep their backticks: `DEFAULT_VIEWS_ROOT` in a proportional
+		 * Constants keep their backticks: `VIEWS_ROOT` in a proportional
 		 * face reads as prose rather than as an identifier.
 		 */
 		$label = $entry['text'];

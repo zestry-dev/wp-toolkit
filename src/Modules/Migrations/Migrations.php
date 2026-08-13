@@ -66,18 +66,6 @@ use Zestry\WPToolkit\Services\Path;
  * > generates a correct `YYYYMMDDHHmmss` prefix -- in UTC, so migrations
  * > authored from different timezones still sort against each other correctly.
  *
- * @setup
- * Register an initializer only to point the module at a non-default directory.
- *
- * ```
- * // bootstrap.php
- * return array(
- *     Migrations::class => static function ( Migrations $migrations ): void {
- *         $migrations->set_migrations_root( 'db/migrations' );
- *     },
- * );
- * ```
- *
  * @example Triggering a run
  * Call `run_pending()` from wherever fits your release process -- here,
  * immediately on activation. Or trigger it from `wp {slug} migrations run` as
@@ -121,7 +109,7 @@ class Migrations extends Module {
 	/**
 	 * Default plugin-relative directory of migration files.
 	 */
-	const DEFAULT_MIGRATIONS_ROOT = 'migrations';
+	const MIGRATIONS_ROOT = 'migrations';
 
 	/**
 	 * Options key for the array of migration identifiers already run.
@@ -148,40 +136,6 @@ class Migrations extends Module {
 	public Options $options;
 
 	/**
-	 * Plugin-relative directory of migration files.
-	 *
-	 * @var string
-	 */
-	private string $migrations_root = self::DEFAULT_MIGRATIONS_ROOT;
-
-	/**
-	 * Whether the directory above was named deliberately.
-	 *
-	 * A missing directory means two different things. Named by
-	 * {@see set_migrations_root()} and absent: a typo, and registering nothing
-	 * silently would hide it. Never named, and the default is absent: this
-	 * plugin has none of these yet, which is ordinary -- adding the module
-	 * before writing the first file should not take the site down.
-	 *
-	 * @var bool
-	 */
-	private bool $migrations_root_was_set = false;
-
-	/**
-	 * Set the plugin-relative directory that contains migration files.
-	 *
-	 * Call this from the module initializer before the plugin boots the
-	 * module to override the default `migrations` directory.
-	 *
-	 * @param string $migrations_root Plugin-relative directory of migration files.
-	 * @return void
-	 */
-	public function set_migrations_root( string $migrations_root ): void {
-		$this->migrations_root         = $migrations_root;
-		$this->migrations_root_was_set = true;
-	}
-
-	/**
 	 * Every migration identifier -- its filename without the `.php` extension,
 	 * e.g. `20260115120000-create-books-table` -- already recorded as run, in
 	 * the order they ran.
@@ -201,20 +155,15 @@ class Migrations extends Module {
 	 * cannot accidentally trigger) requiring or running any migration file.
 	 *
 	 * @return string[]
-	 * @throws DiscoveryException When a migrations directory named by set_migrations_root() does not exist.
 	 */
 	public function get_discovered_migrations(): array {
-		$root_dir = $this->path->get_plugin_path( $this->migrations_root );
+		$root_dir = $this->path->get_plugin_path( self::MIGRATIONS_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
-			if ( ! $this->migrations_root_was_set ) {
-				return array();
-			}
-
-			throw DiscoveryException::missing_root( 'Migrations', $root_dir, 'set_migrations_root()' );
+			return array();
 		}
 
 		$files = $this->walk_folder( $root_dir, array( 'php' ), 1 );
@@ -241,7 +190,6 @@ class Migrations extends Module {
 	 * ran-list already holds them in.
 	 *
 	 * @return string[]
-	 * @throws DiscoveryException When a migrations directory named by set_migrations_root() does not exist.
 	 */
 	public function get_orphaned_migrations(): array {
 		return \array_values(
@@ -267,7 +215,6 @@ class Migrations extends Module {
 	 * guesses rather than wrong ones.
 	 *
 	 * @return array<string, string> Each pending identifier, mapped to the orphan it probably renames.
-	 * @throws DiscoveryException When a migrations directory named by set_migrations_root() does not exist.
 	 */
 	public function get_probable_renames(): array {
 		$discovered = $this->get_discovered_migrations();
@@ -326,11 +273,11 @@ class Migrations extends Module {
 	 *
 	 * @param bool $force Run even when a pending migration looks like a rename of one that already ran.
 	 * @return void
-	 * @throws DiscoveryException When a migrations directory named by set_migrations_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 * @throws RenamedMigrationException When a pending migration looks like a rename and $force is false.
 	 */
 	public function run_pending( bool $force = false ): void {
-		$root_dir    = $this->path->get_plugin_path( $this->migrations_root );
+		$root_dir    = $this->path->get_plugin_path( self::MIGRATIONS_ROOT );
 		$identifiers = $this->get_discovered_migrations();
 
 		if ( ! $force ) {
@@ -397,7 +344,7 @@ class Migrations extends Module {
 	 * is the one state worse than either outcome the heuristic guards against.
 	 *
 	 * @return void
-	 * @throws DiscoveryException When a migrations directory named by set_migrations_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 */
 	public function maybe_resume_interrupted_run(): void {
 		$running_since = $this->get_migrations_options()->get( self::RUNNING_SINCE_KEY );
@@ -466,7 +413,6 @@ class Migrations extends Module {
 	 * three files fixes three things in one pass instead of three runs.
 	 *
 	 * @return void
-	 * @throws DiscoveryException When a migrations directory named by set_migrations_root() does not exist.
 	 * @throws RenamedMigrationException When a pending migration looks like a rename.
 	 */
 	private function refuse_probable_renames(): void {

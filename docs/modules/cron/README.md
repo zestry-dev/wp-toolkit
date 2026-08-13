@@ -38,13 +38,12 @@ return array(
 
 ## Changing the defaults
 
-Register an initializer to point the module at a non-default directory, or to declare a custom interval schedules can then ask for by name.
+Register an initializer to declare a custom interval schedules can then ask for by name.
 
 ```php
 // bootstrap.php
 return array(
     Cron::class => static function ( Cron $cron ): void {
-        $cron->set_schedules_root( 'cron/schedules' );
         $cron->add_custom_interval( 'every_15_minutes', 15 * MINUTE_IN_SECONDS, 'Every 15 Minutes' );
     },
 );
@@ -56,35 +55,15 @@ A file in `schedules/` returns a [`Schedule`](schedule.md) instance, which `wp z
 
 ## Constants
 
-### `DEFAULT_SCHEDULES_ROOT`
+### `SCHEDULES_ROOT`
 
 ```php
-const DEFAULT_SCHEDULES_ROOT = 'schedules';
+const SCHEDULES_ROOT = 'schedules';
 ```
 
 Default plugin-relative directory of schedule files.
 
 ## Methods
-
-### `set_schedules_root( $schedules_root )`
-
-Set the plugin-relative directory that contains schedule files.
-
-```php
-public function set_schedules_root( string $schedules_root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$schedules_root` — Plugin-relative directory of schedule files |
-| **Return** | — |
-| **Throws** | `DiscoveryException` — When the directory named here does not exist at boot, or a file beneath it returns something other than a Schedule instance |
-
-Call this from the module initializer before the plugin boots the module to override the default `schedules` directory.
-
-Naming a directory is what makes its absence fatal. Discovery runs at `init` on every request, and if the directory you name here is not there it throws a `DiscoveryException` then — so a typo in your initializer takes the site down rather than scheduling nothing and leaving you to wonder why your events never fire. The *default* `schedules` directory being absent is deliberately not an error: a plugin that has not written its first schedule yet should still boot.
-
-<br>
 
 ### `add_custom_interval( $name, $seconds, $display )`
 
@@ -184,7 +163,7 @@ public function unschedule_all(): void
 |---|---|
 | **Parameters** | — |
 | **Return** | — |
-| **Throws** | `DiscoveryException` — When a schedules directory named by set_schedules_root() does not exist, or a file returns something other than a Schedule instance |
+| **Throws** | `DiscoveryException` — When a file returns something other than a Schedule instance |
 
 Exposed for a consuming plugin's own ActivationHandler subclass to call from deactivate() — Cron does not implement ActivationHandler itself, so nothing clears scheduled events automatically; a plugin that schedules events is responsible for unscheduling them.
 
@@ -204,7 +183,7 @@ public function get_orphaned_events(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | Hook name => the timestamp it next fires, earliest first |
-| **Throws** | `DiscoveryException` — When a schedules directory named by set_schedules_root() does not exist, or a file returns something other than a Schedule instance |
+| **Throws** | `DiscoveryException` — When a file returns something other than a Schedule instance |
 
 A schedule's hook is its filename — `schedules/sync.php` is `{slug}-sync` — so renaming the file schedules a new event and abandons the old one. Nothing cleans it up: booting only schedules what discovery finds, and `unschedule_all()` clears the same set, so an event whose file is gone is in neither list. WordPress keeps firing it, on time, forever, with nothing listening.
 
@@ -226,7 +205,7 @@ public function unschedule_orphaned(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | The hooks cleared, in the order they would next have fired |
-| **Throws** | `DiscoveryException` — When a schedules directory named by set_schedules_root() does not exist, or a file returns something other than a Schedule instance |
+| **Throws** | `DiscoveryException` — When a file returns something other than a Schedule instance |
 
 A separate call, and never made by this module: a `{slug}-` event this module did not create is indistinguishable from one it did, so clearing automatically could delete an event you scheduled by hand. Run it from wherever you decide — a deploy step, a reviewed admin action, an activation handler — once you have looked at the list.
 

@@ -29,18 +29,6 @@ use Zestry\WPToolkit\Services\Request\Request;
  * — enforcing the page capability first. A POST is handled a step earlier, on
  * `load-{$hook}`, so a page can still redirect after saving.
  *
- * @setup
- * Register an initializer only to point the module at a non-default directory.
- *
- * ```
- * // bootstrap.php
- * return array(
- *     AdminPages::class => static function ( AdminPages $pages ): void {
- *         $pages->set_pages_root( 'admin/pages' );
- *     },
- * );
- * ```
- *
  * @example A minimal page file
  * The actual authoring surface for most developers is not this class but the
  * page files it discovers. A page such as `admin-pages/settings.php` need
@@ -97,7 +85,7 @@ class AdminPages extends Module {
 	/**
 	 * Default plugin-relative directory of page files.
 	 */
-	const DEFAULT_PAGES_ROOT = 'admin-pages';
+	const PAGES_ROOT = 'admin-pages';
 
 	/**
 	 * Path module injected by the plugin to resolve the pages directory.
@@ -112,26 +100,6 @@ class AdminPages extends Module {
 	 * @var Request
 	 */
 	public Request $request;
-
-	/**
-	 * Plugin-relative directory of page files.
-	 *
-	 * @var string
-	 */
-	private string $pages_root = self::DEFAULT_PAGES_ROOT;
-
-	/**
-	 * Whether the directory above was named deliberately.
-	 *
-	 * A missing directory means two different things. Named by
-	 * {@see set_pages_root()} and absent: a typo, and registering nothing
-	 * silently would hide it. Never named, and the default is absent: this
-	 * plugin has none of these yet, which is ordinary -- adding the module
-	 * before writing the first file should not take the site down.
-	 *
-	 * @var bool
-	 */
-	private bool $pages_root_was_set = false;
 
 	/**
 	 * Discovered pages, indexed by full plugin page slug.
@@ -156,22 +124,6 @@ class AdminPages extends Module {
 	 * @var array<string, string|null>
 	 */
 	private array $folder_parent = array();
-
-	/**
-	 * Set the plugin-relative directory that contains page files.
-	 *
-	 * Call this from the module initializer before the plugin boots the module
-	 * to override the default `admin-pages` directory. The root is read inside
-	 * the `admin_menu` callback, so a call made after that hook has run has no
-	 * effect on the pages already registered.
-	 *
-	 * @param string $pages_root Plugin-relative directory of page files.
-	 * @return void
-	 */
-	public function set_pages_root( string $pages_root ): void {
-		$this->pages_root         = $pages_root;
-		$this->pages_root_was_set = true;
-	}
 
 	/**
 	 * Build the full, plugin-prefixed slug for a page.
@@ -280,17 +232,13 @@ class AdminPages extends Module {
 		$this->registered    = array();
 		$this->folder_parent = array();
 
-		$root_dir = $this->path->get_plugin_path( $this->pages_root );
+		$root_dir = $this->path->get_plugin_path( self::PAGES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
-			if ( ! $this->pages_root_was_set ) {
-				return;
-			}
-
-			throw DiscoveryException::missing_root( 'Pages', $root_dir, 'set_pages_root()' );
+			return;
 		}
 
 		$files = $this->walk_folder( $root_dir, array( 'php' ), 0 );

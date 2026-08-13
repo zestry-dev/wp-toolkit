@@ -44,16 +44,7 @@ return array(
 
 ## Changing the defaults
 
-Register an initializer only to point the module at a non-default directory.
-
-```php
-// bootstrap.php
-return array(
-    Ajax::class => static function ( Ajax $ajax ): void {
-        $ajax->set_actions_root( 'ajax/actions' );
-    },
-);
-```
+`Ajax` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( Ajax::class )`, or declare a property of its type and have it injected.
 
 ## Writing an AjaxAction
 
@@ -69,10 +60,10 @@ const FORBIDDEN_ERROR_CODE = 'forbidden';
 
 WP_Error code used for every rejected AJAX request — a failed capability check, a failed nonce check, and an unprivileged request to an action that does not allow it all reject with this same code, only the message differs.
 
-### `DEFAULT_ACTIONS_ROOT`
+### `ACTIONS_ROOT`
 
 ```php
-const DEFAULT_ACTIONS_ROOT = 'actions';
+const ACTIONS_ROOT = 'actions';
 ```
 
 Default plugin-relative directory of action files.
@@ -94,26 +85,6 @@ public function is_ajax_request(): bool
 | **Throws** | — |
 
 Rather than reading the `DOING_AJAX` constant directly, so the result passes through the `wp_doing_ajax` filter that tests and alternative AJAX endpoints rely on.
-
-<br>
-
-### `set_actions_root( $actions_root )`
-
-Set the plugin-relative directory that contains action files.
-
-```php
-public function set_actions_root( string $actions_root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$actions_root` — Plugin-relative directory of action files |
-| **Return** | — |
-| **Throws** | `DiscoveryException` — When the directory named here does not exist at boot, or a file beneath it returns something other than an AjaxAction instance |
-
-Call this from the module initializer before the plugin boots the module to override the default `actions` directory.
-
-Naming a directory is what makes its absence fatal. Discovery runs at `init`, and if the directory you name here is not there it throws a `DiscoveryException` then — so a typo in your initializer takes the request down rather than registering nothing and leaving you to wonder why your actions never fire. The *default* `actions` directory being absent is deliberately not an error: a plugin that has not written its first action yet should still boot.
 
 <br>
 
@@ -217,7 +188,7 @@ public function get_discovered_actions(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | Wired instances keyed by local name |
-| **Throws** | `DiscoveryException` — When a directory named by set_actions_root() does not exist, or a file returns the wrong value |
+| **Throws** | `DiscoveryException` — When a file returns the wrong value |
 
 Kept rather than rebuilt, so `get_slug_of()` compares against the same instances a caller is holding.
 

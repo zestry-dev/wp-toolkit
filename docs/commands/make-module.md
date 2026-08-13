@@ -30,7 +30,7 @@ A generated file that does not yet parse is not declared at all. The command say
 ## Options
 
 - **`<name>`**  
-  The class name, e.g. 'RequestLog'. Becomes both the filename (`{name}.php`) and the class name itself — unlike every other `make` type, this is NOT a kebab-case local name; give it exactly as it should appear after `class`. Group related modules by qualifying the name: `Services/Mailer` writes `Modules/Services/Mailer.php` declaring `{namespace}\Modules\Services`. There is no `--dir`, since PSR-4 ties a namespace to one directory and the name decides both.
+  The class name, e.g. 'RequestLog'. Becomes both the filename (`{name}.php`) and the class name itself — unlike every other `make` type, this is NOT a kebab-case local name; give it exactly as it should appear after `class`. Group related modules by qualifying the name: `Services/Mailer` writes `Modules/Services/Mailer.php` declaring `{namespace}\Modules\Services`. The destination is fixed, since PSR-4 ties a namespace to one directory and the name decides both.
 
 - **`[--yes]`**  
   Overwrite an existing file without asking, for an unattended run.

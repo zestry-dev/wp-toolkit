@@ -48,17 +48,6 @@ use Zestry\WPToolkit\Services\Request\Request;
  * are extending, or WordPress's own heartbeat. Choose it because something
  * already speaks it, rather than because a form has to submit somewhere.
  *
- * @setup
- * Register an initializer only to point the module at a non-default directory.
- *
- * ```
- * // bootstrap.php
- * return array(
- *     Ajax::class => static function ( Ajax $ajax ): void {
- *         $ajax->set_actions_root( 'ajax/actions' );
- *     },
- * );
- * ```
  */
 class Ajax extends Module {
 
@@ -75,7 +64,7 @@ class Ajax extends Module {
 	/**
 	 * Default plugin-relative directory of action files.
 	 */
-	const DEFAULT_ACTIONS_ROOT = 'actions';
+	const ACTIONS_ROOT = 'actions';
 
 	/**
 	 * Priority for the generated `wp_ajax_*`/`wp_ajax_nopriv_*` handlers.
@@ -104,26 +93,6 @@ class Ajax extends Module {
 	public Request $request;
 
 	/**
-	 * Plugin-relative directory of action files.
-	 *
-	 * @var string
-	 */
-	private string $actions_root = self::DEFAULT_ACTIONS_ROOT;
-
-	/**
-	 * Whether the directory above was named deliberately.
-	 *
-	 * A missing directory means two different things. Named by
-	 * {@see set_actions_root()} and absent: a typo, and registering nothing
-	 * silently would hide it. Never named, and the default is absent: this
-	 * plugin has none of these yet, which is ordinary -- adding the module
-	 * before writing the first file should not take the site down.
-	 *
-	 * @var bool
-	 */
-	private bool $actions_root_was_set = false;
-
-	/**
 	 * Discovered actions by local name, once the directory has been walked.
 	 *
 	 * @var array<string, AjaxAction>|null
@@ -141,31 +110,6 @@ class Ajax extends Module {
 	 */
 	public function is_ajax_request(): bool {
 		return \wp_doing_ajax();
-	}
-
-	/**
-	 * Set the plugin-relative directory that contains action files.
-	 *
-	 * Call this from the module initializer before the plugin boots the module
-	 * to override the default `actions` directory.
-	 *
-	 * Naming a directory is what makes its absence fatal. Discovery runs at
-	 * `init`, and if the directory you name here is not there it throws a
-	 * `DiscoveryException` then -- so a typo in your initializer takes the
-	 * request down rather than registering nothing and leaving you to wonder
-	 * why your actions never fire. The *default* `actions` directory being
-	 * absent is deliberately not an error: a plugin that has not written its
-	 * first action yet should still boot.
-	 *
-	 * @param string $actions_root Plugin-relative directory of action files.
-	 * @return void
-	 * @throws DiscoveryException When the directory named here does not exist at boot, or a file beneath it returns something other than an AjaxAction instance.
-	 */
-	public function set_actions_root( string $actions_root ): void {
-		// Anything already read came from the old directory.
-		$this->discovered           = null;
-		$this->actions_root         = $actions_root;
-		$this->actions_root_was_set = true;
 	}
 
 	/**
@@ -298,7 +242,7 @@ class Ajax extends Module {
 	 * unconditionally rejects the request with a 403.
 	 *
 	 * @return void
-	 * @throws DiscoveryException When an actions directory named by set_actions_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 *
 	 * @internal
 	 */
@@ -334,28 +278,19 @@ class Ajax extends Module {
 	 * same instances a caller is holding.
 	 *
 	 * @return array<string, AjaxAction> Wired instances keyed by local name.
-	 * @throws DiscoveryException When a directory named by set_actions_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 */
 	public function get_discovered_actions(): array {
 		if ( null !== $this->discovered ) {
 			return $this->discovered;
 		}
 
-		$root_dir = $this->path->get_plugin_path( $this->actions_root );
+		$root_dir = $this->path->get_plugin_path( self::ACTIONS_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
-			// Never named, and the default is absent: this plugin has none of
-			// these yet. Only a directory asked for by name is missing in the
-			// sense worth throwing over.
-			if ( ! $this->actions_root_was_set ) {
-				$this->discovered = array();
+			$this->discovered = array();
 
-				return $this->discovered;
-			}
-
-			// Fail with a clear, path-naming message instead of a cryptic SPL error
-			// from RecursiveDirectoryIterator, mirroring the CLI module's guard.
-			throw DiscoveryException::missing_root( 'Actions', $root_dir, 'set_actions_root()' );
+			return $this->discovered;
 		}
 
 		$instances = array();

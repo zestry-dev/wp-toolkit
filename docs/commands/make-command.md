@@ -16,9 +16,6 @@ Needs the `cli` module, so run `wp zt add module cli` first if you have not alre
 - **`<name>`**  
   The local name, e.g. 'greet'. Becomes the filename (`{name}.php`) under `commands/`. May include `/` to nest it under a command namespace, e.g. 'cache/clear' — but one name can be a leaf command or a command namespace, never both, because WP-CLI cannot attach subcommands to a command. `commands/cache.php` and `commands/cache/` therefore exclude each other, and this command refuses to write the second.
 
-- **`[--dir=<dir>]`**  
-  Write into this plugin-relative directory instead of `commands` — pass it when you have pointed CLI's commands root somewhere other than its default.
-
 - **`[--yes]`**  
   Overwrite an existing file without asking, for an unattended run.
 

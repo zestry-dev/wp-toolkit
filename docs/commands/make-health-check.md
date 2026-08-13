@@ -14,9 +14,6 @@ Writes a file into the plugin's `health-checks/` directory, where the SiteHealth
 - **`<name>`**  
   The check's local name, in kebab-case, e.g. `api-key`.
 
-- **`[--dir=<dir>]`**  
-  Write somewhere other than `health-checks/`, relative to the plugin root.
-
 - **`[--extends=<class>]`**  
   Extend one of your own abstracts instead of the toolkit base. A bare name is looked for under your Abstracts\ namespace; the generated file stubs the methods that class leaves abstract, and nothing it has already settled.
 

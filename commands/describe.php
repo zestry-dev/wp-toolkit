@@ -406,7 +406,7 @@ return new class() extends Command {
 	/**
 	 * The directories a module reads by default.
 	 *
-	 * Every discovery module names its own with a `DEFAULT_*_ROOT` constant, so
+	 * Every discovery module names its own with a `*_ROOT` constant, so
 	 * this reads them rather than repeating them -- and a module with two roots
 	 * reports both without needing to be a special case.
 	 *
@@ -417,7 +417,7 @@ return new class() extends Command {
 		$roots = array();
 
 		foreach ( ( new \ReflectionClass( $module ) )->getConstants() as $name => $value ) {
-			if ( is_string( $value ) && 1 === preg_match( '/^DEFAULT_\w+_ROOT$/', $name ) ) {
+			if ( is_string( $value ) && 1 === preg_match( '/^\w+_ROOT$/', $name ) ) {
 				$roots[] = trim( $value, '/\\' );
 			}
 		}

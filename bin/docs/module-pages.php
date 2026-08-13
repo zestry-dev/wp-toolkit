@@ -150,7 +150,7 @@ function zestry_read_module( string $path ): ?array {
 
 	// The constant's name is kept beside its value: it is what pairs a root with
 	// the base class discovered from it, for the one module that has two of each.
-	preg_match_all( "/const DEFAULT_(\w+)_ROOT\s*=\s*'([^']+)'/", $source, $roots );
+	preg_match_all( "/const (\w+)_ROOT\s*=\s*'([^']+)'/", $source, $roots );
 
 	// A module acts on its own and so must be listed in bootstrap.php to be
 	// built; a service is built on demand and needs no entry. `Views` resolves a
@@ -208,10 +208,10 @@ function zestry_read_module( string $path ): ?array {
  * Only `PostTypes` has two of each, and pairing them by position quietly told
  * every reader that a `Taxonomy` goes in `post-types/` -- where the module
  * rejects it with a `DiscoveryException`. Matched by name instead: the constant
- * `DEFAULT_TAXONOMIES_ROOT` belongs to `Taxonomy`, whatever order either was
+ * `TAXONOMIES_ROOT` belongs to `Taxonomy`, whatever order either was
  * declared in.
  *
- * @param string[] $names  The `DEFAULT_<NAME>_ROOT` constant names.
+ * @param string[] $names  The `<NAME>_ROOT` constant names.
  * @param string[] $roots  Their values, in the same order.
  * @param string[] $bases  The base classes a discovered file may return.
  * @return array<string, string> Base class name to the directory it is found in.
@@ -279,7 +279,7 @@ function zestry_make_destination( string $root, string $type ): ?string {
 }
 
 /**
- * One lowercase singular word from a `DEFAULT_<NAME>_ROOT` constant's name.
+ * One lowercase singular word from a `<NAME>_ROOT` constant's name.
  *
  * @param string $name The constant's middle, e.g. `POST_TYPES`.
  * @return string e.g. `posttype`.

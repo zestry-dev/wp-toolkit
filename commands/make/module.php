@@ -61,7 +61,7 @@ return new class() extends MakeCommand {
 	 * should appear after `class`.
 	 * Group related modules by qualifying the name: `Services/Mailer` writes
 	 * `Modules/Services/Mailer.php` declaring `{namespace}\Modules\Services`.
-	 * There is no `--dir`, since PSR-4 ties a namespace to one directory and
+	 * The destination is fixed, since PSR-4 ties a namespace to one directory and
 	 * the name decides both.
 	 *
 	 * [--yes]
@@ -121,10 +121,6 @@ return new class() extends MakeCommand {
 	 */
 	protected function get_default_dir( array $config ): string {
 		return trim( $config['root'], '/\\' ) . '/Modules';
-	}
-
-	protected function allows_custom_dir(): bool {
-		return false;
 	}
 
 	/**

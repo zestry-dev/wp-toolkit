@@ -22,7 +22,7 @@ Neither one extends nothing, which is a plain abstract class: useful for somethi
 ## Options
 
 - **`<name>`**  
-  The class name, e.g. 'EntityField'. Becomes both the filename (`{name}.php`) and the class name — give it exactly as it should appear after `abstract class`. Qualify it to group: `Fields/EntityField` writes `Abstracts/Fields/EntityField.php`. There is no `--dir`, since PSR-4 ties a namespace to one directory and the name decides both.
+  The class name, e.g. 'EntityField'. Becomes both the filename (`{name}.php`) and the class name — give it exactly as it should appear after `abstract class`. Qualify it to group: `Fields/EntityField` writes `Abstracts/Fields/EntityField.php`. The destination is fixed, since PSR-4 ties a namespace to one directory and the name decides both.
 
 - **`[--for=<type>]`**  
   Extend the base class files of this `make` type return, e.g. `field`, `post-type`, `ability`.

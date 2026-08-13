@@ -225,24 +225,22 @@ public function test_a_command_is_registered_from_the_commands_directory(): void
 
 A module hanging its work on a later hook needs that hook fired: `AdminPages` registers on `admin_menu`, so resolve it, then `do_action( 'admin_menu' )`, then assert. Each module's page names the hook it uses.
 
-For anything but the default root, `configure()` before resolving. That is the only window in which a `set_*_root()` call still counts:
+Configuration goes through `configure()` before resolving — that is the only window in which it still counts, since resolving is what boots:
 
 ```php
-$this->plugin->configure( CLI::class, fn ( CLI $cli ) => $cli->set_commands_root( 'cli/commands' ) );
+$this->plugin->configure( Cron::class, fn ( Cron $cron ) => $cron->add_custom_interval( 'quarter_hourly', 900, 'Quarter hourly' ) );
 
-$this->plugin->get( CLI::class );   // configured, then booted, then discovered
+$this->plugin->get( Cron::class );   // configured, then booted, then discovered
 ```
 
 Reaching for `$module->boot()` instead will not work: `boot()` is guarded and idempotent, so once `get()` has booted the module a second call returns without doing anything.
 
 Each module gates itself on the request it serves, and the gate runs before discovery: `CLI` checks the `WP_CLI` constant, `Ajax` checks `wp_doing_ajax()`, `AdminPages` checks `is_admin()`. Satisfy it first or the module does nothing and your assertion reports an empty result rather than a wrong one. `WP_CLI` is a constant, so it is process-global and cannot be undefined — if you also want to assert the "not under WP-CLI" branch, do it in the first test in the file, before anything defines it.
 
-An absent *default* root registers nothing and throws nothing; a root named through `set_*_root()` that does not exist throws a `DiscoveryException`. Both are worth a test in your own plugin, and the second is how you assert a typo is loud:
+Every module reads one fixed directory, so write your fixtures into the one its page names. An absent directory registers nothing and throws nothing — which is worth a test of its own, since it is what a module looks like before you have written the first file:
 
 ```php
-$this->expectException( DiscoveryException::class );
-$this->plugin->configure( CLI::class, fn ( CLI $cli ) => $cli->set_commands_root( 'comands' ) );
-$this->plugin->get( CLI::class );
+$this->assertSame( array(), $this->plugin->get( CLI::class )->get_discovered_commands() );
 ```
 
 ## 5. Test one file, without its module

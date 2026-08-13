@@ -136,8 +136,8 @@ return array(
 
 ```php
 return array(
-    CLI::class => static function ( CLI $cli ): void {
-        $cli->set_commands_root( 'cli/commands' );
+    Cron::class => static function ( Cron $cron ): void {
+        $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
     },
     AdminPages::class,
 );

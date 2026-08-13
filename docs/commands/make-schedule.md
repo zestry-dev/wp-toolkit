@@ -16,9 +16,6 @@ Needs the `cron` module, so run `wp zt add module cron` first if you have not al
 - **`<name>`**  
   The local name, e.g. 'cleanup'. Becomes the filename (`{name}.php`) under `schedules/`.
 
-- **`[--dir=<dir>]`**  
-  Write into this plugin-relative directory instead of `schedules` — pass it when you have pointed Cron's schedules root somewhere other than its default.
-
 - **`[--recurrence=<recurrence>]`**  
   The WP-Cron recurrence, e.g. 'daily'.  
   Defaults to 'daily' without prompting.

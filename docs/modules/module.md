@@ -46,8 +46,8 @@ The entry's value is the initializer, which runs after wiring and before `on_boo
 ```php
 // bootstrap.php
 return array(
-    Ajax::class => static function ( Ajax $ajax ): void {
-        $ajax->set_actions_root( 'actions' );
+    Cron::class => static function ( Cron $cron ): void {
+        $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
     },
     CLI::class,
 );

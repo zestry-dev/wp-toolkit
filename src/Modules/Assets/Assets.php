@@ -111,34 +111,18 @@ use Zestry\WPToolkit\Services\Path;
  * $assets->register_script( 'legacy', 'legacy.js', array( $assets->get_shared_handle( 'formatting' ) ) );
  * ```
  *
- * @setup
- * Configure the module only to point it at directories other than the
- * defaults. The build directory (`build` by default) is separate and
- * independently configurable -- it is not required to live inside the
- * configured assets directory, since `@wordpress/scripts` projects commonly
- * build straight to their own top-level `build/`.
- *
- * ```
- * // bootstrap.php
- * return array(
- *     Assets::class => static function ( Assets $assets ): void {
- *         $assets->set_assets_root( 'resources' );
- *         $assets->set_build_root( 'dist' );
- *     },
- * );
- * ```
  */
 class Assets extends Module {
 
 	/**
 	 * Default plugin-relative directory of asset files.
 	 */
-	const DEFAULT_ASSETS_ROOT = 'assets';
+	const ASSETS_ROOT = 'assets';
 
 	/**
 	 * Default plugin-relative directory of `@wordpress/scripts` build output.
 	 */
-	const DEFAULT_BUILD_ROOT = 'build';
+	const BUILD_ROOT = 'build';
 
 	/**
 	 * The build manifests the generated `webpack.config.js` writes.
@@ -175,55 +159,11 @@ class Assets extends Module {
 	public Path $path;
 
 	/**
-	 * Plugin-relative directory of asset files.
-	 *
-	 * @var string
-	 */
-	private string $assets_root = self::DEFAULT_ASSETS_ROOT;
-
-	/**
-	 * Plugin-relative directory of `@wordpress/scripts` build output.
-	 *
-	 * Independent of $assets_root: a build is not required to live inside the
-	 * configured assets directory.
-	 *
-	 * @var string
-	 */
-	private string $build_root = self::DEFAULT_BUILD_ROOT;
-
-	/**
 	 * Everything the build manifests describe, keyed by entry name, once read.
 	 *
 	 * @var array<string, array<string, mixed>>|null
 	 */
 	private ?array $manifest = null;
-
-	/**
-	 * Set the plugin-relative directory that contains asset files.
-	 *
-	 * Call this from the module initializer before the plugin boots the module
-	 * to override the default `assets` directory.
-	 *
-	 * @param string $assets_root Plugin-relative directory of asset files.
-	 * @return void
-	 */
-	public function set_assets_root( string $assets_root ): void {
-		$this->assets_root = $assets_root;
-	}
-
-	/**
-	 * Set the plugin-relative directory that contains `@wordpress/scripts`
-	 * build output.
-	 *
-	 * Call this from the module initializer before the plugin boots the module
-	 * to override the default `build` directory.
-	 *
-	 * @param string $build_root Plugin-relative directory of build output.
-	 * @return void
-	 */
-	public function set_build_root( string $build_root ): void {
-		$this->build_root = $build_root;
-	}
 
 	/**
 	 * The plugin-relative directory `@wordpress/scripts` builds into.
@@ -235,7 +175,7 @@ class Assets extends Module {
 	 * @return string
 	 */
 	public function get_build_root(): string {
-		return $this->build_root;
+		return self::BUILD_ROOT;
 	}
 
 	/**
@@ -257,7 +197,7 @@ class Assets extends Module {
 	 * @throws \InvalidArgumentException When the path escapes the plugin root.
 	 */
 	public function get_asset_url( string $path, array $query_args = array() ): string {
-		return $this->path->get_plugin_url( $this->assets_root . '/' . \ltrim( $path, '/\\' ), $query_args );
+		return $this->path->get_plugin_url( self::ASSETS_ROOT . '/' . \ltrim( $path, '/\\' ), $query_args );
 	}
 
 	/**
@@ -269,7 +209,7 @@ class Assets extends Module {
 	 * @throws \InvalidArgumentException When the path escapes the plugin root.
 	 */
 	public function get_build_url( string $path, array $query_args = array() ): string {
-		return $this->path->get_plugin_url( $this->build_root . '/' . \ltrim( $path, '/\\' ), $query_args );
+		return $this->path->get_plugin_url( self::BUILD_ROOT . '/' . \ltrim( $path, '/\\' ), $query_args );
 	}
 
 	/**
@@ -431,7 +371,7 @@ class Assets extends Module {
 		$this->manifest = array();
 
 		foreach ( self::MANIFEST_FILENAMES as $filename ) {
-			$relative = $this->build_root . '/' . $filename;
+			$relative = self::BUILD_ROOT . '/' . $filename;
 
 			if ( ! $this->path->plugin_file_exists( $relative ) ) {
 				continue;
@@ -796,13 +736,13 @@ class Assets extends Module {
 	 * @return array{css?: string, rtl?: string} Build-root-relative paths, empty when there is no stylesheet.
 	 */
 	private function get_entry_styles( string $entry ): array {
-		if ( ! $this->path->plugin_file_exists( $this->build_root . '/' . $entry . '.css' ) ) {
+		if ( ! $this->path->plugin_file_exists( self::BUILD_ROOT . '/' . $entry . '.css' ) ) {
 			return array();
 		}
 
 		$styles = array( 'css' => $entry . '.css' );
 
-		if ( $this->path->plugin_file_exists( $this->build_root . '/' . $entry . '-rtl.css' ) ) {
+		if ( $this->path->plugin_file_exists( self::BUILD_ROOT . '/' . $entry . '-rtl.css' ) ) {
 			$styles['rtl'] = $entry . '-rtl.css';
 		}
 
@@ -822,7 +762,7 @@ class Assets extends Module {
 	 * @throws \InvalidArgumentException When the manifest file does not exist or is malformed.
 	 */
 	private function get_manifest( string $entry ): array {
-		$manifest_path = $this->path->get_plugin_path( $this->build_root . '/' . $entry . '.asset.php' );
+		$manifest_path = $this->path->get_plugin_path( self::BUILD_ROOT . '/' . $entry . '.asset.php' );
 
 		if ( ! \is_file( $manifest_path ) ) {
 			throw new \InvalidArgumentException( 'Asset manifest does not exist: ' . $manifest_path );

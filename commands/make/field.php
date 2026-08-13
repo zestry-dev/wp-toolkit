@@ -25,8 +25,6 @@ return new class() extends MakeCommand {
 	 * respells it. To mark the field protected whatever it is called, uncomment
 	 * `is_protected()` in the generated file and return true.
 	 *
-	 * [--dir=<dir>]
-	 * : Write somewhere other than `fields/`, relative to the plugin root.
 	 *
 	 * [--extends=<class>]
 	 * : Extend one of your own abstracts instead of the toolkit base. A bare name

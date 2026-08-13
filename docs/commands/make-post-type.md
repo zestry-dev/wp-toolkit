@@ -16,9 +16,6 @@ Needs the `post-types` module, so run `wp zt add module post-types` first if you
 - **`<name>`**  
   The local name, e.g. 'book'. Becomes both the filename (`{name}.php`) under `post-types/` and the registered post type itself — unlike every other `make` type, this name is NOT namespaced to the plugin slug (WordPress caps a post type name at 20 characters), so pick something short and globally unique.
 
-- **`[--dir=<dir>]`**  
-  Write into this plugin-relative directory instead of `post-types` — pass it when you have pointed PostTypes's post types root somewhere other than its default.
-
 - **`[--singular=<singular>]`**  
   The singular display name, e.g. 'Book'.  
   Defaults to the title-cased name without prompting.

@@ -31,7 +31,6 @@ final class CliTest extends TestCase {
 		$this->write_plugin_file( 'commands/greet.php', $this->command_file() );
 
 		$cli = $this->plugin->get( CLI::class );
-		$cli->set_commands_root( 'commands' );
 		$cli->boot();
 
 		$this->assertNull( \WP_CLI::last( 'add_command' ), 'No commands are registered outside WP-CLI.' );
@@ -42,7 +41,6 @@ final class CliTest extends TestCase {
 		$this->write_plugin_file( 'commands/greet.php', $this->command_file() );
 
 		$cli = $this->plugin->get( CLI::class );
-		$cli->set_commands_root( 'commands' );
 		$cli->boot();
 
 		$registered = \WP_CLI::last( 'add_command' );
@@ -59,7 +57,6 @@ final class CliTest extends TestCase {
 		$this->write_plugin_file( 'commands/cache/clear.php', $this->command_file() );
 
 		$cli = $this->plugin->get( CLI::class );
-		$cli->set_commands_root( 'commands' );
 		$cli->boot();
 
 		$this->assertSame(
@@ -82,7 +79,6 @@ final class CliTest extends TestCase {
 		);
 
 		$cli = $this->plugin->get( CLI::class );
-		$cli->set_commands_root( 'commands' );
 		$cli->boot();
 
 		// The registered callable is a closure bound to the command (see
@@ -106,26 +102,6 @@ final class CliTest extends TestCase {
 			\WP_CLI::last( 'add_command' ),
 			'Nothing is registered, and nothing throws.'
 		);
-	}
-
-	/**
-	 * A directory named by set_commands_root() must exist: asking for one by
-	 * name and getting nothing is a typo, and registering zero commands
-	 * silently would hide it.
-	 */
-	public function test_a_named_commands_directory_that_is_missing_throws(): void {
-		$this->define_wp_cli();
-
-		$this->plugin->configure(
-			CLI::class,
-			static function ( CLI $cli ): void {
-				$cli->set_commands_root( 'comands' );
-			}
-		);
-
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessageMatches( '/Commands root directory does not exist/' );
-		$this->plugin->get( CLI::class );
 	}
 
 	public function test_a_command_name_reused_as_a_subdirectory_throws(): void {

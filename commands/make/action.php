@@ -31,10 +31,6 @@ return new class() extends MakeCommand {
 	 * : The local name, e.g. 'send-welcome-email'. Becomes the filename
 	 * (`{name}.php`) under `actions/`.
 	 *
-	 * [--dir=<dir>]
-	 * : Write into this plugin-relative directory instead of `actions` -- pass
-	 * it when you have pointed Ajax's actions root somewhere other than its
-	 * default.
 	 *
 	 * [--yes]
 	 * : Overwrite an existing file without asking, for an unattended run.

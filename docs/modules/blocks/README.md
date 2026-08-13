@@ -54,7 +54,6 @@ An initializer runs while the plugin file loads, which is before `init` and so b
 // bootstrap.php
 return array(
     Blocks::class => static function ( Blocks $blocks ): void {
-        $blocks->set_blocks_root( 'build/editor-blocks' );
 
         $blocks->on_wp_init( static function ( Blocks $module ): void {
             $module->add_categories(
@@ -79,10 +78,10 @@ You write it in `src/blocks/` — that is what `wp zt make block <name>` creates
 
 ## Constants
 
-### `DEFAULT_BLOCKS_ROOT`
+### `BLOCKS_ROOT`
 
 ```php
-const DEFAULT_BLOCKS_ROOT = 'build/blocks';
+const BLOCKS_ROOT = 'build/blocks';
 ```
 
 Default plugin-relative directory of built block directories.
@@ -96,24 +95,6 @@ const MANIFEST_FILENAME = 'blocks-manifest.php';
 Filename `wp-scripts build --blocks-manifest` writes into the build root.
 
 ## Methods
-
-### `set_blocks_root( $blocks_root )`
-
-Set the plugin-relative directory that contains built block directories.
-
-```php
-public function set_blocks_root( string $blocks_root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$blocks_root` — Plugin-relative directory of built block directories |
-| **Return** | — |
-| **Throws** | — |
-
-Call this from the module initializer before the plugin boots the module to override the default `build/blocks` directory.
-
-<br>
 
 ### `add_categories( $categories )`
 
@@ -175,7 +156,7 @@ public function get_discovered_blocks(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | Absolute directory paths keyed by directory name |
-| **Throws** | `DiscoveryException` — When a blocks directory named by set_blocks_root() does not exist |
+| **Throws** | — |
 
 <br>
 

@@ -154,28 +154,6 @@ final class AssetsTest extends TestCase {
 		);
 	}
 
-	/**
-	 * One setting decides both ends: every path in the manifest is relative to
-	 * the build root, so moving it moves all of them.
-	 */
-	public function test_a_package_follows_a_moved_build_directory(): void {
-		$this->write_manifest(
-			array( 'zestry-test-shared-formatting' => array( 'source' => 'shared' ) ),
-			'dist'
-		);
-
-		$this->boot_assets(
-			static function ( Assets $assets ): void {
-				$assets->set_build_root( 'dist' );
-			}
-		);
-
-		$this->assertStringEndsWith(
-			'dist/shared/formatting.js',
-			wp_scripts()->registered['zestry-test-shared-formatting']->src
-		);
-	}
-
 	public function test_keys_shared_packages_by_their_local_name(): void {
 		$this->write_manifest(
 			array(
@@ -495,13 +473,6 @@ final class AssetsTest extends TestCase {
 		$this->assertStringEndsWith( '/assets/app.js', $url );
 	}
 
-	public function test_set_assets_root_changes_where_get_asset_url_resolves(): void {
-		$assets = $this->assets();
-		$assets->set_assets_root( 'dist' );
-
-		$this->assertStringEndsWith( '/dist/app.js', $assets->get_asset_url( 'app.js' ) );
-	}
-
 	public function test_get_asset_slug_namespaces_by_the_plugin_slug(): void {
 		$this->assertSame( 'zestry-test-app', $this->assets()->get_asset_slug( 'app' ) );
 	}
@@ -563,11 +534,10 @@ final class AssetsTest extends TestCase {
 
 	public function test_register_script_resolves_src_relative_to_the_assets_directory(): void {
 		$assets = $this->assets();
-		$assets->set_assets_root( 'dist' );
 		$assets->register_script( 'app', 'app.js' );
 
 		$this->assertSame( $assets->get_asset_url( 'app.js' ), wp_scripts()->registered['zestry-test-app']->src );
-		$this->assertStringEndsWith( '/dist/app.js', wp_scripts()->registered['zestry-test-app']->src );
+		$this->assertStringEndsWith( '/assets/app.js', wp_scripts()->registered['zestry-test-app']->src );
 	}
 
 	public function test_register_style_registers_under_the_namespaced_handle_without_enqueueing(): void {
@@ -605,18 +575,10 @@ final class AssetsTest extends TestCase {
 		$this->assertStringEndsWith( '/build/app.js', $this->assets()->get_build_url( 'app.js' ) );
 	}
 
-	public function test_set_build_root_changes_where_get_build_url_resolves(): void {
-		$assets = $this->assets();
-		$assets->set_build_root( 'dist' );
-
-		$this->assertStringEndsWith( '/dist/app.js', $assets->get_build_url( 'app.js' ) );
-	}
-
 	public function test_build_root_is_independent_of_assets_root(): void {
 		// Changing assets_root must not move where build files are resolved,
 		// and vice versa -- the two directories are configured separately.
 		$assets = $this->assets();
-		$assets->set_assets_root( 'assets-changed' );
 
 		$this->assertStringEndsWith( '/build/app.js', $assets->get_build_url( 'app.js' ) );
 	}

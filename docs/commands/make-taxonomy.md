@@ -16,9 +16,6 @@ Needs the `post-types` module — the same one that registers post types — so 
 - **`<name>`**  
   The local name, e.g. 'genre'. Becomes both the filename (`{name}.php`) under `taxonomies/` and the registered taxonomy itself — unlike every other `make` type, this name is NOT namespaced to the plugin slug (WordPress caps a taxonomy name at 32 characters), so pick something short and globally unique.
 
-- **`[--dir=<dir>]`**  
-  Write into this plugin-relative directory instead of `taxonomies` — pass it when you have pointed PostTypes's taxonomies root somewhere other than its default.
-
 - **`[--singular=<singular>]`**  
   The singular display name, e.g. 'Genre'.  
   Defaults to the title-cased name without prompting.

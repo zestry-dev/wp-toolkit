@@ -61,24 +61,6 @@ final class ViewsTest extends TestCase {
 		$this->views()->get( '../secret' );
 	}
 
-	public function test_set_views_root_changes_and_reinvalidates_the_root(): void {
-		$this->write_plugin_file( 'templates/page.php', 'PAGE' );
-
-		$views = $this->views();
-
-		// Not found under the default 'views' root.
-		$missing = false;
-		try {
-			$views->get( 'page' );
-		} catch ( \InvalidArgumentException $e ) {
-			$missing = true;
-		}
-		$this->assertTrue( $missing );
-
-		$views->set_views_root( 'templates' );
-		$this->assertSame( 'PAGE', $views->get( 'page' ) );
-	}
-
 	public function test_a_null_byte_in_the_view_name_is_rejected(): void {
 		// A null byte is refused (Path's containment guard catches it first).
 		$this->expectException( \InvalidArgumentException::class );

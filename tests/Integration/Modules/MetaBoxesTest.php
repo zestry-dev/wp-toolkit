@@ -277,16 +277,6 @@ final class MetaBoxesTest extends TestCase {
 		$this->assertSame( array(), $this->boot()->get_discovered_boxes() );
 	}
 
-	public function test_a_named_directory_that_is_missing_throws(): void {
-		$module = $this->plugin->get( MetaBoxes::class );
-		$module->set_boxes_root( 'nowhere' );
-
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Meta boxes root directory does not exist' );
-
-		$module->get_discovered_boxes();
-	}
-
 	public function test_a_file_returning_the_wrong_type_throws(): void {
 		file_put_contents( $this->plugin_dir . '/meta-boxes/bad.php', "<?php\nreturn 'nope';\n" );
 

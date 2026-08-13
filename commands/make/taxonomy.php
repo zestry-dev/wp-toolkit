@@ -34,10 +34,6 @@ return new class() extends MakeCommand {
 	 * plugin slug (WordPress caps a taxonomy name at 32 characters), so pick
 	 * something short and globally unique.
 	 *
-	 * [--dir=<dir>]
-	 * : Write into this plugin-relative directory instead of `taxonomies` --
-	 * pass it when you have pointed PostTypes's taxonomies root somewhere other
-	 * than its default.
 	 *
 	 * [--singular=<singular>]
 	 * : The singular display name, e.g. 'Genre'. Defaults to the title-cased

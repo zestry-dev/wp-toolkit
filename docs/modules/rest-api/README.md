@@ -89,15 +89,7 @@ A check spanning two fields belongs in `handle()` rather than here: a callback s
 
 ## Changing the defaults
 
-// bootstrap.php return array(
-
-```php
-RestApi::class => static function ( RestApi $api ): void {
-    $api->set_routes_root( 'routes' );
-},
-```
-
-);
+`RestApi` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( RestApi::class )`, or declare a property of its type and have it injected.
 
 ## Writing a Route
 
@@ -111,33 +103,15 @@ Shipped with this module, and written against directly:
 
 ## Constants
 
-### `DEFAULT_ROUTES_ROOT`
+### `ROUTES_ROOT`
 
 ```php
-const DEFAULT_ROUTES_ROOT = 'routes';
+const ROUTES_ROOT = 'routes';
 ```
 
 Default plugin-relative directory of route files.
 
 ## Methods
-
-### `set_routes_root( $routes_root )`
-
-Set the plugin-relative directory that contains route files.
-
-```php
-public function set_routes_root( string $routes_root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$routes_root` — Plugin-relative directory of route files |
-| **Return** | — |
-| **Throws** | — |
-
-Call this from the module initializer before the plugin boots the module to override the default `routes` directory. The root is read inside the `rest_api_init` callback, so a call made after that hook has run has no effect on the routes already registered.
-
-<br>
 
 ### `get_rest_namespace( $version )`
 

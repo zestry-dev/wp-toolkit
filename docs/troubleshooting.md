@@ -228,25 +228,11 @@ return new class extends AjaxAction {
 
 `Got: SomeClass` means the class does not extend the base class that module expects. [Modules](modules/) lists the directory and base class for each.
 
-**A directory you named does not exist.**
-
-```
-Actions root directory does not exist: /…/acme-plugin/ajax-actions.
-`set_actions_root()` named it, so create that directory or correct the path in
-the initializer. (A default root that is absent is not an error.)
-```
-
-This one only ever comes from a root you asked for by name:
-
-```php
-// bootstrap.php
-Ajax::class => static fn ( Ajax $ajax ) => $ajax->set_actions_root( 'ajax-actions' ),
-```
-
-Fix the path, or drop the setter and use the default.
-
 > [!NOTE]
-> **A missing *default* root is not an error.** Adding `cron` before you have written your first schedule is fine: the module discovers nothing and says nothing. Only a directory named through a `set_*_root()` call and then not found throws — asking for a directory by name and getting nothing is a typo worth hearing about.
+> **A missing directory is not an error.** Every module reads one fixed
+> directory, so adding `cron` before you have written your first schedule is
+> fine: the module discovers nothing and says nothing. [Modules](modules/) lists
+> the directory each one reads.
 
 `wp zt doctor` does not check roots named inside an initializer — finding out would mean running your closures against live instances. This failure is already loud, which is why it is on this page and not in `doctor`'s output.
 

@@ -637,15 +637,6 @@ final class RestApiTest extends TestCase {
 		$this->assertArrayHasKey( '/' . $rest_api->get_rest_namespace( 'v1' ) . '/widgets', $routes );
 	}
 
-	public function test_missing_routes_directory_throws(): void {
-		$rest_api = $this->plugin->get( RestApi::class );
-		$rest_api->set_routes_root( 'no-such-routes-dir' );
-
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Routes root directory does not exist' );
-		do_action( 'rest_api_init', $GLOBALS['wp_rest_server'] );
-	}
-
 	public function test_a_route_file_returning_the_wrong_type_throws(): void {
 		$this->write_plugin_file( 'routes/bad.php', "<?php\nreturn 42;\n" );
 		$this->plugin->get( RestApi::class );
@@ -664,22 +655,6 @@ final class RestApiTest extends TestCase {
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( 'no matching' );
 		do_action( 'rest_api_init', $GLOBALS['wp_rest_server'] );
-	}
-
-	public function test_set_routes_root_is_honored(): void {
-		mkdir( $this->plugin_dir . '/api', 0777, true );
-		$rest_api = $this->plugin->get( RestApi::class );
-		$rest_api->set_routes_root( 'api' );
-		$this->write_plugin_file(
-			'api/widgets.php',
-			"<?php\nuse Zestry\\WPToolkit\\Modules\\RestApi\\Route;\nuse Zestry\\WPToolkit\\Modules\\RestApi\\RestRoute;\n"
-				. 'return Route::get( \'v1\', \'/widgets\', new class extends RestRoute {' . "\n"
-				. $this->open_get() . "\n} );\n"
-		);
-
-		do_action( 'rest_api_init', $GLOBALS['wp_rest_server'] );
-
-		$this->assertArrayHasKey( '/zestry-test/v1/widgets', $GLOBALS['wp_rest_server']->get_routes() );
 	}
 
 	/**

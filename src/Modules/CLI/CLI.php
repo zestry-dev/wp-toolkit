@@ -40,19 +40,8 @@ use Zestry\WPToolkit\Services\Path;
  *
  * A discovered file that returns anything other than a {@see Command} throws
  * `DiscoveryException`, as does a commands directory you named yourself with
- * {@see set_commands_root()} that does not exist.
+ * a file beneath `commands/` that returns something other than a Command.
  *
- * @setup
- * Register an initializer only to point the module at a non-default directory.
- *
- * ```
- * // bootstrap.php
- * return array(
- *     CLI::class => static function ( CLI $cli ): void {
- *         $cli->set_commands_root( 'cli/commands' );
- *     },
- * );
- * ```
  */
 class CLI extends Module {
 
@@ -61,7 +50,7 @@ class CLI extends Module {
 	/**
 	 * Default plugin-relative directory of command files.
 	 */
-	const DEFAULT_COMMANDS_ROOT = 'commands';
+	const COMMANDS_ROOT = 'commands';
 
 	/**
 	 * Path module injected by the plugin to resolve the command directory.
@@ -69,49 +58,6 @@ class CLI extends Module {
 	 * @var Path
 	 */
 	public Path $path;
-
-	/**
-	 * Plugin-relative directory of command files.
-	 *
-	 * @var string
-	 */
-	private string $commands_root = self::DEFAULT_COMMANDS_ROOT;
-
-	/**
-	 * Whether the directory above was named deliberately.
-	 *
-	 * A missing directory means two different things. Named by
-	 * {@see set_commands_root()} and absent: a typo, and registering nothing
-	 * silently would hide it. Never named, and the default is absent: this
-	 * plugin has none of these yet, which is ordinary -- adding the module
-	 * before writing the first file should not take the site down.
-	 *
-	 * @var bool
-	 */
-	private bool $commands_root_was_set = false;
-
-	/**
-	 * Set the plugin-relative directory that contains command files.
-	 *
-	 * Call this from the module initializer before the plugin boots the module
-	 * to override the default `commands` directory.
-	 *
-	 * Naming a directory is what makes its absence fatal. Discovery runs at
-	 * `init`, and if the directory you name here is not there it throws a
-	 * `DiscoveryException` then -- so a typo in your initializer fails loud on
-	 * every `wp` invocation rather than registering nothing and leaving you to
-	 * wonder why your commands are missing. The *default* `commands` directory
-	 * being absent is deliberately not an error: a plugin that has not written
-	 * its first command yet should still boot.
-	 *
-	 * @param string $commands_root Plugin-relative directory of command files.
-	 * @return void
-	 * @throws DiscoveryException When the directory named here does not exist at boot, or a file beneath it returns something other than a Command instance.
-	 */
-	public function set_commands_root( string $commands_root ): void {
-		$this->commands_root         = $commands_root;
-		$this->commands_root_was_set = true;
-	}
 
 	/**
 	 * Wire (if applicable) and register an already-built command instance
@@ -156,23 +102,18 @@ class CLI extends Module {
 	 * regardless of the directory WP-CLI itself was invoked from.
 	 *
 	 * @return void
-	 * @throws DiscoveryException When a commands directory named by set_commands_root() does not exist.
 	 *
 	 * @internal
 	 */
 	public function register_commands(): void {
 		// Resolve relative to the plugin root so discovery does not depend on the CWD.
-		$root_dir = $this->path->get_plugin_path( $this->commands_root );
+		$root_dir = $this->path->get_plugin_path( self::COMMANDS_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
-			if ( ! $this->commands_root_was_set ) {
-				return;
-			}
-
-			throw DiscoveryException::missing_root( 'Commands', $root_dir, 'set_commands_root()' );
+			return;
 		}
 
 		$command_prefix = $this->get_plugin()->get_slug();

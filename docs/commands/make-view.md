@@ -18,9 +18,6 @@ Needs the `views` service: `wp zt add service views`. It arrives on its own with
 - **`<name>`**  
   The view name, as the caller will ask for it, e.g. `emails/receipt`.
 
-- **`[--dir=<dir>]`**  
-  Write into this plugin-relative directory instead of `views` — pass it when you have pointed the Views service's root somewhere else.
-
 - **`[--yes]`**  
   Overwrite an existing file without asking, for an unattended run.
 

@@ -16,9 +16,6 @@ Being declared matters more here than for other modules: WordPress fires the act
 - **`<name>`**  
   The class name, in PascalCase, e.g. `Activation`.
 
-- **`[--dir=<dir>]`**  
-  Write somewhere other than your `Modules/` directory, relative to the plugin root.
-
 - **`[--yes]`**  
   Overwrite an existing file without asking, for an unattended run.
 

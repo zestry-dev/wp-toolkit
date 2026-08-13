@@ -270,17 +270,11 @@ final class MakeCommandTest extends TestCase {
 		mkdir( $this->target_plugin_dir . '/actions', 0777, true );
 		file_put_contents( $this->target_plugin_dir . '/actions/leaf', '<?php' );
 
-		$this->run_make( array( 'send-welcome-email' ), array( 'dir' => 'actions/leaf' ) );
+		$this->run_make( array( 'leaf/send-welcome-email' ) );
 
 		$this->assertNotNull( \WP_CLI::last( 'error' ) );
 		$this->assertStringContainsString( 'already exists as a file', $this->last_error() );
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/actions/leaf/send-welcome-email.php' );
-	}
-
-	public function test_dir_flag_overrides_the_default_directory(): void {
-		$this->run_make( array( 'send-welcome-email' ), array( 'dir' => 'custom-actions' ) );
-
-		$this->assertFileExists( $this->target_plugin_dir . '/custom-actions/send-welcome-email.php' );
 	}
 
 	public function test_command_type_refuses_a_name_already_claimed_as_a_leaf_command(): void {
@@ -511,7 +505,7 @@ final class MakeCommandTest extends TestCase {
 
 	/**
 	 * The directory and the namespace come from the same name, so the two
-	 * cannot disagree the way a separate --dir let them.
+	 * cannot disagree the way a separate destination flag let them.
 	 */
 	public function test_module_type_nests_by_qualifying_the_name(): void {
 		file_put_contents( $this->target_plugin_dir . '/bootstrap.php', "<?php\n\nreturn array(\n);\n" );
@@ -537,19 +531,6 @@ final class MakeCommandTest extends TestCase {
 			'use Acme\\Plugin\\Modules\\Services\\Mailer;',
 			(string) file_get_contents( $this->target_plugin_dir . '/bootstrap.php' )
 		);
-	}
-
-	/**
-	 * A module is found by its namespace, and PSR-4 ties that to one directory,
-	 * so moving the file without moving the namespace produced a class nothing
-	 * could autoload -- and an unresolvable reference in bootstrap.php.
-	 */
-	public function test_module_type_refuses_a_custom_dir(): void {
-		$this->run_make( array( 'RequestLog' ), array( 'dir' => 'custom/Modules' ), 'module.php.stub' );
-
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/custom/Modules/RequestLog.php' );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/lib/Modules/RequestLog.php' );
-		$this->assertStringContainsString( 'does not take --dir', (string) ( \WP_CLI::last( 'error' )[0] ?? '' ) );
 	}
 
 	/**

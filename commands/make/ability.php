@@ -36,8 +36,6 @@ return new class() extends MakeCommand {
 	 * <name>
 	 * : The ability's local name, in kebab-case, e.g. `create-order`.
 	 *
-	 * [--dir=<dir>]
-	 * : Write somewhere other than `abilities/`, relative to the plugin root.
 	 *
 	 * [--extends=<class>]
 	 * : Extend one of your own abstracts instead of the toolkit base. A bare name

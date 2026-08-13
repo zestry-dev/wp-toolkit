@@ -65,13 +65,7 @@ return new class extends Field {
 
 ## Changing the defaults
 
-Point it at a different directory
-
-```php
-Fields::class => static function ( Fields $fields ): void {
-    $fields->set_fields_root( 'meta' );
-},
-```
+`Fields` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( Fields::class )`, or declare a property of its type and have it injected.
 
 ## Writing a Field
 
@@ -85,33 +79,15 @@ Shipped with this module, and written against directly:
 
 ## Constants
 
-### `DEFAULT_FIELDS_ROOT`
+### `FIELDS_ROOT`
 
 ```php
-const DEFAULT_FIELDS_ROOT = 'fields';
+const FIELDS_ROOT = 'fields';
 ```
 
 Where fields are discovered, relative to the plugin root.
 
 ## Methods
-
-### `set_fields_root( $root )`
-
-Read fields from a different directory.
-
-```php
-public function set_fields_root( string $root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$root` — Directory relative to the plugin root |
-| **Return** | — |
-| **Throws** | — |
-
-Call this before the module boots — from its `bootstrap.php` entry. Naming a directory that does not exist is an error and throws at boot, where leaving the default alone and having no such directory simply means you have no fields yet.
-
-<br>
 
 ### `get_discovered_fields()`
 
@@ -125,7 +101,7 @@ public function get_discovered_fields(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | Object type => meta key => instance |
-| **Throws** | `DiscoveryException` — When a directory named by set_fields_root() does not exist, or a file returns the wrong value |
+| **Throws** | `DiscoveryException` — When a file returns the wrong value |
 
 Nested because a meta key is unique only within an object type. Use `get_fields_of()` when you know which type you want.
 

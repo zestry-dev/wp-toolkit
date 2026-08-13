@@ -40,23 +40,11 @@ use Zestry\WPToolkit\Services\Path;
  *
  * Both roots behave the same way, which is what lets a plugin with post types
  * but no taxonomies skip the `taxonomies/` directory entirely. Name one with
- * {@see set_post_types_root()} or {@see set_taxonomies_root()} and it must
+ * `post-types/` or `taxonomies/` and it must
  * exist -- asking for a directory by name and getting nothing is a typo worth
  * hearing about. Leave one at its default and let it be absent, and your
  * plugin simply has none of those files yet.
  *
- * @setup
- * Register an initializer only to point the module at non-default directories.
- *
- * ```
- * // bootstrap.php
- * return array(
- *     PostTypes::class => static function ( PostTypes $post_types ): void {
- *         $post_types->set_post_types_root( 'cpt/post-types' );
- *         $post_types->set_taxonomies_root( 'cpt/taxonomies' );
- *     },
- * );
- * ```
  */
 class PostTypes extends Module {
 
@@ -65,12 +53,12 @@ class PostTypes extends Module {
 	/**
 	 * Default plugin-relative directory of post type files.
 	 */
-	const DEFAULT_POST_TYPES_ROOT = 'post-types';
+	const POST_TYPES_ROOT = 'post-types';
 
 	/**
 	 * Default plugin-relative directory of taxonomy files.
 	 */
-	const DEFAULT_TAXONOMIES_ROOT = 'taxonomies';
+	const TAXONOMIES_ROOT = 'taxonomies';
 
 	/**
 	 * Path module injected by the plugin to resolve the discovery directories.
@@ -78,47 +66,6 @@ class PostTypes extends Module {
 	 * @var Path
 	 */
 	public Path $path;
-
-	/**
-	 * Plugin-relative directory of post type files.
-	 *
-	 * @var string
-	 */
-	private string $post_types_root = self::DEFAULT_POST_TYPES_ROOT;
-
-	/**
-	 * Whether the directory above was named deliberately.
-	 *
-	 * A missing directory means two different things. Named by
-	 * {@see set_post_types_root()} and absent: a typo, and registering nothing
-	 * silently would hide it. Never named, and the default is absent: this
-	 * plugin has none of these yet, which is ordinary -- adding the module
-	 * before writing the first file should not take the site down.
-	 *
-	 * @var bool
-	 */
-	private bool $post_types_root_was_set = false;
-
-	/**
-	 * Plugin-relative directory of taxonomy files.
-	 *
-	 * @var string
-	 */
-	private string $taxonomies_root = self::DEFAULT_TAXONOMIES_ROOT;
-
-	/**
-	 * Whether the taxonomies directory was named deliberately.
-	 *
-	 * A missing directory means two different things here, and this is what
-	 * tells them apart. Asked for one by name and it is not there: a typo, and
-	 * silence would hide it. Never asked, and the default is not there: this
-	 * plugin registers no taxonomies, which is ordinary -- it is the only
-	 * module with a second root, so throwing would make adding it for post
-	 * types demand an empty directory for something the plugin does not use.
-	 *
-	 * @var bool
-	 */
-	private bool $taxonomies_root_was_set = false;
 
 	/**
 	 * Discovered post type instances, indexed by their registered name.
@@ -138,40 +85,6 @@ class PostTypes extends Module {
 	 * @var array<string, Taxonomy>|null
 	 */
 	private ?array $taxonomies = null;
-
-	/**
-	 * Set the plugin-relative directory that contains post type files.
-	 *
-	 * Call this from the module initializer before the plugin boots the
-	 * module to override the default `post-types` directory.
-	 *
-	 * @param string $post_types_root Plugin-relative directory of post type files.
-	 * @return void
-	 */
-	public function set_post_types_root( string $post_types_root ): void {
-		$this->post_types_root         = $post_types_root;
-		$this->post_types_root_was_set = true;
-
-		// Anything already read came from the old directory.
-		$this->post_types = null;
-	}
-
-	/**
-	 * Set the plugin-relative directory that contains taxonomy files.
-	 *
-	 * Call this from the module initializer before the plugin boots the
-	 * module to override the default `taxonomies` directory.
-	 *
-	 * @param string $taxonomies_root Plugin-relative directory of taxonomy files.
-	 * @return void
-	 */
-	public function set_taxonomies_root( string $taxonomies_root ): void {
-		$this->taxonomies_root         = $taxonomies_root;
-		$this->taxonomies_root_was_set = true;
-
-		// Anything already read came from the old directory.
-		$this->taxonomies = null;
-	}
 
 	/**
 	 * This post type's registered name.
@@ -264,26 +177,22 @@ class PostTypes extends Module {
 	 * were given earlier.
 	 *
 	 * @return array<string, PostType> Wired instances keyed by registered name.
-	 * @throws DiscoveryException When a post types directory named by set_post_types_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 */
 	public function get_discovered_post_types(): array {
 		if ( null !== $this->post_types ) {
 			return $this->post_types;
 		}
 
-		$root_dir = $this->path->get_plugin_path( $this->post_types_root );
+		$root_dir = $this->path->get_plugin_path( self::POST_TYPES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
-			if ( ! $this->post_types_root_was_set ) {
-				$this->post_types = array();
+			$this->post_types = array();
 
-				return $this->post_types;
-			}
-
-			throw DiscoveryException::missing_root( 'Post types', $root_dir, 'set_post_types_root()' );
+			return $this->post_types;
 		}
 
 		$this->post_types = array();
@@ -332,20 +241,14 @@ class PostTypes extends Module {
 			return $this->taxonomies;
 		}
 
-		$root_dir = $this->path->get_plugin_path( $this->taxonomies_root );
+		$root_dir = $this->path->get_plugin_path( self::TAXONOMIES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// The default directory, absent and never asked for: this plugin
 			// registers no taxonomies. Only a directory named by
-			// set_taxonomies_root() is missing in the sense worth throwing over
-			// -- see $taxonomies_root_was_set.
-			if ( ! $this->taxonomies_root_was_set ) {
-				$this->taxonomies = array();
+			$this->taxonomies = array();
 
-				return $this->taxonomies;
-			}
-
-			throw DiscoveryException::missing_root( 'Taxonomies', $root_dir, 'set_taxonomies_root()' );
+			return $this->taxonomies;
 		}
 
 		$this->taxonomies = array();

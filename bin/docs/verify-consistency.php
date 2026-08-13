@@ -130,7 +130,7 @@ function zestry_check_fenced_table_cells( array $pages ): array {
  * One row links to `commands/` rather than to a page: `wp zt make`, which states
  * the flags its 21 types share. It satisfies the omission check for all of them
  * and is left out of the reverse one, since it qualifies itself in prose
- * ("`--dir=` on every type but `module`") rather than claiming a flag outright.
+ * ("`--yes` on every type") rather than claiming a flag outright.
  *
  * Values a row spells out (`--format=a|b`) are not claims about a second flag,
  * so only the flag name is compared.
@@ -169,7 +169,7 @@ function zestry_check_cheat_sheet_flags( string $root, array $pages ): array {
 			 * A row linking to the directory rather than to a page describes
 			 * every command in it -- `wp zt make` states the flags its 21 types
 			 * share. Kept apart from the per-type rows: it qualifies them in
-			 * prose ("`--dir=` on every type but `module`"), so it can satisfy
+			 * prose ("`--yes` on every type"), so it can satisfy
 			 * the omission check without being read as a claim in reverse.
 			 */
 			if ( ! str_ends_with( $target, '.md' ) ) {

@@ -30,9 +30,6 @@ Add the `assets` module to register what the build produces: `wp zt add module a
   How WordPress loads it. `script` registers a handle other scripts depend on, and works everywhere. `module` registers an ES module, which needs WordPress 6.5 or newer and importers that are modules themselves. Asked for when omitted.  
   Accepts `script`, `module`.
 
-- **`[--dir=<dir>]`**  
-  Write somewhere other than `src/shared/`, relative to the plugin root.
-
 - **`[--yes]`**  
   Overwrite an existing file without asking, and take the default for `--kind` rather than asking — a `script` package, which works everywhere.
 

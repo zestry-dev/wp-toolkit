@@ -84,13 +84,6 @@ final class MigrationsTest extends TestCase {
 		$this->boot_migrations_with_root( 'migrations' )->run_pending();
 	}
 
-	public function test_missing_migrations_directory_throws(): void {
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Migrations root directory does not exist' );
-
-		$this->boot_migrations_with_root( 'does-not-exist' )->run_pending();
-	}
-
 	public function test_a_migration_file_returning_the_wrong_type_throws(): void {
 		$this->write_plugin_file( 'migrations/20260101000000-bad.php', "<?php\nreturn 42;\n" );
 
@@ -112,13 +105,6 @@ final class MigrationsTest extends TestCase {
 			$migrations->get_discovered_migrations(),
 			'Discovery order matches filename order, independent of run state.'
 		);
-	}
-
-	public function test_get_discovered_migrations_throws_on_a_missing_directory(): void {
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Migrations root directory does not exist' );
-
-		$this->boot_migrations_with_root( 'does-not-exist' )->get_discovered_migrations();
 	}
 
 	public function test_run_pending_clears_running_since_on_normal_completion(): void {
@@ -767,7 +753,6 @@ final class MigrationsTest extends TestCase {
 		$this->plugin->configure(
 			Migrations::class,
 			static function ( Migrations $migrations ) use ( $root ): void {
-				$migrations->set_migrations_root( $root );
 			}
 		);
 

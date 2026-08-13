@@ -111,11 +111,9 @@ use Zestry\WPToolkit\Services\Request\Request;
  * }
  * ```
  *
- * @setup Group them, or read them from elsewhere
+ * @setup Group them
  * ```
  * Abilities::class => static function ( Abilities $abilities ): void {
- *     $abilities->set_abilities_root( 'src/abilities' );
- *
  *     $abilities->on_wp_init(
  *         static function ( Abilities $abilities ): void {
  *             $abilities->add_categories(
@@ -138,7 +136,7 @@ class Abilities extends Module {
 	/**
 	 * Where abilities are discovered, relative to the plugin root.
 	 */
-	const DEFAULT_ABILITIES_ROOT = 'abilities';
+	const ABILITIES_ROOT = 'abilities';
 
 	/**
 	 * @var Path
@@ -151,20 +149,6 @@ class Abilities extends Module {
 	 * @var Request
 	 */
 	public Request $request;
-
-	/**
-	 * The directory abilities are read from.
-	 *
-	 * @var string
-	 */
-	private string $abilities_root = self::DEFAULT_ABILITIES_ROOT;
-
-	/**
-	 * Whether the root above was named rather than defaulted.
-	 *
-	 * @var bool
-	 */
-	private bool $abilities_root_was_set = false;
 
 	/**
 	 * Discovered abilities by local name, once the directory has been walked.
@@ -182,25 +166,6 @@ class Abilities extends Module {
 	 * @var array<string, array{label: string, description: string}>
 	 */
 	private array $categories = array();
-
-	/**
-	 * Read abilities from a different directory.
-	 *
-	 * Call this before the module boots — from its `bootstrap.php` entry. Naming
-	 * a directory that does not exist is an error and throws, where leaving the
-	 * default alone and having no such directory simply means you have no
-	 * abilities yet.
-	 *
-	 * @param string $root Directory relative to the plugin root.
-	 * @return void
-	 */
-	public function set_abilities_root( string $root ): void {
-		$this->abilities_root         = \trim( $root, '/\\' );
-		$this->abilities_root_was_set = true;
-
-		// Anything already read came from the old directory.
-		$this->discovered = null;
-	}
 
 	/**
 	 * Declare ability categories of your own.
@@ -279,26 +244,22 @@ class Abilities extends Module {
 	 * Every discovered ability, keyed by its local name.
 	 *
 	 * @return array<string, Ability> Wired instances keyed by local name.
-	 * @throws DiscoveryException When a directory named by set_abilities_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 */
 	public function get_discovered_abilities(): array {
 		if ( null !== $this->discovered ) {
 			return $this->discovered;
 		}
 
-		$root_dir = $this->path->get_plugin_path( $this->abilities_root );
+		$root_dir = $this->path->get_plugin_path( self::ABILITIES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
-			if ( ! $this->abilities_root_was_set ) {
-				$this->discovered = array();
+			$this->discovered = array();
 
-				return $this->discovered;
-			}
-
-			throw DiscoveryException::missing_root( 'Abilities', $root_dir, 'set_abilities_root()' );
+			return $this->discovered;
 		}
 
 		$instances = array();

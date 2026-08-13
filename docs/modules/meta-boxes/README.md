@@ -78,13 +78,7 @@ return new class extends MetaBox {
 
 ## Changing the defaults
 
-Point it at a different directory
-
-```php
-MetaBoxes::class => static function ( MetaBoxes $boxes ): void {
-    $boxes->set_boxes_root( 'panels' );
-},
-```
+`MetaBoxes` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( MetaBoxes::class )`, or declare a property of its type and have it injected.
 
 ## Writing a MetaBox
 
@@ -100,33 +94,15 @@ Shipped with this module, and written against directly:
 
 ## Constants
 
-### `DEFAULT_BOXES_ROOT`
+### `BOXES_ROOT`
 
 ```php
-const DEFAULT_BOXES_ROOT = 'meta-boxes';
+const BOXES_ROOT = 'meta-boxes';
 ```
 
 Where boxes are discovered, relative to the plugin root.
 
 ## Methods
-
-### `set_boxes_root( $root )`
-
-Read boxes from a different directory.
-
-```php
-public function set_boxes_root( string $root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$root` — Directory relative to the plugin root |
-| **Return** | — |
-| **Throws** | — |
-
-Call this before the module boots — from its `bootstrap.php` entry. Naming a directory that does not exist is an error and throws at boot, where leaving the default alone and having no such directory simply means you have no boxes yet.
-
-<br>
 
 ### `get_discovered_boxes()`
 
@@ -140,7 +116,7 @@ public function get_discovered_boxes(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | Screen type => identifier => instance |
-| **Throws** | `DiscoveryException` — When a directory named by set_boxes_root() does not exist, or a file returns the wrong value |
+| **Throws** | `DiscoveryException` — When a file returns the wrong value |
 
 <br>
 

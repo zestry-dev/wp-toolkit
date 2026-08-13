@@ -22,8 +22,6 @@ return new class() extends MakeCommand {
 	 * <name>
 	 * : The box's local name, in kebab-case, e.g. `book-details`.
 	 *
-	 * [--dir=<dir>]
-	 * : Write somewhere other than `meta-boxes/`, relative to the plugin root.
 	 *
 	 * [--extends=<class>]
 	 * : Extend one of your own abstracts instead of the toolkit base. A bare name

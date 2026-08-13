@@ -100,12 +100,10 @@ if ( is_wp_error( $result ) ) {
 
 ## Changing the defaults
 
-Group them, or read them from elsewhere
+Group them
 
 ```php
 Abilities::class => static function ( Abilities $abilities ): void {
-    $abilities->set_abilities_root( 'src/abilities' );
-
     $abilities->on_wp_init(
         static function ( Abilities $abilities ): void {
             $abilities->add_categories(
@@ -133,33 +131,15 @@ Shipped with this module, and written against directly:
 
 ## Constants
 
-### `DEFAULT_ABILITIES_ROOT`
+### `ABILITIES_ROOT`
 
 ```php
-const DEFAULT_ABILITIES_ROOT = 'abilities';
+const ABILITIES_ROOT = 'abilities';
 ```
 
 Where abilities are discovered, relative to the plugin root.
 
 ## Methods
-
-### `set_abilities_root( $root )`
-
-Read abilities from a different directory.
-
-```php
-public function set_abilities_root( string $root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$root` — Directory relative to the plugin root |
-| **Return** | — |
-| **Throws** | — |
-
-Call this before the module boots — from its `bootstrap.php` entry. Naming a directory that does not exist is an error and throws, where leaving the default alone and having no such directory simply means you have no abilities yet.
-
-<br>
 
 ### `add_categories( $categories )`
 
@@ -221,7 +201,7 @@ public function get_discovered_abilities(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | Wired instances keyed by local name |
-| **Throws** | `DiscoveryException` — When a directory named by set_abilities_root() does not exist, or a file returns the wrong value |
+| **Throws** | `DiscoveryException` — When a file returns the wrong value |
 
 <br>
 

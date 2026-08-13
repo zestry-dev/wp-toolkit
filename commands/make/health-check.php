@@ -22,8 +22,6 @@ return new class() extends MakeCommand {
 	 * <name>
 	 * : The check's local name, in kebab-case, e.g. `api-key`.
 	 *
-	 * [--dir=<dir>]
-	 * : Write somewhere other than `health-checks/`, relative to the plugin root.
 	 *
 	 * [--extends=<class>]
 	 * : Extend one of your own abstracts instead of the toolkit base. A bare name

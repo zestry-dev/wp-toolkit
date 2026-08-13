@@ -20,9 +20,6 @@ Needs the `admin-pages` module, so run `wp zt add module admin-pages` first if y
 - **`<name>`**  
   The local name, e.g. 'settings'. Becomes the filename (`{name}.php`) under `admin-pages/`.
 
-- **`[--dir=<dir>]`**  
-  Write into this plugin-relative directory instead of `admin-pages` — pass it when you have pointed AdminPages's pages root somewhere other than its default.
-
 - **`[--no-view]`**  
   Skip the template, and generate a `render()` that echoes its own markup instead of rendering one. The page class is written either way.
 

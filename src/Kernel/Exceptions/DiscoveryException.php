@@ -15,13 +15,10 @@ namespace Zestry\WPToolkit\Kernel\Exceptions;
  * Thrown when a module's file-based discovery cannot proceed.
  *
  * Catch this to handle any malformed discovery layout, in any module that reads
- * files, without also catching unrelated failures. It arrives in six shapes:
+ * files, without also catching unrelated failures. It arrives in five shapes:
  *
  * - **A discovered file returned the wrong thing.** Usually a missing `return`,
  *   since `require` yields `1` for a file that returns nothing.
- * - **A root directory named by a `set_*_root()` call does not exist.** A
- *   *default* root that is absent is not an error: the module discovers nothing
- *   and says nothing.
  * - **Two files resolve to one registered name**, which only happens where the
  *   name is built from more than the filename -- `reports.php` and
  *   `reports/index.php` are two paths meaning one admin page.
@@ -47,9 +44,14 @@ namespace Zestry\WPToolkit\Kernel\Exceptions;
  * `catch ( ModuleException $e )` around boot covers every way a module can fail
  * to come up.
  *
- * Writing a discovery module of your own? {@see missing_root()} and
- * {@see name_collision()} raise the same two sentences the built-in modules do,
- * so yours fails the way the rest of the plugin already does.
+ * Writing a discovery module of your own? {@see name_collision()} raises the same
+ * sentence the built-in modules do, so yours fails the way the rest of the plugin
+ * already does.
+ *
+ * A root directory that is simply absent is not here, and never was an error
+ * worth raising: with the directories fixed, an empty one means the plugin has
+ * none of those files yet, which is what adding a module before writing its first
+ * file looks like.
  *
  * @rationale
  * The SPL argument for `\RuntimeException` over `\InvalidArgumentException`:
@@ -128,33 +130,6 @@ class DiscoveryException extends ModuleException {
 				$name,
 				$first,
 				$other
-			)
-		);
-	}
-
-	/**
-	 * The message every module raises for a root it was told to read.
-	 *
-	 * Reached only when a `set_*_root()` call named the directory. A *default*
-	 * root that does not exist discovers nothing and says nothing -- adding a
-	 * module before writing its first file is ordinary -- so arriving here means
-	 * someone asked for this path by name and it is not there. That is what
-	 * makes a next step worth stating: the setter's argument is wrong, or the
-	 * directory has yet to be made.
-	 *
-	 * @param string $what   What the module discovers, e.g. `Commands`.
-	 * @param string $path   The absolute path it looked in.
-	 * @param string $setter The setter that named it, e.g. `set_commands_root()`.
-	 * @return self
-	 */
-	public static function missing_root( string $what, string $path, string $setter ): self {
-		return new self(
-			\sprintf(
-				'%s root directory does not exist: %s. `%s` named it, so create that directory or correct'
-					. ' the path in the initializer. (A default root that is absent is not an error.)',
-				$what,
-				$path,
-				$setter
 			)
 		);
 	}

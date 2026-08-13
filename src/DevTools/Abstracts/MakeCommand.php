@@ -32,7 +32,7 @@ use Zestry\WPToolkit\DevTools\RuntimePlugin;
  * concrete classes under `commands/make/`): read the project's zestry.json for
  * its namespace, render the type's stub with the name/title plus whatever
  * {@see get_extra_values()} contributes, and write it into the type's
- * conventional directory (or `--dir=` when given), refusing to overwrite an
+ * conventional directory, refusing to overwrite an
  * existing file without confirmation.
  *
  * A concrete subcommand supplies only what makes it different from the
@@ -105,10 +105,6 @@ abstract class MakeCommand extends Command {
 	 * : The local name, e.g. 'send-welcome-email'. Becomes the filename
 	 * (`{name}.php`) under the type's conventional directory.
 	 *
-	 * [--dir=<dir>]
-	 * : Write into this plugin-relative directory instead of the type's
-	 * default -- use this when the consuming plugin configured a module's
-	 * root to something other than its default.
 	 *
 	 * [--extends=<class>]
 	 * : Extend your own intermediate abstract instead of the toolkit's base.
@@ -122,7 +118,6 @@ abstract class MakeCommand extends Command {
 		if ( \count( $args ) < 1 ) {
 			$this->error(
 				'Usage: wp zt make ' . static::get_type() . ' <name>'
-					. ( $this->allows_custom_dir() ? ' [--dir=<dir>]' : '' )
 			);
 			return;
 		}
@@ -192,21 +187,7 @@ abstract class MakeCommand extends Command {
 			$values = \array_merge( $values, $parent );
 		}
 
-		if ( ! $this->allows_custom_dir() && null !== $this->get_flag( $assoc_args, 'dir', null ) ) {
-			$this->error(
-				\sprintf(
-					'`%s` does not take --dir: it belongs in "%s" and nowhere else.',
-					static::get_type(),
-					$this->get_default_dir( $config )
-				)
-			);
-
-			return;
-		}
-
-		$dir = $this->allows_custom_dir()
-			? $this->get_flag( $assoc_args, 'dir', $this->get_default_dir( $config ) )
-			: $this->get_default_dir( $config );
+		$dir = $this->get_default_dir( $config );
 
 		/*
 		 * One shared stub for every type once a parent is named. The type's own
@@ -428,29 +409,9 @@ abstract class MakeCommand extends Command {
 	abstract protected function get_stub(): string;
 
 	/**
-	 * Whether this type accepts `--dir` at all.
-	 *
-	 * True for every discovery type: their root is configurable at runtime with
-	 * a `set_*_root()` call, so where the file lives is genuinely the project's
-	 * choice and zestry.json does not track it.
-	 *
-	 * The `module` type is the exception. A plain module is not a discovery
-	 * convention with a root of its own -- it is found by its namespace, and
-	 * PSR-4 ties that to one directory. A file written elsewhere would need a
-	 * namespace to match, so honouring `--dir` there meant either stamping a
-	 * namespace nothing autoloads or deriving one per invocation. One home is
-	 * simpler than either, and it is the one the docs already name.
-	 *
-	 * @return bool
-	 */
-	protected function allows_custom_dir(): bool {
-		return true;
-	}
-
-	/**
 	 * The plugin-relative directory this type writes into by default.
 	 *
-	 * A default only for a type that {@see allows_custom_dir()}, since zestry.json
+	 * Read from zestry.json where the type needs it, since zestry.json
 	 * does not track per-module discovery roots; for one that does not, it is
 	 * the only destination. `$config` is the already-read zestry.json, used by the
 	 * `module` type alone (its destination is `{$config['root']}/Modules`);
@@ -502,7 +463,7 @@ abstract class MakeCommand extends Command {
 	 * stub placeholders still use the plain `$name`. A type whose stub is a
 	 * directory returns a directory here instead, since that is what it writes.
 	 *
-	 * @param string $dir  The resolved destination directory (already `--dir=`-overridden if given).
+	 * @param string $dir  The type's own destination directory.
 	 * @param string $name The local name given on the command line.
 	 * @return string The plugin-relative path, e.g. `schedules/cleanup.php`.
 	 */

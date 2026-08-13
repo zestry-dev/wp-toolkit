@@ -79,25 +79,10 @@ final class AjaxDiscoveryTest extends TestCase {
 		$this->plugin->configure(
 			Ajax::class,
 			static function ( Ajax $ajax ) use ( $root ): void {
-				$ajax->set_actions_root( $root );
 			}
 		);
 
 		return $this->plugin->get( Ajax::class );
-	}
-
-	/**
-	 * A missing actions directory fails fast with a clear, path-naming message
-	 * (register_actions()'s is_dir() guard).
-	 */
-	public function test_missing_actions_directory_throws_invalid_argument(): void {
-		$this->force_ajax_request();
-
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Actions root directory does not exist' );
-
-		// No such directory is created under the plugin dir.
-		$this->boot_ajax_with_root( 'does-not-exist' );
 	}
 
 	/**
@@ -127,7 +112,6 @@ final class AjaxDiscoveryTest extends TestCase {
 		$ajax = $this->plugin->make(
 			Ajax::class,
 			static function ( Ajax $module ): void {
-				$module->set_actions_root( 'actions' );
 			}
 		);
 

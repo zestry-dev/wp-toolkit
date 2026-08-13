@@ -47,14 +47,13 @@ use Zestry\WPToolkit\Services\Path;
  * nothing moves on a site that already has the event.
  *
  * @setup
- * Register an initializer to point the module at a non-default directory, or
- * to declare a custom interval schedules can then ask for by name.
+ * Register an initializer to declare a custom interval schedules can then ask
+ * for by name.
  *
  * ```
  * // bootstrap.php
  * return array(
  *     Cron::class => static function ( Cron $cron ): void {
- *         $cron->set_schedules_root( 'cron/schedules' );
  *         $cron->add_custom_interval( 'every_15_minutes', 15 * MINUTE_IN_SECONDS, 'Every 15 Minutes' );
  *     },
  * );
@@ -67,7 +66,7 @@ class Cron extends Module {
 	/**
 	 * Default plugin-relative directory of schedule files.
 	 */
-	const DEFAULT_SCHEDULES_ROOT = 'schedules';
+	const SCHEDULES_ROOT = 'schedules';
 
 	private const BUILTIN_INTERVALS = array( 'hourly', 'twicedaily', 'daily' );
 
@@ -77,26 +76,6 @@ class Cron extends Module {
 	 * @var Path
 	 */
 	public Path $path;
-
-	/**
-	 * Plugin-relative directory of schedule files.
-	 *
-	 * @var string
-	 */
-	private string $schedules_root = self::DEFAULT_SCHEDULES_ROOT;
-
-	/**
-	 * Whether the directory above was named deliberately.
-	 *
-	 * A missing directory means two different things. Named by
-	 * {@see set_schedules_root()} and absent: a typo, and registering nothing
-	 * silently would hide it. Never named, and the default is absent: this
-	 * plugin has none of these yet, which is ordinary -- adding the module
-	 * before writing the first file should not take the site down.
-	 *
-	 * @var bool
-	 */
-	private bool $schedules_root_was_set = false;
 
 	/**
 	 * Custom interval definitions registered via add_custom_interval(), keyed
@@ -115,31 +94,6 @@ class Cron extends Module {
 	 * @var array<string, Schedule>|null
 	 */
 	private ?array $discovered = null;
-
-	/**
-	 * Set the plugin-relative directory that contains schedule files.
-	 *
-	 * Call this from the module initializer before the plugin boots the module
-	 * to override the default `schedules` directory.
-	 *
-	 * Naming a directory is what makes its absence fatal. Discovery runs at
-	 * `init` on every request, and if the directory you name here is not there
-	 * it throws a `DiscoveryException` then -- so a typo in your initializer
-	 * takes the site down rather than scheduling nothing and leaving you to
-	 * wonder why your events never fire. The *default* `schedules` directory
-	 * being absent is deliberately not an error: a plugin that has not written
-	 * its first schedule yet should still boot.
-	 *
-	 * @param string $schedules_root Plugin-relative directory of schedule files.
-	 * @return void
-	 * @throws DiscoveryException When the directory named here does not exist at boot, or a file beneath it returns something other than a Schedule instance.
-	 */
-	public function set_schedules_root( string $schedules_root ): void {
-		// Anything already read came from the old directory.
-		$this->discovered             = null;
-		$this->schedules_root         = $schedules_root;
-		$this->schedules_root_was_set = true;
-	}
 
 	/**
 	 * Register a custom WP-Cron interval.
@@ -229,7 +183,7 @@ class Cron extends Module {
 	 * way discovery does on a broken schedules directory.
 	 *
 	 * @return void
-	 * @throws DiscoveryException When a schedules directory named by set_schedules_root() does not exist, or a file returns something other than a Schedule instance.
+	 * @throws DiscoveryException When a file returns something other than a Schedule instance.
 	 */
 	public function unschedule_all(): void {
 		foreach ( $this->get_discovered_schedules() as $name => $instance ) {
@@ -259,7 +213,7 @@ class Cron extends Module {
 	 * reports once, at the first.
 	 *
 	 * @return array<string, int> Hook name => the timestamp it next fires, earliest first.
-	 * @throws DiscoveryException When a schedules directory named by set_schedules_root() does not exist, or a file returns something other than a Schedule instance.
+	 * @throws DiscoveryException When a file returns something other than a Schedule instance.
 	 */
 	public function get_orphaned_events(): array {
 		$registered = array();
@@ -300,7 +254,7 @@ class Cron extends Module {
 	 * activation handler -- once you have looked at the list.
 	 *
 	 * @return string[] The hooks cleared, in the order they would next have fired.
-	 * @throws DiscoveryException When a schedules directory named by set_schedules_root() does not exist, or a file returns something other than a Schedule instance.
+	 * @throws DiscoveryException When a file returns something other than a Schedule instance.
 	 */
 	public function unschedule_orphaned(): array {
 		$orphaned = \array_keys( $this->get_orphaned_events() );
@@ -401,26 +355,22 @@ class Cron extends Module {
 	 * Discover every schedule file and wire an instance for each.
 	 *
 	 * @return array<string, Schedule> Wired instances keyed by local schedule name.
-	 * @throws DiscoveryException When a schedules directory named by set_schedules_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 */
 	private function get_discovered_schedules(): array {
 		if ( null !== $this->discovered ) {
 			return $this->discovered;
 		}
 
-		$root_dir = $this->path->get_plugin_path( $this->schedules_root );
+		$root_dir = $this->path->get_plugin_path( self::SCHEDULES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
-			if ( ! $this->schedules_root_was_set ) {
-				$this->discovered = array();
+			$this->discovered = array();
 
-				return $this->discovered;
-			}
-
-			throw DiscoveryException::missing_root( 'Schedules', $root_dir, 'set_schedules_root()' );
+			return $this->discovered;
 		}
 
 		$instances = array();
@@ -451,7 +401,7 @@ class Cron extends Module {
 	 * @throws \InvalidArgumentException When no schedule file matches $name.
 	 */
 	private function load_schedule( string $name ): Schedule {
-		$root_dir = $this->path->get_plugin_path( $this->schedules_root );
+		$root_dir = $this->path->get_plugin_path( self::SCHEDULES_ROOT );
 		$file     = $root_dir . '/' . $name . '.php';
 
 		if ( ! \is_file( $file ) ) {

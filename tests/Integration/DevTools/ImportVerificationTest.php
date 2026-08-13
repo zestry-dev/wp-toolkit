@@ -61,7 +61,7 @@ final class ImportVerificationTest extends TestCase {
 	/**
 	 * A consumer's own class through the plain root is left alone.
 	 *
-	 * `wp zt make service Mailer --dir=Modules/Services` legitimately writes
+	 * `wp zt make service Mailer` legitimately writes
 	 * this, and nothing here can know whether it exists.
 	 */
 	public function test_ignores_a_class_that_is_not_the_toolkit_s(): void {

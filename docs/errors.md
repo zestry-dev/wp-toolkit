@@ -73,11 +73,11 @@ Module initializer must be callable.
 ```php
 // bootstrap.php
 use Acme\Plugin\Core\Modules\AdminPages\AdminPages;
-use Acme\Plugin\Core\Modules\CLI\CLI;
+use Acme\Plugin\Core\Modules\Cron\Cron;
 
 return array(
-    CLI::class => static function ( CLI $cli ): void {
-        $cli->set_commands_root( 'cli/commands' );
+    Cron::class => static function ( Cron $cron ): void {
+        $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
     },
     AdminPages::class,
 );
@@ -170,18 +170,7 @@ return new class extends Command {
 };
 ```
 
-**A directory you named does not exist.**
-
-```
-Commands root directory does not exist: /…/acme-plugin/cli/commands.
-`set_commands_root()` named it, so create that directory or correct the path in
-the initializer. (A default root that is absent is not an error.)
-```
-
-Each module names its own root, so the message begins by saying which one threw:
-
-| Module | Message prefix |
-|---|---|
+---|---|
 | [`ajax`](modules/ajax/) | `Actions root directory does not exist: ` |
 | [`admin-pages`](modules/admin-pages/) | `Pages root directory does not exist: ` |
 | [`rest-api`](modules/rest-api/) | `Routes root directory does not exist: ` |

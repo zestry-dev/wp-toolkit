@@ -71,16 +71,7 @@ A page's markup belongs in a template, and `wp zt make page` writes one alongsid
 
 ## Changing the defaults
 
-Register an initializer only to point the module at a non-default directory.
-
-```php
-// bootstrap.php
-return array(
-    AdminPages::class => static function ( AdminPages $pages ): void {
-        $pages->set_pages_root( 'admin/pages' );
-    },
-);
-```
+`AdminPages` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( AdminPages::class )`, or declare a property of its type and have it injected.
 
 ## Writing an AdminPage
 
@@ -100,33 +91,15 @@ Shipped with this module, and written against directly:
 
 ## Constants
 
-### `DEFAULT_PAGES_ROOT`
+### `PAGES_ROOT`
 
 ```php
-const DEFAULT_PAGES_ROOT = 'admin-pages';
+const PAGES_ROOT = 'admin-pages';
 ```
 
 Default plugin-relative directory of page files.
 
 ## Methods
-
-### `set_pages_root( $pages_root )`
-
-Set the plugin-relative directory that contains page files.
-
-```php
-public function set_pages_root( string $pages_root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$pages_root` — Plugin-relative directory of page files |
-| **Return** | — |
-| **Throws** | — |
-
-Call this from the module initializer before the plugin boots the module to override the default `admin-pages` directory. The root is read inside the `admin_menu` callback, so a call made after that hook has run has no effect on the pages already registered.
-
-<br>
 
 ### `get_page_slug( $name )`
 

@@ -424,15 +424,6 @@ final class AbilitiesTest extends TestCase {
 	}
 
 
-	public function test_a_missing_directory_named_by_hand_throws(): void {
-		$abilities = $this->boot();
-		$abilities->set_abilities_root( 'nowhere' );
-
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Abilities root directory does not exist' );
-		$abilities->get_discovered_abilities();
-	}
-
 	/**
 	 * A typed property with an AbilityArgument is the whole declaration: it
 	 * becomes the input schema, and the validated value is bound onto it.

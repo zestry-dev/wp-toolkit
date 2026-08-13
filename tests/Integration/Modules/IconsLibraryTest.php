@@ -198,17 +198,6 @@ final class IconsLibraryTest extends TestCase {
 		$this->boot();
 	}
 
-	public function test_a_named_root_that_does_not_exist_throws(): void {
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'set_svg_icons_root()' );
-
-		$this->boot_with(
-			static function ( IconsLibrary $icons ): void {
-				$icons->set_svg_icons_root( 'assets/nowhere' );
-			}
-		);
-	}
-
 	/**
 	 * Adding the module before drawing the first icon is ordinary, so only a
 	 * directory asked for by name is missing in the sense worth throwing over.

@@ -15,7 +15,7 @@ Taxonomies are always registered after every post type, regardless of file disco
 
 `get_discovered_post_types()` and `get_discovered_taxonomies()` hand back everything the two directories declare, switched on or off, so a plugin can build a screen over its own post types without keeping a second list of them somewhere. `is_enabled()` is read at registration instead: a file that switches itself off is one you can list and WordPress never hears about.
 
-Both roots behave the same way, which is what lets a plugin with post types but no taxonomies skip the `taxonomies/` directory entirely. Name one with `set_post_types_root()` or `set_taxonomies_root()` and it must exist — asking for a directory by name and getting nothing is a typo worth hearing about. Leave one at its default and let it be absent, and your plugin simply has none of those files yet.
+Both roots behave the same way, which is what lets a plugin with post types but no taxonomies skip the `taxonomies/` directory entirely. Name one with `post-types/` or `taxonomies/` and it must exist — asking for a directory by name and getting nothing is a typo worth hearing about. Leave one at its default and let it be absent, and your plugin simply has none of those files yet.
 
 [Adding it](#adding-it) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a PostType](#writing-a-posttype) &nbsp;·&nbsp; [Writing a Taxonomy](#writing-a-taxonomy) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
@@ -37,17 +37,7 @@ return array(
 
 ## Changing the defaults
 
-Register an initializer only to point the module at non-default directories.
-
-```php
-// bootstrap.php
-return array(
-    PostTypes::class => static function ( PostTypes $post_types ): void {
-        $post_types->set_post_types_root( 'cpt/post-types' );
-        $post_types->set_taxonomies_root( 'cpt/taxonomies' );
-    },
-);
-```
+`PostTypes` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( PostTypes::class )`, or declare a property of its type and have it injected.
 
 ## Writing a PostType
 
@@ -59,59 +49,23 @@ A file in `taxonomies/` returns a [`Taxonomy`](taxonomy.md) instance, which `wp 
 
 ## Constants
 
-### `DEFAULT_POST_TYPES_ROOT`
+### `POST_TYPES_ROOT`
 
 ```php
-const DEFAULT_POST_TYPES_ROOT = 'post-types';
+const POST_TYPES_ROOT = 'post-types';
 ```
 
 Default plugin-relative directory of post type files.
 
-### `DEFAULT_TAXONOMIES_ROOT`
+### `TAXONOMIES_ROOT`
 
 ```php
-const DEFAULT_TAXONOMIES_ROOT = 'taxonomies';
+const TAXONOMIES_ROOT = 'taxonomies';
 ```
 
 Default plugin-relative directory of taxonomy files.
 
 ## Methods
-
-### `set_post_types_root( $post_types_root )`
-
-Set the plugin-relative directory that contains post type files.
-
-```php
-public function set_post_types_root( string $post_types_root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$post_types_root` — Plugin-relative directory of post type files |
-| **Return** | — |
-| **Throws** | — |
-
-Call this from the module initializer before the plugin boots the module to override the default `post-types` directory.
-
-<br>
-
-### `set_taxonomies_root( $taxonomies_root )`
-
-Set the plugin-relative directory that contains taxonomy files.
-
-```php
-public function set_taxonomies_root( string $taxonomies_root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$taxonomies_root` — Plugin-relative directory of taxonomy files |
-| **Return** | — |
-| **Throws** | — |
-
-Call this from the module initializer before the plugin boots the module to override the default `taxonomies` directory.
-
-<br>
 
 ### `get_post_type_of( $post_type )`
 
@@ -157,7 +111,7 @@ public function get_discovered_post_types(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | Wired instances keyed by registered name |
-| **Throws** | `DiscoveryException` — When a post types directory named by set_post_types_root() does not exist, or a file returns the wrong value |
+| **Throws** | `DiscoveryException` — When a file returns the wrong value |
 
 Everything the directory holds, including any file whose `is_enabled()` returns false — so a screen offering to switch features on can list the ones currently switched off, which is the only case such a screen exists for. Ask an instance yourself when you need to tell them apart; only `register_all()` acts on the answer.
 

@@ -86,12 +86,6 @@ use Zestry\WPToolkit\Services\Path;
  * };
  * ```
  *
- * @setup Point it at a different directory
- * ```
- * MetaBoxes::class => static function ( MetaBoxes $boxes ): void {
- *     $boxes->set_boxes_root( 'panels' );
- * },
- * ```
  */
 class MetaBoxes extends Module {
 
@@ -100,7 +94,7 @@ class MetaBoxes extends Module {
 	/**
 	 * Where boxes are discovered, relative to the plugin root.
 	 */
-	const DEFAULT_BOXES_ROOT = 'meta-boxes';
+	const BOXES_ROOT = 'meta-boxes';
 
 	/**
 	 * @var Path
@@ -111,20 +105,6 @@ class MetaBoxes extends Module {
 	 * @var Fields
 	 */
 	public Fields $fields;
-
-	/**
-	 * The directory boxes are read from.
-	 *
-	 * @var string
-	 */
-	private string $boxes_root = self::DEFAULT_BOXES_ROOT;
-
-	/**
-	 * Whether the root above was named rather than defaulted.
-	 *
-	 * @var bool
-	 */
-	private bool $boxes_root_was_set = false;
 
 	/**
 	 * Discovered boxes by screen type, then identifier.
@@ -138,48 +118,25 @@ class MetaBoxes extends Module {
 	private ?array $discovered = null;
 
 	/**
-	 * Read boxes from a different directory.
-	 *
-	 * Call this before the module boots — from its `bootstrap.php` entry. Naming
-	 * a directory that does not exist is an error and throws at boot, where
-	 * leaving the default alone and having no such directory simply means you
-	 * have no boxes yet.
-	 *
-	 * @param string $root Directory relative to the plugin root.
-	 * @return void
-	 */
-	public function set_boxes_root( string $root ): void {
-		$this->boxes_root         = \trim( $root, '/\\' );
-		$this->boxes_root_was_set = true;
-
-		// Anything already read came from the old directory.
-		$this->discovered = null;
-	}
-
-	/**
 	 * Every discovered box, by screen type and then by identifier.
 	 *
 	 * @return array<string, array<string, MetaBox>> Screen type => identifier => instance.
-	 * @throws DiscoveryException When a directory named by set_boxes_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 */
 	public function get_discovered_boxes(): array {
 		if ( null !== $this->discovered ) {
 			return $this->discovered;
 		}
 
-		$root_dir = $this->path->get_plugin_path( $this->boxes_root );
+		$root_dir = $this->path->get_plugin_path( self::BOXES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
-			if ( ! $this->boxes_root_was_set ) {
-				$this->discovered = array();
+			$this->discovered = array();
 
-				return $this->discovered;
-			}
-
-			throw DiscoveryException::missing_root( 'Meta boxes', $root_dir, 'set_boxes_root()' );
+			return $this->discovered;
 		}
 
 		$instances = array();

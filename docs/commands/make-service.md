@@ -24,7 +24,7 @@ The line is not "is it a thing I call?" — `Options` is something you call, and
 ## Options
 
 - **`<name>`**  
-  The class name, e.g. 'Cache'. Becomes both the filename (`{name}.php`) and the class name itself — unlike the discovery types, this is NOT a kebab-case local name; give it exactly as it should appear after `class`. Group related services by qualifying the name: `Billing/Invoices` writes `Services/Billing/Invoices.php` declaring `{namespace}\Services\Billing`. There is no `--dir`, since PSR-4 ties a namespace to one directory and the name decides both.
+  The class name, e.g. 'Cache'. Becomes both the filename (`{name}.php`) and the class name itself — unlike the discovery types, this is NOT a kebab-case local name; give it exactly as it should appear after `class`. Group related services by qualifying the name: `Billing/Invoices` writes `Services/Billing/Invoices.php` declaring `{namespace}\Services\Billing`. The destination is fixed, since PSR-4 ties a namespace to one directory and the name decides both.
 
 - **`[--yes]`**  
   Overwrite an existing file without asking, for an unattended run.

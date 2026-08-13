@@ -76,30 +76,13 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * }
  * ```
  *
- * @setup
- * Templates live in `views/` unless you say otherwise. `bootstrap.php` is
- * modules only, so the configuration goes in your entry file, where the
- * callback runs the first time something asks for the service.
- *
- * ```
- * // acme-plugin.php
- * ( new Plugin( __FILE__ ) )
- *     ->configure(
- *         Views::class,
- *         static function ( Views $views ): void {
- *             $views->set_views_root( 'templates' );
- *         }
- *     )
- *     ->bootstrap()
- *     ->run();
- * ```
  */
 class Views extends Service {
 
 	/**
 	 * Default plugin-relative directory of view files.
 	 */
-	const DEFAULT_VIEWS_ROOT = 'views';
+	const VIEWS_ROOT = 'views';
 
 	/**
 	 * Path service injected by the plugin to resolve the view's absolute path.
@@ -109,36 +92,11 @@ class Views extends Service {
 	public Path $path;
 
 	/**
-	 * Plugin-relative directory of view files.
-	 *
-	 * @var string
-	 */
-	private string $views_root = self::DEFAULT_VIEWS_ROOT;
-
-	/**
 	 * Cached real (symlink-resolved) absolute path of the views root.
 	 *
 	 * @var string|false|null
 	 */
 	private string|false|null $real_root = null;
-
-	/**
-	 * Set the plugin-relative directory that contains view files.
-	 *
-	 * Call this from `configure()` in your entry file, before anything first
-	 * asks for the service, to override the default `views` directory.
-	 *
-	 * Resets the cached resolved root along with the configured directory, so
-	 * changing the root mid-request is guaranteed to take effect on the next
-	 * render rather than reusing a stale resolved path from the previous root.
-	 *
-	 * @param string $views_root Plugin-relative directory of view files.
-	 * @return void
-	 */
-	public function set_views_root( string $views_root ): void {
-		$this->views_root = $views_root;
-		$this->real_root  = null;
-	}
 
 	/**
 	 * Render a view directly to the current output stream.
@@ -184,7 +142,7 @@ class Views extends Service {
 	 */
 	private function get_real_root(): string|false {
 		if ( $this->real_root === null ) {
-			$resolved = \realpath( $this->path->get_plugin_path( $this->views_root ) );
+			$resolved = \realpath( $this->path->get_plugin_path( self::VIEWS_ROOT ) );
 			if ( $resolved === false ) {
 				return false;
 			}
@@ -218,7 +176,7 @@ class Views extends Service {
 			$view = \substr( $view, 0, -4 );
 		}
 
-		$full_path = $this->path->get_plugin_path( $this->views_root . '/' . $view . '.php' );
+		$full_path = $this->path->get_plugin_path( self::VIEWS_ROOT . '/' . $view . '.php' );
 
 		// Resolve symlinks and .. segments on both the candidate and the root, then
 		// require the candidate to sit inside the root. realpath() returns false for
@@ -231,12 +189,12 @@ class Views extends Service {
 		// request input, so this can surface to an attacker. Reported
 		// separately so a mistyped root is not blamed on the view name.
 		if ( false === $real_root ) {
-			throw new \InvalidArgumentException( 'Views root directory does not exist: ' . $this->views_root );
+			throw new \InvalidArgumentException( 'Views root directory does not exist: ' . self::VIEWS_ROOT );
 		}
 
 		if ( false === $real_view ) {
 			throw new \InvalidArgumentException(
-				\sprintf( 'View file does not exist: %s (in views root: %s)', $view, $this->views_root )
+				\sprintf( 'View file does not exist: %s (in views root: %s)', $view, self::VIEWS_ROOT )
 			);
 		}
 

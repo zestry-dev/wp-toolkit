@@ -81,12 +81,6 @@ use Zestry\WPToolkit\Services\Path;
  * };
  * ```
  *
- * @setup Point it at a different directory
- * ```
- * Fields::class => static function ( Fields $fields ): void {
- *     $fields->set_fields_root( 'meta' );
- * },
- * ```
  */
 class Fields extends Module {
 
@@ -95,26 +89,12 @@ class Fields extends Module {
 	/**
 	 * Where fields are discovered, relative to the plugin root.
 	 */
-	const DEFAULT_FIELDS_ROOT = 'fields';
+	const FIELDS_ROOT = 'fields';
 
 	/**
 	 * @var Path
 	 */
 	public Path $path;
-
-	/**
-	 * The directory fields are read from.
-	 *
-	 * @var string
-	 */
-	private string $fields_root = self::DEFAULT_FIELDS_ROOT;
-
-	/**
-	 * Whether the root above was named rather than defaulted.
-	 *
-	 * @var bool
-	 */
-	private bool $fields_root_was_set = false;
 
 	/**
 	 * Discovered fields keyed by filename, once the directory has been walked.
@@ -125,25 +105,6 @@ class Fields extends Module {
 	 * @var array<string, Field>|null
 	 */
 	private ?array $discovered = null;
-
-	/**
-	 * Read fields from a different directory.
-	 *
-	 * Call this before the module boots — from its `bootstrap.php` entry. Naming
-	 * a directory that does not exist is an error and throws at boot, where
-	 * leaving the default alone and having no such directory simply means you
-	 * have no fields yet.
-	 *
-	 * @param string $root Directory relative to the plugin root.
-	 * @return void
-	 */
-	public function set_fields_root( string $root ): void {
-		$this->fields_root         = \trim( $root, '/\\' );
-		$this->fields_root_was_set = true;
-
-		// Anything already read came from the old directory.
-		$this->discovered = null;
-	}
 
 	/**
 	 * Every discovered field, by object type and then by meta key.
@@ -158,7 +119,7 @@ class Fields extends Module {
 	 * switched off.
 	 *
 	 * @return array<string, array<string, Field>> Object type => meta key => instance.
-	 * @throws DiscoveryException When a directory named by set_fields_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 */
 	public function get_discovered_fields(): array {
 		$fields = array();
@@ -518,26 +479,22 @@ class Fields extends Module {
 	 * Every discovered field, keyed by the file it came from.
 	 *
 	 * @return array<string, Field>
-	 * @throws DiscoveryException When a directory named by set_fields_root() does not exist, or a file returns the wrong value.
+	 * @throws DiscoveryException When a file returns the wrong value.
 	 */
 	private function get_fields_by_file(): array {
 		if ( null !== $this->discovered ) {
 			return $this->discovered;
 		}
 
-		$root_dir = $this->path->get_plugin_path( $this->fields_root );
+		$root_dir = $this->path->get_plugin_path( self::FIELDS_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
-			if ( ! $this->fields_root_was_set ) {
-				$this->discovered = array();
+			$this->discovered = array();
 
-				return $this->discovered;
-			}
-
-			throw DiscoveryException::missing_root( 'Fields', $root_dir, 'set_fields_root()' );
+			return $this->discovered;
 		}
 
 		$instances = array();

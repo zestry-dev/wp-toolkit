@@ -40,7 +40,6 @@ final class CronTest extends TestCase {
 		$this->plugin->configure(
 			Cron::class,
 			static function ( Cron $cron ) use ( $root, $configure ): void {
-				$cron->set_schedules_root( $root );
 				if ( null !== $configure ) {
 					$configure( $cron );
 				}
@@ -115,7 +114,6 @@ final class CronTest extends TestCase {
 			$this->plugin->configure(
 				Cron::class,
 				static function ( Cron $cron ): void {
-					$cron->set_schedules_root( 'schedules' );
 				}
 			);
 			$cron = $this->plugin->get( Cron::class );
@@ -200,7 +198,6 @@ final class CronTest extends TestCase {
 		$this->plugin->configure(
 			Cron::class,
 			static function ( Cron $cron ): void {
-				$cron->set_schedules_root( 'schedules' );
 				$cron->add_custom_interval( 'every_15_minutes', 15 * MINUTE_IN_SECONDS, 'Every 15 Minutes' );
 			}
 		);
@@ -244,7 +241,6 @@ final class CronTest extends TestCase {
 		$this->plugin->configure(
 			Cron::class,
 			static function ( Cron $cron ): void {
-				$cron->set_schedules_root( 'schedules' );
 			}
 		);
 		$cron = $this->plugin->get( Cron::class );
@@ -260,7 +256,6 @@ final class CronTest extends TestCase {
 		$this->plugin->configure(
 			Cron::class,
 			static function ( Cron $cron ): void {
-				$cron->set_schedules_root( 'schedules' );
 			}
 		);
 		mkdir( $this->plugin_dir . '/schedules', 0777, true );
@@ -400,13 +395,6 @@ final class CronTest extends TestCase {
 
 		$this->assertSame( 1, $GLOBALS['zestry_cron_run_count'] );
 		unset( $GLOBALS['zestry_cron_run_count'] );
-	}
-
-	public function test_missing_schedules_directory_throws(): void {
-		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'Schedules root directory does not exist' );
-
-		$this->boot_cron_with_root( 'does-not-exist' );
 	}
 
 	public function test_a_schedule_file_returning_the_wrong_type_throws(): void {
@@ -583,7 +571,6 @@ final class CronTest extends TestCase {
 		$cron = $this->plugin->make(
 			Cron::class,
 			function ( Cron $module ): void {
-				$module->set_schedules_root( 'schedules' );
 			}
 		);
 

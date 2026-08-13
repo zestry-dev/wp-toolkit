@@ -66,16 +66,7 @@ class MyActivation extends ActivationHandler {
 
 ## Changing the defaults
 
-Register an initializer only to point the module at a non-default directory.
-
-```php
-// bootstrap.php
-return array(
-    Migrations::class => static function ( Migrations $migrations ): void {
-        $migrations->set_migrations_root( 'db/migrations' );
-    },
-);
-```
+`Migrations` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( Migrations::class )`, or declare a property of its type and have it injected.
 
 ## Writing a Migration
 
@@ -91,33 +82,15 @@ const OPTIONS_GROUP_NAME = '_migrations_';
 
 The Options group the list of migrations that have run is stored under.
 
-### `DEFAULT_MIGRATIONS_ROOT`
+### `MIGRATIONS_ROOT`
 
 ```php
-const DEFAULT_MIGRATIONS_ROOT = 'migrations';
+const MIGRATIONS_ROOT = 'migrations';
 ```
 
 Default plugin-relative directory of migration files.
 
 ## Methods
-
-### `set_migrations_root( $migrations_root )`
-
-Set the plugin-relative directory that contains migration files.
-
-```php
-public function set_migrations_root( string $migrations_root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$migrations_root` — Plugin-relative directory of migration files |
-| **Return** | — |
-| **Throws** | — |
-
-Call this from the module initializer before the plugin boots the module to override the default `migrations` directory.
-
-<br>
 
 ### `get_ran_migrations()`
 
@@ -147,7 +120,7 @@ public function get_discovered_migrations(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | `array` |
-| **Throws** | `DiscoveryException` — When a migrations directory named by set_migrations_root() does not exist |
+| **Throws** | — |
 
 Exposed for `wp {slug} migrations list` (`ListMigrationsCommand`), separate from `run_pending()` so listing never requires (and cannot accidentally trigger) requiring or running any migration file.
 
@@ -165,7 +138,7 @@ public function get_orphaned_migrations(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | `array` |
-| **Throws** | `DiscoveryException` — When a migrations directory named by set_migrations_root() does not exist |
+| **Throws** | — |
 
 An orphan means one of exactly two things, and nothing here tries to tell them apart: the file was renamed, or it was deleted. The first is dangerous — the migration is about to run a second time under its new name — and the second is usually deliberate. Both are worth seeing.
 
@@ -185,7 +158,7 @@ public function get_probable_renames(): array
 |---|---|
 | **Parameters** | — |
 | **Return** | Each pending identifier, mapped to the orphan it probably renames |
-| **Throws** | `DiscoveryException` — When a migrations directory named by set_migrations_root() does not exist |
+| **Throws** | — |
 
 A pending migration is a probable rename when an orphan (`get_orphaned_migrations()`) shares its timestamp prefix and differs in the rest. That is precise because the prefix is the one part of a filename this module documents as never safe to change: a rename in practice keeps it and edits the description, which is exactly this shape.
 
@@ -207,7 +180,7 @@ public function run_pending( bool $force = false ): void
 |---|---|
 | **Parameters** | `$force` — Run even when a pending migration looks like a rename of one that already ran |
 | **Return** | — |
-| **Throws** | `DiscoveryException` — When a migrations directory named by set_migrations_root() does not exist, or a file returns the wrong value<br>`RenamedMigrationException` — When a pending migration looks like a rename and $force is false |
+| **Throws** | `DiscoveryException` — When a file returns the wrong value<br>`RenamedMigrationException` — When a pending migration looks like a rename and $force is false |
 
 Public because nothing calls it automatically. Call it from wherever the plugin decides migrations should run: an `ActivationHandler::activate()`, a reviewed action on an admin screen, a deploy script, `wp {slug} migrations run`, or a hook of the plugin's own.
 
@@ -230,7 +203,7 @@ public function maybe_resume_interrupted_run(): void
 |---|---|
 | **Parameters** | — |
 | **Return** | — |
-| **Throws** | `DiscoveryException` — When a migrations directory named by set_migrations_root() does not exist, or a file returns the wrong value |
+| **Throws** | `DiscoveryException` — When a file returns the wrong value |
 
 `run_pending()` records a `running_since` timestamp before it starts and clears it only once every pending migration has run (or thrown). If PHP is killed mid-run — `max_execution_time`, an OOM kill — neither of which a `try`/`finally` can trap, that timestamp is left behind: proof migrations 1-3 of 5 ran but 4 and 5 did not.
 

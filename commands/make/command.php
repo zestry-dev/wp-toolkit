@@ -35,10 +35,6 @@ return new class() extends MakeCommand {
 	 * to a command. `commands/cache.php` and `commands/cache/` therefore
 	 * exclude each other, and this command refuses to write the second.
 	 *
-	 * [--dir=<dir>]
-	 * : Write into this plugin-relative directory instead of `commands` -- pass
-	 * it when you have pointed CLI's commands root somewhere other than its
-	 * default.
 	 *
 	 * [--yes]
 	 * : Overwrite an existing file without asking, for an unattended run.

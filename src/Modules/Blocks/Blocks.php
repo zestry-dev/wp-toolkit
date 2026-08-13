@@ -70,7 +70,6 @@ use WP_Block_Type_Registry;
  * // bootstrap.php
  * return array(
  *     Blocks::class => static function ( Blocks $blocks ): void {
- *         $blocks->set_blocks_root( 'build/editor-blocks' );
  *
  *         $blocks->on_wp_init( static function ( Blocks $module ): void {
  *             $module->add_categories(
@@ -94,7 +93,7 @@ class Blocks extends Module {
 	/**
 	 * Default plugin-relative directory of built block directories.
 	 */
-	const DEFAULT_BLOCKS_ROOT = 'build/blocks';
+	const BLOCKS_ROOT = 'build/blocks';
 
 	/**
 	 * Filename `wp-scripts build --blocks-manifest` writes into the build root.
@@ -107,26 +106,6 @@ class Blocks extends Module {
 	 * @var Path
 	 */
 	public Path $path;
-
-	/**
-	 * Plugin-relative directory of built block directories.
-	 *
-	 * @var string
-	 */
-	private string $blocks_root = self::DEFAULT_BLOCKS_ROOT;
-
-	/**
-	 * Whether the directory above was named deliberately.
-	 *
-	 * A missing directory means two different things. Named by
-	 * {@see set_blocks_root()} and absent: a typo, and registering nothing
-	 * silently would hide it. Never named, and the default is absent: this
-	 * plugin has none of these yet, which is ordinary -- adding the module
-	 * before writing the first file should not take the site down.
-	 *
-	 * @var bool
-	 */
-	private bool $blocks_root_was_set = false;
 
 	/**
 	 * Block categories registered via add_categories(), in declaration order.
@@ -173,20 +152,6 @@ class Blocks extends Module {
 	 * @var array<string, class-string<Block>>
 	 */
 	private array $renderer_classes = array();
-
-	/**
-	 * Set the plugin-relative directory that contains built block directories.
-	 *
-	 * Call this from the module initializer before the plugin boots the module
-	 * to override the default `build/blocks` directory.
-	 *
-	 * @param string $blocks_root Plugin-relative directory of built block directories.
-	 * @return void
-	 */
-	public function set_blocks_root( string $blocks_root ): void {
-		$this->blocks_root         = $blocks_root;
-		$this->blocks_root_was_set = true;
-	}
 
 	/**
 	 * Declare the block categories this plugin's blocks sit in.
@@ -333,22 +298,18 @@ class Blocks extends Module {
 	 * Discover every built block and register it with WordPress.
 	 *
 	 * @return void
-	 * @throws DiscoveryException When a blocks directory named by set_blocks_root() does not exist, or a render file returns the wrong value.
+	 * @throws DiscoveryException When a render file returns the wrong value.
 	 *
 	 * @internal
 	 */
 	public function register_blocks(): void {
-		$root_dir = $this->path->get_plugin_path( $this->blocks_root );
+		$root_dir = $this->path->get_plugin_path( self::BLOCKS_ROOT );
 
-		if ( ! $this->path->is_plugin_dir( $this->blocks_root ) ) {
+		if ( ! $this->path->is_plugin_dir( self::BLOCKS_ROOT ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
-			if ( ! $this->blocks_root_was_set ) {
-				return;
-			}
-
-			throw DiscoveryException::missing_root( 'Blocks', $root_dir, 'set_blocks_root()' );
+			return;
 		}
 
 		// Bound before any registration: it fires while a block registers, and
@@ -363,7 +324,7 @@ class Blocks extends Module {
 		 * `{collection path}/{key}/block.json`, so the collection path is the
 		 * blocks root while the manifest sits one level above it.
 		 */
-		$manifest_path = \rtrim( \dirname( $this->blocks_root ), '/\\.' ) . '/' . self::MANIFEST_FILENAME;
+		$manifest_path = \rtrim( \dirname( self::BLOCKS_ROOT ), '/\\.' ) . '/' . self::MANIFEST_FILENAME;
 		$manifest_path = \ltrim( $manifest_path, '/' );
 		$manifest      = $this->path->get_plugin_path( $manifest_path );
 		$has_manifest  = $this->path->plugin_file_exists( $manifest_path );
@@ -459,7 +420,6 @@ class Blocks extends Module {
 	 * Every discovered block directory, keyed by its own directory name.
 	 *
 	 * @return array<string, string> Absolute directory paths keyed by directory name.
-	 * @throws DiscoveryException When a blocks directory named by set_blocks_root() does not exist.
 	 */
 	public function get_discovered_blocks(): array {
 		return $this->get_discovered_directories();
@@ -490,20 +450,15 @@ class Blocks extends Module {
 	 * Find every directory under the root that holds a `block.json`.
 	 *
 	 * @return array<string, string> Absolute directory paths keyed by directory name.
-	 * @throws DiscoveryException When a blocks directory named by set_blocks_root() does not exist.
 	 */
 	private function get_discovered_directories(): array {
-		$root_dir = $this->path->get_plugin_path( $this->blocks_root );
+		$root_dir = $this->path->get_plugin_path( self::BLOCKS_ROOT );
 
-		if ( ! $this->path->is_plugin_dir( $this->blocks_root ) ) {
+		if ( ! $this->path->is_plugin_dir( self::BLOCKS_ROOT ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
-			if ( ! $this->blocks_root_was_set ) {
-				return array();
-			}
-
-			throw DiscoveryException::missing_root( 'Blocks', $root_dir, 'set_blocks_root()' );
+			return array();
 		}
 
 		$directories = array();

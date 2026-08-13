@@ -68,52 +68,26 @@ public function render(): void {
 
 ## Changing the defaults
 
-Templates live in `views/` unless you say otherwise. `bootstrap.php` is modules only, so the configuration goes in your entry file, where the callback runs the first time something asks for the service.
+`Views` takes no configuration, so it needs no `bootstrap.php` entry at all. It is built the first time something asks for it:
 
 ```php
-// acme-plugin.php
-( new Plugin( __FILE__ ) )
-    ->configure(
-        Views::class,
-        static function ( Views $views ): void {
-            $views->set_views_root( 'templates' );
-        }
-    )
-    ->bootstrap()
-    ->run();
+$views = $plugin->get( Views::class );
+
+// Or, from any service, module, command or action:
+public Views $views;   // injected before your code runs
 ```
 
 ## Constants
 
-### `DEFAULT_VIEWS_ROOT`
+### `VIEWS_ROOT`
 
 ```php
-const DEFAULT_VIEWS_ROOT = 'views';
+const VIEWS_ROOT = 'views';
 ```
 
 Default plugin-relative directory of view files.
 
 ## Methods
-
-### `set_views_root( $views_root )`
-
-Set the plugin-relative directory that contains view files.
-
-```php
-public function set_views_root( string $views_root ): void
-```
-
-|  | Details |
-|---|---|
-| **Parameters** | `$views_root` — Plugin-relative directory of view files |
-| **Return** | — |
-| **Throws** | — |
-
-Call this from `configure()` in your entry file, before anything first asks for the service, to override the default `views` directory.
-
-Resets the cached resolved root along with the configured directory, so changing the root mid-request is guaranteed to take effect on the next render rather than reusing a stale resolved path from the previous root.
-
-<br>
 
 ### `render( $view, $data )`
 

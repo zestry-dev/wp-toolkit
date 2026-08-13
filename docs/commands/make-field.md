@@ -14,9 +14,6 @@ Writes a file into the plugin's `fields/` directory, where the Fields module dis
 - **`<name>`**  
   The meta key, e.g. `acme-rating`. Written exactly as given — a meta key is the `meta_key` column and appears in your REST responses, so nothing respells it. To mark the field protected whatever it is called, uncomment `is_protected()` in the generated file and return true.
 
-- **`[--dir=<dir>]`**  
-  Write somewhere other than `fields/`, relative to the plugin root.
-
 - **`[--extends=<class>]`**  
   Extend one of your own abstracts instead of the toolkit base. A bare name is looked for under your Abstracts\ namespace; the generated file stubs the methods that class leaves abstract, and nothing it has already settled.
 

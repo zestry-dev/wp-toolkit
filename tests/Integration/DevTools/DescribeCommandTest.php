@@ -146,7 +146,7 @@ final class DescribeCommandTest extends TestCase {
 		file_put_contents(
 			$this->target_plugin_dir . '/bootstrap.php',
 			"<?php\nuse Acme\\Plugin\\Core\\Modules\\Cron\\Cron;\n"
-				. "return array( Cron::class => static function ( Cron \$cron ): void { \$cron->set_schedules_root( 'jobs' ); } );\n"
+				. "return array( Cron::class => static function ( Cron \$cron ): void { \$cron->add_custom_interval( 'quarter_hourly', 900, 'Quarter hourly' ); } );\n"
 		);
 
 		$rows = $this->describe_rows();
