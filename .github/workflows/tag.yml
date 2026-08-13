@@ -2,12 +2,21 @@ name: Tag
 
 # Publishing, as one button. Actions cannot block a tag push -- a workflow
 # only runs once the ref already exists, and pre-receive hooks are Enterprise
-# Server only -- so the tag is not pushed by hand at all: this workflow runs
-# CI first and creates the tag only if it passed. A tag that exists is
+# Server only -- so the tag is not created by hand at all: this workflow runs
+# CI first and cuts the release only if it passed. A tag that exists is
 # therefore a tag that was green.
+#
+# The release is what carries the tag. Creating one is a single API call that
+# tags the verified commit and gives the version a page with generated notes,
+# where pushing a bare tag gave neither.
 #
 # Packagist's webhook does the rest. Nothing here talks to Packagist, and
 # nothing needs to: it is watching the repository for the tag.
+#
+# There is deliberately no zip to build or upload. Composer downloads GitHub's
+# own archive of the tag, and what that archive holds is decided by
+# `export-ignore` in `.gitattributes` -- a file attached to a release is
+# downloaded by nobody.
 on:
   workflow_dispatch:
     inputs:
@@ -31,6 +40,9 @@ jobs:
 
     outputs:
       tag: ${{ steps.resolve.outputs.tag }}
+      # The commit CI is about to verify, pinned here so the release tags that
+      # one rather than whatever main points at by the time it runs.
+      sha: ${{ steps.resolve.outputs.sha }}
 
     steps:
       - name: Refuse to tag anything but main
@@ -65,7 +77,8 @@ jobs:
           fi
 
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
-          echo "Will tag ${tag} at $(git rev-parse --short HEAD) once CI passes." >> "$GITHUB_STEP_SUMMARY"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "Will release ${tag} from $(git rev-parse --short HEAD) once CI passes." >> "$GITHUB_STEP_SUMMARY"
 
   verify:
     name: Verify
@@ -73,7 +86,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
 
   tag:
-    name: Create the tag
+    name: Cut the release
     needs:
       - check
       - verify
@@ -84,22 +97,32 @@ jobs:
       contents: write
 
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
-
-      # Lightweight, not annotated: an annotated tag carries a tagger
-      # identity, and there is no honest one to give it from a runner.
+      # Creating a release for a tag that does not exist yet creates the tag
+      # too, lightweight rather than annotated -- an annotated tag carries a
+      # tagger identity, and there is no honest one to give it from a runner.
       # Composer reads both the same way.
-      - name: Push the tag
+      - name: Create the release
         env:
+          GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.check.outputs.tag }}
+          SHA: ${{ needs.check.outputs.sha }}
+          REPO: ${{ github.repository }}
         run: |
-          git tag "$TAG"
-          git push origin "$TAG"
+          # --target is the commit `verify` just passed, not the current tip:
+          # a push landing on main mid-run must not ride out under this tag.
+          gh release create "$TAG" \
+            --repo "$REPO" \
+            --target "$SHA" \
+            --title "$TAG" \
+            --generate-notes
 
           {
-            echo "### Tagged \`${TAG}\`"
+            echo "### Released \`${TAG}\`"
             echo
-            echo "Packagist's webhook picks it up within a minute or so:"
+            echo "Packagist's webhook picks the tag up within a minute or so:"
             echo "<https://packagist.org/packages/zestry-dev/wp-toolkit>"
+            echo
+            echo "Composer serves GitHub's own archive of that tag. What it"
+            echo "holds is decided by \`export-ignore\` in \`.gitattributes\`,"
+            echo "so there is no artifact to attach here."
           } >> "$GITHUB_STEP_SUMMARY"

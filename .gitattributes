@@ -32,3 +32,9 @@
 /package.json       export-ignore
 /phpcs.xml          export-ignore
 /phpunit.xml.dist   export-ignore
+
+# Composer resolves a consumer's dependencies from their own lock file and
+# never reads a dependency's, so nothing opens this one. Removing it is worth
+# little on the wire -- 16 KB of a 773 KB download, since JSON compresses well
+# -- and 148 KB in every vendor/ directory it would otherwise sit in.
+/composer.lock      export-ignore
