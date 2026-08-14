@@ -44,8 +44,8 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  * uses.
  *
  * The accessor holds the instance for anything outside the module system --
- * a test, a template, a hand-registered callback -- since modules themselves
- * are injected by type and never need it.
+ * a test, a template, a hand-registered callback -- since a module already
+ * reaches every other one with `with()`.
  *
  * ```
  * // acme-plugin.php
@@ -169,7 +169,7 @@ class Plugin {
 	private ?string $bootstrap_file = null;
 
 	/**
-	 * Construct the plugin and its service repository.
+	 * Construct the plugin and its module repository.
 	 *
 	 * Pass `__FILE__` from your entry file. Everything else the plugin needs to
 	 * know about itself -- its own directory, and the headers it declares --

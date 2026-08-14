@@ -5,6 +5,6 @@
 
 # CircularDependencyException
 
-Thrown when services or modules depend on each other in a cycle.
+Thrown when two modules reach for each other while building.
 
-Raised while resolving a class whose dependency graph re-enters that same class before it finishes resolving, which cannot be satisfied. The plugin tracks the classes it is part-way through building, and raises this the moment one of them is asked for again.
+Only `make()` can get here. `get()` publishes the shared instance before the module boots, so anything reaching back for it during that boot receives the in-flight one — `make()` never publishes, so two modules making each other would recurse until the stack gave out. The plugin tracks the classes it is part-way through building and raises this the moment one is asked for again.

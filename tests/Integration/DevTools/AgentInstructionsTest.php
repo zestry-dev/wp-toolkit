@@ -92,7 +92,7 @@ final class AgentInstructionsTest extends TestCase {
 	public function test_keeps_the_section_headings_that_group_the_rules(): void {
 		$rendered = $this->render();
 
-		$this->assertStringContainsString( '### The two kinds', $rendered );
+		$this->assertStringContainsString( '### What a plugin is made of', $rendered );
 		$this->assertStringContainsString( '### Files that are features', $rendered );
 	}
 

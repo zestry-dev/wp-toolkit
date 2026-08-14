@@ -1,5 +1,5 @@
 <!--
-    Generated from src/Services/DB.php.
+    Generated from src/Modules/DB.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
@@ -16,7 +16,17 @@ A custom table is `{$wpdb->prefix}{plugin_prefix}_{name}`, so it carries both th
 ## Adding it
 
 ```bash
-wp zt add service db
+wp zt add db
+```
+
+> [!IMPORTANT]
+> **A module is built because `bootstrap.php` lists it.** `DB` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
+
+```php
+// bootstrap.php
+return array(
+    DB::class,
+);
 ```
 
 ## Naming a table
@@ -35,17 +45,17 @@ $db->get_core_table( 'users' );    // wp_users
 Pass the table through `%i`, WordPress's identifier placeholder (6.2+), rather than interpolating it: `%i` backtick-quotes what it is given, so the query is correct even for a name that would need quoting. `%s` is for values and would wrap the table in single quotes, which is a string, not a table.
 
 ```php
-$wpdb = $this->db->get_wpdb();
+$wpdb = $this->with( DB::class )->get_wpdb();
 
 $wpdb->get_results(
     $wpdb->prepare(
         'SELECT * FROM %i WHERE status = %s',
-        $this->db->get_table( 'submissions' ),
+        $this->with( DB::class )->get_table( 'submissions' ),
         'unread'
     )
 );
 
-$wpdb->insert( $this->db->get_table( 'submissions' ), array( 'status' => 'unread' ), array( '%s' ) );
+$wpdb->insert( $this->with( DB::class )->get_table( 'submissions' ), array( 'status' => 'unread' ), array( '%s' ) );
 ```
 
 There is no `query()`, `insert()` or `get_results()` on this class. Naming a table and running a query are two jobs, and only the first is ambiguous enough to need help: a local name says nothing about whether it is one of yours or one of WordPress's, which is the difference between `get_table()` and `get_core_table()`. A wrapper taking that name would have to guess.
@@ -174,14 +184,14 @@ public function get_wpdb(): \wpdb
 **Assign it to a variable called `$wpdb`. Do not chain off this call.**
 
 ```php
-$wpdb = $this->db->get_wpdb();
+$wpdb = $this->with( DB::class )->get_wpdb();
 
 $rows = $wpdb->get_results(
-    $wpdb->prepare( 'SELECT * FROM %i WHERE status = %s', $this->db->get_table( 'submissions' ), 'unread' )
+    $wpdb->prepare( 'SELECT * FROM %i WHERE status = %s', $this->with( DB::class )->get_table( 'submissions' ), 'unread' )
 );
 ```
 
-`WordPress.DB.PreparedSQL` is what catches a value interpolated into a query instead of prepared, and it finds a query by the *variable name* `$wpdb` — `WPDBTrait::is_wpdb_method_call()` tests the token, and there is no setting for another. So `$wpdb->query( "... $value ..." )` is flagged and `$this->db->get_wpdb()->query( "... $value ..." )` is not. Chaining is the one form that turns `composer lint` green over an injection; the assignment costs the same line the `global` did and keeps every sniff working.
+`WordPress.DB.PreparedSQL` is what catches a value interpolated into a query instead of prepared, and it finds a query by the *variable name* `$wpdb` — `WPDBTrait::is_wpdb_method_call()` tests the token, and there is no setting for another. So `$wpdb->query( "... $value ..." )` is flagged and `$this->with( DB::class )->get_wpdb()->query( "... $value ..." )` is not. Chaining is the one form that turns `composer lint` green over an injection; the assignment costs the same line the `global` did and keeps every sniff working.
 
 Which is also why there is no `query()`, `prepare()`, `get_var()`, `get_row()`, `get_col()` or `get_results()` on this class, and will not be.
 
@@ -223,6 +233,38 @@ Public so you can build a name this service does not cover — an index name, sa
 
 <br>
 
+### `on_wp_init( $callback, $priority )`
+
+*Inherited from [`Module`](../module.md).*
+
+Run a callback on `init`, or immediately if `init` has already fired.
+
+```php
+final public function on_wp_init( callable $callback, int $priority = 10 ): void
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$callback` — What to run<br>`$priority` — WordPress hook priority, honoured only while `init` is still ahead |
+| **Return** | — |
+| **Throws** | — |
+
+Almost everything a module registers — a post type, a block, a WP-CLI command — has to happen on `init`, and a plain `add_action( 'init', ... )` is a callback that never runs once `init` has passed. A module can be built on either side of it: `Plugin::run()` is synchronous, so an entry file that calls it at plugin load is ahead of `init`, while one that calls it from a later hook is behind. This behaves the same either way, so a module never has to care which.
+
+The callback receives the module, so a closure declared elsewhere needs no `use` to reach it:
+
+```php
+public function on_boot(): void {
+    $this->on_wp_init( function ( self $module ): void {
+        $module->register_widgets();
+    } );
+}
+```
+
+`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only while `init` is still ahead**: a module built after `init` has fired runs its callback immediately, in registration order, whatever priority it asked for. Ordering that has to hold either way belongs inside one callback.
+
+<br>
+
 ### `get_plugin()`
 
 *Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
@@ -239,13 +281,37 @@ final public function get_plugin(): Plugin
 | **Return** | The plugin instance |
 | **Throws** | — |
 
-How you reach a module, always: building one boots it, so the cost belongs at the call rather than hidden in a property declaration. Also how you reach a service you look up by a name computed at runtime.
+For the plugin's own answers — its slug, its entry file, the headers it declares. To reach another module, `with()` is shorter and says what it is doing.
+
+<br>
+
+### `with( $name )`
+
+*Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
+
+Reach another module.
 
 ```php
-$this->get_plugin()->get( Options::class )->get( 'api_key' );
+final public function with( string $name ): object
 ```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$name` — The module class to reach |
+| **Return** | The shared instance |
+| **Throws** | `ModuleException` — If it is not declared, or has not booted yet |
+
+The one way anything in a plugin reaches anything else. Returns the same instance every time, so two callers asking for `Options` share its state:
+
+```php
+$this->with( Options::class )->get( 'api_key' );
+```
+
+**The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
+
+A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
 
 ## See also
 
-- [`Service`](../service.md) — what every service inherits
-- [`wp zt add service db`](../../commands/add-service.md) — the command that copies it
+- [`Module`](../module.md) — what every module inherits
+- [`wp zt add db`](../../commands/add.md) — the command that copies it

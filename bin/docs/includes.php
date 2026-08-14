@@ -184,13 +184,12 @@ function zestry_run_generator( string $root, string $name ): ?string {
  * Sorting also means adding an entry moves nothing else, so the diff on a page
  * is the one line that changed.
  *
- * @param string $root    Absolute path to the repository root.
- * @param string $section 'services' or 'modules'.
+ * @param string $root Absolute path to the repository root.
  * @return string
  */
-function zestry_generate_registry_names( string $root, string $section ): string {
+function zestry_generate_registry_names( string $root ): string {
 	$registry = require $root . '/src/DevTools/registry.php';
-	$names    = array_keys( $registry[ $section ] ?? array() );
+	$names    = array_keys( $registry );
 
 	sort( $names );
 

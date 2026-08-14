@@ -249,12 +249,6 @@ final class PluginTest extends TestCase {
 	}
 
 	/**
-	 * A service is never declared in `bootstrap.php` -- that file is modules
-	 * only. One that takes configuration gets it from configure() in the entry
-	 * file, and the callback waits for the first get() rather than running at
-	 * load.
-	 */
-	/**
 	 * `configure()` remembers a callback against a name and nothing else.
 	 * Declaring is what makes a module exist, so a configured class that was
 	 * never declared is never built and its callback never runs.

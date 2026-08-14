@@ -217,7 +217,7 @@ final class InitCommandTest extends TestCase {
 
 		$contents = (string) file_get_contents( $this->target_plugin_dir . '/AGENTS.md' );
 
-		$this->assertStringContainsString( 'listed in `bootstrap.php`', $contents );
+		$this->assertStringContainsString( '`bootstrap.php` is the whole inventory', $contents );
 		$this->assertStringContainsString( 'wp zt describe --format=json', $contents );
 	}
 

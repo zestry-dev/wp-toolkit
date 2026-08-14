@@ -1,5 +1,5 @@
 <!--
-    Generated from src/Services/Request/Attributes/RequestArgument.php.
+    Generated from src/Modules/Request/Attributes/RequestArgument.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 

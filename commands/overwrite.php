@@ -36,7 +36,9 @@ return new class() extends AddCommand {
 	 *
 	 * <module>...
 	 * : One or more module names to overwrite (or add, if not already present).
-	 * Available modules: log, options, assets, ajax, admin-pages, rest-api, cli, cron, fields, meta-boxes, post-types, blocks, site-health, abilities, icons-library, migrations.
+	 * Available modules: path, request, cookie, globals, transients, db, views, assets, log, options,
+	 * ajax, admin-pages, rest-api, cli, cron, fields, post-types, blocks, meta-boxes, site-health,
+	 * abilities, icons-library, migrations.
 	 *
 	 * [--yes]
 	 * : Answer any confirmation prompt affirmatively, for an unattended run.

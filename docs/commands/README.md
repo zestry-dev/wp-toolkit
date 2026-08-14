@@ -15,13 +15,6 @@ been initialized — see [Getting started](../getting-started.md).
 
 - [`wp zt init`](init.md) — Set up a plugin to receive wp-toolkit source.
 
-## Add toolkit code
-
-- [`wp zt add module`](add-module.md) — Copy one or more feature modules into an initialized plugin.
-- [`wp zt add service`](add-service.md) — Copy one or more services into an initialized plugin.
-- [`wp zt overwrite module`](overwrite-module.md) — Copy one or more feature modules into an initialized plugin, replacing any of them (or their dependencies) already present.
-- [`wp zt overwrite service`](overwrite-service.md) — Copy one or more services into an initialized plugin, replacing any of them (or their dependencies) already present.
-
 ## Generate your own code
 
 - [`wp zt make ability`](make-ability.md) — Generate an ability.
@@ -41,7 +34,6 @@ been initialized — see [Getting started](../getting-started.md).
 - [`wp zt make post-type`](make-post-type.md) — Generate a new custom post type.
 - [`wp zt make route`](make-route.md) — Generate a new REST route.
 - [`wp zt make schedule`](make-schedule.md) — Generate a new cron schedule.
-- [`wp zt make service`](make-service.md) — Generate a new Service subclass.
 - [`wp zt make shared`](make-shared.md) — Generate a shared JavaScript package.
 - [`wp zt make taxonomy`](make-taxonomy.md) — Generate a new custom taxonomy.
 - [`wp zt make view`](make-view.md) — Generate a view template.
@@ -53,5 +45,7 @@ been initialized — see [Getting started](../getting-started.md).
 
 ## Everything else
 
+- [`wp zt add`](add.md) — Copy one or more feature modules into an initialized plugin.
 - [`wp zt debug`](debug.md) — Turn this plugin's debug mode on or off.
 - [`wp zt describe`](describe.md) — Report what this plugin has, where each module looks, and what it expects.
+- [`wp zt overwrite`](overwrite.md) — Copy one or more feature modules into an initialized plugin, replacing any of them (or their dependencies) already present.

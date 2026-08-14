@@ -125,11 +125,6 @@ final class DescribeCommandTest extends TestCase {
 	}
 
 	/**
-	 * A service is built the moment something asks for it, so one that is not
-	 * declared is doing exactly what it should. Reporting it as undeclared
-	 * would be reporting every service in the registry as a problem.
-	 */
-	/**
 	 * Every module has to be declared, so an undeclared one is reported
 	 * whatever it does -- there is no kind that is exempt.
 	 */

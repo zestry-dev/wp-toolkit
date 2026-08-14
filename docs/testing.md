@@ -423,9 +423,9 @@ Four properties make it work:
 
 Cover every method your commands actually call — `Command::error_box()` reaches `error_multi_line()`, `debug()` reaches `debug()` — and call `\WP_CLI::reset()` in `set_up()` so one test's recorded calls do not leak into the next.
 
-## 7. Services, and how injection behaves
+## 7. Reaching a module in a test
 
-A service is resolved the same way anything else is:
+A module is built the same way anything else is:
 
 ```php
 $this->write_plugin_file( 'views/card.php', 'Hi <?php echo esc_html( $name ); ?>' );
@@ -435,10 +435,10 @@ $views = $this->plugin->get( Views::class );
 $this->assertSame( 'Hi Ada', $views->get( 'card', array( 'name' => 'Ada' ) ) );
 ```
 
-A service reads the filesystem when you call it rather than at boot, so ordering is less strict here than in section 4 — but keeping fixtures first costs nothing and never surprises you.
+A module with no `on_boot()` reads the filesystem when you call it rather than at boot, so ordering is less strict here than in section 4 — but keeping fixtures first costs nothing and never surprises you.
 
 > [!IMPORTANT]
-> **Never `new` a service in a test.** The constructor is `final` and takes no arguments, so `new Path()` compiles — and then fatals on the first method call, because nothing assigned the plugin. Injection happens in `get()`, `make()` and `wire()`, and nowhere else.
+> **Never `new` a module in a test.** The constructor is `final` and takes no arguments, so `new Path()` compiles — and then fatals on the first method call, because nothing assigned the plugin. Injection happens in `get()`, `make()` and `wire()`, and nowhere else.
 
 Three ways to get an instance, and the difference matters in tests:
 
@@ -463,7 +463,7 @@ $reports = $this->plugin->get( Reports::class );
 $reports->views = $fake_views;      // public property, replaced after injection
 ```
 
-A `private` property typed as a service is **never** injected. If a test fails with "must not be accessed before initialization", that is usually why.
+A module the plugin never declared throws rather than being built. `TestCase` declares the whole toolkit, so a test only has to declare its own fixture classes.
 
 ## 8. Things that bite
 

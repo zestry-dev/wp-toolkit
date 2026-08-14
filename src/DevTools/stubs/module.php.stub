@@ -15,9 +15,7 @@ use {{copied_namespace}}\Kernel\Abstracts\Module;
 
 class {{class_name}} extends Module {
 
-	// Declare a public or protected typed property to have a service injected.
-	// A module is asked for instead: `$this->get_plugin()->get( Options::class )`.
-	// public Path $path;
+	// Reach any other declared module with `$this->with( Path::class )`.
 
 	/*
 	 * A module is built with no arguments -- the constructor is final -- so

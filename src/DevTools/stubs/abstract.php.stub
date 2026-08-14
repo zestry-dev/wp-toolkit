@@ -16,7 +16,7 @@ namespace {{class_namespace}};
  *
  * Put here what would otherwise be repeated in each file: a method every one of
  * them answers the same way, a helper they all reach for, a property the plugin
- * injects once. Leave abstract what each one has to decide for itself, and the
+ * writes once. Leave abstract what each one has to decide for itself, and the
  * generator fills those in:
  *
  * ```bash
@@ -25,9 +25,8 @@ namespace {{class_namespace}};
  */
 abstract class {{class_name}}{{extends}} {
 
-	// Declare a public or protected typed property to have a service injected
-	// into every file extending this, e.g.:
-	// public Path $path;
+	// Reach any declared module with `$this->with( Path::class )` -- here, or in
+	// any file extending this.
 
 	// An abstract method here is one each file must answer. A concrete one is an
 	// answer they all share, and the reason this class exists.

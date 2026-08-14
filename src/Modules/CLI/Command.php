@@ -24,11 +24,9 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * the underlying `\WP_CLI` static calls.
  *
  * A command file returns an instance of a Command subclass. When that file is
- * discovered by {@see CLI}, the plugin is assigned and properties typed as a
- * Service subclass are injected (public or protected, unless marked
- * `#[NoInject]`) before WP-CLI invokes `handle()`. Every Module is a Service,
- * so both kinds inject. This lets a command use plugin services without
- * accessing global state.
+ * discovered by {@see CLI}, the plugin is assigned before WP-CLI invokes
+ * `handle()` -- so `$this->with( Path::class )` reaches any declared module,
+ * without the command touching global state.
  *
  * A file at `commands/greet.php` registers as `wp {plugin-slug} greet <name>`
  * (see {@see CLI} for how subdirectories become nested command namespaces).

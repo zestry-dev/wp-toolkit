@@ -1,6 +1,6 @@
 # Errors
 
-Four exception classes cover every way a service or module can fail to come up. They form one chain, so a single `catch` handles all of them:
+Four exception classes cover every way a module can fail to come up. They form one chain, so a single `catch` handles all of them:
 
 ```
 \RuntimeException
@@ -57,7 +57,7 @@ Catch the subclasses individually only when you genuinely handle them differentl
 
 [Reference](kernel/module-exception.md)
 
-The base class, and thrown directly for three things: a `bootstrap.php` the plugin cannot read, a property typed as a module, and a module asked for before its hook.
+The base class, and thrown directly for three things: a `bootstrap.php` the plugin cannot read, a module nothing declared, and a module asked for before its hook.
 
 ### A `bootstrap.php` the plugin cannot read
 
@@ -65,9 +65,9 @@ The base class, and thrown directly for three things: a `bootstrap.php` the plug
 Bootstrap file must return an array: /…/acme-plugin/bootstrap.php
 Bootstrap entries must name a class.
 The `bootstrap.php` entry for Acme\Plugin\Core\Modules\Cron\Cron is Closure.
-Configuration is an array: `Acme\…\Cron::class => array( 'before_boot' => $callback )`,
+Configuration is an array: `Acme\…\Cron::class => array( 'configure' => $callback )`,
 which is also where `boots_on` and `priority` go. A module needing none is written bare.
-The `before_boot` for Acme\Plugin\Core\Modules\Cron\Cron must be a callable, or left out.
+The `configure` for Acme\Plugin\Core\Modules\Cron\Cron must be a callable, or left out.
 ```
 
 **What causes it.** A `bootstrap.php` with no `return`, or one returning something other than an array. An entry configured with a bare callback rather than an array — the shape most people reach for first.
@@ -81,7 +81,7 @@ use Acme\Plugin\Core\Modules\Cron\Cron;
 
 return array(
     Cron::class => array(
-        'before_boot' => static function ( Cron $cron ): void {
+        'configure' => static function ( Cron $cron ): void {
             $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
         },
     ),
@@ -89,29 +89,19 @@ return array(
 );
 ```
 
-`before_boot` configures the module, `boots_on` names a hook to boot on, and `priority` is what that hook binds at. All three are optional and all three live in the same array, so adding one never means rewriting the entry.
+`configure` configures the module, `boots_on` names a hook to boot on, and `priority` is what that hook binds at. All three are optional and all three live in the same array, so adding one never means rewriting the entry.
 
-### A property typed as a module
+### A module nothing declared
 
 ```
-Acme\Plugin\Routes\Books declares `Options $options`, and a module is not injected:
-building one boots it. Drop the property and ask where you need it --
-`$this->get_plugin()->get( Options::class )`.
+Acme\Plugin\Core\Modules\Options is not declared, so nothing built it. Add it to
+/…/acme-plugin/bootstrap.php -- that file is everything this plugin is made of,
+and nothing outside it is ever built.
 ```
 
-**What causes it.** Injection is for services. A service is built when something asks for it and does nothing else, so a property is an honest way to ask. A module *boots* when it is built — it binds hooks, walks a directory, registers things with WordPress — and a property declaration hides all of that behind a type name.
+**What causes it.** Something called `with()` or `get()` for a module the file never lists. Nothing is built on demand, so there is no instance to hand back.
 
-**What to do.** Exactly what the message says. Delete the property and call `get()` in the method that needs it, which puts the cost where a reader can see it:
-
-```php
-public function handle( WP_REST_Request $request ): WP_REST_Response {
-    $options = $this->get_plugin()->get( Options::class );
-
-    return new WP_REST_Response( $options->get( 'per_page', 10 ) );
-}
-```
-
-Thrown rather than skipped, because skipping would leave the property uninitialised and the first read would fatal with PHP's own message, which names neither the module nor the reason.
+**What to do.** Add it to `bootstrap.php`, or let `wp zt add <name>` do it. That refusal is what keeps the file worth reading: if an unlisted class could be built by asking, the inventory would be a suggestion rather than the answer.
 
 ### A module asked for before its hook
 
@@ -133,18 +123,17 @@ plugin can live with.
 
 ```
 Class Acme\Plugin\Modules\Shortcode does not exist.
-Class Acme\Plugin\Modules\Shortcode must extend Acme\Plugin\Core\Kernel\Abstracts\Service.
+Class Acme\Plugin\Modules\Shortcode must extend Acme\Plugin\Core\Kernel\Abstracts\Module.
 ```
 
-**What causes it.** Something asked for a class the plugin cannot build — via `get()`, `make()`, a `bootstrap.php` entry, or an injected property typed as it.
+**What causes it.** Something asked for a class the plugin cannot build — via `with()`, `get()`, `make()` or a `bootstrap.php` entry.
 
-The first message is almost always a namespace or autoload problem, and the copied source carries a `Core` segment your own code does not. The second means the class exists but extends neither `Service` nor `Module`; the repository builds only those two.
+The first message is almost always a namespace or autoload problem, and the copied source carries a `Core` segment your own code does not. The second means the class exists but is not a module.
 
-**What to do.** Check the namespace against the map in [Troubleshooting](troubleshooting.md#class-not-found), then `composer dump-autoload`. If the class is yours, make sure it extends one of the base classes:
+**What to do.** Check the namespace against the map in [Troubleshooting](troubleshooting.md#class-not-found), then `composer dump-autoload`. If the class is yours, make sure it extends the base class:
 
 ```php
-use Acme\Plugin\Core\Kernel\Abstracts\Module;   // acts on its own
-use Acme\Plugin\Core\Kernel\Abstracts\Service;  // works when called
+use Acme\Plugin\Core\Kernel\Abstracts\Module;
 ```
 
 A declaration in `bootstrap.php` whose file has since been deleted or renamed is the other common source. `wp zt doctor` finds those before they reach a request.
@@ -159,9 +148,9 @@ A declaration in `bootstrap.php` whose file has since been deleted or renamed is
 Circular module dependency detected: Acme\Plugin\Modules\Reports -> Acme\Plugin\Modules\Exporter -> Acme\Plugin\Modules\Reports.
 ```
 
-**What causes it.** Injected properties formed a cycle: resolving `Reports` injected `Exporter`, whose own injected property is `Reports`, which is still mid-construction. The message prints the whole chain in resolution order, ending with the class that closed it.
+**What causes it.** Two modules built with `make()` reached for each other while building. `get()` cannot cycle — it publishes the shared instance before the module boots, so anything reaching back for it during that boot gets the in-flight one — but `make()` never publishes. The message prints the whole chain, ending with the class that closed it.
 
-**What to do.** Break the cycle at one end by fetching lazily instead of declaring the property:
+**What to do.** Break the cycle at one end by reaching for the other module when you use it rather than while building:
 
 ```php
 namespace Acme\Plugin\Modules;
@@ -269,22 +258,22 @@ Two families sit outside the hierarchy, so `catch ( ModuleException $e )` around
 
 | Where | Message shape |
 |---|---|
-| [`Path`](services/path/) | `Resource path must stay within the plugin directory.` |
-| [`Views`](services/views/) | `View file does not exist: dashboard (in views root: views)`, `Invalid view name.` |
+| [`Path`](modules/path/) | `Resource path must stay within the plugin directory.` |
+| [`Views`](modules/views/) | `View file does not exist: dashboard (in views root: views)`, `Invalid view name.` |
 | [`Assets`](modules/assets/) | `Asset manifest does not exist: /…/build/panel.asset.php` |
-| [`DB`](services/db/) | `Table name "acme-reports" must contain only letters, digits and underscores.` |
+| [`DB`](modules/db/) | `Table name "acme-reports" must contain only letters, digits and underscores.` |
 | [`CLI`](modules/cli/) | `Command name collision: "report" (report.php) is also used as a subdirectory by "report list" (report/list.php).` |
 | [`Cron`](modules/cron/) | `Schedule "digest" has an unregistered recurrence "fortnightly". Register it with Cron::add_custom_interval() first, or use a WordPress built-in (hourly, twicedaily, daily).` |
 | [`RestApi`](modules/rest-api/) | `The file "/…/routes/report.php" has a pattern placeholder with no matching #[…\Attributes\RequestArgument] property: id.` |
-| [`Request`](services/request/) | `The argument Acme\Plugin\Routes\Report::$id needs a single declared type. A union or an untyped property cannot be described to a caller.` |
-| [`Request`](services/request/) | `The argument …::$rows is an array that does not say what it holds. Name a class with of: Thing::class, or describe the items with schema: array( 'items' => ... ).` |
-| [`Request`](services/request/) | `Acme\Plugin\Reports\Filter declares no arguments, so nothing describes it.` |
-| [`Request`](services/request/) | `The argument …::$total is static. An argument belongs to one call, and a static property belongs to every call at once.` |
-| [`Request`](services/request/) | `The argument "id" is readonly on an object that answers more than one call, so it can only ever be set once.` |
-| [`Request`](services/request/) | `A file cannot be described in a schema, so only a REST route can take one.` |
+| [`Request`](modules/request/) | `The argument Acme\Plugin\Routes\Report::$id needs a single declared type. A union or an untyped property cannot be described to a caller.` |
+| [`Request`](modules/request/) | `The argument …::$rows is an array that does not say what it holds. Name a class with of: Thing::class, or describe the items with schema: array( 'items' => ... ).` |
+| [`Request`](modules/request/) | `Acme\Plugin\Reports\Filter declares no arguments, so nothing describes it.` |
+| [`Request`](modules/request/) | `The argument …::$total is static. An argument belongs to one call, and a static property belongs to every call at once.` |
+| [`Request`](modules/request/) | `The argument "id" is readonly on an object that answers more than one call, so it can only ever be set once.` |
+| [`Request`](modules/request/) | `A file cannot be described in a schema, so only a REST route can take one.` |
 | [`Log`](modules/log/) | `Unknown log level "verbose". Expected one of: emergency, alert, critical, error, warning, notice, info, debug.` |
 
-Every one of those is thrown while your route or ability registers, not while it answers a call, and names the property. [`#[RequestArgument]`](services/request/request-argument.md) lists what you can declare and what you cannot.
+Every one of those is thrown while your route or ability registers, not while it answers a call, and names the property. [`#[RequestArgument]`](modules/request/request-argument.md) lists what you can declare and what you cannot.
 
 **`\RuntimeException` — the environment refused.** WordPress or MySQL would not do what was asked: `Could not create upload directory: …`, `Options::save() failed to persist option "acme-plugin__options_"`, `dbDelta() reported creating "wp_acme_reports", but the table does not exist.` These mean a filesystem permission, a full disk, or a database privilege — not a wiring mistake.
 

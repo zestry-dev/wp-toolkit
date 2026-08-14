@@ -66,21 +66,18 @@ Nothing is ever overwritten — an existing config file, dependency or script is
 `init` copies only the kernel. Each feature is opt-in, and lands beside it under `lib/Core/`:
 
 ```bash
-wp zt add module cli admin-pages
+wp zt add cli admin-pages
 ```
 
 Dependencies come along automatically — nearly everything needs `path`, so it arrives too, and `migrations` also pulls in `db`, `options` and `cli`.
 
-What you add is one of two kinds:
+Everything you can add is a **[module](modules/)**:
 
-- a **[service](services/)** works only when you call it. Add one on its own with `wp zt add service <name>`:
-  <!-- zestry:include generator="service-names" -->
-  `cookie`, `db`, `globals`, `path`, `request`, `transients`, `views`
-  <!-- /zestry:include -->
-- a **[module](modules/)** acts on its own:
-  <!-- zestry:include generator="module-names" -->
-  `abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cron`, `fields`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `post-types`, `rest-api`, `site-health`
-  <!-- /zestry:include -->
+<!-- zestry:include generator="module-names" -->
+`abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cookie`, `cron`, `db`, `fields`, `globals`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `path`, `post-types`, `request`, `rest-api`, `site-health`, `transients`, `views`
+<!-- /zestry:include -->
+
+Some act on their own — `ajax` binds hooks, `post-types` walks a directory — and some only work when you call them, like `path` and `views`. Both are added, declared and reached the same way; what differs is whether the class implements [`Bootable`](kernel/bootable.md).
 
 ## 5. Wire the plugin up
 
@@ -113,7 +110,7 @@ acme_plugin();
 
 That is the whole file, and it stays this size however many modules you add. The slug defaults to the entry file's directory name — `acme-plugin` — and every hook, option and handle the modules register is namespaced with it. `bootstrap()` reads `bootstrap.php`; `run()` builds and boots what it found, synchronously, so you control the timing.
 
-`wp zt add module` already appended to `bootstrap.php` in step 4, so it now reads:
+`wp zt add` already appended to `bootstrap.php` in step 4, so it now reads:
 
 ```php
 <?php
@@ -137,7 +134,7 @@ return array(
 ```php
 return array(
     Cron::class => array(
-        'before_boot' => static function ( Cron $cron ): void {
+        'configure' => static function ( Cron $cron ): void {
             $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
         },
     ),
@@ -149,34 +146,28 @@ That array takes three keys, all optional:
 
 | Key | What it does |
 |---|---|
-| `before_boot` | Configures the module. Runs when it is built, immediately before it boots, so `on_boot()` can rely on whatever it set. |
+| `configure` | Configures the module. Runs when it is built, immediately before it boots, so `on_boot()` can rely on whatever it set. |
 | `boots_on` | A WordPress hook to boot on, for a module that cannot do its work as the plugin loads. Without it the module boots the moment `run()` reaches it. |
 | `priority` | What `boots_on` binds at. Defaults to 10. |
 
 Configuration is always the array and never a bare callback, so adding a `boots_on` to an entry that already has an initializer is one more line rather than a rewrite. Anything else as an entry's value throws, naming the shape to write.
 
-A service never appears here. It is built the moment something asks for it — a `$plugin->get()`, or another class declaring a property of its type. One that takes configuration gets it from `configure()` in your entry file:
+Everything the plugin is made of is here, including the modules that only work when you call them. A module that takes configuration gets a `configure`:
 
 ```php
 use Acme\Plugin\Core\Modules\DB;
 
-$plugin ??= ( new Plugin( __FILE__ ) )
-    ->declare_modules(
-        array(
-            DB::class => array(
-                'configure' => static function ( DB $db ): void {
-                    $db->set_table_prefix( 'acme' );
-                },
-            ),
-        )
-    )
-    ->bootstrap()
-    ->run();
-
-return $plugin;
+return array(
+    DB::class => array(
+        'configure' => static function ( DB $db ): void {
+            $db->set_table_prefix( 'acme' );
+        },
+    ),
+    CLI::class,
+);
 ```
 
-The one mistake left is leaving a module out of `bootstrap.php`: nothing builds it, its `on_boot()` never runs, and no error says so. That is what [`wp zt doctor`](commands/doctor.md) exists to catch.
+The one mistake left is leaving a module out: nothing builds it, so a `Bootable` one never runs its `on_boot()` and any other throws the moment something reaches for it. [`wp zt doctor`](commands/doctor.md) catches the first, which is the silent one.
 
 ```bash
 wp zt doctor
@@ -209,14 +200,14 @@ Three conventions do the work, and they are the same in every module:
 
 1. **A directory is a feature set.** `commands/` holds WP-CLI commands, `admin-pages/` holds pages, `routes/` holds REST routes. The [module index](modules/) maps every one.
 2. **A file returns an object.** The module requires the file and expects an instance of that module's base class. Anything else throws a `DiscoveryException` naming the file and what was expected.
-3. **Services are declared, not fetched.** Type a public property as a service — `public Path $path;` — and it is injected before your code runs, in every discovered file as well as in every service and module. A *module* is asked for instead, where you need it — `$this->get_plugin()->get( Options::class )` — because building one boots it, and that is too much to hide behind a property declaration.
+3. **Dependencies are reached, not built.** `$this->with( Path::class )` hands you the module the plugin already made — the same instance every time, in a discovered file as readily as in a module of your own.
 
 ## JavaScript, if you need it
 
 Nothing so far touched the front end. When you want it:
 
 ```bash
-wp zt add module assets
+wp zt add assets
 wp zt make entry settings
 npm install && npm run build
 ```
@@ -239,14 +230,13 @@ The `webpack.config.js` that came with the module is what lets one build produce
 lib/
 ├── Core/                  ← copied in; `update` may replace it
 │   ├── Kernel/            ← wp zt init
-│   ├── Modules/Ajax/      ← wp zt add module ajax
-│   └── Services/Path.php  ← wp zt add service path
+│   ├── Modules/Ajax/      ← wp zt add ajax
+│   └── Modules/Path.php   ← wp zt add path
 ├── Modules/Shortcode.php  ← wp zt make module Shortcode — yours
-├── Services/Cache.php     ← wp zt make service Cache — yours
 └── Data/LineItem.php      ← no generator, no command — just yours
 ```
 
-It is all your code, under one namespace and one PSR-4 entry — which is why the last line needs no command: that entry maps the whole of `lib/`, so a plain class autoloads from wherever you put it. `Modules/` and `Services/` are where the two generators write, not a list of what may exist. The segment appears in the namespace too — `Acme\Plugin\Core\Modules\Ajax\Ajax` against your own `Acme\Plugin\Modules\Shortcode` — so which kind you are looking at shows in every `use` statement.
+It is all your code, under one namespace and one PSR-4 entry — which is why the last line needs no command: that entry maps the whole of `lib/`, so a plain class autoloads from wherever you put it. `Modules/` is where `make module` writes, not a list of what may exist. The `Core` segment appears in the namespace too — `Acme\Plugin\Core\Modules\Ajax\Ajax` against your own `Acme\Plugin\Modules\Shortcode` — so which is which shows in every `use` statement.
 
 Edit anything under `lib/Core/` freely. `wp zt update` names the files you changed before it would replace them, and keeps them unless you pass `--force`. If you want a module to stop being upstream's altogether, move it out of `lib/Core/` and rename its namespace; `update` then has nothing to say about it.
 
@@ -255,5 +245,4 @@ Edit anything under `lib/Core/` freely. `wp zt update` names the files you chang
 - [Your first plugin](first-plugin.md) — the same pieces, used to build something real.
 - [Modules](modules/) — what each one discovers, and what its files return.
 - [JavaScript](javascript.md) — entries, shared code, and what the build hands to PHP.
-- [Services](services/) — paths, views, db, globals.
-- [Command reference](commands/) — every `wp zt` command, including `make module` and `make service` for your own.
+- [Command reference](commands/) — every `wp zt` command, including `make module` for your own.

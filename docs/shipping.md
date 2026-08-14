@@ -44,7 +44,7 @@ They are not the same list, and the difference is what makes `git archive` the w
 | Path | Committed | In the zip |
 |---|---|---|
 | `acme-plugin.php`, `bootstrap.php` | yes | **yes** — `bootstrap.php` is what builds your modules |
-| `lib/` | yes | **yes** — your kernel, modules and services |
+| `lib/` | yes | **yes** — your kernel and modules |
 | `src/blocks/` | yes | no — source for the JS build |
 | `build/` | no (gitignored) | **yes** — what the Blocks module reads |
 | `vendor/` | no (gitignored) | **yes** — built with `--no-dev` |
@@ -76,13 +76,13 @@ npm install
 npm run build
 ```
 
-`wp zt add module blocks` wrote that script as `wp-scripts build --webpack-copy-php --experimental-modules --blocks-manifest`, so the build also copies each block's PHP into `build/` and writes a `blocks-manifest.php` the module reads in place of one `block.json` decode per block. **Build before packaging, every time** — `build/` is gitignored, so a fresh clone has nothing there at all.
+`wp zt add blocks` wrote that script as `wp-scripts build --webpack-copy-php --experimental-modules --blocks-manifest`, so the build also copies each block's PHP into `build/` and writes a `blocks-manifest.php` the module reads in place of one `block.json` decode per block. **Build before packaging, every time** — `build/` is gitignored, so a fresh clone has nothing there at all.
 
 The npm packages are all dev dependencies. `wp-scripts` maps every `@wordpress/*` import onto the `wp.*` globals WordPress already enqueues, so none of them end up in the bundle and `node_modules/` never ships.
 
 ### Making the zip
 
-`wp zt add module blocks` also added `npm run plugin-zip`, which wraps `wp-scripts plugin-zip`. It is usable, with one thing to set up first.
+`wp zt add blocks` also added `npm run plugin-zip`, which wraps `wp-scripts plugin-zip`. It is usable, with one thing to set up first.
 
 Without a `files` field in your `package.json`, it falls back to a fixed list of Plugin Handbook directories — `admin/`, `build/`, `includes/`, `languages/`, `public/`, `{name}.php` and a few root files. **`lib/`, `vendor/` and `bootstrap.php` are not on that list**, so the zip it produces will be missing your entire plugin. Declare what ships:
 
@@ -107,7 +107,7 @@ A plugin that never added the `blocks` module has no npm tooling at all, and not
 
 ## Updating the toolkit in a shipped plugin
 
-A later release of the toolkit never arrives on its own. `wp zt update` re-copies everything under `lib/Core/` — the kernel, plus every module and service you have added — from whichever version of `zestry-dev/wp-toolkit` is currently installed. Nothing outside `lib/Core/` is touched.
+A later release of the toolkit never arrives on its own. `wp zt update` re-copies everything under `lib/Core/` — the kernel, plus every module you have added — from whichever version of `zestry-dev/wp-toolkit` is currently installed. Nothing outside `lib/Core/` is touched.
 
 ```bash
 composer update zestry-dev/wp-toolkit

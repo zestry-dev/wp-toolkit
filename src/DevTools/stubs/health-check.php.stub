@@ -28,8 +28,8 @@ return new class() extends HealthCheck {
 	//
 	// This runs on the Site Health screen and on the weekly cron behind it,
 	// so keep it quick and free of side effects. Anything a Module or Service
-	// can be injected into this can too: declare a typed public property and
-	// read real state rather than guessing.
+	// Reach any declared module with `$this->with( Options::class )` and report
+	// real state rather than guessing.
 	public function run(): array {
 		return $this->good( 'Everything looks fine.' );
 	}

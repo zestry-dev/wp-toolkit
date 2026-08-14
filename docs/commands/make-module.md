@@ -23,7 +23,7 @@ Anything that has to wait for `init` goes through `Module::on_wp_init()` instead
 
 Requires `wp zt init` to have already run in this plugin. Unlike every other `make` type, there is no fixed conventional directory to default to — a plain module is not discovered by anything — so its home is your own `{zestry.json root}/Modules/` directory, beside the copied `Core/` tree rather than inside it, which `wp zt update` never touches.
 
-Because nothing discovers it, this is also the one `make` type that writes to your `bootstrap.php`: the new class is appended there, which is what builds it. Its sibling `wp zt make service` declares nothing, since a service is built the moment something asks for it — configure one from `$plugin->configure()` in your entry file instead.
+Because nothing discovers it, this is also the one `make` type that writes to your `bootstrap.php`: the new class is appended there, which is what service is built the moment something asks for it — configure one from `$plugin->configure()` in your entry file instead.
 
 A generated file that does not yet parse is not declared at all. The command says so, and declaring it is one edit away once the file parses.
 

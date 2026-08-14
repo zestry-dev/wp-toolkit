@@ -39,17 +39,14 @@ function zestry_record_missing_base( ?string $base = null ): array {
  */
 function zestry_find_class_file( string $root, string $class ): ?string {
 	/*
-	 * Two levels under each tree, not one: `RequestArgument` lives at
-	 * `src/Services/Request/Attributes/`, and a single-level glob could not see
+	 * Two levels under the tree, not one: `RequestArgument` lives at
+	 * `src/Modules/Request/Attributes/`, and a single-level glob could not see
 	 * it -- so the attribute appeared in several code samples and had no page.
 	 */
 	$candidates = array(
 		$root . '/src/Modules/*/' . $class . '.php',
 		$root . '/src/Modules/*/*/' . $class . '.php',
 		$root . '/src/Modules/' . $class . '.php',
-		$root . '/src/Services/' . $class . '.php',
-		$root . '/src/Services/*/' . $class . '.php',
-		$root . '/src/Services/*/*/' . $class . '.php',
 		$root . '/src/Kernel/*/' . $class . '.php',
 		$root . '/src/Kernel/' . $class . '.php',
 	);
@@ -482,7 +479,6 @@ function zestry_base_class_pages(): array {
 	return array(
 		'Module'            => 'modules/module.md',
 		'ActivationHandler' => 'modules/activation-handler.md',
-		'Service'           => 'services/service.md',
 		'WithPlugin'        => 'kernel/with-plugin.md',
 		'WithEnablement'    => 'kernel/with-enablement.md',
 		'WithFolderWalker'  => 'kernel/with-folder-walker.md',
@@ -896,55 +892,34 @@ function zestry_stub_language( string $name ): string {
  * @return int The number of module pages written.
  */
 function zestry_generate_module_pages( string $root ): int {
-	// One tree per section, mirroring src/ and bootstrap.php: docs/services and
-	// docs/modules. Which a page lands in follows the registry section, so the
-	// three layouts cannot disagree.
-	$output_dirs = array(
-		'services' => $root . '/docs/services',
-		'modules'  => $root . '/docs/modules',
-	);
-	$registry    = require $root . '/src/DevTools/registry.php';
+	// One tree, mirroring src/ and bootstrap.php: there is one kind of thing, so
+	// there is one place to document it.
+	$output_dir = $root . '/docs/modules';
+	$registry   = require $root . '/src/DevTools/registry.php';
 
-	foreach ( $output_dirs as $output_dir ) {
-		if ( ! is_dir( $output_dir ) && ! mkdir( $output_dir, 0755, true ) && ! is_dir( $output_dir ) ) {
-			fwrite( STDERR, "Could not create {$output_dir}\n" );
-			exit( 1 );
-		}
+	if ( ! is_dir( $output_dir ) && ! mkdir( $output_dir, 0755, true ) && ! is_dir( $output_dir ) ) {
+		fwrite( STDERR, "Could not create {$output_dir}\n" );
+		exit( 1 );
+	}
 
-		// Clear the whole tree: pages moved into per-entry folders, so a stale
-		// file from an earlier layout would otherwise survive forever.
-		foreach ( glob( $output_dir . '/*.md' ) ?: array() as $stale ) {
+	// Clear the whole tree: pages moved into per-entry folders, so a stale
+	// file from an earlier layout would otherwise survive forever.
+	foreach ( glob( $output_dir . '/*.md' ) ?: array() as $stale ) {
+		unlink( $stale );
+	}
+
+	foreach ( glob( $output_dir . '/*', GLOB_ONLYDIR ) ?: array() as $stale_dir ) {
+		foreach ( glob( $stale_dir . '/*.md' ) ?: array() as $stale ) {
 			unlink( $stale );
 		}
 
-		foreach ( glob( $output_dir . '/*', GLOB_ONLYDIR ) ?: array() as $stale_dir ) {
-			foreach ( glob( $stale_dir . '/*.md' ) ?: array() as $stale ) {
-				unlink( $stale );
-			}
-
-			rmdir( $stale_dir );
-		}
-	}
-
-	/*
-	 * registry.php groups entries under `services` and `modules`; both are
-	 * documented the same way, so they are flattened here. This script runs
-	 * outside WordPress and requires the file directly, so it cannot call
-	 * Copier::normalize_registry() -- the shape is simple enough to walk.
-	 */
-	$flat = array();
-
-	foreach ( $registry as $section => $entries ) {
-		foreach ( $entries as $name => $entry ) {
-			$entry['section'] = $section;
-			$flat[ $name ]    = $entry;
-		}
+		rmdir( $stale_dir );
 	}
 
 	$modules = array();
 
-	foreach ( $flat as $name => $entry ) {
-		// PSR-4: `Zestry\WPToolkit\Modules\Path` is src/Core/Services/Path.php. Everything below
+	foreach ( $registry as $name => $entry ) {
+		// PSR-4: `Zestry\WPToolkit\Modules\Path` is src/Modules/Path.php. Everything below
 		// is derived from that one path, so nothing restates the layout.
 		$source     = $entry['source'];
 		$class_path = str_replace( '\\', '/', zestry_without_root_namespace( $source ) );
@@ -971,14 +946,8 @@ function zestry_generate_module_pages( string $root ): int {
 			continue;
 		}
 
-		$module['name'] = $name;
-		// Merged: the closure crosses the two sections freely, and a reader of
-		// "Also copies" does not care which kind each dependency is.
-		$module['depends'] = array_merge(
-			$entry['depends']['services'] ?? array(),
-			$entry['depends']['modules'] ?? array()
-		);
-		$module['section'] = $entry['section'];
+		$module['name']    = $name;
+		$module['depends'] = $entry['depends'] ?? array();
 		// A single-file module has no directory of its own to hold a second
 		// base class, and scanning src/Core/Modules/ itself would sweep up every
 		// other module's.
@@ -991,14 +960,7 @@ function zestry_generate_module_pages( string $root ): int {
 
 	// Which section a name is filed under, so a dependency can be linked across
 	// to the other tree rather than assumed to be a sibling.
-	$sections = array();
-
 	foreach ( $modules as $name => $module ) {
-		$sections[ $name ] = $module['section'];
-	}
-
-	foreach ( $modules as $name => $module ) {
-		$output_dir = $output_dirs[ $module['section'] ];
 		$module_dir = $output_dir . '/' . $name;
 
 		if ( ! is_dir( $module_dir ) && ! mkdir( $module_dir, 0755, true ) && ! is_dir( $module_dir ) ) {
@@ -1012,7 +974,7 @@ function zestry_generate_module_pages( string $root ): int {
 		$page[] = '';
 
 		// Directly under the title, so the facts read before the contents list.
-		$page = array_merge( $page, zestry_render_facts_table( $module, $sections ) );
+		$page = array_merge( $page, zestry_render_facts_table( $module ) );
 
 		/*
 		 * What it is, before what to type. The install snippet and the
@@ -1030,7 +992,7 @@ function zestry_generate_module_pages( string $root ): int {
 		$page[] = '';
 		$page[] = '```bash';
 		// The subcommand names the kind, so the snippet has to as well.
-		$page[] = 'wp zt add ' . ( $module['is_module'] ? 'module ' : 'service ' ) . $name;
+		$page[] = 'wp zt add ' . $name;
 		$page[] = '```';
 		$page[] = '';
 
@@ -1270,7 +1232,7 @@ function zestry_generate_module_pages( string $root ): int {
 		 * so a module gains its links by having dependencies and a base class
 		 * rather than by anyone remembering to add them.
 		 */
-		$page = array_merge( $page, zestry_render_see_also( $module, $name, $sections ) );
+		$page = array_merge( $page, zestry_render_see_also( $module, $name ) );
 
 		zestry_write_page( $module_dir . '/README.md', zestry_insert_toc( $page ) );
 	}
@@ -1279,8 +1241,7 @@ function zestry_generate_module_pages( string $root ): int {
 	 * Each base class sits beside the index of the things that extend it, rather
 	 * than inside any one of their folders -- it belongs to all of them.
 	 */
-	zestry_write_base_class_page( $root, $output_dirs['modules'], 'Module', null );
-	zestry_write_base_class_page( $root, $output_dirs['services'], 'Service', null );
+	zestry_write_base_class_page( $root, $output_dir, 'Module', null );
 
 	/*
 	 * ActivationHandler is a Module subclass shipped in Core rather than a registry
@@ -1288,7 +1249,7 @@ function zestry_generate_module_pages( string $root ): int {
 	 * to it (`Migrations` for run_pending(), `Cron` for unscheduling) without
 	 * anywhere to land. It sits beside Module, which is what it extends.
 	 */
-	zestry_write_base_class_page( $root, $output_dirs['modules'], 'ActivationHandler', null );
+	zestry_write_base_class_page( $root, $output_dir, 'ActivationHandler', null );
 
 	/*
 	 * The kernel types every plugin meets and no module owns. The four
@@ -1297,9 +1258,9 @@ function zestry_generate_module_pages( string $root ): int {
 	 * `catch ( ModuleException $e )` covers every way a module can fail to come
 	 * up -- and until now that reached docs/ only as one-line "Throws" cells.
 	 * `PluginAware` and `WithPlugin` are named across eleven pages with nothing
-	 * to link to; `NoInject` is how a property opts out of injection.
+	 * to link to; `Bootable` is what marks a module that acts on its own.
 	 */
-	$kernel_dir = dirname( $output_dirs['modules'] ) . '/kernel';
+	$kernel_dir = dirname( $output_dir ) . '/kernel';
 
 	if ( ! is_dir( $kernel_dir ) && ! mkdir( $kernel_dir, 0755, true ) && ! is_dir( $kernel_dir ) ) {
 		fwrite( STDERR, "Could not create {$kernel_dir}\n" );
@@ -1313,7 +1274,7 @@ function zestry_generate_module_pages( string $root ): int {
 		'CircularDependencyException' => 'Two classes depend on each other',
 		'PluginAware'                 => 'The contract that makes an object wireable',
 		'WithPlugin'                  => 'The trait that satisfies it',
-		'NoInject'                    => 'Opt a property out of injection',
+		'Bootable'                    => 'What marks a module that acts on its own',
 		'WithFolderWalker'            => 'How every discovery module reads its directory',
 		'WithEnablement'              => 'Let a discovered file say it should not register',
 		'Arr'                         => 'Nested array paths, and the operations you reach for on a list of rows',
@@ -1336,8 +1297,7 @@ function zestry_generate_module_pages( string $root ): int {
 	}
 
 	$index[] = '';
-	$index[] = 'See also [`Plugin`](../plugin.md), [`Service`](../services/service.md) and';
-	$index[] = '[`Module`](../modules/module.md).';
+	$index[] = 'See also [`Plugin`](../plugin.md) and [`Module`](../modules/module.md).';
 	$index[] = '';
 
 	zestry_write_page( $kernel_dir . '/README.md', $index );
@@ -1352,211 +1312,168 @@ function zestry_generate_module_pages( string $root ): int {
 	 */
 	zestry_write_base_class_page( $root, $root . '/docs', 'Plugin', null );
 
-	// Two indexes, one per section, both generated -- the depends column is
-	// registry.php itself.
-	foreach ( $output_dirs as $section => $output_dir ) {
-		$entries = array_filter(
-			$modules,
-			static function ( array $module ) use ( $section ): bool {
-				return $section === $module['section'];
-			}
-		);
+	// One index, generated -- the depends column is registry.php itself.
+	$entries = $modules;
 
-		$index = zestry_generated_banner( 'src/DevTools/registry.php and each class it names' );
+	$index = zestry_generated_banner( 'src/DevTools/registry.php and each class it names' );
 
-		if ( 'services' === $section ) {
-			$index[] = '# Services';
-			$index[] = '';
-			$index[] = 'A service does nothing on its own. The plugin builds it the first time'
-				. ' something asks for it -- a `$plugin->get()` call, or another class'
-				. ' declaring a property of its type -- and it works only when called.'
-				. ' Nothing happens until then, so a service is never listed in'
-				. ' `bootstrap.php`; one that takes configuration gets it from'
-				. ' `$plugin->configure()` in your entry file.';
-			$index[] = '';
-			$index[] = 'All of them extend [`Service`](service.md), which supplies plugin access'
-				. ' and the typed-property injection they rely on. For the things that *do*'
-				. ' act on their own, see [Modules](../modules/).';
-		} else {
-			$index[] = '# Modules';
-			$index[] = '';
-			$index[] = 'A module acts on its own: it binds a hook, registers a post type, walks'
-				. ' a directory. Because it acts without being called, it has to be built for'
-				. ' that to happen -- so every module is listed in'
-				. ' `bootstrap.php`, and the plugin builds it as the plugin loads.';
-			$index[] = '';
-			$index[] = '## What your files are named';
-			$index[] = '';
-			$index[] = 'A discovered file\'s name is the thing it registers as: `commands/greet.php`'
-				. ' is `wp your-plugin greet`, `post-types/book.php` is the `book` post type,'
-				. ' `fields/acme_rating.php` is the `acme_rating` meta key. You never repeat that'
-				. ' name inside the file.';
-			$index[] = '';
-			$index[] = 'Whether your plugin slug is prefixed onto that name depends on where the'
-				. ' name lands:';
-			$index[] = '';
-			$index[] = '- **Prefixed**, when the name goes into something every plugin on the site'
-				. ' shares — admin page slugs, cron hooks, AJAX actions, Site Health checks,'
-				. ' REST namespaces, WP-CLI commands. Two plugins with a `sync` schedule must'
-				. ' not collide, so yours is `your-plugin-sync`. A hyphen joins the two halves'
-				. ' wherever the destination takes one; the few that take something else say'
-				. ' so — an option name joins with `_`, a REST namespace with `/`, a WP-CLI'
-				. ' command with a space.';
-			$index[] = '- **Not prefixed**, when the name is your own public API and something else'
-				. ' constrains it — post types and taxonomies, which WordPress caps at 20 and 32'
-				. ' characters; meta keys, which appear in your REST responses; block names,'
-				. ' which `block.json` already qualifies. Prefix these yourself in the filename'
-				. ' when you need to.';
-			$index[] = '';
-			$index[] = 'All of them extend [`Module`](module.md), whose abstract `on_boot()` is'
-				. ' where the acting-on-its-own goes. For the things that only work when'
-				. ' called, see [Services](../services/).';
-		}
-
+		$index[] = '# Modules';
 		$index[] = '';
-		$index[] = 'Everything here is optional. `wp zt add ' . rtrim( $section, 's' ) . ' <name>` copies one into your'
-			. ' plugin, along with anything it depends on.';
+		$index[] = 'A module acts on its own: it binds a hook, registers a post type, walks'
+			. ' a directory. Because it acts without being called, it has to be built for'
+			. ' that to happen -- so every module is listed in'
+			. ' `bootstrap.php`, and the plugin builds it as the plugin loads.';
 		$index[] = '';
+		$index[] = '## What your files are named';
+		$index[] = '';
+		$index[] = 'A discovered file\'s name is the thing it registers as: `commands/greet.php`'
+			. ' is `wp your-plugin greet`, `post-types/book.php` is the `book` post type,'
+			. ' `fields/acme_rating.php` is the `acme_rating` meta key. You never repeat that'
+			. ' name inside the file.';
+		$index[] = '';
+		$index[] = 'Whether your plugin slug is prefixed onto that name depends on where the'
+			. ' name lands:';
+		$index[] = '';
+		$index[] = '- **Prefixed**, when the name goes into something every plugin on the site'
+			. ' shares — admin page slugs, cron hooks, AJAX actions, Site Health checks,'
+			. ' REST namespaces, WP-CLI commands. Two plugins with a `sync` schedule must'
+			. ' not collide, so yours is `your-plugin-sync`. A hyphen joins the two halves'
+			. ' wherever the destination takes one; the few that take something else say'
+			. ' so — an option name joins with `_`, a REST namespace with `/`, a WP-CLI'
+			. ' command with a space.';
+		$index[] = '- **Not prefixed**, when the name is your own public API and something else'
+			. ' constrains it — post types and taxonomies, which WordPress caps at 20 and 32'
+			. ' characters; meta keys, which appear in your REST responses; block names,'
+			. ' which `block.json` already qualifies. Prefix these yourself in the filename'
+			. ' when you need to.';
+		$index[] = '';
+		$index[] = 'All of them extend [`Module`](module.md), whose abstract `on_boot()` is'
+			. ' where the acting-on-its-own goes; a module without it works only'
+			. ' when you call it.';
 
-		/*
-		 * One table, not two. This page used to open with a "Which do I need?"
-		 * table naming ten of the fifteen modules, then repeat all fifteen under
-		 * "Every module" with their mechanics -- so the five with no row in the
-		 * first were the ones a reader had no way to want, and the ten with one
-		 * were described twice and could disagree. What each is *for* is now a
-		 * column, which is the thing being scanned for, so it comes first.
-		 */
-		if ( 'modules' === $section ) {
-			$index[]  = '## Every module';
-			$index[]  = '';
-			$index[]  = 'Add nothing up front. Reach for one when you hit what it solves:';
-			$index[]  = '';
-			$headings = array( 'Module', 'Reach for it to…', 'Discovers', 'A file returns', 'Also copies' );
-		} else {
-			$index[]  = '## Every service';
-			$index[]  = '';
-			$headings = array( 'Service', 'Reach for it to…', 'Reads from', 'A file returns', 'Also copies' );
-		}
+	$index[] = '';
+	$index[] = 'Everything here is optional. `wp zt add <name>` copies one into your'
+		. ' plugin, along with anything it depends on.';
+	$index[] = '';
 
-		$rows = array();
+	/*
+	 * What each module is *for* is a column rather than a second table: it is
+	 * the thing being scanned for, so it comes first and is said once.
+	 */
+	$index[]  = '## Every module';
+	$index[]  = '';
+	$index[]  = 'Add nothing up front. Reach for one when you hit what it solves:';
+	$index[]  = '';
+	$headings = array( 'Module', 'Reach for it to…', 'Discovers', 'A file returns', 'Also copies' );
 
-		/*
-		 * Alphabetical, not the registry's own order. The registry is ordered by
-		 * what depends on what, which put `assets`, `log` and `options` at the
-		 * top of a table people read to find a name -- and it means adding an
-		 * entry reshuffles rows that did not change.
-		 */
-		$listed = $entries;
-		ksort( $listed );
+	$rows = array();
 
-		foreach ( $listed as $name => $module ) {
-			$dirs = array() === $module['roots']
-				? '—'
-				: implode(
-					', ',
-					array_map(
-						static function ( string $dir ): string {
-							return '`' . $dir . '/`';
-						},
-						$module['roots']
-					)
-				);
+	/*
+	 * Alphabetical, not the registry's own order. The registry is ordered by
+	 * what depends on what, which put `assets`, `log` and `options` at the
+	 * top of a table people read to find a name -- and it means adding an
+	 * entry reshuffles rows that did not change.
+	 */
+	$listed = $entries;
+	ksort( $listed );
 
-			/*
-			 * The column is headed "Discovers", and one module does not: `assets`
-			 * resolves URLs from one root and reads a manifest out of the other,
-			 * walking neither. Said in the cell rather than left to the heading,
-			 * because a reader who takes it at its word drops a file in and waits
-			 * for something to register. Derived from the same `use
-			 * WithFolderWalker;` test the per-module facts line uses, so a module
-			 * that stops walking cannot keep the claim.
-			 */
-			if ( '—' !== $dirs && ! ( $module['walks'] ?? true ) ) {
-				$dirs .= ' (read, not walked)';
-			}
-
-			// Alternates listed alongside the guard's own base: this column is
-			// where a reader decides what to extend, so a base missing from it
-			// is a base they never learn exists.
-			$bases = array_merge( $module['returns'], array_keys( $module['alternates'] ) );
-
-			$returns = array() === $bases
-				? '—'
-				: implode(
-					', ',
-					array_map(
-						static function ( string $base ) use ( $name ): string {
-							return sprintf( '[`%s`](%s/%s.md)', $base, $name, zestry_base_slug( $base ) );
-						},
-						$bases
-					)
-				);
-
-			$depends = array() === $module['depends']
-				? '—'
-				: implode(
-					', ',
-					array_map(
-						static function ( string $dependency ): string {
-							return '`' . $dependency . '`';
-						},
-						$module['depends']
-					)
-				);
-
-			$rows[] = array(
-				sprintf( '[`%s`](%s/)', $name, $name ),
-				zestry_entry_purpose( $name ),
-				$dirs,
-				$returns,
-				$depends,
+	foreach ( $listed as $name => $module ) {
+		$dirs = array() === $module['roots']
+			? '—'
+			: implode(
+				', ',
+				array_map(
+					static function ( string $dir ): string {
+						return '`' . $dir . '/`';
+					},
+					$module['roots']
+				)
 			);
-		}
 
 		/*
-		 * A column every row leaves empty is a column that says nothing. No
-		 * service discovers a file that returns anything, so the services index
-		 * carried an "A file returns" column of five em dashes.
+		 * The column is headed "Discovers", and one module does not: `assets`
+		 * resolves URLs from one root and reads a manifest out of the other,
+		 * walking neither. Said in the cell rather than left to the heading,
+		 * because a reader who takes it at its word drops a file in and waits
+		 * for something to register. Derived from the same `use
+		 * WithFolderWalker;` test the per-module facts line uses, so a module
+		 * that stops walking cannot keep the claim.
 		 */
-		$index = array_merge( $index, zestry_render_table( $headings, $rows ) );
-
-		$index[] = '';
-
-		if ( 'modules' === $section ) {
-			/*
-			 * "Also copies" lists modules and services, which is what a reader
-			 * needs for every row but two: `blocks` and `assets` each also write
-			 * build tooling into files they do not own -- package.json scripts and
-			 * devDependencies, a tsconfig, a webpack config, .gitignore entries.
-			 * Naming that here because this table is where a reader decides what
-			 * to add, and "copies a class" and "reconfigures my toolchain" are
-			 * different enough to be worth the sentence.
-			 */
-			$index[] = '**`blocks` and `assets` also write build tooling outside their own'
-				. ' tree** -- npm scripts and devDependencies, a `tsconfig.json`, a'
-				. ' `webpack.config.js`, `.gitignore` entries. Everything either writes is'
-				. ' additive, and [`wp zt add module`](../commands/add-module.md) lists it.';
-			$index[] = '';
-			$index[] = 'One worth calling out: **`ajax` serves `admin-ajax.php`**, not the REST'
-				. ' API. Reach for it when something already speaks that protocol -- an'
-				. ' existing script, a third-party integration -- and `rest-api` otherwise.';
-		} else {
-			$index[] = '**`path` arrives on its own** with almost every other entry, so it is'
-				. ' rarely worth naming.';
+		if ( '—' !== $dirs && ! ( $module['walks'] ?? true ) ) {
+			$dirs .= ' (read, not walked)';
 		}
 
-		$index[] = '';
+		// Alternates listed alongside the guard's own base: this column is
+		// where a reader decides what to extend, so a base missing from it
+		// is a base they never learn exists.
+		$bases = array_merge( $module['returns'], array_keys( $module['alternates'] ) );
 
-		if ( 'modules' === $section ) {
-			$index[] = '> [!NOTE]';
-			$index[] = '> **A module whose directory does not exist yet discovers nothing, and'
-				. ' says nothing.** The directory each one reads is fixed, so adding a'
-				. ' module before writing its first file is fine.';
-			$index[] = '';
-		}
+		$returns = array() === $bases
+			? '—'
+			: implode(
+				', ',
+				array_map(
+					static function ( string $base ) use ( $name ): string {
+						return sprintf( '[`%s`](%s/%s.md)', $base, $name, zestry_base_slug( $base ) );
+					},
+					$bases
+				)
+			);
 
-		zestry_write_page( $output_dir . '/README.md', $index );
+		$depends = array() === $module['depends']
+			? '—'
+			: implode(
+				', ',
+				array_map(
+					static function ( string $dependency ): string {
+						return '`' . $dependency . '`';
+					},
+					$module['depends']
+				)
+			);
+
+		$rows[] = array(
+			sprintf( '[`%s`](%s/)', $name, $name ),
+			zestry_entry_purpose( $name ),
+			$dirs,
+			$returns,
+			$depends,
+		);
 	}
+
+	$index = array_merge( $index, zestry_render_table( $headings, $rows ) );
+
+	$index[] = '';
+
+	/*
+	 * "Also copies" lists modules and services, which is what a reader
+	 * needs for every row but two: `blocks` and `assets` each also write
+	 * build tooling into files they do not own -- package.json scripts and
+	 * devDependencies, a tsconfig, a webpack config, .gitignore entries.
+	 * Naming that here because this table is where a reader decides what
+	 * to add, and "copies a class" and "reconfigures my toolchain" are
+	 * different enough to be worth the sentence.
+	 */
+	$index[] = '**`blocks` and `assets` also write build tooling outside their own'
+		. ' tree** -- npm scripts and devDependencies, a `tsconfig.json`, a'
+		. ' `webpack.config.js`, `.gitignore` entries. Everything either writes is'
+		. ' additive, and [`wp zt add module`](../commands/add.md) lists it.';
+	$index[] = '';
+	$index[] = 'One worth calling out: **`ajax` serves `admin-ajax.php`**, not the REST'
+		. ' API. Reach for it when something already speaks that protocol -- an'
+		. ' existing script, a third-party integration -- and `rest-api` otherwise.';
+	$index[] = '';
+	$index[] = '**`path` arrives on its own** with almost every other entry, so it is'
+		. ' rarely worth naming.';
+
+	$index[] = '';
+	$index[] = '> [!NOTE]';
+	$index[] = '> **A module whose directory does not exist yet discovers nothing, and'
+		. ' says nothing.** The directory each one reads is fixed, so adding a'
+		. ' module before writing its first file is fine.';
+	$index[] = '';
+
+	zestry_write_page( $output_dir . '/README.md', $index );
 
 	return count( $modules );
 }
@@ -1589,11 +1506,10 @@ function zestry_base_slug( string $base ): string {
  * it introduces. Reading them inline also lets the line sit above the contents
  * list, where it says what the module is before the reader picks a section.
  *
- * @param array<string, mixed>  $module   The module's extracted data.
- * @param array<string, string> $sections Every installable name to its registry section.
+ * @param array<string, mixed> $module The module's extracted data.
  * @return string[] Markdown lines.
  */
-function zestry_render_facts_table( array $module, array $sections = array() ): array {
+function zestry_render_facts_table( array $module ): array {
 	$facts = array();
 
 	if ( array() !== $module['roots'] ) {
@@ -1630,9 +1546,8 @@ function zestry_render_facts_table( array $module, array $sections = array() ): 
 				 * `path`, a service. Linking every one as a sibling pointed all
 				 * nine at docs/modules/path/, which does not exist.
 				 */
-				static function ( string $dependency ) use ( $module, $sections ): string {
-					$section = $sections[ $dependency ] ?? $module['section'];
-					$prefix  = $section === $module['section'] ? '../' : '../../' . $section . '/';
+				static function ( string $dependency ): string {
+					$prefix = '../';
 
 					return sprintf( '[`%s`](%s%s/)', $dependency, $prefix, $dependency );
 				},
@@ -1915,12 +1830,11 @@ function zestry_render_table( array $headings, array $rows ): array {
 /**
  * The links a reader is most likely to want after this page.
  *
- * @param array<string, mixed>  $module   The module's extracted data.
- * @param string                $name     Its installable name, e.g. `ajax`.
- * @param array<string, string> $sections Every installable name to its registry section.
+ * @param array<string, mixed> $module The module's extracted data.
+ * @param string               $name   Its installable name, e.g. `ajax`.
  * @return string[] Markdown lines.
  */
-function zestry_render_see_also( array $module, string $name, array $sections ): array {
+function zestry_render_see_also( array $module, string $name ): array {
 	$links = array();
 
 	foreach ( $module['returns'] as $base ) {
@@ -1933,21 +1847,16 @@ function zestry_render_see_also( array $module, string $name, array $sections ):
 	}
 
 	foreach ( $module['depends'] as $dependency ) {
-		$section = $sections[ $dependency ] ?? $module['section'];
-		$prefix  = $section === $module['section'] ? '../' : '../../' . $section . '/';
+		$prefix = '../';
 
 		$links[] = sprintf( '[`%s`](%s%s/) — copied in alongside this one', $dependency, $prefix, $dependency );
 	}
 
-	$links[] = $module['is_module']
-		? '[`Module`](../module.md) — what every module inherits'
-		: '[`Service`](../service.md) — what every service inherits';
+	$links[] = '[`Module`](../module.md) — what every module inherits';
 
 	$links[] = sprintf(
-		'[`wp zt add %s %s`](../../commands/add-%s.md) — the command that copies it',
-		$module['is_module'] ? 'module' : 'service',
-		$name,
-		$module['is_module'] ? 'module' : 'service'
+		'[`wp zt add %s`](../../commands/add.md) — the command that copies it',
+		$name
 	);
 
 	$lines = array( '## See also', '' );
@@ -2072,7 +1981,7 @@ function zestry_entry_purpose( string $name ): string {
 		'rest-api'      => 'expose an HTTP endpoint',
 		'site-health'   => 'report a verdict on Site Health, or list values on Info',
 
-		// Services.
+		// The ones that only work when you call them.
 		'cookie'        => 'read and write a cookie, and carry a value across a redirect',
 		'db'            => 'name a database table, yours or WordPress\'s',
 		'globals'       => 'pass a value between classes within one request',

@@ -44,7 +44,7 @@ Source directory: (default: lib) lib
 Copy the kernel into lib/Core/Kernel/ under Acme\Books? [Y/n] y
 Created bootstrap.php. Read it with `$plugin->bootstrap()` in your entry file.
 ...
-Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
+Success: Initialized. Run `wp zt add <name>` to copy in feature modules.
 ```
 
 That copied the kernel to `lib/Core/Kernel/`, added `"Acme\\Books\\": "lib/"` to your `composer.json`, and wrote an empty `bootstrap.php`. The `Plugin` class is now yours, at `Acme\Books\Core\Kernel\Plugin`.
@@ -52,7 +52,7 @@ That copied the kernel to `lib/Core/Kernel/`, added `"Acme\\Books\\": "lib/"` to
 `init` copies the kernel and nothing else. Add the five modules this plugin uses:
 
 ```bash
-$ wp zt add module post-types rest-api admin-pages options log
+$ wp zt add post-types rest-api admin-pages options log
 Also adding required dependencies: path, request, transients, cookie, views
 Added path
 Added post-types
@@ -68,7 +68,7 @@ Declared in bootstrap.php: post-types, rest-api, admin-pages, options, log
 Success: Done.
 ```
 
-Each module arrives after whatever it needs, which is why the list interleaves. `path` came along because three of those modules resolve plugin-relative directories with it, `request` because that is how a REST route declares what it accepts, and `views` because that is how an admin page renders its markup. `cookie` is how a page carries a notice across the redirect that follows a save, and it brings `transients` for a payload too big for a cookie. All five are **services**, so none of them is declared anywhere — each gets built the first time something asks for it.
+Each module arrives after whatever it needs, which is why the list interleaves. `path` came along because three of those modules resolve plugin-relative directories with it, `request` because that is how a REST route declares what it accepts, and `views` because that is how an admin page renders its markup. `cookie` is how a page carries a notice across the redirect that follows a save, and it brings `transients` for a payload too big for a cookie. All five are modules like the rest, and `add` declared each one for you.
 
 ## 2. The entry file
 
@@ -110,7 +110,7 @@ Three details:
 
 ## 3. `bootstrap.php`
 
-`wp zt add module` appended an entry per module. Edit it down to this:
+`wp zt add` appended an entry per module. Edit it down to this:
 
 ```php
 <?php
@@ -139,7 +139,7 @@ return array(
     Assets::class,
     Log::class,
     Options::class => array(
-        'before_boot' => static function ( Options $options ): void {
+        'configure' => static function ( Options $options ): void {
             $options->autoload_default_group();
         },
     ),
@@ -147,16 +147,16 @@ return array(
 );
 ```
 
-A configured module gets an **array**, whose `before_boot` is the callback that configures it before it boots. `Options` gets one here so its row is loaded with the rest of WordPress's autoloaded options, since the REST route reads a setting on every request. The other four need no configuration, so they are written bare.
+A configured module gets an **array**, whose `configure` is the callback that configures it before it boots. `Options` gets one here so its row is loaded with the rest of WordPress's autoloaded options, since the REST route reads a setting on every request. The other four need no configuration, so they are written bare.
 
 That array also takes `boots_on` and `priority`, for a module that cannot do its work as the plugin loads. Configuration is always the array and never a bare callback, so all three read the same way.
 
-`Assets` and `Activation` are the two lines you do not add by hand — `wp zt add module assets` appends the first in section 7, and `wp zt make activation` the second in section 8. Both are shown here so the finished file is in one place.
+`Assets` and `Activation` are the two lines you do not add by hand — `wp zt add assets` appends the first in section 7, and `wp zt make activation` the second in section 8. Both are shown here so the finished file is in one place.
 
 > [!IMPORTANT]
 > **This file is modules only, and listing one is what builds it.** A module acts on its own — it binds a hook, registers a post type, walks a directory — so it has to be built for any of that to happen.
 >
-> A service never appears here. It is built the moment something asks for it, so an entry naming one would only build it sooner than needed. A service that takes configuration gets it from `$plugin->configure()` in the entry file instead.
+> Every module is here, including the ones that only work when you call them. Nothing outside this list is ever built, so reading it tells you what the plugin has.
 
 ## 4. The post type
 
@@ -308,7 +308,7 @@ The namespace is `{plugin-slug}/{version}`, so the full path is `/wp-json/acme-b
 
 The property is the declaration: `string` makes WordPress reject anything else with a 400 before `handle()` runs, and the description is published to whoever is calling. `sanitize:` cleans the value on the way in, `validate:` adds a rule JSON Schema cannot state, and `schema:` adds one it can — an `enum`, a `minimum` — which is the better place for it, since a caller can read a schema and satisfy it before calling.
 
-The same attribute declares an [ability](modules/abilities/)'s input, because a route and an ability ask the same question. Every type you can declare, and every one you cannot: **[`#[RequestArgument]`](services/request/request-argument.md)**.
+The same attribute declares an [ability](modules/abilities/)'s input, because a route and an ability ask the same question. Every type you can declare, and every one you cannot: **[`#[RequestArgument]`](modules/request/request-argument.md)**.
 
 > [!NOTE]
 > **A default is what makes an argument optional**, as `public string $search = ''` does. A property with no default is required, and WordPress rejects a request that omits it — which is the right answer, since a typed property with no value throws on read. A `{token}` from the URL is required whatever its property says, because there is no optional path segment.
@@ -430,13 +430,13 @@ One field does not need a template, but markup assembled by concatenation in `re
 
 The template gets exactly what that `render()` call named, and nothing of the page itself — so its inputs are readable without opening it, and it cannot reach into the page for something the call did not offer.
 
-Inside any template `$this` is the [Views](services/views/) service, so a subview is the same call everything else makes: `$this->render( 'admin-pages/-fields', array( 'per_page' => $per_page ) )`. A template is included rather than called, so the `@var` block at the top describes the whole scope and gives your editor completion.
+Inside any template `$this` is the [Views](modules/views/) service, so a subview is the same call everything else makes: `$this->render( 'admin-pages/-fields', array( 'per_page' => $per_page ) )`. A template is included rather than called, so the `@var` block at the top describes the whole scope and gives your editor completion.
 
 `admin-pages/settings.php` registers the page slug `acme-books-settings`. Returning `'edit.php?post_type=book'` from `parent()` nests it under the Books menu the post type created; return a `ParentMenu` case such as `ParentMenu::Settings` to nest under a core menu instead, or `null` to get a top-level menu of its own.
 
 The module enforces `capability()` before anything on the page runs, verifies the nonce on every POST, and only then calls `handle_submit()`. `nonce_field()` emits the matching field. There is no `add_menu_page()`, no `admin_menu` hook, and no `check_admin_referer()` to write.
 
-`#[RequestArgument]` is why `handle_submit()` reads `$this->per_page` rather than `$_POST['per_page']`. The value is checked against the type and the `minimum`/`maximum` before the method runs, so there is nothing to unslash, cast or clamp by hand — the same declaration a [route and an ability](services/request/request-argument.md) use, and a submission that fails it never reaches your code.
+`#[RequestArgument]` is why `handle_submit()` reads `$this->per_page` rather than `$_POST['per_page']`. The value is checked against the type and the `minimum`/`maximum` before the method runs, so there is nothing to unslash, cast or clamp by hand — the same declaration a [route and an ability](modules/request/request-argument.md) use, and a submission that fails it never reaches your code.
 
 **`handle_submit()` redirects rather than falling through to `render()`.** Without that, the browser's current request is still the POST: a refresh resubmits the form and saves a second time. The redirect throws away everything the method knew, so the notice travels in `set_flash()` — which reads once, so a refresh shows nothing for a save that already happened.
 
@@ -444,28 +444,22 @@ The module enforces `capability()` before anything on the page runs, verifies th
 
 ### Where the dependencies came from
 
-Neither file builds anything. When a module discovers a file, it **wires** the object it returns: it assigns the plugin, then walks the object's public and protected properties and fills in every one typed as a **service**, before your code runs.
+Neither file builds anything. When a module discovers a file, it **wires** the object it returns — it assigns the plugin — and `with()` reaches every module from there:
 
 ```php
-public Views $views;    // a service: injected, ready to use
+$this->with( Options::class )->get( 'per_page', 10 );
 ```
 
-`Options` and `Log` are **modules**, so they are asked for instead:
+The same instance every time: ask for `Options` in ten files and all ten share it. Nothing is built by asking, either — the module was built because `bootstrap.php` lists it, and asking for one that is not listed throws.
 
-```php
-$this->get_plugin()->get( Options::class );
-```
-
-Building a module boots it — it binds hooks, walks a directory, registers things with WordPress — and a property declaration would hide all of that behind a type name, so declaring one throws. Either way you get the same instance every time: ask for `Options` in ten files and all ten share it.
-
-This is why nothing here declares a constructor. `Service::__construct()` is `final` and takes no arguments, so services arrive as properties and configuration arrives from the `before_boot` in `bootstrap.php`. Mark a property `#[NoInject]` to opt one out.
+This is why nothing here declares a constructor. `Module::__construct()` is `final` and takes no arguments, so configuration arrives from the `configure` in `bootstrap.php` and everything else through `with()`.
 
 ## 7. A script for the settings page
 
 The page works without JavaScript. Giving it some is two commands:
 
 ```bash
-$ wp zt add module assets
+$ wp zt add assets
 Created webpack.config.js
 Declared the src/shared/* npm workspace in package.json
 Added npm scripts: build, start
@@ -504,7 +498,7 @@ public function enqueue_assets(): void {
 
 That is the whole wiring. There is no `register_script()`, no `.asset.php` to read, no version string to bump, and no separate call for the stylesheet — the build wrote `build/assets-manifest.php` naming every entry it produced, and the `assets` module registered each one on `init` before any page could ask for it.
 
-`wp zt add module assets` is what makes that possible, and the `webpack.config.js` it wrote is the load-bearing part — without it a plugin cannot have both a block and a script of its own. See **[JavaScript](javascript.md)** for the rest: why that is, shared code two screens import by name, and ES module entries.
+`wp zt add assets` is what makes that possible, and the `webpack.config.js` it wrote is the load-bearing part — without it a plugin cannot have both a block and a script of its own. See **[JavaScript](javascript.md)** for the rest: why that is, shared code two screens import by name, and ES module entries.
 
 ## 8. ActivationHandler
 
@@ -597,18 +591,17 @@ acme-books/
 ├── build/                      ← npm run build writes this; gitignored, ships in the zip
 ├── lib/
 │   ├── Core/                   ← copied in; `wp zt update` may replace it
-│   │   ├── Kernel/             ← Plugin, Service, Module, ActivationHandler, the exceptions
-│   │   ├── Modules/
-│   │   │   ├── AdminPages/
-│   │   │   ├── PostTypes/
-│   │   │   ├── RestApi/
-│   │   │   ├── Assets/
-│   │   │   ├── Log.php
-│   │   │   └── Options.php
-│   │   └── Services/
-│   │       ├── Cookie.php
-│   │       ├── Path.php
+│   │   ├── Kernel/             ← Plugin, Module, Bootable, ActivationHandler, the exceptions
+│   │   └── Modules/
+│   │       ├── AdminPages/
+│   │       ├── PostTypes/
+│   │       ├── RestApi/
+│   │       ├── Assets/
 │   │       ├── Request/
+│   │       ├── Cookie.php
+│   │       ├── Log.php
+│   │       ├── Options.php
+│   │       ├── Path.php
 │   │       ├── Transients.php
 │   │       └── Views.php
 │   └── Modules/
@@ -616,12 +609,12 @@ acme-books/
 └── vendor/                     ← dev only, not shipped
 ```
 
-A directory is a feature set, a file returns an object, and a public typed property is filled in before your code runs — the same three conventions in every module. Adding the next feature is one more file. Adding the next module is `wp zt add module cron` and a file in `schedules/`.
+A directory is a feature set, a file returns an object, and a public typed property is filled in before your code runs — the same three conventions in every module. Adding the next feature is one more file. Adding the next module is `wp zt add cron` and a file in `schedules/`.
 
 ## Next
 
 - [Modules](modules/) — the ones that act on their own, and what each one discovers
-- [Services](services/) — the ones that work when called
+- [Services](modules/) — the ones that work when called
 - [`Plugin`](plugin.md) — `configure()`, `make()`, `wire()`, and everything else the entry file can do
 - [Command reference](commands/) — every `wp zt` command
 - [`wp zt update`](commands/update.md) — take a later release of the toolkit without losing your edits

@@ -15,11 +15,10 @@ something fails, this is what it fails with.
 - [`CircularDependencyException`](circular-dependency-exception.md) — Two classes depend on each other
 - [`PluginAware`](plugin-aware.md) — The contract that makes an object wireable
 - [`WithPlugin`](with-plugin.md) — The trait that satisfies it
-- [`NoInject`](no-inject.md) — Opt a property out of injection
+- [`Bootable`](bootable.md) — What marks a module that acts on its own
 - [`WithFolderWalker`](with-folder-walker.md) — How every discovery module reads its directory
 - [`WithEnablement`](with-enablement.md) — Let a discovered file say it should not register
 - [`Arr`](arr.md) — Nested array paths, and the operations you reach for on a list of rows
 - [`Str`](str.md) — Spelling a name the way the thing you hand it to spells names
 
-See also [`Plugin`](../plugin.md), [`Service`](../services/service.md) and
-[`Module`](../modules/module.md).
+See also [`Plugin`](../plugin.md) and [`Module`](../modules/module.md).

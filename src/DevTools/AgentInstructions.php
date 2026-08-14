@@ -79,8 +79,8 @@ class AgentInstructions extends Module {
 			'',
 			'## Before you change anything',
 			'',
-			'Run `wp zt describe --format=json` from this directory. It reports every module and service,'
-				. ' whether each is installed and declared, the directory it reads, the base class a file there'
+			'Run `wp zt describe --format=json` from this directory. It reports every module, whether'
+				. ' each is installed and declared, the directory it reads, the base class a file there'
 				. ' must return, and the `wp zt make` that writes one.',
 			'',
 			'It is derived from this plugin rather than written down, so it cannot be out of date.'
@@ -99,8 +99,7 @@ class AgentInstructions extends Module {
 		$lines[] = '';
 		$lines[] = '- `wp zt make <type> <name>` writes a working file into the directory its module discovers.'
 			. ' Run `wp zt make` to list the types.';
-		$lines[] = '- `wp zt add module <name>` copies a feature in and declares it. `wp zt add service <name>`'
-			. ' copies one that has nothing to declare.';
+		$lines[] = '- `wp zt add <name>` copies a module in and declares it in `bootstrap.php`.';
 		$lines[] = '- `wp zt doctor` reports the wiring mistakes that raise no error. Run it after changing'
 			. ' `bootstrap.php` or adding a module by hand.';
 

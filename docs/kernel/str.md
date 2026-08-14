@@ -9,7 +9,7 @@ The string operations you would otherwise write out at every use.
 
 Mostly spelling a name the way the thing you are handing it to spells names. If you have used Laravel's `Str`, these are the same names doing the same things, with WordPress's own functions underneath wherever it has one — `_wp_to_kebab_case()` splits a name, `remove_accents()` transliterates, `wp_trim_words()` trims to whole words.
 
-Static, and not a `Service`, because there is nothing here to configure or inject: every method is a pure function of its arguments.
+Static, and not a `Module`, because there is nothing here to configure or inject: every method is a pure function of its arguments.
 
 ## Spelling a name for where it is going
 

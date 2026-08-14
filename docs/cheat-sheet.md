@@ -4,24 +4,27 @@ One screen for a plugin you have already built. Every link goes to the page that
 
 For the absolutes alone, with the tables and the caveats stripped out, see [Rules](rules.md).
 
-## Service or module?
+## One kind of thing
 
-**Does it do anything without being called?**
+Everything is a **[`Module`](modules/module.md)**, and `bootstrap.php` lists every one. Nothing outside that list is ever built — asking for an undeclared module throws.
 
-- **No → [`Service`](services/service.md).** Built the first time something asks for it. Never appears in `bootstrap.php`; configure it with `$plugin->configure()` in the entry file. Reach one by declaring a typed property.
-- **Yes → [`Module`](modules/module.md).** Binds a hook, registers a post type, walks a directory. Listed in `bootstrap.php` — listing it is what builds it — and `on_boot()` runs once. Defer work to `init` with `$this->on_wp_init( $callback )`. Reach one with `$this->get_plugin()->get( X::class )`; a property typed as a module throws.
+**Does it do anything without being called?** If yes, it implements [`Bootable`](kernel/bootable.md) and its `on_boot()` runs once when the plugin builds it. If no, it has no `on_boot()` and sits there until something calls it. Nothing else differs: both are listed the same way and reached the same way.
+
+Reach any module with `$this->with( X::class )` — the same instance every time, from a module or from any file a module discovers.
 
 ## `bootstrap.php`
 
-Modules only. A module needing nothing is written bare; one that needs configuration gets an array, never a bare callback.
+A module needing nothing is written bare; one that needs configuration gets an array, never a bare callback.
 
 ```php
 return array(
-    CLI::class,
+    Path::class,
     Blocks::class => array(
-        'boots_on'    => 'init',                                   // a hook to boot on; omit to boot as the plugin loads
-        'priority'    => 10,                                       // what that hook binds at
-        'before_boot' => static fn ( Blocks $b ) => $b->add_categories( $categories ),
+        'boots_on'  => 'init',   // a hook to boot on; omit to build as run() reaches it
+        'priority'  => 10,       // what that hook binds at
+        'configure' => static function ( Blocks $blocks ) use ( $categories ): void {
+            $blocks->add_categories( $categories );
+        },
     ),
 );
 ```
@@ -35,17 +38,17 @@ All three keys are optional. Asking for a module before its `boots_on` fires thr
 | Written by | On disk | Namespace |
 |---|---|---|
 | `wp zt init` | `lib/Core/Kernel/` | `Acme\Plugin\Core\Kernel\Plugin` |
-| `wp zt add module ajax`, `wp zt add service path` | `lib/Core/Modules/Ajax/`, `lib/Core/Services/Path.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax`, `Acme\Plugin\Core\Modules\Path` |
-| `wp zt make module`, `wp zt make service`, `wp zt make abstract` | `lib/Modules/Shortcode.php`, `lib/Services/Cache.php`, `lib/Abstracts/EntityField.php` | `Acme\Plugin\Modules\Shortcode`, `Acme\Plugin\Services\Cache`, `Acme\Plugin\Abstracts\EntityField` |
+| `wp zt add ajax`, `wp zt add path` | `lib/Core/Modules/Ajax/`, `lib/Core/Modules/Path.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax`, `Acme\Plugin\Core\Modules\Path` |
+| `wp zt make module`, `wp zt make abstract` | `lib/Modules/Shortcode.php`, `lib/Abstracts/EntityField.php` | `Acme\Plugin\Modules\Shortcode`, `Acme\Plugin\Abstracts\EntityField` |
 | you, anywhere else under `lib/` | `lib/Data/LineItem.php` | `Acme\Plugin\Data\LineItem` |
 
-**A plain class needs no generator and no directory of ours.** The one PSR-4 entry `init` writes maps your whole source root, so any class under it autoloads from its namespace — a DTO, a value object, a helper. `Modules/` and `Services/` are where the two generators write, not a rule about what may exist.
+**A plain class needs no generator and no directory of ours.** The one PSR-4 entry `init` writes maps your whole source root, so any class under it autoloads from its namespace — a DTO, a value object, a helper. `Modules/` is where `make module` writes, not a rule about what may exist.
 
 `wp zt update` and `wp zt overwrite` may replace anything under `lib/Core/`, and can never touch anything outside it — including directories you made yourself.
 
 ## Modules
 
-Add any of them with `wp zt add module <name>`; dependencies come along.
+Add any of them with `wp zt add <name>`; dependencies come along.
 
 | Module | Directory | A file returns | Generate one |
 |---|---|---|---|
@@ -67,8 +70,15 @@ Add any of them with `wp zt add module <name>`; dependencies come along.
 | [`assets`](modules/assets/) | `assets/`, `build/` (via its manifest) | — | [`make entry`](commands/make-entry.md), [`make shared`](commands/make-shared.md) |
 | [`options`](modules/options/) | — | — | — |
 | [`log`](modules/log/) | — | — | — |
+| [`path`](modules/path/) | — | — | — |
+| [`views`](modules/views/) | `views/` | — | [`make view`](commands/make-view.md) |
+| [`db`](modules/db/) | — | — | — |
+| [`globals`](modules/globals/) | — | — | — |
+| [`transients`](modules/transients/) | — | — | — |
+| [`cookie`](modules/cookie/) | — | — | — |
+| [`request`](modules/request/) | — | — | — |
 
-- **A route, an ability, an AJAX action and an admin page declare their inputs the same way**, with [`#[RequestArgument]`](services/request/request-argument.md) on a typed property — the type and the presence of a default state what the schema says, and the value is bound before your handler runs. That page is the full guide: every type you can declare, and every one you cannot.
+- **A route, an ability, an AJAX action and an admin page declare their inputs the same way**, with [`#[RequestArgument]`](modules/request/request-argument.md) on a typed property — the type and the presence of a default state what the schema says, and the value is bound before your handler runs. That page is the full guide: every type you can declare, and every one you cannot.
 - **Prefer [`rest-api`](modules/rest-api/) to [`ajax`](modules/ajax/) for anything new.** Both declare their input the same way, but a route also publishes a schema and is callable by anything, where an action answers only WordPress-shaped callers. Reach for `ajax` when something already speaks it — an admin screen's existing JavaScript, another plugin's action, the heartbeat.
 - **`abilities` is the AI-agent surface.** WordPress 6.9+ gives each one a REST endpoint, and an MCP adapter on the site turns it into a tool an agent can call — with no protocol code from you. Call your own with `$abilities->run( 'name', $input )`.
 - **`site-health` has two directories, one per tab.** A `health-checks/` file reports a verdict on **Status**; a `debug-sections/` file lists values on **Info**, which is what the "Copy site info" button copies.
@@ -83,7 +93,7 @@ Add any of them with `wp zt add module <name>`; dependencies come along.
 | `entries/{name}/` | `build/entries/{name}` | `assets`, as `{slug}-{name}` | [`make entry`](commands/make-entry.md) |
 | `shared/{name}/` | `build/shared/{name}` | `assets`, under the build's handle | [`make shared`](commands/make-shared.md) |
 
-- **`wp zt add module assets` writes the build.** `webpack.config.js`, the `src/shared/*` npm workspace, and `npm run build`/`start`. Without that config `@wordpress/scripts` builds *one* of the three — adding a block silently stops `src/index` being built.
+- **`wp zt add assets` writes the build.** `webpack.config.js`, the `src/shared/*` npm workspace, and `npm run build`/`start`. Without that config `@wordpress/scripts` builds *one* of the three — adding a block silently stops `src/index` being built.
 - **`build/assets-manifest.php` is what PHP reads.** One `require`: every entry, its dependencies and version, its stylesheet, and which entries are shared packages. Build output — gitignored, never committed.
 - **Nothing empty is registered.** A stylesheet that compiles to nothing is deleted and left out of the manifest, an entry that is only a stylesheet loses the JavaScript webpack generates for it, and a block's `block.json` loses any `file:` field whose target compiled away — so no page pays for an empty `<link>` or `<script>`.
 - **An entry or a shared package can be `--kind=module`**, built as an ES module and registered with `wp_register_script_module()`.
@@ -91,7 +101,7 @@ Add any of them with `wp zt add module <name>`; dependencies come along.
 - **`assets` is a module because of one thing it does unasked.** Called, it composes asset URLs and registers scripts and styles. Unasked, on `init`, it registers every shared package `npm run build` compiled from `src/shared/` into `build/shared/`, so an entry that imports one can declare it as a dependency instead of bundling a copy.
 - **An admin page's markup goes in a template**, and [`make page`](commands/make-page.md) writes both files. The template gets exactly what the `render()` call names and nothing of the page itself. Echoing markup from `render()` works for something tiny and stops working sooner than it looks.
 - **[`make view`](commands/make-view.md) writes a standalone template**, and a name with a slash nests: `wp zt make view emails/receipt` is `views/emails/receipt.php`, rendered as `emails/receipt`.
-- **`$this` inside any template is the [`views`](services/views/) service**, so a subview is `$this->render( 'admin-pages/-fields', array( … ) )` — the same call every other caller makes, costing no variable name. Declare `@var` at the top of a template and your editor completes all of it.
+- **`$this` inside any template is the [`views`](modules/views/) module**, so a subview is `$this->render( 'admin-pages/-fields', array( … ) )` — the same call every other caller makes, costing no variable name. Declare `@var` at the top of a template and your editor completes all of it.
 - **`admin-pages`** also accepts a [`ModernAdminPage`](modules/admin-pages/modern-admin-page.md). A page whose `menu()` returns [`AdminMenu::Network`](modules/admin-pages/admin-menu.md) goes to the network administrator's menu on multisite instead of every site's — pick `capability()` to match, and remember the two menus offer different `ParentMenu` sections.
 - **`meta-boxes` reaches two screens.** Posts and comments are the only ones WordPress renders boxes on; terms and users take custom fields through action hooks instead. Register their meta with `fields` and render it on those forms yourself.
 - **`migrations` never triggers itself.** Call `$plugin->get( Migrations::class )->run_pending()`, or run `wp {slug} migrations run` / `wp {slug} migrations list`.
@@ -122,23 +132,19 @@ The filename is what a file registers as. Whether your slug is prefixed onto it 
 >
 > Those four are not prefixed for a reason — WordPress caps post type names at 20 characters and taxonomies at 32, a meta key is part of your own REST responses, and a block's namespace already lives in its `block.json`. So put your prefix in the filename: `post-types/acme-book.php`, `fields/acme_rating.php`.
 
-## Services
+The last seven do nothing on their own — no `Bootable`, no `on_boot()`. They are listed in `bootstrap.php` like the rest, and reached the same way:
 
-Add with `wp zt add service <name>`. Reach one by declaring a typed property on any service, module, command, action, page or route — `public Path $path;` — or with `$plugin->get( Path::class )`.
-
-`globals`, `transients` and the `options` module are the same four verbs — `get`, `set`, `has`, `delete` — differing only in how long a value lasts: this request, until it expires, or until you change it.
-
-| Service | What it does | A first call |
+| Module | What it does | A first call |
 |---|---|---|
-| [`path`](services/path/) | Plugin-relative paths and URLs | `$this->path->get_plugin_url( 'logo.png' )` |
-| [`request`](services/request/) | Declared arguments become schemas and bound properties | `#[RequestArgument( 'Which one.' )] public int $id;` |
-| [`views`](services/views/) | Renders `views/*.php` templates | `$this->views->render( 'emails/receipt', $data )` |
-| [`db`](services/db/) | Names your tables and WordPress's | `$this->db->get_table( 'events' )` |
-| [`globals`](services/globals/) | Request-scoped key/value store | `$this->globals->set( 'run_id', $id )` |
-| [`transients`](services/transients/) | Key/value that outlives the request, with a TTL | `$this->transients->set( 'rates', $r, HOUR_IN_SECONDS )` |
-| [`cookie`](services/cookie/) | Cookies, encrypted, and one value carried across a redirect | `$this->cookie->set_flash( 'Saved.' )` |
+| [`path`](modules/path/) | Plugin-relative paths and URLs | `$this->with( Path::class )->get_plugin_url( 'logo.png' )` |
+| [`request`](modules/request/) | Declared arguments become schemas and bound properties | `#[RequestArgument( 'Which one.' )] public int $id;` |
+| [`views`](modules/views/) | Renders `views/*.php` templates | `$this->with( Views::class )->render( 'emails/receipt', $data )` |
+| [`db`](modules/db/) | Names your tables and WordPress's | `$this->with( DB::class )->get_table( 'events' )` |
+| [`globals`](modules/globals/) | Request-scoped key/value store | `$this->with( Globals::class )->set( 'run_id', $id )` |
+| [`transients`](modules/transients/) | Key/value that outlives the request, with a TTL | `$this->with( Transients::class )->set( 'rates', $r, HOUR_IN_SECONDS )` |
+| [`cookie`](modules/cookie/) | Cookies, encrypted, and one value carried across a redirect | `$this->with( Cookie::class )->set_flash( 'Saved.' )` |
 
-**[`assets`](modules/assets/) is a module, not a service** — `wp zt add module assets`.
+`globals`, `transients` and `options` are the same four verbs — `get`, `set`, `has`, `delete` — differing only in how long a value lasts: this request, until it expires, or until you change it.
 
 ## The `Plugin` API
 
@@ -165,14 +171,13 @@ Also on it: `get_entry_file()`, `set_languages_path( $path, $text_domain = null 
 
 An [`ActivationHandler`](modules/activation-handler.md) subclass only works if `run()` is called as the entry file loads — WordPress fires `activate_{plugin}` right after that, and a `run()` deferred to `plugins_loaded` has already missed it.
 
-## Injection
+## Reaching another module
 
-1. A **public or protected** property typed as a `Service` is resolved and assigned before any of your code runs.
-2. **A property typed as a `Module` throws.** Building a module boots it, so you ask for one where you need it: `$this->get_plugin()->get( Options::class )`.
-3. **Private is never injected**, and `#[NoInject]` opts a property out. Scalars, unions, untyped and other class types are left alone.
-4. A class the plugin did not build gets the same by `use WithPlugin;` and `$plugin->wire( $object )` — which is how discovered commands, actions and pages are wired.
+`$this->with( X::class )` — from a module, or from any file a module discovers. The same instance every time.
 
-See [`WithPlugin`](kernel/with-plugin.md), [`NoInject`](kernel/no-inject.md), [`PluginAware`](kernel/plugin-aware.md).
+A module the plugin never declared throws rather than being built on the spot, and one waiting on a `boots_on` throws until that hook fires. A class the plugin did not build gets `with()` by `use WithPlugin;` and `$plugin->wire( $object )`, which is how discovered commands, actions and pages are wired.
+
+See [`WithPlugin`](kernel/with-plugin.md), [`Bootable`](kernel/bootable.md), [`PluginAware`](kernel/plugin-aware.md).
 
 ## Every `wp zt` command
 
@@ -181,15 +186,13 @@ Run from inside your plugin's directory, with the plugin active.
 | Command | What it does |
 |---|---|
 | [`wp zt init`](commands/init.md) | Copies the kernel; writes `zestry.json`, `zestry.lock.json`, `bootstrap.php`, the PSR-4 entry, `.gitignore`, the linter configs and `AGENTS.md`. `--no-phpcs`, `--no-eslint`, `--no-prettier`, `--no-agents`, `--yes` |
-| [`wp zt add module <name>...`](commands/add-module.md) | Copies modules and their dependencies; declares each in `bootstrap.php`. Skips what is already there. Never asks. |
-| [`wp zt add service <name>...`](commands/add-service.md) | Copies services and their dependencies. Declares nothing. Never asks. |
-| [`wp zt make <type> <name>`](commands/) | Generates one file from a stub — see the 21 types below. `--yes` on every type; `--extends=` on every type whose file returns a base-class instance, except `route` and `block`, plus `abstract`, which also takes `--for=<type>` |
-| [`wp zt describe`](commands/describe.md) | Reports what this plugin has: each module installed, declared, the directory it reads and the base class a file there returns. `--format`, `--kind`, `--installed` |
+| [`wp zt add <name>...`](commands/add.md) | Copies modules and their dependencies; declares each in `bootstrap.php`. Skips what is already there. Never asks. |
+| [`wp zt make <type> <name>`](commands/) | Generates one file from a stub — see the 20 types below. `--yes` on every type; `--extends=` on every type whose file returns a base-class instance, except `route` and `block`, plus `abstract`, which also takes `--for=<type>` |
+| [`wp zt describe`](commands/describe.md) | Reports what this plugin has: each module installed, declared, the directory it reads and the base class a file there returns. `--format`, `--installed` |
 | [`wp zt doctor`](commands/doctor.md) | Reports the wiring mistakes that raise no error — chiefly a module on disk that nothing declares. `--format=report\|csv\|json\|yaml` |
 | [`wp zt debug`](commands/debug.md) | Reports this plugin's own `{SLUG}_DEBUG` constant, or writes it to `wp-config.php`. Takes `on` or `off`; omit both to report. |
 | [`wp zt update`](commands/update.md) | Re-copies everything under `lib/Core/` from the installed toolkit, keeping files you edited. `--dry-run`, `--force`, `--yes` |
-| [`wp zt overwrite module <name>...`](commands/overwrite-module.md) | Like `add module`, but replaces what is already on disk after one confirmation. `--yes` |
-| [`wp zt overwrite service <name>...`](commands/overwrite-service.md) | Like `add service`, but replaces what is already on disk after one confirmation. `--yes` |
+| [`wp zt overwrite <name>...`](commands/overwrite.md) | Like `add module`, but replaces what is already on disk after one confirmation. `--yes` |
 
 ### What `make` generates
 
@@ -216,16 +219,15 @@ Each type writes one file into the directory its module discovers, so the genera
 | [`shared`](commands/make-shared.md) | `src/shared/` | a package two entries can share. `--kind=script\|module` |
 | [`module`](commands/make-module.md) | `lib/Modules/` | your own module, **declared in `bootstrap.php`** |
 | [`activation`](commands/make-activation.md) | `lib/Modules/` | an activation handler, **declared** too |
-| [`service`](commands/make-service.md) | `lib/Services/` | your own service. Declares nothing |
 | [`abstract`](commands/make-abstract.md) | `lib/Abstracts/` | a base your own files share. `--for=<type>`, `--extends=` |
 
 The last four land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. Every type writes to one directory, fixed by the module that reads it; a name with a slash nests inside it, so `make command reports/daily` writes `commands/reports/daily.php`.
 
 <!-- zestry:include generator="prompting-generators" -->
-**5 of the 21 generators ask for what you leave out** — [`block`](commands/make-block.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 16 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.
+**5 of the 20 generators ask for what you leave out** — [`block`](commands/make-block.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 15 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.
 <!-- /zestry:include -->
 
-`make module` and `make activation` are the only generators that also write to `bootstrap.php`, since being listed is the only thing that builds a module. `make service` declares nothing: a service is built the moment something asks for it, so an entry naming one would only build it sooner than needed.
+`make module` and `make activation` are the only generators that also write to `bootstrap.php`, since being listed is the only thing that makes a module exist.
 
 ## What throws what
 
@@ -233,7 +235,7 @@ The last four land beside the copied `lib/Core/` tree, never inside it — that 
 |---|---|
 | [`ModuleException`](kernel/module-exception.md) | Base class for every declaration, resolution and boot failure, so one `catch` covers all four. Thrown directly for a `bootstrap.php` it cannot read, a property typed as a `Module`, and a module asked for before its `boots_on` hook |
 | [`DiscoveryException`](kernel/discovery-exception.md) | A discovered file returned something other than the base class that module expects, two files claim one registered name, a filename a destination cannot carry, an SVG icon WordPress would strip, or WordPress refused the registration |
-| [`ModuleNotFoundException`](kernel/module-not-found-exception.md) | `get()`, `make()` or an injected property named a class that does not exist or does not extend `Service` |
+| [`ModuleNotFoundException`](kernel/module-not-found-exception.md) | `with()`, `get()` or `make()` named a class that does not exist or does not extend `Module` |
 | [`CircularDependencyException`](kernel/circular-dependency-exception.md) | Two classes are typed as properties of each other, directly or through a chain |
 | [`RenamedMigrationException`](modules/migrations/) | A pending migration shares a timestamp with one that ran and no longer has a file. Nothing ran when this is thrown |
 

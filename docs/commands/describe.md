@@ -17,17 +17,13 @@ Reads only. Nothing here edits a file, and no module is ever built.
 
 ## What it cannot tell you
 
-What a module was configured to do. A module whose entry carries a `before_boot` is marked `configured`, but what that callback does is only found by running it — which this command does not do, for the same reason `wp zt doctor` does not. The report says where to look rather than guessing.
+What a module was configured to do. A module whose entry carries a `configure` is marked `configured`, but what that callback does is only found by running it — which this command does not do, for the same reason `wp zt doctor` does not. The report says where to look rather than guessing.
 
 ## Options
 
 - **`[--format=<format>]`**  
   Render output in a particular format. `report` is the default read by a person; the rest are the same rows for a script.  
   Accepts `report`, `table`, `csv`, `json`, `yaml`.
-
-- **`[--kind=<kind>]`**  
-  Limit to modules or to services.  
-  Accepts `all`, `modules`, `services`.
 
 - **`[--installed]`**  
   Only what is actually in this plugin. Without it, everything installable is listed, so you can see what you have not added yet.
@@ -45,14 +41,12 @@ MODULES
   cron           schedules/       Schedule      wp zt make schedule   NOT DECLARED
   fields         fields/          Field         wp zt make field
       fields/ 40 files via Acme\Plugin\Abstracts\EntityField
-
-SERVICES
   path           —
   views          views/
 
 # For a script, or an agent.
 $ wp zt describe --format=json --installed
-[{"name":"ajax","kind":"module","installed":true,"declared":true,
+[{"name":"ajax","installed":true,"declared":true,
   "configured":false,"reads":"actions/","returns":"AjaxAction",
   "via":"","make":"action","file":"lib/Core/Modules/Ajax/Ajax.php"}]
 ```

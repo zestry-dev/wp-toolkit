@@ -12,7 +12,7 @@ composer require zestry-dev/wp-toolkit --dev
 wp plugin activate acme-plugin
 
 wp zt init
-wp zt add module cli
+wp zt add cli
 ```
 
 Run these from inside your own plugin's directory. `zt` is short for *zestry toolkit*, and the command is registered by your plugin's autoloader, so the plugin has to be **active** before `init`.
@@ -96,18 +96,18 @@ Almost everything is the same two steps: **add** the feature once, then **make**
 
 | I want to… | Run | Reference |
 |---|---|---|
-| Add a `wp` command | `wp zt add module cli`<br>then `wp zt make command greet` | [`cli`](modules/cli/) |
-| Add an admin screen | `wp zt add module admin-pages`<br>then `wp zt make page settings` | [`admin-pages`](modules/admin-pages/) |
-| Expose an HTTP endpoint | `wp zt add module rest-api`<br>then `wp zt make route widgets` | [`rest-api`](modules/rest-api/) |
-| Register a post type | `wp zt add module post-types`<br>then `wp zt make post-type book` | [`post-types`](modules/post-types/) |
-| Add a field to the editor | `wp zt add module fields`<br>then `wp zt make field acme_rating` | [`fields`](modules/fields/) |
-| Run something on a schedule | `wp zt add module cron`<br>then `wp zt make schedule sync` | [`cron`](modules/cron/) |
-| Create or change a table | `wp zt add module migrations`<br>then `wp zt make migration create-books-table` | [`migrations`](modules/migrations/) |
-| Build a block | `wp zt add module blocks`<br>then `wp zt make block card --dynamic --view=none`<br>then `npm run build` | [`blocks`](modules/blocks/) |
-| Give an AI agent a tool | `wp zt add module abilities`<br>then `wp zt make ability publish-post` | [`abilities`](modules/abilities/) |
-| Store settings | `wp zt add module options` | [`options`](modules/options/) |
-| Render markup from a template | `wp zt add service views`<br>then `wp zt make view emails/receipt` | [`views`](services/views/) |
-| Share JavaScript between screens | `wp zt add module assets`<br>then `wp zt make shared formatting` | [JavaScript](javascript.md) |
+| Add a `wp` command | `wp zt add cli`<br>then `wp zt make command greet` | [`cli`](modules/cli/) |
+| Add an admin screen | `wp zt add admin-pages`<br>then `wp zt make page settings` | [`admin-pages`](modules/admin-pages/) |
+| Expose an HTTP endpoint | `wp zt add rest-api`<br>then `wp zt make route widgets` | [`rest-api`](modules/rest-api/) |
+| Register a post type | `wp zt add post-types`<br>then `wp zt make post-type book` | [`post-types`](modules/post-types/) |
+| Add a field to the editor | `wp zt add fields`<br>then `wp zt make field acme_rating` | [`fields`](modules/fields/) |
+| Run something on a schedule | `wp zt add cron`<br>then `wp zt make schedule sync` | [`cron`](modules/cron/) |
+| Create or change a table | `wp zt add migrations`<br>then `wp zt make migration create-books-table` | [`migrations`](modules/migrations/) |
+| Build a block | `wp zt add blocks`<br>then `wp zt make block card --dynamic --view=none`<br>then `npm run build` | [`blocks`](modules/blocks/) |
+| Give an AI agent a tool | `wp zt add abilities`<br>then `wp zt make ability publish-post` | [`abilities`](modules/abilities/) |
+| Store settings | `wp zt add options` | [`options`](modules/options/) |
+| Render markup from a template | `wp zt add views`<br>then `wp zt make view emails/receipt` | [`views`](modules/views/) |
+| Share JavaScript between screens | `wp zt add assets`<br>then `wp zt make shared formatting` | [JavaScript](javascript.md) |
 
 Three that are not that shape:
 
@@ -117,39 +117,49 @@ Three that are not that shape:
 | Find out why nothing happened | `wp zt doctor` | [Troubleshooting](troubleshooting.md) |
 | Take a toolkit release | `wp zt update --dry-run` | [`wp zt update`](commands/update.md) |
 
-Nothing needs adding up front. Reach for one when you hit what it solves — the full list is under [Reference](#documentation) below, and [`wp zt add`](commands/add-module.md) brings along whatever the thing you asked for depends on.
+Nothing needs adding up front. Reach for one when you hit what it solves — the full list is under [Reference](#documentation) below, and [`wp zt add`](commands/add.md) brings along whatever the thing you asked for depends on.
 
-## Services and modules
+## One kind of thing
 
-One question decides which you are writing: **does it do anything without being called?**
+Everything a plugin is made of is a **[module](modules/)**, and `bootstrap.php` lists every one of them. Nothing is built that is not listed there — asking for an undeclared module throws — so reading that file tells you what the plugin has.
 
-A **[service](services/)** does not. It is built the first time something asks for it — a `$plugin->get()` call, or another class declaring a property of its type — and works only when called. `Path` resolves a path when asked; `Views` renders when asked. A service needs no declaration; one that takes configuration gets it from `$plugin->configure()` in your entry file.
+```php
+// bootstrap.php
+return array(
+    Path::class,
+    CLI::class,
+    Options::class,
+);
+```
 
-A **[module](modules/)** does. It binds a hook, registers a post type, walks a directory. Because it acts without being called, it has to be built for that to happen — so **`bootstrap.php` lists every module, and listing one is what builds it**. That file is modules only, and `wp zt add module` writes the entry for you.
+**A module that does something on its own implements [`Bootable`](kernel/bootable.md).** That is the only difference between one module and another, and it is on the line that names the class:
 
-**A service reaches your code by type.** Declare a public typed property and the plugin injects it before your code runs:
+```php
+class Shortcode extends Module implements Bootable {
+
+    public function on_boot(): void {
+        add_shortcode( 'acme_form', array( $this, 'render' ) );
+    }
+}
+```
+
+`Path` resolves a path when you ask it and has no `on_boot()`; `Ajax` binds hooks the moment the plugin builds it and does. Both are listed the same way.
+
+**`with()` is how anything reaches anything** — in a module, and in every file a module discovers:
 
 ```php
 use Acme\Plugin\Core\Modules\CLI\Command;
-use Acme\Plugin\Core\Modules\Views;
+use Acme\Plugin\Core\Modules\Options;
 
 return new class extends Command {
 
-    public Views $views;
-
     public function handle( array $args, array $assoc_args ): void {
-        $this->success( $this->views->get( 'greeting', array( 'name' => $args[0] ?? 'world' ) ) );
+        $this->success( $this->with( Options::class )->get( 'greeting', 'hi' ) );
     }
 };
 ```
 
-**A module you ask for**, where you need it — because building one boots it, and a property declaration would hide a whole feature coming up behind a type name:
-
-```php
-$options = $this->get_plugin()->get( Options::class );
-```
-
-Declaring a module as a property throws, naming the property and this call.
+The same instance every time, so two callers asking for `Options` share its state.
 
 ## Documentation
 
@@ -165,7 +175,7 @@ Declaring a module as a property throws, naming the property and this call.
 
 **Guides**
 
-- [`#[RequestArgument]`](services/request/request-argument.md) — how a route or an ability declares what it accepts, and what a caller is told.
+- [`#[RequestArgument]`](modules/request/request-argument.md) — how a route or an ability declares what it accepts, and what a caller is told.
 - [JavaScript](javascript.md) — sharing code between screens without shipping it twice.
 - [Testing](testing.md) — how to test a plugin built this way.
 - [Troubleshooting](troubleshooting.md) — including [`wp zt doctor`](commands/doctor.md), which finds the wiring mistakes that fail silently.
@@ -173,15 +183,11 @@ Declaring a module as a property throws, naming the property and this call.
 
 **Reference**
 
-Every module and service name below is what you pass to `wp zt add` — `wp zt add module meta-boxes`, `wp zt add service request`.
+Every name below is what you pass to `wp zt add` — `wp zt add meta-boxes`, `wp zt add request`.
 
-- [Modules](modules/) — the ones that act on their own:
+- [Modules](modules/) — everything a plugin can be made of:
   <!-- zestry:include generator="module-names" -->
-  `abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cron`, `fields`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `post-types`, `rest-api`, `site-health`
-  <!-- /zestry:include -->
-- [Services](services/) — the ones that work when you call them:
-  <!-- zestry:include generator="service-names" -->
-  `cookie`, `db`, `globals`, `path`, `request`, `transients`, `views`
+  `abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cookie`, `cron`, `db`, `fields`, `globals`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `path`, `post-types`, `request`, `rest-api`, `site-health`, `transients`, `views`
   <!-- /zestry:include -->
 - [`Plugin`](plugin.md) — the class your entry file builds, and everything it can be told to do.
 - [Command reference](commands/) — every `wp zt` command.

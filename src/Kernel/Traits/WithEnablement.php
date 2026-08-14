@@ -56,10 +56,10 @@ namespace Zestry\WPToolkit\Kernel\Traits;
  * @rationale
  * A trait rather than a method on each base class, because there are twelve of
  * them and one default; and a trait rather than something on `WithPlugin`, which
- * they all already use, because a `Service` and a `Module` use it too and would
- * come out with an `is_enabled()` that nothing reads -- a method that looks like
- * it works. Listing a module in `bootstrap.php` is what builds it, and a second
- * way to say the same thing would drift from it.
+ * they all already use, because a `Module` uses it too and would come out with
+ * an `is_enabled()` that nothing reads -- a method that looks like it works.
+ * Listing a module in `bootstrap.php` is what makes it exist, and a second way
+ * to say the same thing would drift from it.
  *
  * No interface accompanies it. Every caller reaches an instance through its own
  * discovery guard, which has already established the base class, so an interface

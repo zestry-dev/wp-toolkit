@@ -5,7 +5,7 @@
 
 # Abilities
 
-Discovers `abilities/` &nbsp;·&nbsp; Each file returns [`Ability`](ability.md) &nbsp;·&nbsp; Dependencies [`path`](../../services/path/), [`request`](../../services/request/)
+Discovers `abilities/` &nbsp;·&nbsp; Each file returns [`Ability`](ability.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`request`](../request/)
 
 Publishes what your plugin can do, for the REST API and for AI agents.
 
@@ -38,7 +38,7 @@ Abilities are worth writing even when nothing external calls them yet. One abili
 ## Adding it
 
 ```bash
-wp zt add module abilities
+wp zt add abilities
 ```
 
 > [!IMPORTANT]
@@ -107,7 +107,7 @@ Group them
 ```php
 Abilities::class => array(
     'boots_on'    => 'init',
-    'before_boot' => static function ( Abilities $abilities ): void {
+    'configure' => static function ( Abilities $abilities ): void {
         $abilities->add_categories(
             array(
                 'acme-billing' => array(
@@ -120,7 +120,7 @@ Abilities::class => array(
 ),
 ```
 
-`before_boot` runs on the hook, right before the module registers anything, which is what makes the `__()` calls safe — an initializer running at plugin load would report `_load_textdomain_just_in_time` on every request.
+`configure` runs on the hook, right before the module registers anything, which is what makes the `__()` calls safe — an initializer running at plugin load would report `_load_textdomain_just_in_time` on every request.
 
 ## Writing an Ability
 
@@ -188,7 +188,7 @@ The description is worth writing. A client listing categories shows it to decide
 
 A slug is registered exactly as given and is not namespaced to the plugin: WordPress's own `site` and `user` are unprefixed, and an ability naming a category has to match it verbatim. So choose slugs distinctive enough not to collide — a category already registered by WordPress or another plugin is left as it is rather than replaced.
 
-**Call it from the entry's `before_boot`, as the example does.** A label and a description are both user-visible, so they usually want translating, and an initializer running at plugin load would load the text domain before WordPress is ready, reporting `_load_textdomain_just_in_time` on every request. `before_boot` runs on the boot hook, where ordinary `__()` is correct — which is why both are plain strings and nothing here is lazy.
+**Call it from the entry's `configure`, as the example does.** A label and a description are both user-visible, so they usually want translating, and an initializer running at plugin load would load the text domain before WordPress is ready, reporting `_load_textdomain_just_in_time` on every request. `configure` runs on the boot hook, where ordinary `__()` is correct — which is why both are plain strings and nothing here is lazy.
 
 <br>
 
@@ -298,24 +298,72 @@ final public function on_wp_init( callable $callback, int $priority = 10 ): void
 | **Return** | — |
 | **Throws** | — |
 
-Almost everything a module registers — a post type, a block, a WP-CLI command — has to happen on `init`, and a plain `add_action( 'init', ... )` is a callback that never runs once `init` has passed. A module can be resolved on either side of it: `Plugin::run()` is synchronous, so an entry file that calls it at plugin load is ahead of `init`, while one that calls it from a later hook — or a `get()` during a request — is behind. This behaves the same either way, so a module never has to care which.
+Almost everything a module registers — a post type, a block, a WP-CLI command — has to happen on `init`, and a plain `add_action( 'init', ... )` is a callback that never runs once `init` has passed. A module can be built on either side of it: `Plugin::run()` is synchronous, so an entry file that calls it at plugin load is ahead of `init`, while one that calls it from a later hook is behind. This behaves the same either way, so a module never has to care which.
 
-The callback receives the module, matching the initializer signature, so a closure declared elsewhere needs no `use` to reach it:
+The callback receives the module, so a closure declared elsewhere needs no `use` to reach it:
 
 ```php
-protected function on_boot(): void {
+public function on_boot(): void {
     $this->on_wp_init( function ( self $module ): void {
         $module->register_widgets();
     } );
 }
 ```
 
-`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only while `init` is still ahead**: a module resolved after `init` has fired runs its callback immediately, in registration order, whatever priority it asked for. Ordering that has to hold either way belongs inside one callback.
+`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only while `init` is still ahead**: a module built after `init` has fired runs its callback immediately, in registration order, whatever priority it asked for. Ordering that has to hold either way belongs inside one callback.
+
+<br>
+
+### `get_plugin()`
+
+*Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
+
+Get the plugin this class belongs to.
+
+```php
+final public function get_plugin(): Plugin
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | The plugin instance |
+| **Throws** | — |
+
+For the plugin's own answers — its slug, its entry file, the headers it declares. To reach another module, `with()` is shorter and says what it is doing.
+
+<br>
+
+### `with( $name )`
+
+*Inherited from [`WithPlugin`](../../kernel/with-plugin.md).*
+
+Reach another module.
+
+```php
+final public function with( string $name ): object
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$name` — The module class to reach |
+| **Return** | The shared instance |
+| **Throws** | `ModuleException` — If it is not declared, or has not booted yet |
+
+The one way anything in a plugin reaches anything else. Returns the same instance every time, so two callers asking for `Options` share its state:
+
+```php
+$this->with( Options::class )->get( 'api_key' );
+```
+
+**The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
+
+A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
 
 ## See also
 
 - [`Ability`](ability.md) — what a file in `abilities/` returns
-- [`path`](../../services/path/) — copied in alongside this one
-- [`request`](../../services/request/) — copied in alongside this one
+- [`path`](../path/) — copied in alongside this one
+- [`request`](../request/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
-- [`wp zt add module abilities`](../../commands/add-module.md) — the command that copies it
+- [`wp zt add abilities`](../../commands/add.md) — the command that copies it

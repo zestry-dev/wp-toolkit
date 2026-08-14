@@ -5,6 +5,6 @@
 
 # ModuleNotFoundException
 
-Thrown when a requested service or module class cannot be resolved.
+Thrown when a requested module class cannot be built.
 
-Raised when the class does not exist or is not a Service subclass — which includes every Module — so no instance can be created for the requested name. Checked before every instantiation, so it is raised as the class is asked for rather than when something first calls it.
+Raised when the class does not exist or is not a `Module`, so no instance could be created for the name. Checked before the declaration is looked up, so a name that could never be a module says that rather than sending you to `bootstrap.php` to add it.

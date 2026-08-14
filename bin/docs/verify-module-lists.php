@@ -9,43 +9,32 @@ declare( strict_types=1 );
 /**
  * Check that `add` and `overwrite` name every installable module.
  *
- * Every `add`/`overwrite` subcommand lists the names it installs in its own
+ * `add` and `overwrite` each list the names they install in their own
  * `## OPTIONS` docblock, which WP-CLI reads verbatim for `--help` -- so the list
  * has to be literal text and cannot be computed from `registry.php` at runtime.
- * That makes it a copy, and a copy drifts. Each subcommand is checked against
- * the one registry section it installs from, so a name in the wrong list is a
- * failure rather than something a reader has to notice.
+ * That makes it a copy, and a copy drifts.
  *
  * @param string $root Absolute path to the repository root.
- * @return string[] Human-readable problems, empty when both lists match.
+ * @return string[] Human-readable problems, empty when every list matches.
  */
 function zestry_verify_module_lists( string $root ): array {
 	$problems = array();
 	$registry = require $root . '/src/DevTools/registry.php';
 
-	/*
-	 * Checked per kind, and now the file itself declares which kind it is:
-	 * `commands/add/module.php` installs from the registry's `modules` section
-	 * and must list exactly those names. A name moving between `Services/` and
-	 * `Modules/` therefore fails here loudly, instead of leaving a subcommand
-	 * advertising something it refuses to install.
-	 */
-	$expected = array(
-		'services' => array_keys( $registry['services'] ?? array() ),
-		'modules'  => array_keys( $registry['modules'] ?? array() ),
-	);
+	$expected = array_keys( $registry );
 
 	foreach ( array( 'add', 'overwrite' ) as $command ) {
-		foreach ( $expected as $section => $names ) {
-			$relative = 'commands/' . $command . '/' . rtrim( $section, 's' ) . '.php';
+		{
+			$names    = $expected;
+			$relative = 'commands/' . $command . '.php';
 			$source   = (string) file_get_contents( $root . '/' . $relative );
-			$label    = 'Available ' . $section;
+			$label    = 'Available modules';
 
-			if ( ! preg_match( '/' . $label . ':(.*?)\./s', $source, $match ) ) {
-				$problems[] = sprintf( '%s — no "%s:" list to check.', $relative, $label );
+		if ( ! preg_match( '/' . $label . ':(.*?)\./s', $source, $match ) ) {
+			$problems[] = sprintf( '%s — no "%s:" list to check.', $relative, $label );
 
-				continue;
-			}
+			continue;
+		}
 
 			// The list wraps across docblock lines, so the ` * ` prefixes come
 			// out before anything is split on the separator.
@@ -58,18 +47,18 @@ function zestry_verify_module_lists( string $root ): array {
 			$missing = array_diff( $names, $listed );
 			$unknown = array_diff( $listed, $names );
 
-			if ( array() !== $missing ) {
-				$problems[] = sprintf( '%s — "%s" is missing: %s', $relative, $label, implode( ', ', $missing ) );
-			}
+		if ( array() !== $missing ) {
+			$problems[] = sprintf( '%s — "%s" is missing: %s', $relative, $label, implode( ', ', $missing ) );
+		}
 
-			if ( array() !== $unknown ) {
-				$problems[] = sprintf(
-					'%s — "%s" names something that section does not: %s',
-					$relative,
-					$label,
-					implode( ', ', $unknown )
-				);
-			}
+		if ( array() !== $unknown ) {
+			$problems[] = sprintf(
+				'%s — "%s" names something the registry does not: %s',
+				$relative,
+				$label,
+				implode( ', ', $unknown )
+			);
+		}
 		}
 	}
 
@@ -93,7 +82,7 @@ function zestry_verify_module_lists( string $root ): array {
  * rendering is something this cannot check and a reader cannot type.
  *
  * @param string                $root     Absolute path to the repository root.
- * @param array<string, string[]> $expected Registry names, keyed by section.
+ * @param string[] $expected Every registry name.
  * @return string[] Problems found.
  */
 function zestry_verify_front_page( string $root, array $expected ): array {
@@ -107,34 +96,35 @@ function zestry_verify_front_page( string $root, array $expected ): array {
 	$lines    = explode( "\n", (string) file_get_contents( $path ) );
 	$problems = array();
 
-	foreach ( $expected as $section => $names ) {
+	{
+		$names  = $expected;
 		$listed = array();
 
-		foreach ( $lines as $number => $line ) {
-			if ( ! str_starts_with( $line, '- [' ) || ! str_contains( $line, '](' . $section . '/)' ) ) {
-				continue;
-			}
-
-			preg_match_all( '/`([a-z0-9-]+)`/', zestry_bullet_text( $lines, $number ), $matches );
-			$listed = $matches[1];
-		}
-
-		if ( array() === $listed ) {
-			$problems[] = sprintf( '%1$s — has no "%2$s" inventory to check.', $relative, $section );
-
+	foreach ( $lines as $number => $line ) {
+		if ( ! str_starts_with( $line, '- [' ) || ! str_contains( $line, '](modules/)' ) ) {
 			continue;
 		}
+
+		preg_match_all( '/`([a-z0-9-]+)`/', zestry_bullet_text( $lines, $number ), $matches );
+		$listed = $matches[1];
+	}
+
+	if ( array() === $listed ) {
+		$problems[] = $relative . ' — has no module inventory to check.';
+
+		return $problems;
+	}
 
 		$missing = array_diff( $names, $listed );
 		$unknown = array_diff( $listed, $names );
 
-		if ( array() !== $missing ) {
-			$problems[] = sprintf( '%1$s — does not list the %2$s: %3$s', $relative, $section, implode( ', ', $missing ) );
-		}
+	if ( array() !== $missing ) {
+		$problems[] = sprintf( '%1$s — does not list the modules: %2$s', $relative, implode( ', ', $missing ) );
+	}
 
-		if ( array() !== $unknown ) {
-			$problems[] = sprintf( '%1$s — lists a %2$s that does not exist: %3$s', $relative, rtrim( $section, 's' ), implode( ', ', $unknown ) );
-		}
+	if ( array() !== $unknown ) {
+		$problems[] = sprintf( '%1$s — lists a module that does not exist: %2$s', $relative, implode( ', ', $unknown ) );
+	}
 	}
 
 	return $problems;
@@ -166,13 +156,11 @@ function zestry_verify_cheat_sheet( string $root, array $expected ): array {
 	$source   = (string) file_get_contents( $path );
 	$problems = array();
 
-	foreach ( $expected as $section => $names ) {
-		foreach ( $names as $name ) {
-			// The page links each one at least once; a name it never mentions
-			// is one a reader scanning this page will not discover exists.
-			if ( ! str_contains( $source, '](' . $section . '/' . $name . '/' ) ) {
-				$problems[] = sprintf( '%1$s — does not list the %2$s "%3$s".', $relative, rtrim( $section, 's' ), $name );
-			}
+	foreach ( $expected as $name ) {
+		// The page links each one at least once; a name it never mentions is one
+		// a reader scanning this page will not discover exists.
+		if ( ! str_contains( $source, '](modules/' . $name . '/' ) ) {
+			$problems[] = sprintf( '%1$s — does not list the module "%2$s".', $relative, $name );
 		}
 	}
 

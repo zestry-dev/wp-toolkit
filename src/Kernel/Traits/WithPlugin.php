@@ -11,6 +11,7 @@ namespace Zestry\WPToolkit\Kernel\Traits;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Exceptions\ModuleException;
 use Zestry\WPToolkit\Kernel\Plugin;
 
 /**
@@ -92,10 +93,10 @@ trait WithPlugin {
 	 * hook has fired, since building it early would bind it on the wrong side of
 	 * whatever it was declared to follow.
 	 *
-	 * @template T of \Zestry\WPToolkit\Kernel\Abstracts\Module
+	 * @template T of object
 	 * @param class-string<T> $name The module class to reach.
 	 * @return T The shared instance.
-	 * @throws \Zestry\WPToolkit\Kernel\Exceptions\ModuleException If it is not declared, or has not booted yet.
+	 * @throws ModuleException If it is not declared, or has not booted yet.
 	 */
 	final public function with( string $name ): object {
 		return $this->_plugin->get( $name );

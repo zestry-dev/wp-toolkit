@@ -5,49 +5,74 @@
 
 # Module
 
-[A module](#a-module) &nbsp;·&nbsp; [One that takes configuration](#one-that-takes-configuration) &nbsp;·&nbsp; [Doing something on `init`](#doing-something-on-init) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use)
+[One that only works when called](#one-that-only-works-when-called) &nbsp;·&nbsp; [One that acts on its own](#one-that-acts-on-its-own) &nbsp;·&nbsp; [One that takes configuration](#one-that-takes-configuration) &nbsp;·&nbsp; [Doing something on `init`](#doing-something-on-init) &nbsp;·&nbsp; [Methods](#methods)
 
-Base class for something that acts on its own.
+Base class for everything a plugin is made of.
 
-A module does something without being called: it binds a hook, registers a post type, walks a directory, schedules a job. That is the whole distinction from `Service`, which sits there until something asks it for something.
+One kind of thing, listed in `bootstrap.php`. `Path` resolves paths, `Ajax` binds hooks, `Options` does both — all three are modules, built by the plugin and reached the same way.
 
-Because it acts on its own, it has to be built for that to happen — so every module is listed in `bootstrap.php`, and the plugin resolves each one as it loads. `on_boot()` then runs, once, and is where the acting-on-its-own goes. Nothing has to be said about *when*: being a module is the declaration.
+**Listing it in `bootstrap.php` is what makes it exist.** Nothing else builds a module, and asking for one that is not listed throws rather than quietly constructing it — so that file is the whole inventory of what a plugin is made of, and reading it tells you what the plugin has.
 
-`Options` is the case worth understanding. It is something you call — `$options->get( 'key' )` — which makes it look like a service. But it also loads its persisted values and binds `shutdown` to flush deferred writes, without being asked. That is acting on its own, so it is a module.
+```php
+$path = $this->with( Path::class );
+```
 
-Everything `Service` says about construction applies here too: your class may not declare a constructor, since `__construct()` is `final` and takes no arguments. Dependencies arrive as injected typed properties — of services only, since a property typed as a module would boot one behind a type name — and configuration from the `before_boot` in its `bootstrap.php` entry. Reach another module with `$this->get_plugin()->get( Cron::class )`.
+`WithPlugin::with()` is how a module reaches another, and how a discovered file reaches any of them. There is nothing to construct and nothing to declare in advance.
 
-## A module
+**Implement `Bootable` to do something without being called.** That is the only difference between one module and another, and it is on the line that names the class: a `Bootable` module binds hooks, registers a post type or walks a directory when the plugin builds it, and one that is not sits there until something calls it.
 
-`on_boot()` is abstract, so a module cannot be written without saying what it does at boot. Listing it in `bootstrap.php` is what builds it.
+**Your class may not declare a constructor.** `__construct()` is `final` here and takes no arguments, so every module is built as `new YourModule()`. Configuration comes from the `configure` in its `bootstrap.php` entry, and dependencies from `with()`. A class that genuinely needs constructor arguments is a value object rather than a module: write it as a plain class, and if it also needs the plugin, have it `use WithPlugin` and pass it through `$plugin->wire( $object )`.
+
+## One that only works when called
+
+No `Bootable`, so nothing happens until something calls it.
 
 ```php
 namespace Acme\Plugin\Modules;
 
 use Acme\Plugin\Core\Kernel\Abstracts\Module;
+use Acme\Plugin\Core\Modules\Path;
 
-class Shortcode extends Module {
+class Cache extends Module {
 
-    protected function on_boot(): void {
-        add_shortcode( 'acme_form', array( $this, 'render' ) );
+    public function remember( string $key, callable $compute ): mixed {
+        $file = $this->with( Path::class )->get_plugin_path( 'cache/' . $key );
+
+        // ...
     }
 }
 
 // bootstrap.php
 return array(
-    Shortcode::class,
+    Cache::class,
 );
+```
+
+## One that acts on its own
+
+`on_boot()` runs once, when the plugin builds the module — which is what being listed causes.
+
+```php
+use Acme\Plugin\Core\Kernel\Abstracts\Module;
+use Acme\Plugin\Core\Kernel\Contracts\Bootable;
+
+class Shortcode extends Module implements Bootable {
+
+    public function on_boot(): void {
+        add_shortcode( 'acme_form', array( $this, 'render' ) );
+    }
+}
 ```
 
 ## One that takes configuration
 
-A configured entry is an array, whose `before_boot` runs after wiring and before `on_boot()` — so `on_boot()` can rely on whatever it set. A module needing no configuration stays bare, as `CLI::class` does here.
+A configured entry is an array, whose `configure` runs after the module is built and before `on_boot()` — so `on_boot()` can rely on whatever it set. A module needing no configuration stays bare, as `CLI::class` does here.
 
 ```php
 // bootstrap.php
 return array(
     Cron::class => array(
-        'before_boot' => static function ( Cron $cron ): void {
+        'configure' => static function ( Cron $cron ): void {
             $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
         },
     ),
@@ -62,7 +87,7 @@ Almost everything WordPress wants registered — a post type, a block, a taxonom
 It is also the answer to `_load_textdomain_just_in_time`: a `__()` at plugin load asks WordPress for translations before it is ready to give them.
 
 ```php
-protected function on_boot(): void {
+public function on_boot(): void {
     $this->on_wp_init( function ( self $module ): void {
         register_post_type( 'acme_report', array(
             'label' => __( 'Reports', 'acme-plugin' ),
@@ -71,25 +96,7 @@ protected function on_boot(): void {
 }
 ```
 
-## You must implement
-
-This one method is abstract: a subclass that does not declare it will not load.
-
-### `on_boot()`
-
-What this module does on its own.
-
-```php
-abstract protected function on_boot(): void
-```
-
-Runs once, when the plugin builds the module. Abstract rather than optional: a module with nothing to do here is a `Service`.
-
-**Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
-
-`on_wp_init()` is the way out of all three, and where anything a module registers belongs.
-
-## Methods you can use
+## Methods
 
 ### `on_wp_init( $callback, $priority )`
 
@@ -105,19 +112,19 @@ final public function on_wp_init( callable $callback, int $priority = 10 ): void
 | **Return** | — |
 | **Throws** | — |
 
-Almost everything a module registers — a post type, a block, a WP-CLI command — has to happen on `init`, and a plain `add_action( 'init', ... )` is a callback that never runs once `init` has passed. A module can be resolved on either side of it: `Plugin::run()` is synchronous, so an entry file that calls it at plugin load is ahead of `init`, while one that calls it from a later hook — or a `get()` during a request — is behind. This behaves the same either way, so a module never has to care which.
+Almost everything a module registers — a post type, a block, a WP-CLI command — has to happen on `init`, and a plain `add_action( 'init', ... )` is a callback that never runs once `init` has passed. A module can be built on either side of it: `Plugin::run()` is synchronous, so an entry file that calls it at plugin load is ahead of `init`, while one that calls it from a later hook is behind. This behaves the same either way, so a module never has to care which.
 
-The callback receives the module, matching the initializer signature, so a closure declared elsewhere needs no `use` to reach it:
+The callback receives the module, so a closure declared elsewhere needs no `use` to reach it:
 
 ```php
-protected function on_boot(): void {
+public function on_boot(): void {
     $this->on_wp_init( function ( self $module ): void {
         $module->register_widgets();
     } );
 }
 ```
 
-`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only while `init` is still ahead**: a module resolved after `init` has fired runs its callback immediately, in registration order, whatever priority it asked for. Ordering that has to hold either way belongs inside one callback.
+`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only while `init` is still ahead**: a module built after `init` has fired runs its callback immediately, in registration order, whatever priority it asked for. Ordering that has to hold either way belongs inside one callback.
 
 <br>
 
@@ -137,8 +144,32 @@ final public function get_plugin(): Plugin
 | **Return** | The plugin instance |
 | **Throws** | — |
 
-How you reach a module, always: building one boots it, so the cost belongs at the call rather than hidden in a property declaration. Also how you reach a service you look up by a name computed at runtime.
+For the plugin's own answers — its slug, its entry file, the headers it declares. To reach another module, `with()` is shorter and says what it is doing.
+
+<br>
+
+### `with( $name )`
+
+*Inherited from [`WithPlugin`](../kernel/with-plugin.md).*
+
+Reach another module.
 
 ```php
-$this->get_plugin()->get( Options::class )->get( 'api_key' );
+final public function with( string $name ): object
 ```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$name` — The module class to reach |
+| **Return** | The shared instance |
+| **Throws** | `ModuleException` — If it is not declared, or has not booted yet |
+
+The one way anything in a plugin reaches anything else. Returns the same instance every time, so two callers asking for `Options` share its state:
+
+```php
+$this->with( Options::class )->get( 'api_key' );
+```
+
+**The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
+
+A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.

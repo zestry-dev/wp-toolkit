@@ -45,7 +45,6 @@ return new class() extends MakeCommand {
 	 *
 	 * Because nothing discovers it, this is also the one `make` type that writes
 	 * to your `bootstrap.php`: the new class is appended there, which is what
-	 * builds it. Its sibling `wp zt make service` declares nothing, since a
 	 * service is built the moment something asks for it -- configure one from
 	 * `$plugin->configure()` in your entry file instead.
 	 *

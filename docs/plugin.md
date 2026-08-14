@@ -9,19 +9,17 @@
 
 The one object your plugin builds, in its entry file.
 
-It holds every service and module the plugin uses, builds each the first time it is needed, and answers what the plugin knows about itself — its slug, its own directory, the headers its entry file declares. Nothing else has to be constructed by hand: a class asks for another by declaring a typed property, and this is what fills it in.
+It holds every module the plugin is made of, builds each one, and answers what the plugin knows about itself — its slug, its own directory, the headers its entry file declares. Nothing has to be constructed by hand: a module reaches another with `$this->with( Path::class )`, and this is what hands it over.
 
-Modules are declared in a `bootstrap.php`, which `bootstrap()` reads and `run()` builds and boots. `wp zt init` creates that file and `wp zt add` appends to it, so a module is active as soon as it is copied and the entry file never has to change. `configure()` and `autoload()` are public, so a plugin that prefers to declare its modules in the entry file can do that instead, and the two approaches can be combined.
+Every module is declared in a `bootstrap.php`, which `bootstrap()` reads and `run()` builds. `wp zt init` creates that file and `wp zt add` appends to it, so a module works as soon as it is copied and the entry file never has to change. `declare_modules()` is public and takes the same entries, so a plugin that prefers to declare everything in the entry file can do that instead, and the two approaches can be combined.
 
-A `Service` is never declared there: it resolves on demand through `get()`, or is injected into another class by type. One that takes configuration is given it with `configure()` in the entry file.
-
-There is nothing to register: `get()` builds any `Service` subclass the first time you ask for it — both kinds, since a Module is a Service that also acts on its own — so asking whether the plugin "has" one is never a question you need to answer. To reach a module your plugin may not have added, emit a hook instead of asking for it, the way `Options` and `Cron` reach `Log`.
+**That file is the whole inventory.** Nothing is built without being listed there, and asking for an undeclared class throws — so reading it tells you what the plugin is made of, and that stays true. To reach a module your plugin may not have declared, emit a hook instead of asking for it, the way `Options` and `Cron` reach `Log`.
 
 ## The entry file
 
 Constructs the plugin and runs it. Module declarations live in `bootstrap.php`, so this file is unchanged by how many modules the plugin uses.
 
-The accessor holds the instance for anything outside the module system — a test, a template, a hand-registered callback — since modules themselves are injected by type and never need it.
+The accessor holds the instance for anything outside the module system — a test, a template, a hand-registered callback — since a module already reaches every other one with `with()`.
 
 ```php
 // acme-plugin.php
@@ -46,7 +44,7 @@ Declares every module the plugin uses, with the configuration each requires. `wp
 
 With this in place, a file returned from `actions/save-profile.php` becomes an AJAX action (see `AjaxAction`), a file returned from `commands/greet.php` becomes the WP-CLI command `wp acme-plugin greet` (see `Command`), and a file returned from `admin-pages/settings.php` becomes an admin menu page (see `AdminPage`) — none of them need registering by hand.
 
-Every entry is a module, and listing one is what builds it. A module needing no configuration is written bare, as `Ajax::class` and `AdminPages::class` below; one that needs some gets an array, whose `before_boot` is the callback that configures it.
+Every entry is a module, and listing one is what makes it exist. A module needing no configuration is written bare, as `Ajax::class` and `AdminPages::class` below; one that needs some gets an array, whose `configure` is the callback that sets it up.
 
 ```php
 // bootstrap.php
@@ -56,7 +54,7 @@ use Acme\Plugin\Core\Modules\Cron\Cron;
 
 return array(
     Cron::class => array(
-        'before_boot' => static function ( Cron $cron ): void {
+        'configure' => static function ( Cron $cron ): void {
             $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
         },
     ),
@@ -67,7 +65,7 @@ return array(
 
 ## Declaring modules in the entry file instead
 
-`bootstrap.php` is optional. It calls `configure()` and `autoload()`, both of which are public, so a plugin that prefers a single file can call them directly.
+`bootstrap.php` is optional — `bootstrap()` hands what it read to `declare_modules()`, which is public and takes the same entries, so a plugin that prefers a single file calls it directly.
 
 ```php
 // acme-plugin.php
@@ -75,13 +73,16 @@ function acme_plugin(): Plugin {
     static $plugin = null;
 
     $plugin ??= ( new Plugin( __FILE__ ) )
-        ->configure(
-            Cron::class,
-            static function ( Cron $cron ): void {
-                $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
-            }
+        ->declare_modules(
+            array(
+                Path::class,
+                Cron::class => array(
+                    'configure' => static function ( Cron $cron ): void {
+                        $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
+                    },
+                ),
+            )
         )
-        ->autoload( array( Cron::class ) )
         ->run();
 
     return $plugin;
@@ -104,7 +105,7 @@ The longest slug a registered name can carry.
 
 ### `__construct( $entry, $slug )`
 
-Construct the plugin and its service repository.
+Construct the plugin and its module repository.
 
 ```php
 public function __construct( string $entry, ?string $slug = null )
@@ -126,21 +127,21 @@ Choose it once: changing it later renames everything registered under the old on
 
 <br>
 
-### `configure( $name, $initializer )`
+### `configure( $name, $configurator )`
 
-Configure a service or a module before anything builds it.
+Configure a module before the plugin builds it.
 
 ```php
-public function configure( string $name, callable $initializer ): self
+public function configure( string $name, callable $configurator ): self
 ```
 
 |  | Details |
 |---|---|
-| **Parameters** | `$name` — The class name to configure<br>`$initializer` — Callback receiving the instance and plugin |
+| **Parameters** | `$name` — The class name to configure<br>`$configurator` — Callback receiving the module and plugin |
 | **Return** | Fluent interface for method chaining |
 | **Throws** | — |
 
-Either kind: what is stored is a callback against a class name, and the two are configured identically. The initializer runs when the class is first built, after wiring and — for a `Module` — before `on_boot()`, so it can set what boot depends on. Only needed by a class that takes configuration; anything else resolves fine without one.
+The callback runs when the module is built, after it has the plugin and before `on_boot()`, so it can set what boot depends on. The same callback a `bootstrap.php` entry's `configure` key takes — this is for a plugin that prefers to keep its configuration in the entry file.
 
 ```php
 $plugin->configure( Cron::class, function ( Cron $cron ) {
@@ -148,25 +149,83 @@ $plugin->configure( Cron::class, function ( Cron $cron ) {
 } );
 ```
 
-Nothing here declares a class to the plugin, and nothing here loads one: every service and module is found by type, so this only remembers a callback against a name. A module still has to be queued — by `autoload()`, or by being listed in `bootstrap.php` — for anything to happen. **This is where a service is configured**, since `bootstrap.php` is modules only: the callback runs when something first asks for it, and never at all if nothing does.
+**This does not declare the module.** It remembers a callback against a name and loads nothing; the module still has to be listed, either in `bootstrap.php` or through `declare_modules()`, for anything to build it.
 
 <br>
 
-### `autoload( $modules )`
+### `declare_modules( $entries )`
 
-Queue modules to be resolved when `run()` is called.
+Declare the modules this plugin is made of.
 
 ```php
-public function autoload( array $modules = array() ): self
+public function declare_modules( array $entries = array() ): self
 ```
 
 |  | Details |
 |---|---|
-| **Parameters** | `$modules` — Module classes to resolve automatically |
+| **Parameters** | `$entries` — The entries `bootstrap.php` would hold |
 | **Return** | `self` |
-| **Throws** | — |
+| **Throws** | `ModuleException` — When an entry names no class, or its configuration is not an array |
 
-Only remembers the class names — nothing is built here, and no hook of this method's own decides the timing. Your entry file does, by choosing when it calls `run()`, which resolves the queue synchronously and boots each module as it goes.
+What `bootstrap()` calls with the entries it read, and what an entry file calls directly when it prefers to keep its declarations in one file. Both take the same two entry shapes, because they are the same declaration written in different places — a bare class name, or a class name with a configuration array:
+
+```php
+CLI::class,                   // bare
+Options::class => array(      // configured
+    'boots_on'  => 'init',
+    'priority'  => 10,
+    'configure' => static function ( Options $options ): void { … },
+),
+```
+
+Both shapes declare the class, and declaring is what makes a module exist: nothing outside this list is ever built. `configure` runs immediately before `on_boot()`, which is what makes a `__()` in there safe once a hook is named. `boots_on` lives in the entry and nowhere else — this is where a plugin says what it has and when each part starts, so a default on the class would make a bare listing boot on a hook nothing mentions.
+
+Configuration is an array and never a bare callable, so all three keys are written the same way: adding a `boots_on` to an entry that already configures the module is one more line rather than a rewrite of the entry.
+
+Nothing here loads a class. An entry remembers a name and a `configure` remembers a closure against it, so a list naming a dozen classes reads without compiling any of them — they compile when `run()` builds them.
+
+Every shape, in one list:
+
+```php
+( new Plugin( __FILE__ ) )
+    ->declare_modules(
+        array(
+            // Bare: nothing to configure, built as `run()` reaches it.
+            Path::class,
+
+            // Configured.
+            Cron::class => array(
+                'configure' => static function ( Cron $cron ): void {
+                    $cron->add_custom_interval( 'quarter_hourly', 900, 'Quarter hourly' );
+                },
+            ),
+
+            // Held back until a hook, with nothing to configure.
+            Blocks::class => array(
+                'boots_on' => 'init',
+            ),
+
+            // Held back, and ordered against everything else on that hook.
+            IconsLibrary::class => array(
+                'boots_on' => 'init',
+                'priority' => 100,
+            ),
+
+            // All three. `configure` runs on the hook too, right before
+            // `on_boot()`, which is what makes the `__()` in it safe.
+            Abilities::class => array(
+                'boots_on'  => 'init',
+                'priority'  => 20,
+                'configure' => static function ( Abilities $abilities ): void {
+                    $abilities->add_categories(
+                        array( 'acme-billing' => __( 'Acme billing', 'acme-plugin' ) )
+                    );
+                },
+            ),
+        )
+    )
+    ->run();
+```
 
 <br>
 
@@ -190,7 +249,7 @@ The file returns one flat list, so the entry file never changes as modules are a
 // bootstrap.php
 return array(
     Cron::class => array(
-        'before_boot' => static function ( Cron $cron ): void {
+        'configure' => static function ( Cron $cron ): void {
             $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
         },
     ),
@@ -202,37 +261,30 @@ return array(
 
 | Key | What it does |
 |---|---|
-| `before_boot` | The initializer — the same callback `configure()` takes. Runs after wiring, immediately before `on_boot()`. |
-| `boots_on` | A WordPress hook to boot on, for a module that cannot do its work as the plugin loads. Without it the module boots the moment `run()` reaches it. |
+| `configure` | Runs when the module is built, immediately before `on_boot()`. The same callback `configure()` takes. |
+| `boots_on` | A WordPress hook to boot on, for a module that cannot do its work as the plugin loads. Without it the module is built the moment `run()` reaches it. |
 | `priority` | What `boots_on` binds at. Defaults to 10. |
 
-Configuration is always the array, never a bare callback, so adding a `boots_on` to an entry that already has an initializer is one more line rather than a rewrite:
+Configuration is always the array, never a bare callback, so adding a `boots_on` to an entry that already configures the module is one more line rather than a rewrite:
 
 ```php
 Blocks::class => array(
-    'boots_on'    => 'init',
-    'before_boot' => static fn ( Blocks $blocks ) => $blocks->add_categories( $categories ),
+    'boots_on'  => 'init',
+    'configure' => static function ( Blocks $blocks ): void {
+        $blocks->add_categories( $categories );
+    },
 ),
 ```
 
-A module that names a `boots_on` cannot be built before that hook: asking for it through `get()` beforehand throws, naming the hook, rather than booting it on the wrong side of whatever it was waiting for.
+A module that names a `boots_on` cannot be built before that hook: asking for it beforehand throws, naming the hook, rather than booting it on the wrong side of whatever it was waiting for.
 
-**The file is modules only, and listing one is what builds it.** That is its whole job, which is what makes it readable at a glance: every name here is something the plugin starts, and its array — when it has one — configures it on the way.
+**This file is the whole inventory of what the plugin is made of.** Every module is here — the ones that act on their own and the ones that only work when called — and nothing outside it is ever built: asking for an undeclared class throws rather than quietly constructing it. That is what makes reading this file worth doing.
 
-A `Service` does not belong here. It is built the moment something asks for it, so listing it would only build it sooner than it needed to be. Configure one from the entry file instead, where `configure()` takes the same callback:
-
-```php
-( new Plugin( __FILE__ ) )
-    ->configure( DB::class, static fn ( DB $db ) => $db->set_table_prefix( 'acme' ) )
-    ->bootstrap()
-    ->run();
-```
-
-Because every entry means one thing, nothing here has to ask what a class *is* — so reading this file compiles none of the classes it names. They load when `run()` builds them.
+Nothing here loads a class. An entry remembers a name, and a `configure` remembers a closure against it, so a file naming a dozen classes reads without compiling any of them — they load when `run()` builds them.
 
 A missing file is not an error. If there is no `bootstrap.php` the plugin is returned unchanged, so you can call this unconditionally from a template entry file and declare everything in the entry file itself.
 
-A plugin with a hand-written entry file needs none of this: `configure()` and `autoload()` are public, and the two approaches can be mixed.
+A plugin with a hand-written entry file needs none of this: `declare_modules()` takes the same entries directly, and the two approaches can be mixed.
 
 <br>
 
@@ -268,7 +320,7 @@ This registers a path rather than loading anything: translations load on the fir
 
 ### `get( $name )`
 
-Get the given service or module from the plugin.
+Get a module the plugin declared.
 
 ```php
 public function get( string $name ): object
@@ -276,17 +328,19 @@ public function get( string $name ): object
 
 |  | Details |
 |---|---|
-| **Parameters** | `$name` — The class name to resolve |
-| **Return** | The resolved instance |
-| **Throws** | `ModuleNotFoundException` — If the class does not exist or does not extend Service<br>`CircularDependencyException` — If the dependency graph re-enters itself |
+| **Parameters** | `$name` — The class name to get |
+| **Return** | The shared instance |
+| **Throws** | `ModuleException` — If the class was never declared, or has not reached its `boots_on` hook<br>`ModuleNotFoundException` — If the class does not exist or does not extend Module<br>`CircularDependencyException` — If the dependency graph re-enters itself |
 
-Resolved once and cached, so repeated calls return the same object. One accessor for both kinds, since a `Module` *is* a `Service`: what differs is that resolving a module also boots it.
+The same instance every time. Inside a module or anything the plugin wired, `$this->with( X::class )` is the shorter way to say this; use `get()` from an entry file, a template, or anywhere holding the plugin itself.
+
+**The module has to be declared.** Asking for one that is not throws, because `bootstrap.php` is the whole inventory of what the plugin is made of — and that only holds while nothing is built without being listed there.
 
 <br>
 
 ### `make( $name, $configurator )`
 
-Build a fresh, fully wired instance of a service or module class.
+Build a fresh, unshared instance of a module class.
 
 ```php
 public function make( string $name, ?callable $configurator = null ): object
@@ -294,11 +348,11 @@ public function make( string $name, ?callable $configurator = null ): object
 
 |  | Details |
 |---|---|
-| **Parameters** | `$name` — The class name to construct<br>`$configurator` — Optional callback run after wiring, before boot |
-| **Return** | A new, wired instance |
-| **Throws** | `ModuleNotFoundException` — If the class does not exist or does not extend Service<br>`CircularDependencyException` — If the dependency graph re-enters itself |
+| **Parameters** | `$name` — The class name to construct<br>`$configurator` — Optional callback run before boot |
+| **Return** | A new instance |
+| **Throws** | `ModuleNotFoundException` — If the class does not exist or does not extend Module<br>`CircularDependencyException` — If the dependency graph re-enters itself |
 
-Unlike get(), never cached: every call returns a new wired instance. The configurator runs after wiring and before boot(). Use it for a second instance of a module, such as a dedicated Options group:
+Unlike get(), never shared: every call returns a new instance. The configurator runs before boot(). Use it for a second instance of a module, such as a dedicated Options group:
 
 ```php
 $api_options = $plugin->make( Options::class, function ( Options $o ) {
@@ -310,7 +364,7 @@ $api_options = $plugin->make( Options::class, function ( Options $o ) {
 
 ### `wire( $instance )`
 
-Assign the plugin and inject declared dependencies into an existing object.
+Give an object the plugin, so it can reach modules through `with()`.
 
 ```php
 public function wire( PluginAware $instance ): PluginAware
@@ -319,12 +373,10 @@ public function wire( PluginAware $instance ): PluginAware
 |  | Details |
 |---|---|
 | **Parameters** | `$instance` — The object to wire |
-| **Return** | The same instance, now wired |
-| **Throws** | `CircularDependencyException` — If the dependency graph re-enters itself |
+| **Return** | The same instance, now holding the plugin |
+| **Throws** | — |
 
-Lets an object built outside the resolution lifecycle — a CLI command or an AJAX action loaded from a file — declare typed properties and receive them the way a service does, without being one itself. The object must implement `PluginAware`, which the `WithPlugin` trait satisfies.
-
-Each typed property is resolved through `get()` as it is injected, so wiring an object can raise the same failures resolving one does.
+Lets an object the plugin did not build — a CLI command, an AJAX action, an admin page loaded from a file — reach every module exactly the way a module does, without being one itself. The object must implement `PluginAware`, which the `WithPlugin` trait satisfies.
 
 <br>
 
@@ -492,7 +544,7 @@ Checks for a plugin-specific debug constant based on the plugin slug. Constant n
 
 ### `run( $on_boot_callback )`
 
-Resolve autoloaded modules and run an optional ready callback.
+Build every declared module, and run an optional ready callback.
 
 ```php
 public function run( ?callable $on_boot_callback = null ): self
@@ -502,9 +554,9 @@ public function run( ?callable $on_boot_callback = null ): self
 |---|---|
 | **Parameters** | `$on_boot_callback` — Optional callback receiving this plugin after modules are ready |
 | **Return** | `self` |
-| **Throws** | `ModuleException` — When a queued class cannot be built, or a discovery module cannot read its root<br>`Throwable` — Whatever a module's own `on_boot()` raises, unchanged |
+| **Throws** | `ModuleException` — When a declared class cannot be built, or a discovery module cannot read its root<br>`Throwable` — Whatever a module's own `on_boot()` raises, unchanged |
 
-Call this from the plugin entry file once modules are registered. It runs synchronously, so the caller controls timing: invoke it directly at plugin load, or from inside a `plugins_loaded`/`init` hook when a later point is needed. Queued classes resolve first — and a `Module` boots as it resolves — then the callback runs with all of them available.
+Call this from the plugin entry file once the modules are declared. It runs synchronously, so the caller controls timing: invoke it directly at plugin load, or from inside a `plugins_loaded`/`init` hook when a later point is needed. Every declared class is built first — booting as it goes, unless it named a `boots_on` — then the callback runs with all of them available.
 
 An `ActivationHandler` subclass is the one case where *when* this is called is load-bearing: WordPress fires `activate_{plugin}` immediately after the entry file loads, so a `run()` deferred to a later hook is already too late to register the activation callback.
 

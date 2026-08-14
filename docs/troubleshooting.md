@@ -9,7 +9,7 @@ This page is for the rest: the failures with no message attached. Find your symp
 | `'zt' is not a registered wp command` | [below](#zt-is-not-a-registered-wp-command) |
 | A module is there, and nothing it does happens | [below](#a-module-does-nothing-and-nothing-errors) |
 | `Class "Acme\Plugin\..." not found` | [below](#class-not-found) |
-| `Typed property ... must not be accessed before initialization` | [below](#an-injected-property-is-not-there) |
+| `... is not declared, so nothing built it` | [below](#is-not-declared-so-nothing-built-it) |
 | A post type's permalinks 404 | [below](#a-post-type-404s) |
 | `DiscoveryException` from a file you wrote | [below](#discoveryexception-from-a-file-you-wrote) |
 | A script or style you registered never loads | [below](#a-script-or-style-never-loads) |
@@ -69,7 +69,7 @@ return array(
 );
 ```
 
-`wp zt add module <name>` writes that entry for you, and so does `wp zt make module`. A module added by hand, or one whose declaration was lost in a merge, is the case to check.
+`wp zt add <name>` writes that entry for you, and so does `wp zt make module`. A module added by hand, or one whose declaration was lost in a merge, is the case to check.
 
 `wp zt doctor` finds it:
 
@@ -89,7 +89,6 @@ Error: 1 problem found.
 Two limits on that check, so you know when to look yourself:
 
 - It knows the modules **it** copied in, under `lib/Core/Modules/`. A module *you* wrote under `lib/Modules/` is not in its registry, so an undeclared one is not flagged.
-- A **service** never needs declaring, and one that is not listed is doing exactly what it should. If a service seems dead, the problem is elsewhere — nothing has asked for it yet.
 
 Two other causes worth ruling out once the declaration is there:
 
@@ -105,16 +104,15 @@ Two other causes worth ruling out once the declaration is there:
 | What it is | On disk | Class |
 |---|---|---|
 | The kernel (`wp zt init`) | `lib/Core/Kernel/Plugin.php` | `Acme\Plugin\Core\Kernel\Plugin` |
-| A module you added (`wp zt add module ajax`) | `lib/Core/Modules/Ajax/Ajax.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax` |
-| A service you added (`wp zt add service path`) | `lib/Core/Services/Path.php` | `Acme\Plugin\Core\Modules\Path` |
+| A module you added (`wp zt add ajax`) | `lib/Core/Modules/Ajax/Ajax.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax` |
+| One with no directory of its own (`wp zt add path`) | `lib/Core/Modules/Path.php` | `Acme\Plugin\Core\Modules\Path` |
 | A module you wrote (`wp zt make module`) | `lib/Modules/Shortcode.php` | `Acme\Plugin\Modules\Shortcode` |
-| A service you wrote (`wp zt make service`) | `lib/Services/Cache.php` | `Acme\Plugin\Services\Cache` |
 
 The base classes and exceptions follow the same rule, since they are copied in:
 
 ```php
 use Acme\Plugin\Core\Kernel\Abstracts\Module;
-use Acme\Plugin\Core\Kernel\Abstracts\Service;
+use Acme\Plugin\Core\Kernel\Contracts\Bootable;
 use Acme\Plugin\Core\Kernel\Exceptions\ModuleException;
 use Acme\Plugin\Core\Modules\CLI\Command;
 ```
@@ -131,49 +129,28 @@ composer dump-autoload
 
 ---
 
-## An injected property is not there
+## `is not declared, so nothing built it`
 
-The symptom is a PHP `Error`, not a null: reading an uninitialized typed property throws `Typed property Acme\Plugin\Modules\Reports::$path must not be accessed before initialization`.
-
-A property is injected when **all** of these hold:
-
-- it is `public` or `protected` — `private` is never injected, because reflection cannot reach a private property declared on an ancestor class;
-- its type is a **single named class** that extends `Service` **and is not a `Module`**;
-- it does not carry `#[NoInject]`.
-
-Everything else is left alone as your own state: scalars, untyped properties, unrelated class types, and — the one that catches people — **union and intersection types**, which are skipped whole, even when every member of the union qualifies.
+`bootstrap.php` is the whole inventory: nothing is built that it does not list, and `with()` refuses an undeclared class rather than constructing one on the spot.
 
 ```php
-use Acme\Plugin\Core\Kernel\Abstracts\Module;
-use Acme\Plugin\Core\Kernel\Attributes\NoInject;
-use Acme\Plugin\Core\Modules\Path;
-use Acme\Plugin\Core\Modules\Views;
+// bootstrap.php
+use Acme\Plugin\Core\Modules\Options;
 
-class Reports extends Module {
-
-    public Path $path;              // injected
-    protected Views $views;         // injected
-
-    private Path $cache;            // NOT injected: private
-    public Path|Views $either;      // NOT injected: union type
-    public ?Path $maybe = null;     // injected: nullable is still one named type
-
-    #[NoInject]
-    public Path $manual;            // NOT injected: opted out
-
-    protected function on_boot(): void {}
-}
+return array(
+    Options::class,
+);
 ```
 
-**A property typed as a `Module` is a different symptom**: it throws rather than staying unset, with a message naming the property and the call to use instead. See [Errors](errors.md#a-property-typed-as-a-module).
+`wp zt add <name>` writes that entry for you. A module added by hand, or one whose declaration was lost in a merge, is the case to check — `wp zt doctor` finds it.
 
-The other cause is an object that was **never wired**. Injection runs when the plugin builds an instance (`get()`, `make()`, or booting a module) and when a discovery module wires the object a file returned. An object you built with `new` yourself gets neither:
+The other shape is a module you *did* declare that names a `boots_on`:
 
-```php
-$reporter = $plugin->wire( new Reporter() );
+```
+Acme\Plugin\Core\Modules\Blocks\Blocks boots on `init`, which has not fired yet.
 ```
 
-`wire()` assigns the plugin and injects the properties, and is how anything outside the lifecycle — a hand-registered callback, a template helper — gets the same treatment.
+That one is a timing problem, not a missing declaration: move the call to that hook or later. See [Errors](errors.md#a-module-asked-for-before-its-hook).
 
 ---
 
@@ -257,7 +234,7 @@ $assets->register_script( 'panel', 'js/panel.js', array( 'main' ) );
 The rule reads the same in both directions. In `$deps`, use:
 
 - the **return value** of a previous `register_script()`/`register_style()` call for one of your own assets;
-- the **plain handle** for anything registered outside the service — `jquery`, `wp-element`, `wp-components`. Those pass through as-is, which is exactly what you want; namespacing `jquery` would yield `acme-plugin-jquery`, which nothing registered.
+- the **plain handle** for anything registered outside the module — `jquery`, `wp-element`, `wp-components`. Those pass through as-is, which is exactly what you want; namespacing `jquery` would yield `acme-plugin-jquery`, which nothing registered.
 
 `$deps` is the one place that takes a handle you did not get back from somewhere, because it is the one place the value might not be yours. Everything else here already speaks in real handles: `register_script()`/`register_style()` return one, `enqueue_entry()`/`enqueue_shared()` return one, and WordPress's own `wp_add_inline_script()`/`wp_localize_script()` take it from there.
 
@@ -283,7 +260,7 @@ wp zt update --dry-run
 
 `--force` replaces the `edited` and `conflict` files too, discarding those changes. Reach for it only after you have looked at the named files and decided you do not want them.
 
-Nothing outside `lib/Core/` is ever touched — your own `lib/Modules/` and `lib/Services/` are invisible to this command. If you want a copied module to stop being upstream's altogether, move it out of `lib/Core/` and rename its namespace to match; `update` then has nothing to say about it.
+Nothing outside `lib/Core/` is ever touched — your own `lib/Modules/` and anything else you wrote are invisible to this command. If you want a copied module to stop being upstream's altogether, move it out of `lib/Core/` and rename its namespace to match; `update` then has nothing to say about it.
 
 **If every file reports as `upstream`,** you have no `zestry.lock.json` — most often because it was not committed. The command warns and degrades to a plain difference report, which cannot tell your edit from upstream's change. Commit `zestry.lock.json` the way you commit `composer.lock`.
 
@@ -298,8 +275,8 @@ Error: zestry.json already exists at /…/acme-plugin -- already initialized.
 `init` is one-time: running it again would re-copy the kernel over whatever you have since edited. What you want instead is one of:
 
 - **A later release of the toolkit** — [`wp zt update`](commands/update.md).
-- **More modules** — [`wp zt add module <name>`](commands/add-module.md).
-- **A copied module back to its original state** — [`wp zt overwrite module <name>`](commands/overwrite-module.md), which asks before replacing anything.
+- **More modules** — [`wp zt add <name>`](commands/add.md).
+- **A copied module back to its original state** — [`wp zt overwrite <name>`](commands/overwrite.md), which asks before replacing anything.
 - **A genuinely fresh start** — delete `zestry.json`, `zestry.lock.json` and your root directory, then run `init` again.
 
 ---

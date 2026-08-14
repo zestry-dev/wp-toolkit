@@ -13,7 +13,7 @@ src/
 One command sets all of it up:
 
 ```bash
-wp zt add module assets
+wp zt add assets
 ```
 
 which copies the [`assets`](modules/assets/) module and writes the `webpack.config.js`, the npm workspace declaration and the `build`/`start` scripts. `add module blocks` writes those same two scripts from the same definition, so whichever you add first writes them and the second leaves them alone. An existing `webpack.config.js` is never replaced, so the generated one is yours to edit.
@@ -34,11 +34,11 @@ writes `src/entries/settings/index.ts` and `style.scss` beside it. Use it from a
 
 ```php
 public function enqueue_assets(): void {
-    $this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
+    $this->with( Assets::class )->enqueue_entry( 'settings' );
 }
 ```
 
-`assets` is a module, so it is asked for rather than declared as a property — building a module boots it, which is too much to hide behind a type name.
+`assets` is declared in `bootstrap.php` like everything else, and `with()` is how you reach it.
 
 There is no registration call. The module registers every built entry on `init`, under the handle `{plugin-slug}-settings`, so the local name is all you ever pass.
 
@@ -51,7 +51,7 @@ An entry can also be **only** a stylesheet: leave out `index.ts` and put `style.
 Export an `initialize()` from the entry, and call it with the data:
 
 ```php
-$handle = $this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
+$handle = $this->with( Assets::class )->enqueue_entry( 'settings' );
 
 wp_add_inline_script(
     $handle,
@@ -175,7 +175,7 @@ This is why a freshly generated entry costs nothing until you write something. `
 ## Tips
 
 - **A shared directory with no `wordpress` block is an ordinary dependency.** It is bundled into whatever imports it, like anything from npm. That is the right choice when a copy costs less than a request.
-- **`npm run build` asks for three things `wp-scripts` does not do by default.** The generated scripts pass `--webpack-copy-php`, so a block's `block.php` reaches `build/`; `--experimental-modules`, without which a `"kind": "module"` package is silently skipped; and `--blocks-manifest`. You do not add these — `wp zt add module blocks` and `wp zt add module assets` write them.
+- **`npm run build` asks for three things `wp-scripts` does not do by default.** The generated scripts pass `--webpack-copy-php`, so a block's `block.php` reaches `build/`; `--experimental-modules`, without which a `"kind": "module"` package is silently skipped; and `--blocks-manifest`. You do not add these — `wp zt add blocks` and `wp zt add assets` write them.
 - **A global is two segments.** `[ "acmePlugin", "formatting" ]` puts a shared package on `window.acmePlugin.formatting`, so everything you share sits under one global and cannot collide with another plugin's.
 - **`webpack.config.js` is yours.** It is written once and nothing overwrites it, including [`wp zt update`](commands/update.md). Edit it freely.
 - **The manifest is build output.** Gitignored with the rest of `build/`, regenerated every build. Never edit or commit it.

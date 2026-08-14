@@ -5,29 +5,21 @@
 
 # WithPlugin
 
-Provides plugin access and automatic dependency injection.
+Gives a class the plugin, and `with()` to reach every module through it.
 
-Satisfies the PluginAware contract. A class using the trait asks for a service by declaring a public or protected property typed as it — for example `public Path $path;` — which the plugin populates via _inject_services() after set_plugin() runs.
-
-**Services only.** A service is built when something asks for it and does nothing else, so a property is an honest way to ask. A module *boots* when it is built, and a property declaration hides that behind a type name — so one typed as a Module throws, naming the property and the call to use instead. Ask for a module where you need it: `$this->get_plugin()->get( Options::class )`.
-
-Private properties are never injected (reflection cannot reach a private property declared on an ancestor class). Mark a property with #[NoInject] to exclude it from injection.
-
-Declare injected dependencies `public` by convention, which keeps a class's dependencies inspectable. `protected` is equally supported, and is the right choice only when a subclass hierarchy genuinely needs the dependency hidden from callers.
-
-Typical usage, matching how Command, AdminPage, and AjaxAction consume this trait directly (a Service or Module gets the same behavior by extending the Service base class, which already uses this trait):
+Satisfies the PluginAware contract. `Module` already uses it, so a module has this for free; a class the plugin did not build — a `Command`, an `AjaxAction`, an `AdminPage`, anything a discovered file returns — uses it directly and is passed through `$plugin->wire( $object )`.
 
 ```php
 class MyAction {
     use WithPlugin;
 
-    public Path $path;
-
     public function handle(): void {
-        $absolute = $this->path->get_plugin_path( 'some/file.php' );
+        $absolute = $this->with( Path::class )->get_plugin_path( 'some/file.php' );
     }
 }
 ```
+
+One way to reach a dependency, and it reads the same in a module, a command and a template helper.
 
 ## Methods
 
@@ -45,8 +37,30 @@ final public function get_plugin(): Plugin
 | **Return** | The plugin instance |
 | **Throws** | — |
 
-How you reach a module, always: building one boots it, so the cost belongs at the call rather than hidden in a property declaration. Also how you reach a service you look up by a name computed at runtime.
+For the plugin's own answers — its slug, its entry file, the headers it declares. To reach another module, `with()` is shorter and says what it is doing.
+
+<br>
+
+### `with( $name )`
+
+Reach another module.
 
 ```php
-$this->get_plugin()->get( Options::class )->get( 'api_key' );
+final public function with( string $name ): object
 ```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$name` — The module class to reach |
+| **Return** | The shared instance |
+| **Throws** | `ModuleException` — If it is not declared, or has not booted yet |
+
+The one way anything in a plugin reaches anything else. Returns the same instance every time, so two callers asking for `Options` share its state:
+
+```php
+$this->with( Options::class )->get( 'api_key' );
+```
+
+**The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
+
+A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.

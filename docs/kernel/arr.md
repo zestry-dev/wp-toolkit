@@ -11,7 +11,7 @@ The array operations you would otherwise write out at every use.
 
 Reaching into a nested array without four `isset()`s, taking only the keys you accept, plucking one field off a list of rows. If you have used Laravel's `Arr`, these are the same names doing the same things.
 
-Static, and not a `Service`, because there is nothing here to configure or inject: every method is a pure function of its arguments.
+Static, and not a `Module`, because there is nothing here to configure or inject: every method is a pure function of its arguments.
 
 ## Reading a nested value
 
