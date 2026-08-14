@@ -68,11 +68,9 @@ return new class() extends AdminPage {
 	// request should say goes through set_flash(). It reads once, which is what
 	// keeps the notice off a refresh -- and off a bookmark, as `?updated=1` in
 	// the URL would not.
-	//
-	// The nonce and the capability are checked for you; the values are not. Read
-	// each one yourself, unslashed and sanitised for what it is, e.g.
-	// $name = isset( $_POST['name'] ) ? \sanitize_text_field( \wp_unslash( $_POST['name'] ) ) : '';
 	public function handle_submit(): void {
+		// $name = isset( $_POST['name'] ) ? \sanitize_text_field( \wp_unslash( $_POST['name'] ) ) : '';
+
 		$this->set_flash( \__( 'Saved.', '{{text_domain}}' ) );
 
 		\wp_safe_redirect( $this->get_page_url() );

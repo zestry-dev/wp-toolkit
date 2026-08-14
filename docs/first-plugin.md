@@ -464,8 +464,6 @@ Inside any template `$this` is the [`views`](modules/views/) module, so a subvie
 
 The module enforces `capability()` before anything on the page runs, verifies the nonce on every POST, and only then calls `handle_submit()`. `nonce_field()` emits the matching field. There is no `add_menu_page()`, no `admin_menu` hook, and no `check_admin_referer()` to write.
 
-**An admin page reads its own values**, unlike the route in section 5. `#[RequestArgument]` describes one call to a caller who cannot read the code; a page is two — the GET that draws the form and the POST that submits it — and one declaration cannot describe both, since a field required on the second is absent on the first. The module checks the nonce and the capability; unslashing, casting and clamping are yours.
-
 **`handle_submit()` redirects rather than falling through to `render()`.** Without that, the browser's current request is still the POST: a refresh resubmits the form and saves a second time. The redirect throws away everything the method knew, so the notice travels in `set_flash()` — which reads once, so a refresh shows nothing for a save that already happened.
 
 `Options` writes nothing until `save()`, which is why `handle_submit()` calls it: the values are only worth storing once the request has got this far, and a submission that fails before here leaves the saved settings as they were.

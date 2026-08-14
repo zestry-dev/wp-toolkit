@@ -204,8 +204,6 @@ A route, an ability and an AJAX action all declare their input this way, but Wor
 
 An action is the one WordPress does nothing for: a plain hook handed the superglobals as they arrived, slashed and unchecked, so declaring arguments is how it stops reading them by hand. That is also what the last row is about — where WordPress validates, it walks into an array and names the item that failed; where this module does, it names the argument and stops, so a rejected `of:` list says `fields` rather than which entry in it.
 
-**An admin page is not one of these**, and declaring arguments on one does nothing. Its caller is a browser the same author wrote the form for, so there is nobody to publish a schema to, and a page is reached twice by two methods — the GET that draws the form and the POST that submits it — which one declaration cannot describe: an argument required on the second is absent on the first. Read `$_POST` in `handle_submit()` and `$_GET` in `render()`, unslashed and sanitised for what each one is. The nonce and the capability are still checked for you.
-
 **Where the value comes from** is the same answer on all three: the values are loaded into a `WP_REST_Request` and resolved by `get_param()`, so the JSON body wins, then the form body, then the query string. A cookie is never a parameter.
 
 An ability's input is validated and never sanitised — and that validation accepts a numeric string for an `integer`, so `"42"` is a valid thing for a caller to send. It arrives as `42` either way.
