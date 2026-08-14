@@ -11,12 +11,13 @@ namespace Zestry\WPToolkit\Modules\Migrations;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
 use Zestry\WPToolkit\Modules\CLI\CLI;
 use Zestry\WPToolkit\Modules\Options;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 /**
  * Discovers plugin database migrations and runs each one, at most once, in
@@ -85,7 +86,7 @@ use Zestry\WPToolkit\Services\Path;
  * ```
  * class MyActivation extends ActivationHandler {
  *     public function activate( bool $network_wide ): void {
- *         $this->migrations->run_pending();
+ *         $this->get_plugin()->get( Migrations::class )->run_pending();
  *     }
  *
  *     public function deactivate( bool $network_wide ): void {
@@ -93,7 +94,7 @@ use Zestry\WPToolkit\Services\Path;
  * }
  * ```
  */
-class Migrations extends Module {
+class Migrations extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -120,13 +121,6 @@ class Migrations extends Module {
 	private const RUNNING_SINCE_KEY = 'running_since';
 
 	/**
-	 * Path module injected by the plugin to resolve the migrations directory.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
-
-	/**
 	 * Every migration identifier -- its filename without the `.php` extension,
 	 * e.g. `20260115120000-create-books-table` -- already recorded as run, in
 	 * the order they ran.
@@ -148,7 +142,7 @@ class Migrations extends Module {
 	 * @return string[]
 	 */
 	public function get_discovered_migrations(): array {
-		$root_dir = $this->path->get_plugin_path( self::MIGRATIONS_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::MIGRATIONS_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
@@ -268,7 +262,7 @@ class Migrations extends Module {
 	 * @throws RenamedMigrationException When a pending migration looks like a rename and $force is false.
 	 */
 	public function run_pending( bool $force = false ): void {
-		$root_dir    = $this->path->get_plugin_path( self::MIGRATIONS_ROOT );
+		$root_dir    = $this->with( Path::class )->get_plugin_path( self::MIGRATIONS_ROOT );
 		$identifiers = $this->get_discovered_migrations();
 
 		if ( ! $force ) {
@@ -352,6 +346,31 @@ class Migrations extends Module {
 	}
 
 	/**
+	 * Register the `wp {slug} migrations run`/`wp {slug} migrations list`
+	 * WP-CLI commands, under WP-CLI only.
+	 *
+	 * Deliberately the only thing this method does: this module never decides
+	 * on its own when migrations should run -- the
+	 * CLI commands are themselves consumer-invoked, not automatic, so they are
+	 * the one thing safe to register unconditionally.
+	 *
+	 * Registration goes through CLI's `static` entry point, which needs no CLI
+	 * instance -- so a plugin using migrations without file-based commands never
+	 * builds the CLI module, while the command names stay namespaced the same
+	 * way a discovered command's would be.
+	 *
+	 * @return void
+	 *
+	 * @internal
+	 */
+	public function on_boot(): void {
+		if ( $this->get_plugin()->is_wp_cli() ) {
+			CLI::register_command_for( $this->get_plugin(), 'migrations run', new RunMigrationsCommand() );
+			CLI::register_command_for( $this->get_plugin(), 'migrations list', new ListMigrationsCommand() );
+		}
+	}
+
+	/**
 	 * Seconds a `running_since` timestamp is trusted to reflect a run still
 	 * genuinely in progress, before `maybe_resume_interrupted_run()` treats it
 	 * as abandoned and safe to resume.
@@ -364,37 +383,6 @@ class Migrations extends Module {
 	 */
 	protected function get_stale_run_threshold(): int {
 		return 5 * MINUTE_IN_SECONDS;
-	}
-
-	/**
-	 * Register the `wp {slug} migrations run`/`wp {slug} migrations list`
-	 * WP-CLI commands, under WP-CLI only.
-	 *
-	 * Deliberately the only thing this method does: this module never decides
-	 * on its own when migrations should run -- the
-	 * CLI commands are themselves consumer-invoked, not automatic, so they are
-	 * the one thing safe to register unconditionally.
-	 *
-	 * Registration goes through CLI's `static` entry point rather than an
-	 * injected `CLI $cli` property. Property injection resolves the module,
-	 * and resolving a module boots it -- so an injected property made
-	 * every `wp` invocation boot CLI, walk the consumer's `commands/`
-	 * directory, and throw when it was absent. Since `registry.php` lists
-	 * `cli` in migrations' `depends`, a consumer who added `migrations` and
-	 * never asked for file-based commands inherited that fatal from a module
-	 * they never opted into. The static call needs no CLI instance, so the two
-	 * features stay independent while the command names stay identically
-	 * namespaced.
-	 *
-	 * @return void
-	 *
-	 * @internal
-	 */
-	protected function on_boot(): void {
-		if ( $this->get_plugin()->is_wp_cli() ) {
-			CLI::register_command_for( $this->get_plugin(), 'migrations run', new RunMigrationsCommand() );
-			CLI::register_command_for( $this->get_plugin(), 'migrations list', new ListMigrationsCommand() );
-		}
 	}
 
 	/**

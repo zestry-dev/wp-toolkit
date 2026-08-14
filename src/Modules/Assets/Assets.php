@@ -11,9 +11,10 @@ namespace Zestry\WPToolkit\Modules\Assets;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 /**
  * Registers what the JavaScript build produced, and composes plugin asset URLs.
@@ -111,8 +112,10 @@ use Zestry\WPToolkit\Services\Path;
  * $assets->register_script( 'legacy', 'legacy.js', array( $assets->get_shared_handle( 'formatting' ) ) );
  * ```
  *
+ *
+ * @setup-hook init
  */
-class Assets extends Module {
+class Assets extends Module implements Bootable {
 
 	/**
 	 * Default plugin-relative directory of asset files.
@@ -150,13 +153,6 @@ class Assets extends Module {
 	 * registration.
 	 */
 	const MANIFEST_FILENAMES = array( 'assets-manifest.php', 'assets-module-manifest.php' );
-
-	/**
-	 * Path service injected by the plugin to resolve asset URLs.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
 
 	/**
 	 * Everything the build manifests describe, keyed by entry name, once read.
@@ -197,7 +193,7 @@ class Assets extends Module {
 	 * @throws \InvalidArgumentException When the path escapes the plugin root.
 	 */
 	public function get_asset_url( string $path, array $query_args = array() ): string {
-		return $this->path->get_plugin_url( self::ASSETS_ROOT . '/' . \ltrim( $path, '/\\' ), $query_args );
+		return $this->with( Path::class )->get_plugin_url( self::ASSETS_ROOT . '/' . \ltrim( $path, '/\\' ), $query_args );
 	}
 
 	/**
@@ -209,7 +205,7 @@ class Assets extends Module {
 	 * @throws \InvalidArgumentException When the path escapes the plugin root.
 	 */
 	public function get_build_url( string $path, array $query_args = array() ): string {
-		return $this->path->get_plugin_url( self::BUILD_ROOT . '/' . \ltrim( $path, '/\\' ), $query_args );
+		return $this->with( Path::class )->get_plugin_url( self::BUILD_ROOT . '/' . \ltrim( $path, '/\\' ), $query_args );
 	}
 
 	/**
@@ -373,11 +369,11 @@ class Assets extends Module {
 		foreach ( self::MANIFEST_FILENAMES as $filename ) {
 			$relative = self::BUILD_ROOT . '/' . $filename;
 
-			if ( ! $this->path->plugin_file_exists( $relative ) ) {
+			if ( ! $this->with( Path::class )->plugin_file_exists( $relative ) ) {
 				continue;
 			}
 
-			$path    = $this->path->get_plugin_path( $relative );
+			$path    = $this->with( Path::class )->get_plugin_path( $relative );
 			$entries = require $path;
 
 			if ( ! \is_array( $entries ) ) {
@@ -500,12 +496,8 @@ class Assets extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
-		$this->on_wp_init(
-			static function ( self $module ): void {
-				$module->register_built();
-			}
-		);
+	public function on_boot(): void {
+		$this->register_built();
 	}
 
 	/**
@@ -736,13 +728,13 @@ class Assets extends Module {
 	 * @return array{css?: string, rtl?: string} Build-root-relative paths, empty when there is no stylesheet.
 	 */
 	private function get_entry_styles( string $entry ): array {
-		if ( ! $this->path->plugin_file_exists( self::BUILD_ROOT . '/' . $entry . '.css' ) ) {
+		if ( ! $this->with( Path::class )->plugin_file_exists( self::BUILD_ROOT . '/' . $entry . '.css' ) ) {
 			return array();
 		}
 
 		$styles = array( 'css' => $entry . '.css' );
 
-		if ( $this->path->plugin_file_exists( self::BUILD_ROOT . '/' . $entry . '-rtl.css' ) ) {
+		if ( $this->with( Path::class )->plugin_file_exists( self::BUILD_ROOT . '/' . $entry . '-rtl.css' ) ) {
 			$styles['rtl'] = $entry . '-rtl.css';
 		}
 
@@ -762,7 +754,7 @@ class Assets extends Module {
 	 * @throws \InvalidArgumentException When the manifest file does not exist or is malformed.
 	 */
 	private function get_manifest( string $entry ): array {
-		$manifest_path = $this->path->get_plugin_path( self::BUILD_ROOT . '/' . $entry . '.asset.php' );
+		$manifest_path = $this->with( Path::class )->get_plugin_path( self::BUILD_ROOT . '/' . $entry . '.asset.php' );
 
 		if ( ! \is_file( $manifest_path ) ) {
 			throw new \InvalidArgumentException( 'Asset manifest does not exist: ' . $manifest_path );

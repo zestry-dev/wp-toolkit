@@ -101,8 +101,8 @@ return new class() extends AdminPage {
 	// keeps the notice off a refresh -- and off a bookmark, as `?updated=1` in
 	// the URL would not.
 	public function handle_submit(): void {
-		// Save $this->example. With `$this->get_plugin()->get( Options::class )`,
-		// that is $this->options->set( 'example_example', $this->example );
+		// Save $this->example, e.g.
+		// $this->get_plugin()->get( Options::class )->set( 'example_example', $this->example );
 
 		$this->set_flash( \__( 'Saved.', 'acme-plugin' ) );
 
@@ -388,7 +388,7 @@ final public function set_flash( mixed $value ): bool
 
 ```php
 public function handle_submit(): void {
-    $this->options->set( 'threshold', $this->threshold );
+    $this->get_plugin()->get( Options::class )->set( 'threshold', $this->threshold );
     $this->set_flash( __( 'Settings saved.', 'acme-plugin' ) );
 
     wp_safe_redirect( $this->get_page_url() );

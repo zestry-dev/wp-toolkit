@@ -26,8 +26,8 @@ final class AssumedParcel {
  * argument published as required that is not, an upload that fatals. Pinned
  * here, a change fails one obvious test instead.
  *
- * @covers \Zestry\WPToolkit\Services\Request\Request
- * @covers \Zestry\WPToolkit\Services\Request\UploadedFile
+ * @covers \Zestry\WPToolkit\Modules\Request\Request
+ * @covers \Zestry\WPToolkit\Modules\Request\UploadedFile
  */
 final class RequestPlatformAssumptionsTest extends TestCase {
 

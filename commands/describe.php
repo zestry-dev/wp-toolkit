@@ -18,44 +18,9 @@ use Zestry\WPToolkit\DevTools\ZestryConfig;
 use Zestry\WPToolkit\DevTools\RuntimePlugin;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Modules\CLI\Command;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 return new class() extends Command {
-
-	/**
-	 * The plugin whose directory `wp zt` was run from.
-	 *
-	 * @var ConsumerPlugin
-	 */
-	public ConsumerPlugin $consumer_plugin;
-
-	/**
-	 * Reader for the project's zestry.json.
-	 *
-	 * @var ZestryConfig
-	 */
-	public ZestryConfig $zestry_config;
-
-	/**
-	 * Reader for the project's bootstrap.php.
-	 *
-	 * @var BootstrapFile
-	 */
-	public BootstrapFile $bootstrap_file;
-
-	/**
-	 * Resolver for this toolkit's own paths, used to read the registry.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
-
-	/**
-	 * The consuming plugin's own running instance, when it has one.
-	 *
-	 * @var RuntimePlugin
-	 */
-	public RuntimePlugin $runtime;
 
 	/**
 	 * Report what this plugin has, where each module looks, and what it expects.
@@ -75,12 +40,11 @@ return new class() extends Command {
 	 *
 	 * ## WHAT IT CANNOT TELL YOU
 	 *
-	 * The directory reported for a module is its **default**. A
-	 * `set_*_root()` call inside an initializer changes it, and finding that out
-	 * would mean running your closures against live module instances -- which
-	 * this command does not do, for the same reason `wp zt doctor` does not.
-	 * A module whose entry carries an initializer is marked `configured`, so the
-	 * report says where to look rather than guessing.
+	 * What a module was configured to do. A module whose entry carries a
+	 * `configure` is marked `configured`, but what that callback does is only
+	 * found by running it -- which this command does not do, for the same reason
+	 * `wp zt doctor` does not. The report says where to look rather than
+	 * guessing.
 	 *
 	 * ## OPTIONS
 	 *
@@ -95,16 +59,6 @@ return new class() extends Command {
 	 *   - csv
 	 *   - json
 	 *   - yaml
-	 * ---
-	 *
-	 * [--kind=<kind>]
-	 * : Limit to modules or to services.
-	 * ---
-	 * default: all
-	 * options:
-	 *   - all
-	 *   - modules
-	 *   - services
 	 * ---
 	 *
 	 * [--installed]
@@ -123,14 +77,12 @@ return new class() extends Command {
 	 *       cron           schedules/       Schedule      wp zt make schedule   NOT DECLARED
 	 *       fields         fields/          Field         wp zt make field
 	 *           fields/ 40 files via Acme\Plugin\Abstracts\EntityField
-	 *
-	 *     SERVICES
 	 *       path           —
 	 *       views          views/
 	 *
 	 *     # For a script, or an agent.
 	 *     $ wp zt describe --format=json --installed
-	 *     [{"name":"ajax","kind":"module","installed":true,"declared":true,
+	 *     [{"name":"ajax","installed":true,"declared":true,
 	 *       "configured":false,"reads":"actions/","returns":"AjaxAction",
 	 *       "via":"","make":"action","file":"lib/Core/Modules/Ajax/Ajax.php"}]
 	 *
@@ -140,37 +92,24 @@ return new class() extends Command {
 	 */
 	public function handle( array $args, array $assoc_args ): void {
 		$format      = (string) \WP_CLI\Utils\get_flag_value( $assoc_args, 'format', 'report' );
-		$kind        = (string) \WP_CLI\Utils\get_flag_value( $assoc_args, 'kind', 'all' );
 		$only_added  = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'installed', false );
-		$plugin_root = $this->consumer_plugin->get_plugin_root();
+		$plugin_root = $this->with( ConsumerPlugin::class )->get_plugin_root();
 
-		if ( ! $this->zestry_config->exists( $plugin_root ) ) {
+		if ( ! $this->with( ZestryConfig::class )->exists( $plugin_root ) ) {
 			$this->error( 'No zestry.json here. Run `wp zt init` first.' );
 			return;
 		}
 
-		$config = $this->zestry_config->read( $plugin_root );
+		$config = $this->with( ZestryConfig::class )->read( $plugin_root );
 
 		try {
-			$declarations = $this->bootstrap_file->read_declarations( $plugin_root );
+			$declarations = $this->with( BootstrapFile::class )->read_declarations( $plugin_root );
 		} catch ( \RuntimeException $exception ) {
 			$this->error( $exception->getMessage() );
 			return;
 		}
 
 		$entries = $this->describe_entries( $plugin_root, $config, $declarations );
-
-		if ( 'all' !== $kind ) {
-			$wanted  = rtrim( $kind, 's' );
-			$entries = array_values(
-				array_filter(
-					$entries,
-					static function ( array $entry ) use ( $wanted ): bool {
-						return $entry['kind'] === $wanted;
-					}
-				)
-			);
-		}
 
 		if ( $only_added ) {
 			$entries = array_values(
@@ -191,7 +130,7 @@ return new class() extends Command {
 		\WP_CLI\Utils\format_items(
 			$format,
 			$entries,
-			array( 'name', 'kind', 'installed', 'declared', 'configured', 'reads', 'returns', 'via', 'make', 'file' )
+			array( 'name', 'installed', 'declared', 'configured', 'reads', 'returns', 'via', 'make', 'file' )
 		);
 	}
 
@@ -204,7 +143,7 @@ return new class() extends Command {
 	 * @return array<int, array<string, string|bool>>
 	 */
 	private function describe_entries( string $plugin_root, array $config, array $declarations ): array {
-		$registry  = Copier::flatten_registry( require $this->path->get_plugin_path( 'src/DevTools/registry.php' ) );
+		$registry  = Copier::normalize_registry( require $this->with( Path::class )->get_plugin_path( 'src/DevTools/registry.php' ) );
 		$namespace = Copier::get_target_namespace( $config['namespace'] );
 		$root      = Str::join_path( $plugin_root, trim( $config['root'], '/\\' ) );
 		$makers    = $this->get_make_types( $config );
@@ -213,7 +152,7 @@ return new class() extends Command {
 
 		foreach ( $registry as $name => $entry ) {
 			$relative = trim( $config['root'], '/\\' ) . '/' . Copier::COPIED_SEGMENT . '/' . Copier::get_relative_source( $entry['source'] );
-			$is_dir   = is_dir( $this->path->get_plugin_path( 'src/' . Copier::get_relative_source( $entry['source'] ) ) );
+			$is_dir   = is_dir( $this->with( Path::class )->get_plugin_path( 'src/' . Copier::get_relative_source( $entry['source'] ) ) );
 			$on_disk  = $is_dir ? $relative . '/' . basename( $relative ) . '.php' : $relative . '.php';
 
 			$class = $namespace . '\\' . Copier::get_relative_class( $entry['source'] );
@@ -223,7 +162,6 @@ return new class() extends Command {
 
 			$entries[] = array(
 				'name'       => $name,
-				'kind'       => rtrim( $entry['section'], 's' ),
 				'installed'  => file_exists( rtrim( $plugin_root, '/\\' ) . '/' . $on_disk ),
 				// Only a module is ever declared; a service that is not is doing
 				// exactly what it should.
@@ -291,50 +229,34 @@ return new class() extends Command {
 			)
 		);
 
-		foreach ( array( 'module', 'service' ) as $kind ) {
-			$of_kind = array_values(
-				array_filter(
-					$entries,
-					static function ( array $entry ) use ( $kind ): bool {
-						return $entry['kind'] === $kind;
-					}
+		$this->log( '' );
+		$this->log( 'MODULES' );
+
+		foreach ( $entries as $entry ) {
+			$this->log(
+				sprintf(
+					'  %s %-14s %-18s %-22s %-24s%s',
+					$entry['installed'] ? ' ' : '·',
+					$entry['name'],
+					'' === $entry['reads'] ? '—' : $entry['reads'],
+					'' === $entry['returns'] ? '—' : $entry['returns'],
+					'' === $entry['make'] ? '' : 'wp zt make ' . $entry['make'],
+					$entry['declared'] ? '' : '  NOT DECLARED'
 				)
 			);
 
-			if ( array() === $of_kind ) {
-				continue;
-			}
-
-			$this->log( '' );
-			$this->log( strtoupper( $kind ) . 'S' );
-
-			foreach ( $of_kind as $entry ) {
-				$this->log(
-					sprintf(
-						'  %s %-14s %-18s %-22s %-24s%s',
-						$entry['installed'] ? ' ' : '·',
-						$entry['name'],
-						'' === $entry['reads'] ? '—' : $entry['reads'],
-						'' === $entry['returns'] ? '—' : $entry['returns'],
-						'' === $entry['make'] ? '' : 'wp zt make ' . $entry['make'],
-						$entry['declared'] ? '' : '  NOT DECLARED'
-					)
-				);
-
-				/*
-				 * On its own line rather than in the table: it is the answer to a
-				 * question the table does not ask, and the one thing someone
-				 * opening this repository cold cannot find out any other way.
-				 */
-				foreach ( '' === $entry['via'] ? array() : explode( ', ', (string) $entry['via'] ) as $via ) {
-					$this->log( '      ' . $via );
-				}
+			/*
+			 * On its own line rather than in the table: it is the answer to a
+			 * question the table does not ask, and the one thing someone
+			 * opening this repository cold cannot find out any other way.
+			 */
+			foreach ( '' === $entry['via'] ? array() : explode( ', ', (string) $entry['via'] ) as $via ) {
+				$this->log( '      ' . $via );
 			}
 		}
 
 		$this->log( '' );
-		$this->log( '· = installable, not added. `wp zt add <kind> <name>` to add one.' );
-		$this->log( 'A directory shown is the default; an initializer may point the module elsewhere.' );
+		$this->log( '· = installable, not added. `wp zt add <name>` to add one.' );
 	}
 
 	/**
@@ -354,7 +276,7 @@ return new class() extends Command {
 	 * @return string
 	 */
 	private function get_slug( string $plugin_root ): string {
-		$slug = $this->runtime->get_slug( $plugin_root );
+		$slug = $this->with( RuntimePlugin::class )->get_slug( $plugin_root );
 
 		return null === $slug
 			? basename( rtrim( $plugin_root, '/\\' ) ) . ' (assumed; the plugin is not running)'
@@ -379,7 +301,7 @@ return new class() extends Command {
 	 * @return array<string, string> Directory => the `make` word writing into it.
 	 */
 	private function get_make_types( array $config ): array {
-		$files = glob( $this->path->get_plugin_path( 'commands/make' ) . '/*.php' );
+		$files = glob( $this->with( Path::class )->get_plugin_path( 'commands/make' ) . '/*.php' );
 		$types = array();
 
 		foreach ( false === $files ? array() : $files as $file ) {
@@ -557,7 +479,7 @@ return new class() extends Command {
 	 */
 	private function get_returned_bases( string $module ): array {
 		$relative = Copier::get_relative_source( $module );
-		$dir      = $this->path->get_plugin_path( 'src/' . $relative );
+		$dir      = $this->with( Path::class )->get_plugin_path( 'src/' . $relative );
 
 		if ( ! is_dir( $dir ) ) {
 			return array();

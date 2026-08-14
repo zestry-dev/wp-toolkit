@@ -228,7 +228,12 @@ A module hanging its work on a later hook needs that hook fired: `AdminPages` re
 Configuration goes through `configure()` before resolving — that is the only window in which it still counts, since resolving is what boots:
 
 ```php
-$this->plugin->configure( Cron::class, fn ( Cron $cron ) => $cron->add_custom_interval( 'quarter_hourly', 900, 'Quarter hourly' ) );
+$this->plugin->configure(
+    Cron::class,
+    static function ( Cron $cron ): void {
+        $cron->add_custom_interval( 'quarter_hourly', 900, 'Quarter hourly' );
+    }
+);
 
 $this->plugin->get( Cron::class );   // configured, then booted, then discovered
 ```
@@ -295,7 +300,7 @@ public function test_the_action_returns_the_report(): void {
     $action = require dirname( __DIR__ ) . '/actions/report.php';
     $this->plugin->wire( $action );
 
-    $response = $this->dispatch( fn () => $action->handle() );
+    $response = $this->dispatch( static function () use ( $action ): void { $action->handle(); } );
 
     $this->assertTrue( $response['success'] );
 }
@@ -317,7 +322,11 @@ $nonce = $ajax->create_action_nonce( 'report' );
 $_REQUEST['_wpnonce'] = $nonce;
 $_POST['_wpnonce']    = $nonce;
 
-$response = $this->dispatch( fn () => do_action( 'wp_ajax_' . $ajax->get_action_slug( 'report' ) ) );
+$response = $this->dispatch(
+    static function () use ( $ajax ): void {
+        do_action( 'wp_ajax_' . $ajax->get_action_slug( 'report' ) );
+    }
+);
 ```
 
 ## 6. Provide WP-CLI doubles
@@ -437,7 +446,12 @@ Three ways to get an instance, and the difference matters in tests:
 - **`make()`** does not, which is how you test two configurations side by side:
 
   ```php
-  $api = $this->plugin->make( Options::class, fn ( Options $o ) => $o->set_group_name( 'api' ) );
+  $api = $this->plugin->make(
+      Options::class,
+      static function ( Options $options ): void {
+          $options->set_group_name( 'api' );
+      }
+  );
   ```
 
 - **`wire()`** injects into an object you built yourself.
@@ -467,5 +481,5 @@ A `private` property typed as a service is **never** injected. If a test fails w
 ## Next
 
 - [`Plugin`](plugin.md) — `get()`, `make()`, `wire()`, `configure()` and the rest of what a test drives
-- [Modules](modules/) — each module's discovery root and its `set_*_root()` setter
+- [Modules](modules/) — the directory each one discovers, and what its files return
 - [`wp zt doctor`](commands/doctor.md) — the wiring mistakes that produce no error at all, and no test either

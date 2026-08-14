@@ -15,8 +15,8 @@ use {{copied_namespace}}\Kernel\Abstracts\ActivationHandler;
 
 class {{class_name}} extends ActivationHandler {
 
-	// Declare a public or protected typed property to have another service or
-	// module injected automatically, e.g.:
+	// Declare a public or protected typed property to have a service injected.
+	// A module is asked for instead: `$this->get_plugin()->get( Migrations::class )`.
 	// public DB $db;
 
 	/**

@@ -11,12 +11,12 @@ namespace Zestry\WPToolkit\DevTools;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Keeps a consuming plugin's `.gitignore` covering what the toolkit generates.
  *
- * `wp zt init` writes the file, and `wp zt add blocks` extends it once a build
+ * `wp zt init` writes the file, and `wp zt add module blocks` extends it once a build
  * directory exists to ignore. Both go through here so the two never disagree
  * about what an entry looks like.
  *
@@ -24,7 +24,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * an entry already present -- however it was worded -- is left alone rather than
  * duplicated. Nothing is ever removed.
  */
-class GitIgnore extends Service {
+class GitIgnore extends Module {
 
 	/**
 	 * What a generated plugin ignores before it has anything else to say.

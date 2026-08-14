@@ -11,6 +11,7 @@ namespace Zestry\WPToolkit\Kernel\Abstracts;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 
 /**
  * Base class for plugin activation and deactivation lifecycle callbacks.
@@ -47,10 +48,8 @@ namespace Zestry\WPToolkit\Kernel\Abstracts;
  *
  * class Activation extends ActivationHandler {
  *
- *     public Migrations $migrations;
- *
  *     public function activate( bool $network_wide ): void {
- *         $this->migrations->run_pending();
+ *         $this->get_plugin()->get( Migrations::class )->run_pending();
  *         flush_rewrite_rules();
  *     }
  *
@@ -105,7 +104,7 @@ namespace Zestry\WPToolkit\Kernel\Abstracts;
  * }
  * ```
  */
-abstract class ActivationHandler extends Module {
+abstract class ActivationHandler extends Module implements Bootable {
 
 	/**
 	 * Run plugin activation tasks for one site.
@@ -177,23 +176,11 @@ abstract class ActivationHandler extends Module {
 	 *
 	 * @return void
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		$entry_file = $this->get_plugin()->get_entry_file();
 
 		if ( \did_action( 'activate_' . \plugin_basename( $entry_file ) ) ) {
-			\_doing_it_wrong(
-				__METHOD__,
-				\esc_html(
-					\sprintf(
-						// Deliberately not translated: this runs at plugin load,
-						// before `init`, where a __() call would itself trigger
-						// _load_textdomain_just_in_time.
-						'%s was booted after the plugin activation hook already fired. Resolve ActivationHandler subclasses synchronously at plugin load (for example $plugin->get( %1$s::class ) in the entry file) so activate() can run.',
-						static::class
-					)
-				),
-				'1.0.0'
-			);
+			$this->report_late_boot();
 		} else {
 			\register_activation_hook( $entry_file, $this->run_activation( ... ) );
 		}
@@ -318,6 +305,30 @@ abstract class ActivationHandler extends Module {
 					'number'     => 0,
 				)
 			)
+		);
+	}
+
+	/**
+	 * Say that activation was missed, since nothing else will.
+	 *
+	 * `register_activation_hook()` reports nothing when it binds too late, so
+	 * without this an entry file that defers `run()` looks like it worked.
+	 *
+	 * @return void
+	 */
+	private function report_late_boot(): void {
+		\_doing_it_wrong(
+			__METHOD__,
+			\esc_html(
+				\sprintf(
+					// Deliberately not translated: this runs at plugin load,
+					// before `init`, where a __() call would itself trigger
+					// _load_textdomain_just_in_time.
+					'%s was booted after the plugin activation hook already fired. Declare ActivationHandler subclasses in bootstrap.php and call run() as the entry file loads, so activate() can run.',
+					static::class
+				)
+			),
+			'1.0.0'
 		);
 	}
 }

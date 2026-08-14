@@ -58,12 +58,14 @@ Every group defaults to autoload disabled. To autoload a specific group, declare
 ```php
 // bootstrap.php
 return array(
-    Options::class => static function ( Options $options ): void {
-        $options->add_autoloaded_groups( array( 'my_frequently_read_group' ) );
+    Options::class => array(
+        'before_boot' => static function ( Options $options ): void {
+            $options->add_autoloaded_groups( array( 'my_frequently_read_group' ) );
 
-        // Or, for the default (ungrouped) instance's own option:
-        $options->autoload_default_group();
-    },
+            // Or, for the default (ungrouped) instance's own option:
+            $options->autoload_default_group();
+        },
+    ),
 );
 ```
 
@@ -272,7 +274,7 @@ protected function on_boot(): void {
 }
 ```
 
-`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only when `init` is still ahead**, which is the case for the documented entry file, since `run()` at plugin load is well before `init`. A module resolved *after* `init` has fired runs its callback immediately, because there is no longer a queue to be ordered in — so two callbacks registered then run in the order they were registered, whatever priority each asked for. Ordering that has to hold in both cases belongs inside one callback.
+`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only while `init` is still ahead**: a module resolved after `init` has fired runs its callback immediately, in registration order, whatever priority it asked for. Ordering that has to hold either way belongs inside one callback.
 
 ## See also
 

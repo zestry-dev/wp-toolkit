@@ -11,7 +11,7 @@ namespace Zestry\WPToolkit\DevTools;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Finds the class `--extends` names, refuses one that cannot work, and writes
@@ -29,7 +29,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  *
  * @internal
  */
-class ParentClass extends Service {
+class ParentClass extends Module {
 
 	/**
 	 * Where a bare name is looked for, under the plugin's own namespace.

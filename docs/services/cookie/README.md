@@ -63,7 +63,7 @@ A form handler redirects because the browser's current request is still the POST
 
 ```php
 public function handle_submit(): void {
-    $this->options->set( 'threshold', $this->threshold );
+    $this->get_plugin()->get( Options::class )->set( 'threshold', $this->threshold );
 
     $this->cookies->set_flash( array( 'saved' => __( 'Settings saved.', 'acme-plugin' ) ) );
 

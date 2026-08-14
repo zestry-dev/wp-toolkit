@@ -11,12 +11,13 @@ namespace Zestry\WPToolkit\Modules\AdminPages;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Modules\AdminPages\Contracts\RendersCriticalStyles;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
-use Zestry\WPToolkit\Services\Path;
-use Zestry\WPToolkit\Services\Request\Request;
+use Zestry\WPToolkit\Modules\Path;
+use Zestry\WPToolkit\Modules\Request\Request;
 
 /**
  * Discovers plugin admin pages and registers them in the WordPress admin menu.
@@ -57,7 +58,7 @@ use Zestry\WPToolkit\Services\Request\Request;
  * second form further down — and markup assembled by concatenation stops being
  * reviewable long before it stops growing.
  *
- * {@see AdminPage::view()} renders through the {@see \Zestry\WPToolkit\Services\Views}
+ * {@see AdminPage::view()} renders through the {@see \Zestry\WPToolkit\Modules\Views}
  * service, and the template gets what that call passes and nothing else -- it
  * cannot reach the page for anything the call left out. So the call is the list
  * of the template's inputs, readable without opening the template.
@@ -78,7 +79,7 @@ use Zestry\WPToolkit\Services\Request\Request;
  * `$this` inside a template is the Views service -- rendering a subview is the
  * same call every other caller makes, and costs no variable name.
  */
-class AdminPages extends Module {
+class AdminPages extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -86,20 +87,6 @@ class AdminPages extends Module {
 	 * Default plugin-relative directory of page files.
 	 */
 	const PAGES_ROOT = 'admin-pages';
-
-	/**
-	 * Path module injected by the plugin to resolve the pages directory.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
-
-	/**
-	 * Request service injected by the plugin to read a page's declared arguments.
-	 *
-	 * @var Request
-	 */
-	public Request $request;
 
 	/**
 	 * Discovered pages, indexed by full plugin page slug.
@@ -232,7 +219,7 @@ class AdminPages extends Module {
 		$this->registered    = array();
 		$this->folder_parent = array();
 
-		$root_dir = $this->path->get_plugin_path( self::PAGES_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::PAGES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
@@ -432,7 +419,7 @@ class AdminPages extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		if ( ! \is_admin() ) {
 			return;
 		}
@@ -444,45 +431,57 @@ class AdminPages extends Module {
 			\add_action( $menu->get_menu_hook(), array( $this, 'register_pages' ) );
 		}
 
-		\add_action(
-			'admin_enqueue_scripts',
-			function (): void {
-				$page = $this->get_current_page();
+		\add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_page_assets' ) );
+		\add_filter( 'admin_body_class', array( $this, 'filter_admin_body_class' ) );
+	}
 
-				if ( null === $page ) {
-					return;
-				}
+	/**
+	 * Enqueue the assets of whichever page is being displayed.
+	 *
+	 * @return void
+	 *
+	 * @internal
+	 */
+	public function enqueue_page_assets(): void {
+		$page = $this->get_current_page();
 
-				// Before the page's own assets, and separately from them: a page
-				// whose styles must beat first paint says so by implementing the
-				// contract, rather than by remembering a `parent::` call inside
-				// an enqueue_assets() it was going to override anyway.
-				if ( $page instanceof RendersCriticalStyles ) {
-					$page->enqueue_critical_styles();
-				}
+		if ( null === $page ) {
+			return;
+		}
 
-				$page->enqueue_assets();
-			}
-		);
+		// Before the page's own assets, and separately from them: a page whose
+		// styles must beat first paint says so by implementing the contract,
+		// rather than by remembering a `parent::` call inside an
+		// enqueue_assets() it was going to override anyway.
+		if ( $page instanceof RendersCriticalStyles ) {
+			$page->enqueue_critical_styles();
+		}
 
-		\add_filter(
-			'admin_body_class',
-			function ( string $classes ): string {
-				$page = $this->get_current_page();
-				if ( null === $page ) {
-					return $classes;
-				}
+		$page->enqueue_assets();
+	}
 
-				$base = $this->get_base_css_classname();
-				return \implode(
-					' ',
-					array(
-						$classes,
-						$base,
-						$this->get_page_css_classname( $page ),
-					)
-				);
-			}
+	/**
+	 * Add this plugin's own classes to the admin body on one of its pages.
+	 *
+	 * @param string $classes The classes WordPress has so far.
+	 * @return string
+	 *
+	 * @internal
+	 */
+	public function filter_admin_body_class( string $classes ): string {
+		$page = $this->get_current_page();
+
+		if ( null === $page ) {
+			return $classes;
+		}
+
+		return \implode(
+			' ',
+			array(
+				$classes,
+				$this->get_base_css_classname(),
+				$this->get_page_css_classname( $page ),
+			)
 		);
 	}
 
@@ -491,7 +490,7 @@ class AdminPages extends Module {
 	 *
 	 * A page that declares arguments reads `$this->title` rather than
 	 * `$_POST['title']`, the same as a route, an ability and an AJAX action --
-	 * {@see \Zestry\WPToolkit\Services\Request\Request::get_submitted_values()} resolves each
+	 * {@see \Zestry\WPToolkit\Modules\Request\Request::get_submitted_values()} resolves each
 	 * name through the same ordered sources, so the four cannot disagree about
 	 * where a value came from.
 	 *
@@ -506,12 +505,12 @@ class AdminPages extends Module {
 	 * @return void
 	 */
 	private function bind_arguments( AdminPage $page ): void {
-		if ( array() === $this->request->get_arguments( $page ) ) {
+		if ( array() === $this->with( Request::class )->get_arguments( $page ) ) {
 			return;
 		}
 
-		$values  = $this->request->get_submitted_values( $page );
-		$checked = $this->request->get_validated_values( $page, $values, 'rest_invalid_param' );
+		$values  = $this->with( Request::class )->get_submitted_values( $page );
+		$checked = $this->with( Request::class )->get_validated_values( $page, $values, 'rest_invalid_param' );
 
 		if ( \is_wp_error( $checked ) ) {
 			\wp_die(
@@ -524,7 +523,7 @@ class AdminPages extends Module {
 			);
 		}
 
-		$this->request->bind( $page, $checked );
+		$this->with( Request::class )->bind( $page, $checked );
 	}
 
 	/**

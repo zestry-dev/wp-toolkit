@@ -309,7 +309,7 @@ final public function set_flash( mixed $value ): bool
 
 ```php
 public function handle_submit(): void {
-    $this->options->set( 'threshold', $this->threshold );
+    $this->get_plugin()->get( Options::class )->set( 'threshold', $this->threshold );
     $this->set_flash( __( 'Settings saved.', 'acme-plugin' ) );
 
     wp_safe_redirect( $this->get_page_url() );

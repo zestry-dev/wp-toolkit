@@ -6,12 +6,12 @@
 
 declare( strict_types=1 );
 
-namespace Zestry\WPToolkit\Services;
+namespace Zestry\WPToolkit\Modules;
 
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Names a plugin's own database tables, and WordPress's.
@@ -72,17 +72,17 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * wrap the table in single quotes, which is a string, not a table.
  *
  * ```
- * $wpdb = $this->db->get_wpdb();
+ * $wpdb = $this->with( DB::class )->get_wpdb();
  *
  * $wpdb->get_results(
  *     $wpdb->prepare(
  *         'SELECT * FROM %i WHERE status = %s',
- *         $this->db->get_table( 'submissions' ),
+ *         $this->with( DB::class )->get_table( 'submissions' ),
  *         'unread'
  *     )
  * );
  *
- * $wpdb->insert( $this->db->get_table( 'submissions' ), array( 'status' => 'unread' ), array( '%s' ) );
+ * $wpdb->insert( $this->with( DB::class )->get_table( 'submissions' ), array( 'status' => 'unread' ), array( '%s' ) );
  * ```
  *
  * There is no `query()`, `insert()` or `get_results()` on this class. Naming a
@@ -91,7 +91,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * of WordPress's, which is the difference between {@see get_table()} and
  * {@see get_core_table()}. A wrapper taking that name would have to guess.
  */
-class DB extends Service {
+class DB extends Module {
 
 	/**
 	 * The longest identifier MySQL accepts, in characters.
@@ -254,10 +254,10 @@ class DB extends Service {
 	 * **Assign it to a variable called `$wpdb`. Do not chain off this call.**
 	 *
 	 * ```
-	 * $wpdb = $this->db->get_wpdb();
+	 * $wpdb = $this->with( DB::class )->get_wpdb();
 	 *
 	 * $rows = $wpdb->get_results(
-	 *     $wpdb->prepare( 'SELECT * FROM %i WHERE status = %s', $this->db->get_table( 'submissions' ), 'unread' )
+	 *     $wpdb->prepare( 'SELECT * FROM %i WHERE status = %s', $this->with( DB::class )->get_table( 'submissions' ), 'unread' )
 	 * );
 	 * ```
 	 *
@@ -265,7 +265,7 @@ class DB extends Service {
 	 * instead of prepared, and it finds a query by the *variable name* `$wpdb` --
 	 * `WPDBTrait::is_wpdb_method_call()` tests the token, and there is no setting
 	 * for another. So `$wpdb->query( "... $value ..." )` is flagged and
-	 * `$this->db->get_wpdb()->query( "... $value ..." )` is not. Chaining is the
+	 * `$this->with( DB::class )->get_wpdb()->query( "... $value ..." )` is not. Chaining is the
 	 * one form that turns `composer lint` green over an injection; the assignment
 	 * costs the same line the `global` did and keeps every sniff working.
 	 *

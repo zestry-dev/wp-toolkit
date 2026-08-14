@@ -18,44 +18,9 @@ use Zestry\WPToolkit\DevTools\Copier;
 use Zestry\WPToolkit\DevTools\ZestryConfig;
 use Zestry\WPToolkit\DevTools\RuntimePlugin;
 use Zestry\WPToolkit\Modules\CLI\Command;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 return new class() extends Command {
-
-	/**
-	 * The plugin whose directory `wp zt` was run from.
-	 *
-	 * @var ConsumerPlugin
-	 */
-	public ConsumerPlugin $consumer_plugin;
-
-	/**
-	 * Reader for the project's zestry.json.
-	 *
-	 * @var ZestryConfig
-	 */
-	public ZestryConfig $zestry_config;
-
-	/**
-	 * Reader for the project's bootstrap.php.
-	 *
-	 * @var BootstrapFile
-	 */
-	public BootstrapFile $bootstrap_file;
-
-	/**
-	 * Resolver for this toolkit's own paths, used to read the registry.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
-
-	/**
-	 * The consuming plugin's own running instance, when it has one.
-	 *
-	 * @var RuntimePlugin
-	 */
-	public RuntimePlugin $runtime;
 
 	/**
 	 * Problems found so far, in the order they were found.
@@ -147,19 +112,19 @@ return new class() extends Command {
 	 */
 	public function handle( array $args, array $assoc_args ): void {
 		$format      = (string) \WP_CLI\Utils\get_flag_value( $assoc_args, 'format', 'report' );
-		$plugin_root = $this->consumer_plugin->get_plugin_root();
+		$plugin_root = $this->with( ConsumerPlugin::class )->get_plugin_root();
 
-		if ( ! $this->zestry_config->exists( $plugin_root ) ) {
+		if ( ! $this->with( ZestryConfig::class )->exists( $plugin_root ) ) {
 			$this->error( 'No zestry.json here. Run `wp zt init` first.' );
 			return;
 		}
 
-		$config = $this->zestry_config->read( $plugin_root );
+		$config = $this->with( ZestryConfig::class )->read( $plugin_root );
 
 		$this->check_root_directory( $plugin_root, $config );
 
 		try {
-			$declarations = $this->bootstrap_file->read_declarations( $plugin_root );
+			$declarations = $this->with( BootstrapFile::class )->read_declarations( $plugin_root );
 		} catch ( \RuntimeException $exception ) {
 			$this->error( $exception->getMessage() );
 			return;
@@ -192,9 +157,9 @@ return new class() extends Command {
 
 		// The name this plugin actually reads, which is `bootstrap.php` unless its
 		// entry file pointed `bootstrap()` somewhere else.
-		$file = $this->bootstrap_file->get_display_path( $plugin_root );
+		$file = $this->with( BootstrapFile::class )->get_display_path( $plugin_root );
 
-		if ( ! $this->bootstrap_file->exists( $plugin_root ) ) {
+		if ( ! $this->with( BootstrapFile::class )->exists( $plugin_root ) ) {
 			$this->log( $file . '  absent (modules declared in the entry file instead)' );
 			return;
 		}
@@ -235,7 +200,7 @@ return new class() extends Command {
 	private function check_plugin_is_running( string $plugin_root, array $declarations ): void {
 		// With nothing declared there is nothing that should have been built,
 		// and a plugin is free not to use this toolkit at run time at all.
-		if ( array() === $declarations || null !== $this->runtime->get( $plugin_root ) ) {
+		if ( array() === $declarations || null !== $this->with( RuntimePlugin::class )->get( $plugin_root ) ) {
 			return;
 		}
 
@@ -316,7 +281,7 @@ return new class() extends Command {
 	 * @return void
 	 */
 	private function check_undeclared_modules( string $plugin_root, array $config, array $declarations ): void {
-		$registry  = Copier::flatten_registry( require $this->path->get_plugin_path( 'src/DevTools/registry.php' ) );
+		$registry  = Copier::normalize_registry( require $this->with( Path::class )->get_plugin_path( 'src/DevTools/registry.php' ) );
 		$namespace = Copier::get_target_namespace( $config['namespace'] );
 
 		foreach ( $registry as $name => $entry ) {
@@ -367,10 +332,10 @@ return new class() extends Command {
 	 * @return void
 	 */
 	private function check_wordpress_version( string $plugin_root, array $config ): void {
-		$registry   = Copier::flatten_registry( require $this->path->get_plugin_path( 'src/DevTools/registry.php' ) );
+		$registry   = Copier::normalize_registry( require $this->with( Path::class )->get_plugin_path( 'src/DevTools/registry.php' ) );
 		$namespace  = Copier::get_target_namespace( $config['namespace'] );
-		$declared   = $this->consumer_plugin->get_required_wordpress( $plugin_root );
-		$entry_file = $this->consumer_plugin->get_entry_file( $plugin_root );
+		$declared   = $this->with( ConsumerPlugin::class )->get_required_wordpress( $plugin_root );
+		$entry_file = $this->with( ConsumerPlugin::class )->get_entry_file( $plugin_root );
 
 		if ( null === $declared ) {
 			$this->add_problem(
@@ -400,9 +365,8 @@ return new class() extends Command {
 
 			$this->add_problem(
 				sprintf(
-					'The "%s" %s needs WordPress %s, which this plugin does not promise: %s.',
+					'The "%s" module needs WordPress %s, which this plugin does not promise: %s.',
 					$name,
-					rtrim( $entry['section'], 's' ),
 					$entry['requires'],
 					null === $declared
 						? 'nothing declares a minimum'

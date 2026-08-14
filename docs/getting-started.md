@@ -132,16 +132,28 @@ return array(
 );
 ```
 
-**This file is modules only, and listing one is what builds it.** Every name here is something the plugin starts. Give an entry a value to configure the module before it boots — that value is its initializer, and a module needing none is written bare:
+**This file is modules only, and listing one is what builds it.** Every name here is something the plugin starts. A module needing no configuration is written bare; one that needs some gets an array:
 
 ```php
 return array(
-    Cron::class => static function ( Cron $cron ): void {
-        $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
-    },
+    Cron::class => array(
+        'before_boot' => static function ( Cron $cron ): void {
+            $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
+        },
+    ),
     AdminPages::class,
 );
 ```
+
+That array takes three keys, all optional:
+
+| Key | What it does |
+|---|---|
+| `before_boot` | Configures the module. Runs when it is built, immediately before it boots, so `on_boot()` can rely on whatever it set. |
+| `boots_on` | A WordPress hook to boot on, for a module that cannot do its work as the plugin loads. Without it the module boots the moment `run()` reaches it. |
+| `priority` | What `boots_on` binds at. Defaults to 10. |
+
+Configuration is always the array and never a bare callback, so adding a `boots_on` to an entry that already has an initializer is one more line rather than a rewrite. Anything else as an entry's value throws, naming the shape to write.
 
 A service never appears here. It is built the moment something asks for it — a `$plugin->get()`, or another class declaring a property of its type. One that takes configuration gets it from `configure()` in your entry file:
 
@@ -149,7 +161,15 @@ A service never appears here. It is built the moment something asks for it — a
 use Acme\Plugin\Core\Services\DB;
 
 $plugin ??= ( new Plugin( __FILE__ ) )
-    ->configure( DB::class, static fn ( DB $db ) => $db->set_table_prefix( 'acme' ) )
+    ->declare_modules(
+        array(
+            DB::class => array(
+                'configure' => static function ( DB $db ): void {
+                    $db->set_table_prefix( 'acme' );
+                },
+            ),
+        )
+    )
     ->bootstrap()
     ->run();
 
@@ -189,7 +209,7 @@ Three conventions do the work, and they are the same in every module:
 
 1. **A directory is a feature set.** `commands/` holds WP-CLI commands, `admin-pages/` holds pages, `routes/` holds REST routes. The [module index](modules/) maps every one.
 2. **A file returns an object.** The module requires the file and expects an instance of that module's base class. Anything else throws a `DiscoveryException` naming the file and what was expected.
-3. **Dependencies are declared, not fetched.** Type a public property as another service or module — `public Options $options;` — and it is injected before your code runs, in every discovered file as well as in every service and module.
+3. **Services are declared, not fetched.** Type a public property as a service — `public Path $path;` — and it is injected before your code runs, in every discovered file as well as in every service and module. A *module* is asked for instead, where you need it — `$this->get_plugin()->get( Options::class )` — because building one boots it, and that is too much to hide behind a property declaration.
 
 ## JavaScript, if you need it
 
@@ -204,7 +224,7 @@ npm install && npm run build
 That copies the [`assets`](modules/assets/) module, writes a `webpack.config.js`, and gives you `src/entries/settings/` with a script and a stylesheet. Loading it is one call, with no registration first:
 
 ```php
-$this->assets->enqueue_entry( 'settings' );
+$this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
 ```
 
 Everything JavaScript lives under `src/`, in three directories that differ only in who registers the result: `src/blocks/` (WordPress does, from `block.json`), `src/entries/` (your own scripts), and `src/shared/` (code two of them import by name, built once rather than copied into each).

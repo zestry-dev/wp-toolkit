@@ -17,12 +17,31 @@
  * containing `src/`, `commands/`, and `composer.json` — so a Path module
  * resolved against it (via Plugin's entry-file convention) naturally
  * resolves paths relative to the package itself, not the consuming project.
+ *
+ * The modules are declared here rather than in a `bootstrap.php` of this
+ * package's own: this file is required from an autoloader, so it runs before a
+ * consuming plugin's own entry file, and a `bootstrap.php` sitting in this
+ * package's root would be one more file to keep in step with the list a
+ * `wp zt` command actually needs.
  */
 
 declare( strict_types=1 );
 
+use Zestry\WPToolkit\DevTools\AgentInstructions;
+use Zestry\WPToolkit\DevTools\BootstrapFile;
+use Zestry\WPToolkit\DevTools\ConsumerPlugin;
+use Zestry\WPToolkit\DevTools\Copier;
+use Zestry\WPToolkit\DevTools\Formatter;
+use Zestry\WPToolkit\DevTools\GitIgnore;
+use Zestry\WPToolkit\DevTools\Manifest;
+use Zestry\WPToolkit\DevTools\ParentClass;
+use Zestry\WPToolkit\DevTools\RuntimePlugin;
+use Zestry\WPToolkit\DevTools\StubRenderer;
+use Zestry\WPToolkit\DevTools\Tooling;
+use Zestry\WPToolkit\DevTools\ZestryConfig;
 use Zestry\WPToolkit\Kernel\Plugin;
 use Zestry\WPToolkit\Modules\CLI\CLI;
+use Zestry\WPToolkit\Modules\Path;
 
 if ( ! function_exists( 'zestry_devtool' ) ) {
 
@@ -35,10 +54,28 @@ if ( ! function_exists( 'zestry_devtool' ) ) {
 		static $plugin = null;
 
 		if ( null === $plugin ) {
-			// Nothing to configure: `commands/` is where the CLI module reads,
-			// and this package keeps its own commands exactly there.
 			$plugin = ( new Plugin( __FILE__, 'zt' ) )
-				->autoload( array( CLI::class ) )
+				->declare_modules(
+					array(
+						Path::class,
+						AgentInstructions::class,
+						BootstrapFile::class,
+						ConsumerPlugin::class,
+						Copier::class,
+						Formatter::class,
+						GitIgnore::class,
+						Manifest::class,
+						ParentClass::class,
+						RuntimePlugin::class,
+						StubRenderer::class,
+						Tooling::class,
+						ZestryConfig::class,
+						// On `init`, like every plugin CLI is added to: this file
+						// is required from an autoloader, long before WP-CLI is
+						// ready to be given commands.
+						CLI::class => array( 'boots_on' => 'init' ),
+					)
+				)
 				->run();
 		}
 

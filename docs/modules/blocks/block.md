@@ -79,7 +79,7 @@ use Acme\Plugin\Core\Modules\Blocks\Block;
 
 return new class() extends Block {
 
-	// Declare any module this block needs as a public typed property and the
+	// Declare any service this block needs as a public typed property and the
 	// plugin injects it before render() runs -- no constructor, no get().
 	// Then render through it, e.g. `return $this->views->get( 'blocks/example',
 	// array( 'title' => $attributes['title'] ?? '' ) );`

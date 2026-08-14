@@ -226,11 +226,12 @@ final class AjaxDiscoveryTest extends TestCase {
 			$ajax->is_ajax_request(),
 			'Sanity check: the request must not look like AJAX for this branch.'
 		);
-		// Reaching a booted module with a bogus root and no exception proves the
+		// Reaching a built module with a bogus root and no exception proves the
 		// short-circuit ran instead of the is_dir()/discovery path.
-		$this->assertTrue(
-			$ajax->is_booted(),
-			'boot() must have completed via the short-circuit.'
+		$this->assertSame(
+			array(),
+			$ajax->get_discovered_actions(),
+			'on_boot() must have short-circuited before discovery.'
 		);
 	}
 }

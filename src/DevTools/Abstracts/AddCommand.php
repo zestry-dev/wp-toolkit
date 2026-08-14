@@ -24,7 +24,7 @@ use Zestry\WPToolkit\DevTools\BootstrapFile;
 use Zestry\WPToolkit\DevTools\Copier;
 use Zestry\WPToolkit\DevTools\ZestryConfig;
 use Zestry\WPToolkit\Modules\CLI\Command;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 use Zestry\WPToolkit\DevTools\RuntimePlugin;
 
 /**
@@ -50,61 +50,6 @@ use Zestry\WPToolkit\DevTools\RuntimePlugin;
 abstract class AddCommand extends Command {
 
 	/**
-	 * @var ConsumerPlugin
-	 */
-	public ConsumerPlugin $consumer_plugin;
-
-	/**
-	 * @var ZestryConfig
-	 */
-	public ZestryConfig $zestry_config;
-
-	/**
-	 * @var Manifest
-	 */
-	public Manifest $manifest;
-
-	/**
-	 * @var Copier
-	 */
-	public Copier $copier;
-
-	/**
-	 * @var BootstrapFile
-	 */
-	public BootstrapFile $bootstrap_file;
-
-	/**
-	 * @var Path
-	 */
-	public Path $path;
-
-	/**
-	 * @var GitIgnore
-	 */
-	public GitIgnore $gitignore;
-
-	/**
-	 * @var Tooling
-	 */
-	public Tooling $tooling;
-
-	/**
-	 * @var StubRenderer
-	 */
-	public StubRenderer $stub_renderer;
-
-	/**
-	 * @var Formatter
-	 */
-	public Formatter $formatter;
-
-	/**
-	 * @var RuntimePlugin
-	 */
-	public RuntimePlugin $runtime;
-
-	/**
 	 * Resolve, and copy, the requested modules and their dependencies.
 	 *
 	 * @param array $args
@@ -112,44 +57,36 @@ abstract class AddCommand extends Command {
 	 * @return void
 	 */
 	public function handle( array $args, array $assoc_args ): void {
-		$singular = static::get_singular();
-
 		if ( array() === $args ) {
 			$this->error(
 				\sprintf(
-					'Specify at least one %1$s. Run `wp zt %2$s %1$s --help` for the list.',
-					$singular,
+					'Specify at least one module. Run `wp zt %s --help` for the list.',
 					static::get_word()
 				)
 			);
 			return;
 		}
 
-		$plugin_root = $this->consumer_plugin->get_plugin_root();
+		$plugin_root = $this->with( ConsumerPlugin::class )->get_plugin_root();
 
 		try {
-			$config = $this->zestry_config->read( $plugin_root );
+			$config = $this->with( ZestryConfig::class )->read( $plugin_root );
 		} catch ( \RuntimeException $exception ) {
 			$this->error( $exception->getMessage() );
 			return;
 		}
 
-		$registry = require $this->path->get_plugin_path( 'src/DevTools/registry.php' );
-		$registry = Copier::flatten_registry( $registry );
-
-		if ( ! $this->assert_every_name_is_this_kind( $args, $registry ) ) {
-			return;
-		}
+		$registry = require $this->with( Path::class )->get_plugin_path( 'src/DevTools/registry.php' );
+		$registry = Copier::normalize_registry( $registry );
 
 		try {
-			$resolved = $this->copier->resolve_dependencies( $args, $registry );
+			$resolved = $this->with( Copier::class )->resolve_dependencies( $args, $registry );
 		} catch ( \InvalidArgumentException $exception ) {
 			$this->error(
 				\sprintf(
-					'%s Known %ss: %s',
+					'%s Known modules: %s',
 					$exception->getMessage(),
-					$singular,
-					\implode( ', ', \array_keys( $this->filter_to_this_kind( $registry ) ) )
+					\implode( ', ', \array_keys( $registry ) )
 				)
 			);
 			return;
@@ -195,19 +132,19 @@ abstract class AddCommand extends Command {
 		$written = array();
 
 		foreach ( $to_copy as $name ) {
-			$source      = $this->path->get_plugin_path( 'src/' . Copier::get_relative_source( $registry[ $name ]['source'] ) );
+			$source      = $this->with( Path::class )->get_plugin_path( 'src/' . Copier::get_relative_source( $registry[ $name ]['source'] ) );
 			$destination = $destinations[ $name ];
 
 			$written += \is_dir( $source )
-				? $this->copier->copy_directory( $source, $destination, $namespace, $config['text_domain'] )
-				: $this->copier->copy_file( $source, $destination, $namespace, $config['text_domain'] );
+				? $this->with( Copier::class )->copy_directory( $source, $destination, $namespace, $config['text_domain'] )
+				: $this->with( Copier::class )->copy_file( $source, $destination, $namespace, $config['text_domain'] );
 
 			$this->log( static::get_past_tense() . ' ' . $name );
 		}
 
 		// Merged into whatever previous runs recorded, since this copies one
 		// module at a time and the manifest describes the whole copied tree.
-		$this->manifest->record( $plugin_root, $written );
+		$this->with( Manifest::class )->record( $plugin_root, $written );
 
 		$this->after_copy( $to_copy, $plugin_root );
 
@@ -237,7 +174,7 @@ abstract class AddCommand extends Command {
 		 * an upstream change from a local edit by comparing against it --
 		 * formatting after the fact would report all of them as edited.
 		 */
-		$this->formatter->format( $plugin_root, array( \rtrim( $plugin_root, '/\\' ) . '/bootstrap.php' ) );
+		$this->with( Formatter::class )->format( $plugin_root, array( \rtrim( $plugin_root, '/\\' ) . '/bootstrap.php' ) );
 
 		if ( \in_array( 'blocks', $copied, true ) ) {
 			$this->set_up_block_build( $plugin_root );
@@ -268,10 +205,10 @@ abstract class AddCommand extends Command {
 			return;
 		}
 
-		$config    = $this->zestry_config->read( $plugin_root );
+		$config    = $this->with( ZestryConfig::class )->read( $plugin_root );
 		$namespace = Copier::get_target_namespace( $config['namespace'] );
-		$registry  = require $this->path->get_plugin_path( 'src/DevTools/registry.php' );
-		$registry  = Copier::flatten_registry( $registry );
+		$registry  = require $this->with( Path::class )->get_plugin_path( 'src/DevTools/registry.php' );
+		$registry  = Copier::normalize_registry( $registry );
 
 		$classes        = array();
 		$declared_names = array();
@@ -296,7 +233,7 @@ abstract class AddCommand extends Command {
 			// segment too deep the moment it became two.
 			$class_name = $namespace . '\\' . Copier::get_relative_class( $source );
 
-			$source_path      = $this->path->get_plugin_path( 'src/' . Copier::get_relative_source( $source ) );
+			$source_path      = $this->with( Path::class )->get_plugin_path( 'src/' . Copier::get_relative_source( $source ) );
 			$declared_names[] = $name;
 
 			$classes[ $class_name ] = \array_merge(
@@ -311,19 +248,19 @@ abstract class AddCommand extends Command {
 		 * existed. Logged rather than warned, since neither is an error, and
 		 * the entries are printed so they can be pasted in directly.
 		 */
-		if ( ! $this->bootstrap_file->exists( $plugin_root ) ) {
+		if ( ! $this->with( BootstrapFile::class )->exists( $plugin_root ) ) {
 			$this->log( 'No bootstrap.php found. Declare these modules in your entry file:' );
 
 			foreach ( $classes as $class_name => $entry ) {
 				$this->log(
-					$this->bootstrap_file->get_entry_line( $class_name, $entry['config'], $entry['hook'], $entry['priority'] )
+					$this->with( BootstrapFile::class )->get_entry_line( $class_name, $entry['config'], $entry['hook'], $entry['priority'] )
 				);
 			}
 
 			return;
 		}
 
-		$result = $this->bootstrap_file->declare_modules( $plugin_root, $classes );
+		$result = $this->with( BootstrapFile::class )->declare_modules( $plugin_root, $classes );
 
 		if ( DeclarationResult::Declared === $result ) {
 			$this->log( 'Declared in bootstrap.php: ' . \implode( ', ', $declared_names ) );
@@ -344,7 +281,7 @@ abstract class AddCommand extends Command {
 
 		foreach ( $classes as $class_name => $entry ) {
 			$this->log(
-				$this->bootstrap_file->get_entry_line( $class_name, $entry['config'], $entry['hook'], $entry['priority'] )
+				$this->with( BootstrapFile::class )->get_entry_line( $class_name, $entry['config'], $entry['hook'], $entry['priority'] )
 			);
 		}
 	}
@@ -410,7 +347,7 @@ abstract class AddCommand extends Command {
 		$this->write_if_absent( $root . '/src/types.d.ts', $this->get_ambient_types() );
 		$this->write_if_absent( $root . '/eslint.config.mjs', $this->get_eslint_config() );
 		$this->write_prettier_config( $root );
-		foreach ( $this->gitignore->add_entries( $root, array( 'build/', 'vendor/', 'node_modules/' ) ) as $entry ) {
+		foreach ( $this->with( GitIgnore::class )->add_entries( $root, array( 'build/', 'vendor/', 'node_modules/' ) ) as $entry ) {
 			$this->log( 'Added ' . $entry . ' to .gitignore' );
 		}
 
@@ -435,46 +372,46 @@ abstract class AddCommand extends Command {
 	 */
 	protected function set_up_asset_build( string $plugin_root ): void {
 		$root = \rtrim( $plugin_root, '/\\' );
-		$slug = $this->stub_renderer->to_slug(
-			$this->runtime->get_slug_or_default( $plugin_root )
+		$slug = $this->with( StubRenderer::class )->to_slug(
+			$this->with( RuntimePlugin::class )->get_slug_or_default( $plugin_root )
 		);
 
 		$written = $this->write_if_absent(
 			$root . '/webpack.config.js',
-			$this->stub_renderer->render(
-				$this->path->get_plugin_path( 'src/DevTools/stubs/webpack.config.js.stub' ),
+			$this->with( StubRenderer::class )->render(
+				$this->with( Path::class )->get_plugin_path( 'src/DevTools/stubs/webpack.config.js.stub' ),
 				array(
-					'title'      => $this->stub_renderer->to_title( $slug ),
+					'title'      => $this->with( StubRenderer::class )->to_title( $slug ),
 					'slug'       => $slug,
-					'slug_camel' => $this->stub_renderer->to_camel( $slug ),
+					'slug_camel' => $this->with( StubRenderer::class )->to_camel( $slug ),
 				)
 			)
 		);
 
 		// Deliberately not merge_package_json(): that is the block toolchain,
 		// and a plugin sharing a formatter has no use for `@wordpress/blocks`.
-		$added = $this->tooling->add_npm_dev_dependencies( $plugin_root, Tooling::WEBPACK_PACKAGES );
+		$added = $this->with( Tooling::class )->add_npm_dev_dependencies( $plugin_root, Tooling::WEBPACK_PACKAGES );
 
 		if ( array() !== $added ) {
 			$this->log( 'Added to package.json: ' . \implode( ', ', $added ) );
 		}
 
-		$scripts = $this->tooling->add_scripts( $plugin_root, 'package.json', Tooling::BUILD_SCRIPTS );
+		$scripts = $this->with( Tooling::class )->add_scripts( $plugin_root, 'package.json', Tooling::BUILD_SCRIPTS );
 
 		if ( array() !== $scripts ) {
 			$this->log( 'Added npm scripts: ' . \implode( ', ', $scripts ) );
 		}
 
-		if ( $this->tooling->add_npm_workspaces( $plugin_root, Tooling::WORKSPACE_PATTERN ) ) {
+		if ( $this->with( Tooling::class )->add_npm_workspaces( $plugin_root, Tooling::WORKSPACE_PATTERN ) ) {
 			$this->log( 'Declared the ' . Tooling::WORKSPACE_PATTERN . ' npm workspace in package.json' );
 		}
 
-		foreach ( $this->gitignore->add_entries( $root, array( 'build/', 'node_modules/' ) ) as $entry ) {
+		foreach ( $this->with( GitIgnore::class )->add_entries( $root, array( 'build/', 'node_modules/' ) ) as $entry ) {
 			$this->log( 'Added ' . $entry . ' to .gitignore' );
 		}
 
 		if ( $written ) {
-			$this->formatter->format( $plugin_root, array( $root . '/webpack.config.js' ) );
+			$this->with( Formatter::class )->format( $plugin_root, array( $root . '/webpack.config.js' ) );
 			$this->log( 'Write shared code with `wp zt make shared <name>`.' );
 		}
 	}
@@ -517,8 +454,8 @@ abstract class AddCommand extends Command {
 	 * @return string[] Plugin-relative paths, sorted.
 	 */
 	protected function get_edited_files( array $destinations ): array {
-		$plugin_root = $this->consumer_plugin->get_plugin_root();
-		$recorded    = $this->manifest->read( $plugin_root )['files'];
+		$plugin_root = $this->with( ConsumerPlugin::class )->get_plugin_root();
+		$recorded    = $this->with( Manifest::class )->read( $plugin_root )['files'];
 		$root        = \rtrim( \wp_normalize_path( $plugin_root ), '/' ) . '/';
 		$edited      = array();
 
@@ -559,48 +496,6 @@ abstract class AddCommand extends Command {
 	}
 
 	/**
-	 * Reject any requested name belonging to the other kind.
-	 *
-	 * The name alone is unambiguous -- `Copier::flatten_registry()` throws if one
-	 * is ever declared in both sections -- so this is not disambiguating
-	 * anything. It is telling a caller who asked the wrong subcommand exactly
-	 * which one to ask, rather than reporting the name as unknown when the
-	 * toolkit ships it.
-	 *
-	 * Only the names given on the command line are checked. Dependencies cross
-	 * the boundary constantly -- every module but `log` and `options` needs
-	 * `path`, a service -- so `wp zt add module rest-api` copying a service is
-	 * correct, and refusing it would make the command useless.
-	 *
-	 * @param string[]                                                             $args     The names given on the command line.
-	 * @param array<string, array{source: string, section: string, depends: array}> $registry The flattened registry.
-	 * @return bool False when one was rejected, and the caller should stop.
-	 */
-	protected function assert_every_name_is_this_kind( array $args, array $registry ): bool {
-		foreach ( $args as $name ) {
-			if ( ! isset( $registry[ $name ] ) || static::get_kind() === $registry[ $name ]['section'] ) {
-				continue;
-			}
-
-			$theirs = self::get_singular_of( $registry[ $name ]['section'] );
-
-			$this->error(
-				\sprintf(
-					'"%1$s" is a %2$s, not a %3$s. Run `wp zt %4$s %2$s %1$s`.',
-					$name,
-					$theirs,
-					static::get_singular(),
-					static::get_word()
-				)
-			);
-
-			return false;
-		}
-
-		return true;
-	}
-
-	/**
 	 * Refuse anything the plugin does not promise a new enough WordPress for.
 	 *
 	 * Measured against the plugin's own `Requires at least:` header, never against
@@ -628,12 +523,12 @@ abstract class AddCommand extends Command {
 	 * nor `update` has any way to describe.
 	 *
 	 * @param string[]                                                                                       $resolved The full resolved set, dependencies included.
-	 * @param array<string, array{source: string, section: string, depends: string[], requires: string|null}> $registry The flattened registry.
+	 * @param array<string, array{source: string, depends: string[], requires: string|null}> $registry The flattened registry.
 	 * @param string[]                                                                                       $args     The names given on the command line.
 	 * @return bool False when one was refused, and the caller should stop.
 	 */
 	protected function assert_wordpress_requirement_is_met( array $resolved, array $registry, array $args ): bool {
-		$declared = $this->consumer_plugin->get_required_wordpress( $this->consumer_plugin->get_plugin_root() );
+		$declared = $this->with( ConsumerPlugin::class )->get_required_wordpress( $this->with( ConsumerPlugin::class )->get_plugin_root() );
 		$unmet    = array();
 		$highest  = '0';
 
@@ -683,23 +578,6 @@ abstract class AddCommand extends Command {
 		);
 
 		return false;
-	}
-
-	/**
-	 * The registry entries this subcommand installs, for a help message.
-	 *
-	 * @param array<string, array{source: string, section: string, depends: array}> $registry The flattened registry.
-	 * @return array<string, array{source: string, section: string, depends: array}>
-	 */
-	protected function filter_to_this_kind( array $registry ): array {
-		$kind = static::get_kind();
-
-		return \array_filter(
-			$registry,
-			static function ( array $entry ) use ( $kind ): bool {
-				return $kind === $entry['section'];
-			}
-		);
 	}
 
 	/**
@@ -859,17 +737,21 @@ abstract class AddCommand extends Command {
 		$variable = $this->get_module_variable( $source_path, $class );
 
 		/*
-		 * Commented above the entry rather than inside it: an entry's value is
-		 * its initializer, so the commented form is what the consumer uncomments
-		 * over the bare line -- and until they do, the module still works.
+		 * Commented above the entry rather than inside it: the commented form is
+		 * the whole configured entry, which the consumer uncomments over the bare
+		 * line -- and until they do, the module still works.
 		 */
-		$lines = array( "\t// " . $class . '::class => static function ( ' . $class . ' $' . $variable . ' ): void {' );
+		$lines = array(
+			"\t// " . $class . '::class => array(',
+			"\t//     'configure' => static function ( " . $class . ' $' . $variable . ' ): void {',
+		);
 
 		foreach ( $setters as $setter ) {
-			$lines[] = "\t//     $" . $variable . '->' . $setter . "( '' );";
+			$lines[] = "\t//         $" . $variable . '->' . $setter . "( '' );";
 		}
 
-		$lines[] = "\t// },";
+		$lines[] = "\t//     },";
+		$lines[] = "\t// ),";
 
 		return \implode( "\n", $lines ) . "\n";
 	}
@@ -1038,15 +920,15 @@ abstract class AddCommand extends Command {
 	 * @return void
 	 */
 	private function write_prettier_config( string $root ): void {
-		if ( $this->tooling->has_prettier_config( $root ) ) {
+		if ( $this->with( Tooling::class )->has_prettier_config( $root ) ) {
 			$this->log( 'Kept your existing Prettier configuration.' );
 			return;
 		}
 
 		$this->write_if_absent(
 			$root . '/.prettierrc.js',
-			$this->stub_renderer->render(
-				$this->path->get_plugin_path( 'src/DevTools/stubs/prettierrc.js.stub' ),
+			$this->with( StubRenderer::class )->render(
+				$this->with( Path::class )->get_plugin_path( 'src/DevTools/stubs/prettierrc.js.stub' ),
 				array()
 			)
 		);
@@ -1056,7 +938,7 @@ abstract class AddCommand extends Command {
 	 * The `wp zt <word>` this subcommand registers under, for usage messages.
 	 *
 	 * The verb alone -- `add` or `overwrite` -- since the kind is the word after
-	 * it and comes from {@see get_singular()}.
+	 * it.
 	 *
 	 * @return string
 	 */
@@ -1068,30 +950,4 @@ abstract class AddCommand extends Command {
 	 * @return string
 	 */
 	abstract protected static function get_past_tense(): string;
-
-	/**
-	 * Which registry section this subcommand installs from.
-	 *
-	 * @return string Either `services` or `modules`.
-	 */
-	abstract protected static function get_kind(): string;
-
-	/**
-	 * This subcommand's own kind, in the singular, as it is typed.
-	 *
-	 * @return string Either `service` or `module`.
-	 */
-	protected static function get_singular(): string {
-		return self::get_singular_of( static::get_kind() );
-	}
-
-	/**
-	 * One registry section name, in the singular.
-	 *
-	 * @param string $section Either `services` or `modules`.
-	 * @return string
-	 */
-	private static function get_singular_of( string $section ): string {
-		return \rtrim( $section, 's' );
-	}
 }

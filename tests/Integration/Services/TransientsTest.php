@@ -4,13 +4,13 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\Services;
 
-use Zestry\WPToolkit\Services\Transients;
+use Zestry\WPToolkit\Modules\Transients;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
  * Namespacing, the get-or-compute path, and the two limits worth failing on.
  *
- * @covers \Zestry\WPToolkit\Services\Transients
+ * @covers \Zestry\WPToolkit\Modules\Transients
  */
 final class TransientsTest extends TestCase {
 

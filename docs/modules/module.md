@@ -15,7 +15,7 @@ Because it acts on its own, it has to be built for that to happen — so every m
 
 `Options` is the case worth understanding. It is something you call — `$options->get( 'key' )` — which makes it look like a service. But it also loads its persisted values and binds `shutdown` to flush deferred writes, without being asked. That is acting on its own, so it is a module.
 
-Everything `Service` says about construction applies here too: your class may not declare a constructor, since `__construct()` is `final` and takes no arguments. Dependencies arrive as injected typed properties, and configuration from the initializer in `bootstrap.php`.
+Everything `Service` says about construction applies here too: your class may not declare a constructor, since `__construct()` is `final` and takes no arguments. Dependencies arrive as injected typed properties — of services only, since a property typed as a module would boot one behind a type name — and configuration from the `before_boot` in its `bootstrap.php` entry. Reach another module with `$this->get_plugin()->get( Cron::class )`.
 
 ## A module
 
@@ -41,14 +41,16 @@ return array(
 
 ## One that takes configuration
 
-The entry's value is the initializer, which runs after wiring and before `on_boot()` — so `on_boot()` can rely on whatever it set.
+A configured entry is an array, whose `before_boot` runs after wiring and before `on_boot()` — so `on_boot()` can rely on whatever it set. A module needing no configuration stays bare, as `CLI::class` does here.
 
 ```php
 // bootstrap.php
 return array(
-    Cron::class => static function ( Cron $cron ): void {
-        $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
-    },
+    Cron::class => array(
+        'before_boot' => static function ( Cron $cron ): void {
+            $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
+        },
+    ),
     CLI::class,
 );
 ```
@@ -115,7 +117,7 @@ protected function on_boot(): void {
 }
 ```
 
-`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only when `init` is still ahead**, which is the case for the documented entry file, since `run()` at plugin load is well before `init`. A module resolved *after* `init` has fired runs its callback immediately, because there is no longer a queue to be ordered in — so two callbacks registered then run in the order they were registered, whatever priority each asked for. Ordering that has to hold in both cases belongs inside one callback.
+`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only while `init` is still ahead**: a module resolved after `init` has fired runs its callback immediately, in registration order, whatever priority it asked for. Ordering that has to hold either way belongs inside one callback.
 
 <br>
 

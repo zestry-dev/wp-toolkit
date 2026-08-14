@@ -6,12 +6,12 @@
 
 declare( strict_types=1 );
 
-namespace Zestry\WPToolkit\Services;
+namespace Zestry\WPToolkit\Modules;
 
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Reads and writes this plugin's cookies, encrypted when you want them to be.
@@ -71,9 +71,9 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  *
  * ```
  * public function handle_submit(): void {
- *     $this->options->set( 'threshold', $this->threshold );
+ *     $this->get_plugin()->get( Options::class )->set( 'threshold', $this->threshold );
  *
- *     $this->cookies->set_flash( array( 'saved' => __( 'Settings saved.', 'acme-plugin' ) ) );
+ *     $this->with( Cookie::class )->set_flash( array( 'saved' => __( 'Settings saved.', 'acme-plugin' ) ) );
  *
  *     wp_safe_redirect( $this->get_page_url() );
  *     exit;
@@ -81,7 +81,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  *
  * public function render(): void {
  *     $this->view( 'admin-pages/settings', array(
- *         'notice' => $this->cookies->get_flash( array() )['saved'] ?? '',
+ *         'notice' => $this->with( Cookie::class )->get_flash( array() )['saved'] ?? '',
  *     ) );
  * }
  * ```
@@ -133,7 +133,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * object-injection hole; the authentication is what makes it safe here, since a
  * payload that did not come from this key never reaches it.
  */
-class Cookie extends Service {
+class Cookie extends Module {
 
 	/**
 	 * How long a flashed value waits to be read, in seconds.
@@ -181,13 +181,6 @@ class Cookie extends Service {
 	 * @var string
 	 */
 	private const STORED_PREFIX = 't';
-
-	/**
-	 * Transients service injected by the plugin, for a flash too big for a cookie.
-	 *
-	 * @var Transients
-	 */
-	public Transients $transients;
 
 	/**
 	 * Read one of this plugin's cookies.
@@ -352,7 +345,7 @@ class Cookie extends Service {
 		 */
 		$id = \wp_generate_password( 20, false );
 
-		$this->transients->set( self::STORED_PREFIX . $id, $sealed, self::FLASH_TTL );
+		$this->with( Transients::class )->set( self::STORED_PREFIX . $id, $sealed, self::FLASH_TTL );
 
 		return $this->set( $name, self::STORED_PREFIX . $id, self::FLASH_TTL );
 	}
@@ -383,9 +376,9 @@ class Cookie extends Service {
 
 		if ( \str_starts_with( $carried, self::STORED_PREFIX ) ) {
 			$key    = $carried;
-			$sealed = (string) $this->transients->get( $key, '' );
+			$sealed = (string) $this->with( Transients::class )->get( $key, '' );
 
-			$this->transients->delete( $key );
+			$this->with( Transients::class )->delete( $key );
 		} elseif ( ! \str_starts_with( $carried, self::INLINE_PREFIX ) ) {
 			// Neither shape: a cookie from before this scheme, or one somebody wrote.
 			return $fallback;

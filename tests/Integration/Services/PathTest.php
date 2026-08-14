@@ -4,7 +4,7 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\Services;
 
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
@@ -14,7 +14,7 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  * Traversal / symlink / '..' rejection and URL traversal are covered by
  * PathContainmentTest and are intentionally not duplicated here.
  *
- * @covers \Zestry\WPToolkit\Services\Path
+ * @covers \Zestry\WPToolkit\Modules\Path
  */
 final class PathTest extends TestCase {
 
@@ -180,7 +180,7 @@ final class PathTest extends TestCase {
 		$dir = $this->make_temp_dir( 'zestry-gone-' );
 		file_put_contents( $dir . '/plugin.php', "<?php\n" );
 		$plugin = new \Zestry\WPToolkit\Kernel\Plugin( $dir . '/plugin.php', 'zestry-gone' );
-		$path   = $plugin->get( \Zestry\WPToolkit\Services\Path::class );
+		$path   = $plugin->get( \Zestry\WPToolkit\Modules\Path::class );
 
 		$this->remove_dir( $dir );
 

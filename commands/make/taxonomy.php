@@ -10,6 +10,7 @@
 declare( strict_types=1 );
 
 use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
+use Zestry\WPToolkit\DevTools\StubRenderer;
 
 return new class() extends MakeCommand {
 
@@ -89,7 +90,7 @@ return new class() extends MakeCommand {
 	 * @return array{singular: string, plural: string, object_type: string}
 	 */
 	protected function get_extra_values( string $name, array $assoc_args ): array {
-		$default_singular = $this->stub_renderer->to_title( $name );
+		$default_singular = $this->with( StubRenderer::class )->to_title( $name );
 
 		$singular = $this->get_flag( $assoc_args, 'singular', null ) ?? $default_singular;
 		$plural   = $this->get_flag( $assoc_args, 'plural', null )

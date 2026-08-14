@@ -11,10 +11,11 @@ namespace Zestry\WPToolkit\Modules\Blocks;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 use WP_Block_Type_Registry;
 
 /**
@@ -64,7 +65,7 @@ use WP_Block_Type_Registry;
  * return array(
  *     Blocks::class => array(
  *         'boots_on'    => 'init',
- *         'before_boot' => static function ( Blocks $blocks ): void {
+ *         'configure' => static function ( Blocks $blocks ): void {
  *             $blocks->add_categories(
  *                 array(
  *                     'reports' => __( 'Reports', 'acme-plugin' ),
@@ -79,12 +80,12 @@ use WP_Block_Type_Registry;
  * );
  * ```
  *
- * `before_boot` runs on the hook, right before the module registers anything.
+ * `configure` runs on the hook, right before the module registers anything.
  * That is what makes the `__()` calls safe: an initializer running at plugin
  * load is before `init`, and touching a text domain there reports
  * `_load_textdomain_just_in_time` on every request.
  */
-class Blocks extends Module {
+class Blocks extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -97,13 +98,6 @@ class Blocks extends Module {
 	 * Filename `wp-scripts build --blocks-manifest` writes into the build root.
 	 */
 	const MANIFEST_FILENAME = 'blocks-manifest.php';
-
-	/**
-	 * Path module injected by the plugin to resolve the blocks directory.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
 
 	/**
 	 * Block categories registered via add_categories(), in declaration order.
@@ -195,7 +189,7 @@ class Blocks extends Module {
 	 * of WordPress's own (`text`, `media`, `design`, `widgets`, `theme`,
 	 * `embed`) adds a second entry rather than renaming the first.
 	 *
-	 * **Call it from the entry's `before_boot`, as the example does.** A title
+	 * **Call it from the entry's `configure`, as the example does.** A title
 	 * is user-visible, so it usually wants translating, and an initializer runs
 	 * while the plugin file loads -- early enough that a `__()` there loads the
 	 * text domain before WordPress is ready and reports
@@ -301,9 +295,9 @@ class Blocks extends Module {
 	 * @internal
 	 */
 	public function register_blocks(): void {
-		$root_dir = $this->path->get_plugin_path( self::BLOCKS_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::BLOCKS_ROOT );
 
-		if ( ! $this->path->is_plugin_dir( self::BLOCKS_ROOT ) ) {
+		if ( ! $this->with( Path::class )->is_plugin_dir( self::BLOCKS_ROOT ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.
@@ -324,8 +318,8 @@ class Blocks extends Module {
 		 */
 		$manifest_path = \rtrim( \dirname( self::BLOCKS_ROOT ), '/\\.' ) . '/' . self::MANIFEST_FILENAME;
 		$manifest_path = \ltrim( $manifest_path, '/' );
-		$manifest      = $this->path->get_plugin_path( $manifest_path );
-		$has_manifest  = $this->path->plugin_file_exists( $manifest_path );
+		$manifest      = $this->with( Path::class )->get_plugin_path( $manifest_path );
+		$has_manifest  = $this->with( Path::class )->plugin_file_exists( $manifest_path );
 
 		// The manifest lists every block, so it is checked before the filesystem
 		// is walked at all: one call registers the lot, reading no block.json.
@@ -434,14 +428,10 @@ class Blocks extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		\add_filter( 'block_categories_all', array( $this, 'filter_block_categories' ) );
 
-		$this->on_wp_init(
-			static function ( self $module ): void {
-				$module->register_blocks();
-			}
-		);
+		$this->register_blocks();
 	}
 
 	/**
@@ -450,9 +440,9 @@ class Blocks extends Module {
 	 * @return array<string, string> Absolute directory paths keyed by directory name.
 	 */
 	private function get_discovered_directories(): array {
-		$root_dir = $this->path->get_plugin_path( self::BLOCKS_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::BLOCKS_ROOT );
 
-		if ( ! $this->path->is_plugin_dir( self::BLOCKS_ROOT ) ) {
+		if ( ! $this->with( Path::class )->is_plugin_dir( self::BLOCKS_ROOT ) ) {
 			// Never named, and the default is absent: this plugin has none of
 			// these yet. Only a directory asked for by name is missing in the
 			// sense worth throwing over.

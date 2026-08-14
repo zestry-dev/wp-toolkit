@@ -10,7 +10,7 @@ Read once, then use this to check yourself. The pages behind the links explain *
 2. **A `Service` does nothing until something asks for it**, and is never listed in `bootstrap.php`. — [Services](services/)
 3. **A `Module` acts without being called, so it must be listed in `bootstrap.php`.** Listing it is what builds it. Nothing else does. — [Modules](modules/)
 4. **A service that needs configuration gets it from `$plugin->configure()`** in the entry file, not from `bootstrap.php`. — [`Plugin`](plugin.md)
-5. **`bootstrap.php` returns one flat array, modules only.** An entry's value, when it has one, is the initializer that configures it before boot. — [Getting started](getting-started.md)
+5. **`bootstrap.php` returns one flat array, modules only.** A module is listed bare, or with a configuration array — `before_boot`, `boots_on`, `priority`. Never a bare callback. — [Getting started](getting-started.md)
 
 ## Building and wiring
 
@@ -18,17 +18,17 @@ Read once, then use this to check yourself. The pages behind the links explain *
 7. **Your slug is a lowercase letter, then lowercase letters and digits, single dashes between them.** It defaults to the directory name; pass a second argument when that name is spelled otherwise. Anything else throws, because every registered name is built from it. — [`Plugin`](plugin.md)
 8. **A class the container builds may not declare a constructor.** `Service::__construct()` is `final` and takes nothing. This covers every `Service` and `Module`; a class you construct yourself inside a discovered file may have one. — [`Service`](services/service.md)
 9. **A `public` or `protected` property typed as a `Service` is injected.** Declare it and it is there. — [`WithPlugin`](kernel/with-plugin.md)
-10. **A `private` property is never injected.** It stays uninitialised and the first read is a fatal. — [`WithPlugin`](kernel/with-plugin.md)
-11. **`#[NoInject]` opts a property out** of that. — [`NoInject`](kernel/no-inject.md)
+10. **A property typed as a `Module` throws.** Building a module boots it, so you ask for one where you need it: `$this->get_plugin()->get( Options::class )`. — [`WithPlugin`](kernel/with-plugin.md)
+11. **A `private` property is never injected.** It stays uninitialised and the first read is a fatal. — [`WithPlugin`](kernel/with-plugin.md)
+12. **`#[NoInject]` opts a property out** of that. — [`NoInject`](kernel/no-inject.md)
 
 ## Files that are features
 
-12. **A discovered file returns an instance of that module's base class.** Returning anything else throws. — [Modules](modules/)
-13. **The filename is the identifier of whatever the file registers, exactly as written**, so renaming the file renames the thing and nothing renames it for you. A name the toolkit *builds* from yours — a hook, a page slug, a command — is your slug joined to your filename with the separator that destination takes; a name it *takes* — a post type, a taxonomy, a meta key — is yours and is left alone. — [Cheat sheet](cheat-sheet.md#which-names-get-your-plugin-slug)
-14. **A name a destination could not carry is refused, never repaired.** An admin page whose filename a URL would have to encode, and an ability whose filename is outside WordPress's `[a-z0-9-]`, each throw where they are discovered. — [`DiscoveryException`](kernel/discovery-exception.md)
-15. **A file or directory whose name begins with `.` or `-` is skipped.** A leading `_` is not: WordPress gives it meaning. — [Modules](modules/)
-16. **A default root that does not exist discovers nothing and says nothing.** A root named by a `set_*_root()` call and then missing throws. — [`DiscoveryException`](kernel/discovery-exception.md)
-17. **A root is set from the module's own initializer**, which runs before it boots. — [Getting started](getting-started.md)
+13. **A discovered file returns an instance of that module's base class.** Returning anything else throws. — [Modules](modules/)
+14. **The filename is the identifier of whatever the file registers, exactly as written**, so renaming the file renames the thing and nothing renames it for you. A name the toolkit *builds* from yours — a hook, a page slug, a command — is your slug joined to your filename with the separator that destination takes; a name it *takes* — a post type, a taxonomy, a meta key — is yours and is left alone. — [Cheat sheet](cheat-sheet.md#which-names-get-your-plugin-slug)
+15. **A name a destination could not carry is refused, never repaired.** An admin page whose filename a URL would have to encode, an ability outside WordPress's `[a-z0-9-]`, and an icon outside its own, each throw where they are discovered. — [`DiscoveryException`](kernel/discovery-exception.md)
+16. **A file or directory whose name begins with `.` or `-` is skipped.** A leading `_` is not: WordPress gives it meaning. — [Modules](modules/)
+17. **The directory each module reads is fixed**, and one that does not exist discovers nothing and says nothing. — [Modules](modules/)
 
 ## Names
 

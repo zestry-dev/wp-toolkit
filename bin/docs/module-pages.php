@@ -930,7 +930,7 @@ function zestry_generate_module_pages( string $root ): int {
 	 * registry.php groups entries under `services` and `modules`; both are
 	 * documented the same way, so they are flattened here. This script runs
 	 * outside WordPress and requires the file directly, so it cannot call
-	 * Copier::flatten_registry() -- the shape is simple enough to walk.
+	 * Copier::normalize_registry() -- the shape is simple enough to walk.
 	 */
 	$flat = array();
 
@@ -944,7 +944,7 @@ function zestry_generate_module_pages( string $root ): int {
 	$modules = array();
 
 	foreach ( $flat as $name => $entry ) {
-		// PSR-4: `Zestry\WPToolkit\Services\Path` is src/Core/Services/Path.php. Everything below
+		// PSR-4: `Zestry\WPToolkit\Modules\Path` is src/Core/Services/Path.php. Everything below
 		// is derived from that one path, so nothing restates the layout.
 		$source     = $entry['source'];
 		$class_path = str_replace( '\\', '/', zestry_without_root_namespace( $source ) );
@@ -1550,11 +1550,8 @@ function zestry_generate_module_pages( string $root ): int {
 		if ( 'modules' === $section ) {
 			$index[] = '> [!NOTE]';
 			$index[] = '> **A module whose directory does not exist yet discovers nothing, and'
-				. ' says nothing.** Adding one before writing its first file is fine. What'
-				. ' does throw is a directory named explicitly through a `set_*_root()`'
-				. ' call and then not found, since asking for a directory by name and'
-				. ' getting nothing is a typo worth hearing about rather than a module'
-				. ' quietly registering zero of everything.';
+				. ' says nothing.** The directory each one reads is fixed, so adding a'
+				. ' module before writing its first file is fine.';
 			$index[] = '';
 		}
 

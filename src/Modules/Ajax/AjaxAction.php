@@ -40,7 +40,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * ## What it takes
  *
  * Declare each input with
- * {@see \Zestry\WPToolkit\Services\Request\Attributes\RequestArgument} on a typed
+ * {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument} on a typed
  * property, the same way a route and an ability do, and read it as
  * `$this->post_id`:
  *

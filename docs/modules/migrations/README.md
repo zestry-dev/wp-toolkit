@@ -54,7 +54,7 @@ A PHP timeout can still cut `run_pending()` off partway through a batch (some mi
 ```php
 class MyActivation extends ActivationHandler {
     public function activate( bool $network_wide ): void {
-        $this->migrations->run_pending();
+        $this->get_plugin()->get( Migrations::class )->run_pending();
     }
 
     public function deactivate( bool $network_wide ): void {
@@ -259,7 +259,7 @@ protected function on_boot(): void {
 }
 ```
 
-`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only when `init` is still ahead**, which is the case for the documented entry file, since `run()` at plugin load is well before `init`. A module resolved *after* `init` has fired runs its callback immediately, because there is no longer a queue to be ordered in — so two callbacks registered then run in the order they were registered, whatever priority each asked for. Ordering that has to hold in both cases belongs inside one callback.
+`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only while `init` is still ahead**: a module resolved after `init` has fired runs its callback immediately, in registration order, whatever priority it asked for. Ordering that has to hold either way belongs inside one callback.
 
 ## See also
 

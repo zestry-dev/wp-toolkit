@@ -12,7 +12,7 @@ namespace Zestry\WPToolkit\DevTools;
 \defined( 'ABSPATH' ) || exit;
 
 use Zestry\WPToolkit\Kernel\Helpers\Str;
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Sets a consuming plugin up with the linters the toolkit itself is written to.
@@ -35,7 +35,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * of `wp-prettier`, and an alias has to name a range. See
  * {@see PRETTIER_PACKAGES} for what plain prettier does instead.
  */
-class Tooling extends Service {
+class Tooling extends Module {
 
 	/**
 	 * Composer packages the generated `phpcs.xml` needs to run.

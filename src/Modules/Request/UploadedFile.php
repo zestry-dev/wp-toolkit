@@ -6,7 +6,7 @@
 
 declare( strict_types=1 );
 
-namespace Zestry\WPToolkit\Services\Request;
+namespace Zestry\WPToolkit\Modules\Request;
 
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;

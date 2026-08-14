@@ -16,7 +16,7 @@ use WP_REST_Server;
  *
  * @covers \Zestry\WPToolkit\Modules\RestApi\RestApi
  * @covers \Zestry\WPToolkit\Modules\RestApi\Route
- * @covers \Zestry\WPToolkit\Services\Request\Request
+ * @covers \Zestry\WPToolkit\Modules\Request\Request
  */
 final class RestApiTest extends TestCase {
 

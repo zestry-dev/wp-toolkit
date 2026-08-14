@@ -32,7 +32,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 function acme_plugin(): Plugin {
     static $plugin = null;
 
-    $plugin ??= ( new Plugin( __FILE__, 'acme-plugin' ) )->bootstrap()->run();
+    $plugin ??= ( new Plugin( __FILE__ ) )->bootstrap()->run();
 
     return $plugin;
 }
@@ -46,18 +46,20 @@ Declares every module the plugin uses, with the configuration each requires. `wp
 
 With this in place, a file returned from `actions/save-profile.php` becomes an AJAX action (see `AjaxAction`), a file returned from `commands/greet.php` becomes the WP-CLI command `wp acme-plugin greet` (see `Command`), and a file returned from `admin-pages/settings.php` becomes an admin menu page (see `AdminPage`) — none of them need registering by hand.
 
-Every entry is a module, and listing one is what builds it. Its value — when it has one — is the initializer that configures it; a module needing none is written bare, as `AdminPages::class` below.
+Every entry is a module, and listing one is what builds it. A module needing no configuration is written bare, as `Ajax::class` and `AdminPages::class` below; one that needs some gets an array, whose `before_boot` is the callback that configures it.
 
 ```php
 // bootstrap.php
 use Acme\Plugin\Core\Modules\AdminPages\AdminPages;
 use Acme\Plugin\Core\Modules\Ajax\Ajax;
-use Acme\Plugin\Core\Modules\CLI\CLI;
+use Acme\Plugin\Core\Modules\Cron\Cron;
 
 return array(
-    Cron::class => static function ( Cron $cron ): void {
-        $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
-    },
+    Cron::class => array(
+        'before_boot' => static function ( Cron $cron ): void {
+            $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
+        },
+    ),
     Ajax::class,
     AdminPages::class,
 );
@@ -72,7 +74,7 @@ return array(
 function acme_plugin(): Plugin {
     static $plugin = null;
 
-    $plugin ??= ( new Plugin( __FILE__, 'acme-plugin' ) )
+    $plugin ??= ( new Plugin( __FILE__ ) )
         ->configure(
             Cron::class,
             static function ( Cron $cron ): void {
@@ -141,7 +143,7 @@ public function configure( string $name, callable $initializer ): self
 Either kind: what is stored is a callback against a class name, and the two are configured identically. The initializer runs when the class is first built, after wiring and — for a `Module` — before `on_boot()`, so it can set what boot depends on. Only needed by a class that takes configuration; anything else resolves fine without one.
 
 ```php
-$plugin->configure( Ajax::class, function ( Ajax $ajax ) {
+$plugin->configure( Cron::class, function ( Cron $cron ) {
     $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
 } );
 ```
@@ -187,16 +189,35 @@ The file returns one flat list, so the entry file never changes as modules are a
 ```php
 // bootstrap.php
 return array(
-    Ajax::class => static function ( Ajax $ajax ): void {
-        $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
-    },
+    Cron::class => array(
+        'before_boot' => static function ( Cron $cron ): void {
+            $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
+        },
+    ),
     Options::class,
 );
 ```
 
-An entry's value is its initializer — the callback `configure()` would take — and an entry needing none is written bare, as `Options::class,` above.
+**A module needing no configuration is written bare**, as `Options::class,` above. One that needs some gets an array, which takes three keys:
 
-**The file is modules only, and listing one is what builds it.** That is its whole job, which is what makes it readable at a glance: every name here is something the plugin starts, and an entry's value — when it has one — configures it on the way.
+| Key | What it does |
+|---|---|
+| `before_boot` | The initializer — the same callback `configure()` takes. Runs after wiring, immediately before `on_boot()`. |
+| `boots_on` | A WordPress hook to boot on, for a module that cannot do its work as the plugin loads. Without it the module boots the moment `run()` reaches it. |
+| `priority` | What `boots_on` binds at. Defaults to 10. |
+
+Configuration is always the array, never a bare callback, so adding a `boots_on` to an entry that already has an initializer is one more line rather than a rewrite:
+
+```php
+Blocks::class => array(
+    'boots_on'    => 'init',
+    'before_boot' => static fn ( Blocks $blocks ) => $blocks->add_categories( $categories ),
+),
+```
+
+A module that names a `boots_on` cannot be built before that hook: asking for it through `get()` beforehand throws, naming the hook, rather than booting it on the wrong side of whatever it was waiting for.
+
+**The file is modules only, and listing one is what builds it.** That is its whole job, which is what makes it readable at a glance: every name here is something the plugin starts, and its array — when it has one — configures it on the way.
 
 A `Service` does not belong here. It is built the moment something asks for it, so listing it would only build it sooner than it needed to be. Configure one from the entry file instead, where `configure()` takes the same callback:
 

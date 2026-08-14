@@ -11,11 +11,12 @@ namespace Zestry\WPToolkit\Modules\Ajax;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
-use Zestry\WPToolkit\Services\Path;
-use Zestry\WPToolkit\Services\Request\Request;
+use Zestry\WPToolkit\Modules\Path;
+use Zestry\WPToolkit\Modules\Request\Request;
 
 /**
  * Discovers plugin AJAX actions and registers their WordPress hooks.
@@ -48,8 +49,10 @@ use Zestry\WPToolkit\Services\Request\Request;
  * are extending, or WordPress's own heartbeat. Choose it because something
  * already speaks it, rather than because a form has to submit somewhere.
  *
+ *
+ * @setup-hook init
  */
-class Ajax extends Module {
+class Ajax extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -77,20 +80,6 @@ class Ajax extends Module {
 	 * a named constant rather than a bare literal at the two call sites.
 	 */
 	private const HANDLER_PRIORITY = 1;
-
-	/**
-	 * Path module injected by the plugin to locate the action directory.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
-
-	/**
-	 * Checks each action's declared arguments and binds them onto it.
-	 *
-	 * @var Request
-	 */
-	public Request $request;
 
 	/**
 	 * Discovered actions by local name, once the directory has been walked.
@@ -285,7 +274,7 @@ class Ajax extends Module {
 			return $this->discovered;
 		}
 
-		$root_dir = $this->path->get_plugin_path( self::ACTIONS_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::ACTIONS_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			$this->discovered = array();
@@ -348,16 +337,12 @@ class Ajax extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		if ( ! $this->is_ajax_request() ) {
 			return;
 		}
 
-		$this->on_wp_init(
-			static function ( self $module ): void {
-				$module->register_actions();
-			}
-		);
+		$this->register_actions();
 	}
 
 	/**
@@ -366,7 +351,7 @@ class Ajax extends Module {
 	 * WordPress hands an AJAX hook the superglobals as they arrived, slashed and
 	 * unchecked -- unlike a REST route, whose parameters it unslashes and
 	 * validates before the route ever sees them.
-	 * {@see \Zestry\WPToolkit\Services\Request\Request::get_submitted_values()} does both here,
+	 * {@see \Zestry\WPToolkit\Modules\Request\Request::get_submitted_values()} does both here,
 	 * reading the body then the query string in the order a route does: an action
 	 * that declares its arguments never touches a superglobal.
 	 *
@@ -377,19 +362,19 @@ class Ajax extends Module {
 	 * @return true|\WP_Error True once bound, or why the request was refused.
 	 */
 	private function bind_arguments( AjaxAction $instance ) {
-		if ( array() === $this->request->get_arguments( $instance ) ) {
+		if ( array() === $this->with( Request::class )->get_arguments( $instance ) ) {
 			return true;
 		}
 
-		$values = $this->request->get_submitted_values( $instance );
+		$values = $this->with( Request::class )->get_submitted_values( $instance );
 
-		$checked = $this->request->get_validated_values( $instance, $values, 'rest_invalid_param' );
+		$checked = $this->with( Request::class )->get_validated_values( $instance, $values, 'rest_invalid_param' );
 
 		if ( \is_wp_error( $checked ) ) {
 			return $checked;
 		}
 
-		$this->request->bind( $instance, $checked );
+		$this->with( Request::class )->bind( $instance, $checked );
 
 		return true;
 	}

@@ -6,12 +6,12 @@
 
 declare( strict_types=1 );
 
-namespace Zestry\WPToolkit\Services;
+namespace Zestry\WPToolkit\Modules;
 
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Reads and writes transients, under keys namespaced to your plugin.
@@ -39,24 +39,24 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * public Transients $transients;
  *
  * public function get_summary(): array {
- *     if ( ! $this->transients->has( 'summary' ) ) {
- *         $this->transients->set( 'summary', $this->build_summary(), HOUR_IN_SECONDS );
+ *     if ( ! $this->with( Transients::class )->has( 'summary' ) ) {
+ *         $this->with( Transients::class )->set( 'summary', $this->build_summary(), HOUR_IN_SECONDS );
  *     }
  *
- *     return $this->transients->get( 'summary' );
+ *     return $this->with( Transients::class )->get( 'summary' );
  * }
  * ```
  *
  * @example Reading and writing directly
  * ```
- * $this->transients->set( 'rates', $rates, 15 * MINUTE_IN_SECONDS );
+ * $this->with( Transients::class )->set( 'rates', $rates, 15 * MINUTE_IN_SECONDS );
  *
- * $rates = $this->transients->get( 'rates', array() );
+ * $rates = $this->with( Transients::class )->get( 'rates', array() );
  *
- * $this->transients->delete( 'rates' );
+ * $this->with( Transients::class )->delete( 'rates' );
  * ```
  */
-class Transients extends Service {
+class Transients extends Module {
 
 	/**
 	 * The longest a key may be once prefixed.

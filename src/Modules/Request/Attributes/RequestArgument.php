@@ -6,7 +6,7 @@
 
 declare( strict_types=1 );
 
-namespace Zestry\WPToolkit\Services\Request\Attributes;
+namespace Zestry\WPToolkit\Modules\Request\Attributes;
 
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
@@ -19,7 +19,7 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * {@see \Zestry\WPToolkit\Modules\Abilities\Ability} — because they ask the same question.
  * Each is a named operation, described to a caller who cannot read your code,
  * validated before it runs. Declare the argument once and the
- * {@see \Zestry\WPToolkit\Services\Request\Request} service builds the route's `args` or the
+ * {@see \Zestry\WPToolkit\Modules\Request\Request} service builds the route's `args` or the
  * ability's input schema from it, and binds the value onto the property before
  * your handler runs.
  *
@@ -197,7 +197,7 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  *
  * ## Files
  *
- * A property typed as an {@see \Zestry\WPToolkit\Services\Request\UploadedFile} takes an
+ * A property typed as an {@see \Zestry\WPToolkit\Modules\Request\UploadedFile} takes an
  * upload, and `of: UploadedFile::class` on an `array` takes several:
  *
  * ```
@@ -209,7 +209,7 @@ namespace Zestry\WPToolkit\Services\Request\Attributes;
  * which JSON Schema has no type for, so WordPress keeps uploads out of a
  * request's parameters entirely — an ability, whose input is JSON, is refused
  * one at registration. A file is therefore the one argument no schema checks:
- * ask {@see \Zestry\WPToolkit\Services\Request\UploadedFile::is_ok()} before reading it.
+ * ask {@see \Zestry\WPToolkit\Modules\Request\UploadedFile::is_ok()} before reading it.
  *
  * ## Open objects
  *

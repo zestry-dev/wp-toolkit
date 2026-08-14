@@ -11,10 +11,11 @@ namespace Zestry\WPToolkit\Modules\PostTypes;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 /**
  * Discovers plugin custom post types and taxonomies and registers them with
@@ -45,8 +46,10 @@ use Zestry\WPToolkit\Services\Path;
  * hearing about. Leave one at its default and let it be absent, and your
  * plugin simply has none of those files yet.
  *
+ *
+ * @setup-hook init
  */
-class PostTypes extends Module {
+class PostTypes extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -59,13 +62,6 @@ class PostTypes extends Module {
 	 * Default plugin-relative directory of taxonomy files.
 	 */
 	const TAXONOMIES_ROOT = 'taxonomies';
-
-	/**
-	 * Path module injected by the plugin to resolve the discovery directories.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
 
 	/**
 	 * Discovered post type instances, indexed by their registered name.
@@ -184,7 +180,7 @@ class PostTypes extends Module {
 			return $this->post_types;
 		}
 
-		$root_dir = $this->path->get_plugin_path( self::POST_TYPES_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::POST_TYPES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
@@ -241,7 +237,7 @@ class PostTypes extends Module {
 			return $this->taxonomies;
 		}
 
-		$root_dir = $this->path->get_plugin_path( self::TAXONOMIES_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::TAXONOMIES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// The default directory, absent and never asked for: this plugin
@@ -294,12 +290,8 @@ class PostTypes extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
-		$this->on_wp_init(
-			static function ( self $module ): void {
-				$module->register_all();
-			}
-		);
+	public function on_boot(): void {
+		$this->register_all();
 	}
 
 	/**

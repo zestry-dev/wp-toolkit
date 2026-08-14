@@ -9,7 +9,7 @@ Discovers `svg-icons/` &nbsp;·&nbsp; Dependencies [`path`](../../services/path/
 
 Publishes your plugin's SVG icons, for the Icon block and for your own markup.
 
-An icon is a file in `svg-icons/`. `arrow-right.php` registers as `{plugin-slug}/arrow-right` — offered in the editor's icon picker under a collection named after your plugin, served on the REST API at `wp/v2/icons`, and rendered in PHP as `$this->icons->get( 'arrow-right' )`. Requires WordPress 7.1 or newer.
+An icon is a file in `svg-icons/`. `arrow-right.php` registers as `{plugin-slug}/arrow-right` — offered in the editor's icon picker under a collection named after your plugin, served on the REST API at `wp/v2/icons`, and rendered in PHP as `$icons->get( 'arrow-right' )`. Requires WordPress 7.1 or newer.
 
 > [!IMPORTANT]
 > **WordPress keeps `<svg>`, `<path>` and `<polygon>` and throws the rest away.** It sanitizes every icon through `wp_kses()`, so a `<circle>`, a `<g>`, a `<rect>` or a `<use>` is removed, as is any attribute outside a short list — `stroke` among them, which silently empties an icon drawn as outlines rather than fills. Export icons as filled paths.
@@ -67,11 +67,13 @@ The label is the whole of the difference. `logo.svg` is announced as "Logo" in e
 
 ## Using one
 
-```php
-public IconsLibrary $icons;
+A module is asked for where it is needed rather than declared as a property, since building one boots it.
 
+```php
 public function render(): string {
-    return $this->icons->get( 'arrow-right', array( 'size' => 32 ) );
+    $icons = $this->get_plugin()->get( IconsLibrary::class );
+
+    return $icons->get( 'arrow-right', array( 'size' => 32 ) );
 }
 ```
 
@@ -302,7 +304,7 @@ protected function on_boot(): void {
 }
 ```
 
-`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only when `init` is still ahead**, which is the case for the documented entry file, since `run()` at plugin load is well before `init`. A module resolved *after* `init` has fired runs its callback immediately, because there is no longer a queue to be ordered in — so two callbacks registered then run in the order they were registered, whatever priority each asked for. Ordering that has to hold in both cases belongs inside one callback.
+`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only while `init` is still ahead**: a module resolved after `init` has fired runs its callback immediately, in registration order, whatever priority it asked for. Ordering that has to hold either way belongs inside one callback.
 
 ## See also
 

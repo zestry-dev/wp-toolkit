@@ -138,7 +138,7 @@ The symptom is a PHP `Error`, not a null: reading an uninitialized typed propert
 A property is injected when **all** of these hold:
 
 - it is `public` or `protected` — `private` is never injected, because reflection cannot reach a private property declared on an ancestor class;
-- its type is a **single named class** that extends `Service`, which includes every `Module`;
+- its type is a **single named class** that extends `Service` **and is not a `Module`**;
 - it does not carry `#[NoInject]`.
 
 Everything else is left alone as your own state: scalars, untyped properties, unrelated class types, and — the one that catches people — **union and intersection types**, which are skipped whole, even when every member of the union qualifies.
@@ -146,16 +146,16 @@ Everything else is left alone as your own state: scalars, untyped properties, un
 ```php
 use Acme\Plugin\Core\Kernel\Abstracts\Module;
 use Acme\Plugin\Core\Kernel\Attributes\NoInject;
-use Acme\Plugin\Core\Modules\Options;
 use Acme\Plugin\Core\Services\Path;
+use Acme\Plugin\Core\Services\Views;
 
 class Reports extends Module {
 
     public Path $path;              // injected
-    protected Options $options;     // injected
+    protected Views $views;         // injected
 
     private Path $cache;            // NOT injected: private
-    public Path|Options $either;    // NOT injected: union type
+    public Path|Views $either;      // NOT injected: union type
     public ?Path $maybe = null;     // injected: nullable is still one named type
 
     #[NoInject]
@@ -164,6 +164,8 @@ class Reports extends Module {
     protected function on_boot(): void {}
 }
 ```
+
+**A property typed as a `Module` is a different symptom**: it throws rather than staying unset, with a message naming the property and the call to use instead. See [Errors](errors.md#a-property-typed-as-a-module).
 
 The other cause is an object that was **never wired**. Injection runs when the plugin builds an instance (`get()`, `make()`, or booting a module) and when a discovery module wires the object a file returned. An object you built with `new` yourself gets neither:
 
@@ -234,7 +236,7 @@ return new class extends AjaxAction {
 > fine: the module discovers nothing and says nothing. [Modules](modules/) lists
 > the directory each one reads.
 
-`wp zt doctor` does not check roots named inside an initializer — finding out would mean running your closures against live instances. This failure is already loud, which is why it is on this page and not in `doctor`'s output.
+This failure is already loud, which is why it is on this page and not in `doctor`'s output.
 
 ---
 

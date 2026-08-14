@@ -248,7 +248,6 @@ final class LogTest extends TestCase {
 	 */
 	private function booted_log(): Log {
 		$log = $this->plugin->get( Log::class );
-		$log->boot();
 
 		return $log;
 	}

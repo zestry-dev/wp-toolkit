@@ -10,6 +10,9 @@ declare( strict_types=1 );
 
 use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
 use Zestry\WPToolkit\DevTools\Copier;
+use Zestry\WPToolkit\DevTools\Formatter;
+use Zestry\WPToolkit\Modules\Path;
+use Zestry\WPToolkit\DevTools\StubRenderer;
 
 return new class() extends MakeCommand {
 
@@ -133,11 +136,11 @@ return new class() extends MakeCommand {
 			wp_mkdir_p( dirname( $target ) );
 		}
 
-		$contents = $this->stub_renderer->render(
-			$this->path->get_plugin_path( 'src/DevTools/stubs/page-view.php.stub' ),
+		$contents = $this->with( StubRenderer::class )->render(
+			$this->with( Path::class )->get_plugin_path( 'src/DevTools/stubs/page-view.php.stub' ),
 			array(
 				'name'             => $name,
-				'title'            => $this->stub_renderer->to_title( $name ),
+				'title'            => $this->with( StubRenderer::class )->to_title( $name ),
 				'copied_namespace' => Copier::get_target_namespace( $config['namespace'] ),
 				// The same domain the page class itself is stamped with: the two
 				// files are one feature, and a template translated under another
@@ -152,7 +155,7 @@ return new class() extends MakeCommand {
 			return;
 		}
 
-		$this->formatter->format( $plugin_root, array( $target ) );
+		$this->with( Formatter::class )->format( $plugin_root, array( $target ) );
 
 		$this->log( 'Created ' . $relative );
 	}
@@ -191,7 +194,7 @@ return new class() extends MakeCommand {
 	 * @return string
 	 */
 	protected function normalize_name( string $name ): string {
-		return $this->stub_renderer->to_slug( $name );
+		return $this->with( StubRenderer::class )->to_slug( $name );
 	}
 
 	/**

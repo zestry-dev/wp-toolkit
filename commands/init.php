@@ -30,61 +30,9 @@ use Zestry\WPToolkit\DevTools\StubRenderer;
 use Zestry\WPToolkit\DevTools\Formatter;
 use Zestry\WPToolkit\DevTools\Tooling;
 use Zestry\WPToolkit\Modules\CLI\Command;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 return new class() extends Command {
-
-	/**
-	 * Renderer for the instructions an agent finds in the plugin.
-	 *
-	 * @var AgentInstructions
-	 */
-	public AgentInstructions $agent_instructions;
-
-	/**
-	 * @var ConsumerPlugin
-	 */
-	public ConsumerPlugin $consumer_plugin;
-
-	/**
-	 * @var ZestryConfig
-	 */
-	public ZestryConfig $zestry_config;
-
-	/**
-	 * @var Copier
-	 */
-	public Copier $copier;
-
-	/**
-	 * @var Path
-	 */
-	public Path $path;
-
-	/**
-	 * @var GitIgnore
-	 */
-	public GitIgnore $gitignore;
-
-	/**
-	 * @var Manifest
-	 */
-	public Manifest $manifest;
-
-	/**
-	 * @var StubRenderer
-	 */
-	public StubRenderer $stub_renderer;
-
-	/**
-	 * @var Tooling
-	 */
-	public Tooling $tooling;
-
-	/**
-	 * @var Formatter
-	 */
-	public Formatter $formatter;
 
 	/**
 	 * Set up a plugin to receive wp-toolkit source.
@@ -148,9 +96,9 @@ return new class() extends Command {
 	 *   without one it reformats your `composer.json` and your Markdown too.
 	 *
 	 * - `AGENTS.md`, the invariants an agent working in this plugin needs, and a
-	 *   `.claude/CLAUDE.md` pointing at it. Rendered from the toolkit's own rules
-	 *   page rather than written twice, and describing no feature of your plugin
-	 *   -- `wp zt describe` answers that from the plugin itself.
+	 *   `.claude/CLAUDE.md` pointing at it. It carries the invariants, not a
+	 *   description of your plugin -- `wp zt describe` answers that from the
+	 *   plugin itself.
 	 *
 	 * Dependencies are added unversioned. The pin belongs in your lock file,
 	 * written the first time you install.
@@ -215,9 +163,9 @@ return new class() extends Command {
 	 * @return void
 	 */
 	public function handle( array $args, array $assoc_args ): void {
-		$plugin_root = $this->consumer_plugin->get_plugin_root();
+		$plugin_root = $this->with( ConsumerPlugin::class )->get_plugin_root();
 
-		if ( $this->zestry_config->exists( $plugin_root ) ) {
+		if ( $this->with( ZestryConfig::class )->exists( $plugin_root ) ) {
 			$this->error( 'zestry.json already exists at ' . $plugin_root . ' -- already initialized.' );
 			return;
 		}
@@ -257,18 +205,18 @@ return new class() extends Command {
 		 * everything there came from the toolkit and `wp zt update` may replace
 		 * it, everything else under `{root}/` is the consumer's own.
 		 */
-		$written = $this->copier->copy_directory(
-			$this->path->get_plugin_path( 'src/Kernel' ),
+		$written = $this->with( Copier::class )->copy_directory(
+			$this->with( Path::class )->get_plugin_path( 'src/Kernel' ),
 			$target_root . '/Kernel',
 			Copier::get_target_namespace( $namespace ),
 			$text_domain
 		);
 
-		$this->zestry_config->write( $plugin_root, $namespace, $root, $text_domain );
+		$this->with( ZestryConfig::class )->write( $plugin_root, $namespace, $root, $text_domain );
 
 		// Recorded as it is written, so `wp zt update` can later tell a file
 		// this wrote from one the consumer has since edited.
-		$this->manifest->record( $plugin_root, $written );
+		$this->with( Manifest::class )->record( $plugin_root, $written );
 		$this->update_composer_autoload( $plugin_root, $composer_path, $composer, $namespace, $root );
 		$this->write_bootstrap_file( $plugin_root, $text_domain );
 		$this->write_gitignore( $plugin_root );
@@ -604,7 +552,7 @@ return new class() extends Command {
 	 * @return void
 	 */
 	private function write_gitignore( string $plugin_root ): void {
-		$added = $this->gitignore->add_entries( $plugin_root );
+		$added = $this->with( GitIgnore::class )->add_entries( $plugin_root );
 
 		if ( array() === $added ) {
 			return;
@@ -641,7 +589,7 @@ return new class() extends Command {
 				'phpcs.xml',
 				'phpcs.xml.stub',
 				array(
-					'title'       => $this->stub_renderer->to_title( $slug ),
+					'title'       => $this->with( StubRenderer::class )->to_title( $slug ),
 					'root'        => trim( $root, '/\\' ),
 					'text_domain' => $text_domain,
 				)
@@ -649,17 +597,17 @@ return new class() extends Command {
 
 			$this->report_packages(
 				'composer.json',
-				$this->tooling->add_composer_dev_requires( $plugin_root, Tooling::PHPCS_PACKAGES )
+				$this->with( Tooling::class )->add_composer_dev_requires( $plugin_root, Tooling::PHPCS_PACKAGES )
 			);
 
 			// Without this, Composer declines to run the standards installer and
 			// phpcs then reports the WordPress standard as missing despite it
 			// being installed.
-			$this->tooling->allow_composer_plugin( $plugin_root, Tooling::PHPCS_COMPOSER_PLUGIN );
+			$this->with( Tooling::class )->allow_composer_plugin( $plugin_root, Tooling::PHPCS_COMPOSER_PLUGIN );
 
 			$this->report_scripts(
 				'composer',
-				$this->tooling->add_scripts(
+				$this->with( Tooling::class )->add_scripts(
 					$plugin_root,
 					'composer.json',
 					array(
@@ -679,11 +627,11 @@ return new class() extends Command {
 			);
 			$this->report_packages(
 				'package.json',
-				$this->tooling->add_npm_dev_dependencies( $plugin_root, Tooling::ESLINT_PACKAGES )
+				$this->with( Tooling::class )->add_npm_dev_dependencies( $plugin_root, Tooling::ESLINT_PACKAGES )
 			);
 			$this->report_scripts(
 				'npm',
-				$this->tooling->add_scripts( $plugin_root, 'package.json', array( 'lint:js' => 'eslint .' ) )
+				$this->with( Tooling::class )->add_scripts( $plugin_root, 'package.json', array( 'lint:js' => 'eslint .' ) )
 			);
 		}
 
@@ -691,11 +639,11 @@ return new class() extends Command {
 			$this->write_tooling_file( $plugin_root, '.prettierrc.js', 'prettierrc.js.stub', array() );
 			$this->report_packages(
 				'package.json',
-				$this->tooling->add_npm_dev_dependencies( $plugin_root, Tooling::PRETTIER_PACKAGES )
+				$this->with( Tooling::class )->add_npm_dev_dependencies( $plugin_root, Tooling::PRETTIER_PACKAGES )
 			);
 			$this->report_scripts(
 				'npm',
-				$this->tooling->add_scripts( $plugin_root, 'package.json', array( 'format' => 'prettier --write .' ) )
+				$this->with( Tooling::class )->add_scripts( $plugin_root, 'package.json', array( 'format' => 'prettier --write .' ) )
 			);
 			$this->write_prettier_ignore( $plugin_root );
 		}
@@ -714,8 +662,7 @@ return new class() extends Command {
 	 * -- so it either infers them or goes looking, and inference gets the
 	 * load-bearing ones wrong.
 	 *
-	 * Rendered from the toolkit's own rules page rather than written twice, and
-	 * additive like everything else here: an existing file is left exactly as
+	 * Additive like everything else here: an existing file is left exactly as
 	 * it is, so a plugin that has written its own instructions keeps them.
 	 *
 	 * @param string $plugin_root Absolute path to the consuming plugin's root.
@@ -726,14 +673,14 @@ return new class() extends Command {
 			// From zestry.json rather than from this run's variables: it is written
 			// before this point and is what every later command reads, so the
 			// instructions describe the plugin the same way the tooling does.
-			$contents = $this->agent_instructions->render( $this->zestry_config->read( $plugin_root ) );
+			$contents = $this->with( AgentInstructions::class )->render( $this->with( ZestryConfig::class )->read( $plugin_root ) );
 		} catch ( \RuntimeException $exception ) {
 			$this->warning( $exception->getMessage() );
 			return;
 		}
 
 		try {
-			$written = $this->tooling->write_config_file( $plugin_root, 'AGENTS.md', $contents );
+			$written = $this->with( Tooling::class )->write_config_file( $plugin_root, 'AGENTS.md', $contents );
 		} catch ( \RuntimeException $exception ) {
 			$this->warning( $exception->getMessage() );
 			return;
@@ -751,7 +698,7 @@ return new class() extends Command {
 		}
 
 		try {
-			$this->tooling->write_config_file( $plugin_root, '.claude/CLAUDE.md', $this->agent_instructions->render_pointer() );
+			$this->with( Tooling::class )->write_config_file( $plugin_root, '.claude/CLAUDE.md', $this->with( AgentInstructions::class )->render_pointer() );
 		} catch ( \RuntimeException $exception ) {
 			$this->warning( $exception->getMessage() );
 		}
@@ -783,20 +730,20 @@ return new class() extends Command {
 	 * @return void
 	 */
 	private function write_tooling_file( string $plugin_root, string $name, string $stub, array $values ): void {
-		$contents = $this->stub_renderer->render(
-			$this->path->get_plugin_path( 'src/DevTools/stubs/' . $stub ),
+		$contents = $this->with( StubRenderer::class )->render(
+			$this->with( Path::class )->get_plugin_path( 'src/DevTools/stubs/' . $stub ),
 			$values
 		);
 
 		try {
-			$written = $this->tooling->write_config_file( $plugin_root, $name, $contents );
+			$written = $this->with( Tooling::class )->write_config_file( $plugin_root, $name, $contents );
 		} catch ( \RuntimeException $exception ) {
 			$this->warning( $exception->getMessage() );
 			return;
 		}
 
 		if ( $written ) {
-			$this->formatter->format( $plugin_root, array( Str::join_path( $plugin_root, $name ) ) );
+			$this->with( Formatter::class )->format( $plugin_root, array( Str::join_path( $plugin_root, $name ) ) );
 		}
 
 		$this->log( $written ? 'Wrote ' . $name : $name . ' already exists -- left as it is.' );
@@ -851,12 +798,12 @@ return new class() extends Command {
 			return;
 		}
 
-		$stub = $this->path->get_plugin_path( 'src/DevTools/stubs/bootstrap.php.stub' );
+		$stub = $this->with( Path::class )->get_plugin_path( 'src/DevTools/stubs/bootstrap.php.stub' );
 
 		// Rendered rather than copied: the file's one sample calls `__()`, and a
 		// domain that is not this plugin's is one the linters `init` is about to
 		// write would flag the moment someone uncommented it.
-		$contents = $this->stub_renderer->render( $stub, array( 'text_domain' => $text_domain ) );
+		$contents = $this->with( StubRenderer::class )->render( $stub, array( 'text_domain' => $text_domain ) );
 
 		if ( false === file_put_contents( $destination, $contents ) ) {
 			$this->warning( 'Failed to write bootstrap.php -- create it yourself, returning an empty array.' );

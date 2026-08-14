@@ -4,9 +4,9 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\Services;
 
-use Zestry\WPToolkit\Services\Request\Attributes\RequestArgument;
-use Zestry\WPToolkit\Services\Request\Request;
-use Zestry\WPToolkit\Services\Request\UploadedFile;
+use Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument;
+use Zestry\WPToolkit\Modules\Request\Request;
+use Zestry\WPToolkit\Modules\Request\UploadedFile;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
@@ -80,8 +80,8 @@ final class RequestTestAddress {
 /**
  * The declaration side, exercised without a route or an ability around it.
  *
- * @covers \Zestry\WPToolkit\Services\Request\Request
- * @covers \Zestry\WPToolkit\Services\Request\Attributes\RequestArgument
+ * @covers \Zestry\WPToolkit\Modules\Request\Request
+ * @covers \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument
  */
 final class RequestTest extends TestCase {
 

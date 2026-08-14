@@ -17,34 +17,9 @@ use Zestry\WPToolkit\DevTools\Copier;
 use Zestry\WPToolkit\DevTools\Manifest;
 use Zestry\WPToolkit\DevTools\ZestryConfig;
 use Zestry\WPToolkit\Modules\CLI\Command;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 return new class() extends Command {
-
-	/**
-	 * @var ConsumerPlugin
-	 */
-	public ConsumerPlugin $consumer_plugin;
-
-	/**
-	 * @var ZestryConfig
-	 */
-	public ZestryConfig $zestry_config;
-
-	/**
-	 * @var Manifest
-	 */
-	public Manifest $manifest;
-
-	/**
-	 * @var Copier
-	 */
-	public Copier $copier;
-
-	/**
-	 * @var Path
-	 */
-	public Path $path;
 
 	/**
 	 * Re-copy the toolkit source this plugin already has.
@@ -123,10 +98,10 @@ return new class() extends Command {
 	 * @return void
 	 */
 	public function handle( array $args, array $assoc_args ): void {
-		$plugin_root = $this->consumer_plugin->get_plugin_root();
+		$plugin_root = $this->with( ConsumerPlugin::class )->get_plugin_root();
 
 		try {
-			$config = $this->zestry_config->read( $plugin_root );
+			$config = $this->with( ZestryConfig::class )->read( $plugin_root );
 		} catch ( \RuntimeException $exception ) {
 			$this->error( $exception->getMessage() );
 			return;
@@ -139,12 +114,12 @@ return new class() extends Command {
 			return;
 		}
 
-		if ( ! $this->manifest->exists( $plugin_root ) ) {
+		if ( ! $this->with( Manifest::class )->exists( $plugin_root ) ) {
 			$this->warning( 'No zestry.lock.json, so an edited file cannot be told from an upstream change. Every difference is reported as "upstream".' );
 		}
 
 		$rendered = $this->render_current( $plugin_root, $config, $sources );
-		$statuses = $this->manifest->compare( $plugin_root, $rendered );
+		$statuses = $this->with( Manifest::class )->compare( $plugin_root, $rendered );
 		$grouped  = $this->group_by_status( $statuses );
 
 		/*
@@ -165,7 +140,7 @@ return new class() extends Command {
 		// The lock records what was copied here, and these no longer are --
 		// left in, they are reported again on every run for as long as the
 		// plugin exists.
-		$this->manifest->forget( $plugin_root, $gone );
+		$this->with( Manifest::class )->forget( $plugin_root, $gone );
 
 		if ( $this->is_flag( $assoc_args, 'dry-run' ) ) {
 			$this->success( 'Dry run; nothing written.' );
@@ -227,8 +202,8 @@ return new class() extends Command {
 
 		foreach ( $sources as $source => $destination ) {
 			$written += is_dir( $source )
-				? $this->copier->copy_directory( $source, $destination, Copier::get_target_namespace( $config['namespace'] ), $config['text_domain'] )
-				: $this->copier->copy_file( $source, $destination, Copier::get_target_namespace( $config['namespace'] ), $config['text_domain'] );
+				? $this->with( Copier::class )->copy_directory( $source, $destination, Copier::get_target_namespace( $config['namespace'] ), $config['text_domain'] )
+				: $this->with( Copier::class )->copy_file( $source, $destination, Copier::get_target_namespace( $config['namespace'] ), $config['text_domain'] );
 		}
 
 		$this->restore_kept( $plugin_root, $kept );
@@ -236,7 +211,7 @@ return new class() extends Command {
 		// Recorded from what the copy wrote, then corrected for the restored
 		// files: the manifest has to describe the tree as it now stands, or the
 		// next run reports every kept file as freshly edited.
-		$this->manifest->record( $plugin_root, $written );
+		$this->with( Manifest::class )->record( $plugin_root, $written );
 		$this->record_kept( $plugin_root, $kept );
 
 		$this->success(
@@ -267,7 +242,7 @@ return new class() extends Command {
 		}
 
 		$target_root = Copier::get_target_root( trim( $config['root'], '/\\' ) );
-		$registry    = Copier::flatten_registry( require $this->path->get_plugin_path( 'src/DevTools/registry.php' ) );
+		$registry    = Copier::normalize_registry( require $this->with( Path::class )->get_plugin_path( 'src/DevTools/registry.php' ) );
 		$removed     = array();
 
 		foreach ( $registry as $name => $entry ) {
@@ -334,17 +309,17 @@ return new class() extends Command {
 		$sources     = array();
 
 		if ( is_dir( $target_root . '/Kernel' ) ) {
-			$sources[ $this->path->get_plugin_path( 'src/Kernel' ) ] = $target_root . '/Kernel';
+			$sources[ $this->with( Path::class )->get_plugin_path( 'src/Kernel' ) ] = $target_root . '/Kernel';
 		}
 
-		$registry = Copier::flatten_registry( require $this->path->get_plugin_path( 'src/DevTools/registry.php' ) );
+		$registry = Copier::normalize_registry( require $this->with( Path::class )->get_plugin_path( 'src/DevTools/registry.php' ) );
 
 		foreach ( $registry as $entry ) {
 			$relative    = Copier::get_relative_source( $entry['source'] );
 			$destination = $target_root . '/' . $relative;
 
 			if ( file_exists( $destination ) ) {
-				$sources[ $this->path->get_plugin_path( 'src/' . $relative ) ] = $destination;
+				$sources[ $this->with( Path::class )->get_plugin_path( 'src/' . $relative ) ] = $destination;
 			}
 		}
 
@@ -365,8 +340,8 @@ return new class() extends Command {
 
 		foreach ( $sources as $source => $destination ) {
 			$rendered += is_dir( $source )
-				? $this->copier->render_directory( $source, $destination, $namespace, $config['text_domain'] )
-				: array( $destination => hash( 'sha256', $this->copier->render( $source, $namespace, $config['text_domain'] ) ) );
+				? $this->with( Copier::class )->render_directory( $source, $destination, $namespace, $config['text_domain'] )
+				: array( $destination => hash( 'sha256', $this->with( Copier::class )->render( $source, $namespace, $config['text_domain'] ) ) );
 		}
 
 		$relative = array();
@@ -405,8 +380,8 @@ return new class() extends Command {
 	 * @return void
 	 */
 	private function report_version( string $plugin_root ): void {
-		$was = $this->manifest->read( $plugin_root )['version'];
-		$now = $this->manifest->get_toolkit_version();
+		$was = $this->with( Manifest::class )->read( $plugin_root )['version'];
+		$now = $this->with( Manifest::class )->get_toolkit_version();
 
 		if ( null === $was && null === $now ) {
 			return;
@@ -515,13 +490,13 @@ return new class() extends Command {
 			return;
 		}
 
-		$manifest = $this->manifest->read( $plugin_root );
+		$manifest = $this->with( Manifest::class )->read( $plugin_root );
 
 		foreach ( $kept as $relative => $contents ) {
 			$manifest['files'][ $relative ] = hash( 'sha256', $contents );
 		}
 
-		$this->manifest->write( $plugin_root, $this->manifest->get_toolkit_version(), $manifest['files'] );
+		$this->with( Manifest::class )->write( $plugin_root, $this->with( Manifest::class )->get_toolkit_version(), $manifest['files'] );
 	}
 
 	/**

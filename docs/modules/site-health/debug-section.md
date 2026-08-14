@@ -23,6 +23,7 @@ Most plugins want exactly one, listing the handful of values you would ask for f
 namespace Acme\Plugin\DebugSections;
 
 use Acme\Plugin\Core\Modules\Options;
+use Acme\Plugin\Core\Modules\Options;
 use Acme\Plugin\Core\Modules\SiteHealth\DebugSection;
 
 return new class extends DebugSection {
@@ -32,17 +33,18 @@ return new class extends DebugSection {
     }
 
     public function fields(): array {
+        $options = $this->get_plugin()->get( Options::class );
+        $has_key = '' !== (string) $options->get( 'api_key', '' );
+
         return array(
             'api_key' => array(
                 'label' => __( 'API key', 'acme-plugin' ),
-                'value' => '' !== (string) $this->options->get( 'api_key', '' )
-                    ? __( 'Set', 'acme-plugin' )
-                    : __( 'Missing', 'acme-plugin' ),
-                'debug' => '' !== (string) $this->options->get( 'api_key', '' ) ? 'set' : 'missing',
+                'value' => $has_key ? __( 'Set', 'acme-plugin' ) : __( 'Missing', 'acme-plugin' ),
+                'debug' => $has_key ? 'set' : 'missing',
             ),
             'last_sync' => array(
                 'label' => __( 'Last sync', 'acme-plugin' ),
-                'value' => (string) $this->options->get( 'last_sync', __( 'Never', 'acme-plugin' ) ),
+                'value' => (string) $options->get( 'last_sync', __( 'Never', 'acme-plugin' ) ),
             ),
         );
     }

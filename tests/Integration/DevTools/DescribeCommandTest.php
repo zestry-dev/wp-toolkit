@@ -137,22 +137,21 @@ final class DescribeCommandTest extends TestCase {
 	}
 
 	/**
-	 * The directory reported is the default, and an initializer can point the
-	 * module somewhere else. Running that closure would mean building the
-	 * consumer's modules, which this command does not do -- so it says an
-	 * initializer exists and leaves the reader to look.
+	 * What a `configure` does is only found by running it, which would mean
+	 * building the consumer's modules -- so this says one exists and leaves the
+	 * reader to look.
 	 */
 	public function test_marks_a_module_whose_entry_carries_an_initializer(): void {
 		file_put_contents(
 			$this->target_plugin_dir . '/bootstrap.php',
 			"<?php\nuse Acme\\Plugin\\Core\\Modules\\Cron\\Cron;\n"
-				. "return array( Cron::class => static function ( Cron \$cron ): void { \$cron->add_custom_interval( 'quarter_hourly', 900, 'Quarter hourly' ); } );\n"
+				. "return array( Cron::class => array( 'configure' => static function ( Cron \$cron ): void { \$cron->add_custom_interval( 'quarter_hourly', 900, 'Quarter hourly' ); } ) );\n"
 		);
 
 		$rows = $this->describe_rows();
 
 		$this->assertTrue( $rows['cron']['configured'] );
-		$this->assertSame( 'schedules/', $rows['cron']['reads'], 'The default, since the closure is never run.' );
+		$this->assertSame( 'schedules/', $rows['cron']['reads'], 'The directory it reads, which the closure cannot change.' );
 	}
 
 	public function test_installed_flag_limits_the_report_to_what_is_there(): void {
@@ -312,7 +311,7 @@ final class DescribeCommandTest extends TestCase {
 	private function run_describe( array $assoc_args = array() ): void {
 		\WP_CLI::reset();
 
-		$package_plugin = new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-describe-test' );
+		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-describe-test' ) )->declare_modules( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
 		$command = require dirname( __DIR__, 3 ) . '/commands/describe.php';

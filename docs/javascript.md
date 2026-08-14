@@ -33,12 +33,12 @@ npm run build
 writes `src/entries/settings/index.ts` and `style.scss` beside it. Use it from anywhere in PHP:
 
 ```php
-public Assets $assets;
-
 public function enqueue_assets(): void {
-    $this->assets->enqueue_entry( 'settings' );
+    $this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
 }
 ```
+
+`assets` is a module, so it is asked for rather than declared as a property — building a module boots it, which is too much to hide behind a type name.
 
 There is no registration call. The module registers every built entry on `init`, under the handle `{plugin-slug}-settings`, so the local name is all you ever pass.
 
@@ -51,7 +51,7 @@ An entry can also be **only** a stylesheet: leave out `index.ts` and put `style.
 Export an `initialize()` from the entry, and call it with the data:
 
 ```php
-$handle = $this->assets->enqueue_entry( 'settings' );
+$handle = $this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
 
 wp_add_inline_script(
     $handle,

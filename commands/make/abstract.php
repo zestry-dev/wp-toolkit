@@ -13,6 +13,10 @@ declare( strict_types=1 );
 
 use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
 use Zestry\WPToolkit\DevTools\Copier;
+use Zestry\WPToolkit\DevTools\ConsumerPlugin;
+use Zestry\WPToolkit\DevTools\ParentClass;
+use Zestry\WPToolkit\Modules\Path;
+use Zestry\WPToolkit\DevTools\ZestryConfig;
 
 return new class() extends MakeCommand {
 
@@ -183,7 +187,7 @@ return new class() extends MakeCommand {
 			return array();
 		}
 
-		$root = rtrim( $this->zestry_config->read( $this->consumer_plugin->get_plugin_root() )['namespace'], '\\' );
+		$root = rtrim( $this->with( ZestryConfig::class )->read( $this->with( ConsumerPlugin::class )->get_plugin_root() )['namespace'], '\\' );
 
 		$parent = null !== $for
 			? $this->get_base_of_type( $for, $root )
@@ -207,7 +211,7 @@ return new class() extends MakeCommand {
 	 * @return string|null The class name, or null once the reason has been reported.
 	 */
 	private function get_base_of_type( string $type, string $root ): ?string {
-		$file = $this->path->get_plugin_path( 'commands/make/' . $type . '.php' );
+		$file = $this->with( Path::class )->get_plugin_path( 'commands/make/' . $type . '.php' );
 
 		if ( ! is_file( $file ) ) {
 			$this->error( sprintf( 'There is no `make %s`, so it has no base class to extend.', $type ) );
@@ -238,11 +242,11 @@ return new class() extends MakeCommand {
 	 */
 	private function resolve_own_class( string $requested, string $root ): ?string {
 		try {
-			$parent = $this->parent_class->resolve( $requested, $root );
+			$parent = $this->with( ParentClass::class )->resolve( $requested, $root );
 
 			// No base to hold it to -- an abstract may extend anything -- so this
 			// checks only what would be a fatal in the file about to be written.
-			$this->parent_class->assert_usable( $parent, $parent );
+			$this->with( ParentClass::class )->assert_usable( $parent, $parent );
 		} catch ( \InvalidArgumentException $exception ) {
 			$this->error( $exception->getMessage() );
 
@@ -259,7 +263,7 @@ return new class() extends MakeCommand {
 	 * @return string
 	 */
 	private function get_abstract_namespace( array $segments ): string {
-		$config    = $this->zestry_config->read( $this->consumer_plugin->get_plugin_root() );
+		$config    = $this->with( ZestryConfig::class )->read( $this->with( ConsumerPlugin::class )->get_plugin_root() );
 		$namespace = rtrim( $config['namespace'], '\\' ) . '\\Abstracts';
 
 		foreach ( $segments as $segment ) {

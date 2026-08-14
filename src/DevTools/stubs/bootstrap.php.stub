@@ -3,22 +3,31 @@
 /**
  * What this plugin uses, and how each is configured.
  *
- * `wp zt add <name>` appends to this file, so a module works as soon as it is
- * copied. The entry file reads it with `$plugin->bootstrap()`.
+ * `wp zt add module <name>` appends to this file, so a module works as soon as
+ * it is copied. The entry file reads it with `$plugin->bootstrap()`.
  *
- * An entry is a class name, optionally with an initializer as its value:
+ * An entry is a class name on its own, or a class name with a configuration
+ * array:
  *
  * ```
- * Cron::class,                                    // no configuration
- * Cron::class => function ( Cron $cron ): void {  // configured
- *     $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
- * },
+ * Cron::class,                    // no configuration
+ * Cron::class => array(           // configured
+ *     'configure' => function ( Cron $cron ): void {
+ *         $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
+ *     },
+ * ),
  * ```
  *
- * The initializer runs when the class is first built, before a module boots:
- * the place to call a `set_*_root()` or anything else it needs. Everything
- * works without one, so add it only to change a default. See a module's own
- * page for what it accepts.
+ * The array takes three keys, all optional:
+ *
+ * - `configure` -- runs when the module is first built, before it boots. The
+ *   place to call whatever setters it offers.
+ * - `boots_on` -- a WordPress hook to boot on, for a module that cannot do its
+ *   work as the plugin loads. Without it the module boots as `run()` reaches it.
+ * - `priority` -- what `boots_on` binds at. Defaults to 10.
+ *
+ * Everything works without an array, so add one only to change a default. See a
+ * module's own page for what it accepts.
  *
  * This file is modules only, and listing one is what builds it. A module acts
  * on its own -- it binds a hook, registers a post type, walks a directory -- so
@@ -30,20 +39,18 @@
  * so listing it would only build it sooner than it needed to be. One that takes
  * configuration gets it from `$plugin->configure()` in your entry file.
  *
- * Because every entry means the same thing, reading this file compiles none of
- * the classes it names: they load when the plugin builds them.
- *
- * An entry file that runs the plugin as it loads runs an initializer before
+ * An entry file that runs the plugin as it loads runs `configure` before
  * `init`, where a `__()` loads the text domain early enough that WordPress
- * reports `_load_textdomain_just_in_time` on every request. Anything needing
- * that later point goes in `on_wp_init()`, which every module has:
+ * reports `_load_textdomain_just_in_time` on every request. Naming a `boots_on`
+ * moves the whole module past that point:
  *
  * ```
- * Blocks::class => function ( Blocks $blocks ): void {
- *     $blocks->on_wp_init( function ( Blocks $module ): void {
- *         $module->add_categories( array( 'reports' => __( 'Reports', '{{text_domain}}' ) ) );
- *     } );
- * },
+ * Blocks::class => array(
+ *     'boots_on'    => 'init',
+ *     'configure' => function ( Blocks $blocks ): void {
+ *         $blocks->add_categories( array( 'reports' => __( 'Reports', '{{text_domain}}' ) ) );
+ *     },
+ * ),
  * ```
  */
 

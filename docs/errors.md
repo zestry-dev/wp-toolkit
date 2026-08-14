@@ -57,18 +57,22 @@ Catch the subclasses individually only when you genuinely handle them differentl
 
 [Reference](kernel/module-exception.md)
 
-The base class, and thrown directly for a `bootstrap.php` the plugin cannot read.
+The base class, and thrown directly for three things: a `bootstrap.php` the plugin cannot read, a property typed as a module, and a module asked for before its hook.
+
+### A `bootstrap.php` the plugin cannot read
 
 ```
 Bootstrap file must return an array: /…/acme-plugin/bootstrap.php
 Bootstrap entries must name a class.
-Bootstrap entry for Acme\Plugin\Core\Modules\CLI\CLI must be a callable, or omitted.
-Module initializer must be callable.
+The `bootstrap.php` entry for Acme\Plugin\Core\Modules\Cron\Cron is Closure.
+Configuration is an array: `Acme\…\Cron::class => array( 'before_boot' => $callback )`,
+which is also where `boots_on` and `priority` go. A module needing none is written bare.
+The `before_boot` for Acme\Plugin\Core\Modules\Cron\Cron must be a callable, or left out.
 ```
 
-**What causes it.** A `bootstrap.php` with no `return`, or one returning something other than an array. An entry whose key is a string but whose value is neither a callable nor omitted — usually a stray configuration array where an initializer closure was meant.
+**What causes it.** A `bootstrap.php` with no `return`, or one returning something other than an array. An entry configured with a bare callback rather than an array — the shape most people reach for first.
 
-**What to do.** The file is one flat array. A module needing no configuration is written bare; one that needs it gets a callable:
+**What to do.** The file is one flat array. A module needing no configuration is written bare; one that needs some gets an array:
 
 ```php
 // bootstrap.php
@@ -76,12 +80,50 @@ use Acme\Plugin\Core\Modules\AdminPages\AdminPages;
 use Acme\Plugin\Core\Modules\Cron\Cron;
 
 return array(
-    Cron::class => static function ( Cron $cron ): void {
-        $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
-    },
+    Cron::class => array(
+        'before_boot' => static function ( Cron $cron ): void {
+            $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
+        },
+    ),
     AdminPages::class,
 );
 ```
+
+`before_boot` configures the module, `boots_on` names a hook to boot on, and `priority` is what that hook binds at. All three are optional and all three live in the same array, so adding one never means rewriting the entry.
+
+### A property typed as a module
+
+```
+Acme\Plugin\Routes\Books declares `Options $options`, and a module is not injected:
+building one boots it. Drop the property and ask where you need it --
+`$this->get_plugin()->get( Options::class )`.
+```
+
+**What causes it.** Injection is for services. A service is built when something asks for it and does nothing else, so a property is an honest way to ask. A module *boots* when it is built — it binds hooks, walks a directory, registers things with WordPress — and a property declaration hides all of that behind a type name.
+
+**What to do.** Exactly what the message says. Delete the property and call `get()` in the method that needs it, which puts the cost where a reader can see it:
+
+```php
+public function handle( WP_REST_Request $request ): WP_REST_Response {
+    $options = $this->get_plugin()->get( Options::class );
+
+    return new WP_REST_Response( $options->get( 'per_page', 10 ) );
+}
+```
+
+Thrown rather than skipped, because skipping would leave the property uninitialised and the first read would fatal with PHP's own message, which names neither the module nor the reason.
+
+### A module asked for before its hook
+
+```
+Acme\Plugin\Core\Modules\Blocks\Blocks boots on `init`, which has not fired yet. Ask
+for it from `init` or later, or give its `bootstrap.php` entry a `boots_on` this
+plugin can live with.
+```
+
+**What causes it.** The module's `bootstrap.php` entry names a `boots_on`, and something asked for it earlier than that. Building it now would boot it on the wrong side of whatever it was declared to follow.
+
+**What to do.** Move the `get()` call to that hook or later, or reconsider the `boots_on`. A hook that has *already* fired is not an error — the module is built immediately, so the declaration reads as "not before" rather than "exactly at".
 
 ---
 
@@ -147,7 +189,7 @@ class Exporter extends Module {
 
 [Reference](kernel/discovery-exception.md)
 
-The one you will meet most, because it is the one your own feature files trigger. It arrives in five shapes — the two below that any module can raise, and three that only a particular destination produces.
+The one you will meet most, because it is the one your own feature files trigger. It arrives in five shapes — the first two from any module, the last three only from a particular destination.
 
 **A discovered file returned the wrong thing.**
 
@@ -170,22 +212,8 @@ return new class extends Command {
 };
 ```
 
----|---|
-| [`ajax`](modules/ajax/) | `Actions root directory does not exist: ` |
-| [`admin-pages`](modules/admin-pages/) | `Pages root directory does not exist: ` |
-| [`rest-api`](modules/rest-api/) | `Routes root directory does not exist: ` |
-| [`cli`](modules/cli/) | `Commands root directory does not exist: ` |
-| [`cron`](modules/cron/) | `Schedules root directory does not exist: ` |
-| [`post-types`](modules/post-types/) | `Post types root directory does not exist: `, `Taxonomies root directory does not exist: ` |
-| [`blocks`](modules/blocks/) | `Blocks root directory does not exist: ` |
-| [`migrations`](modules/migrations/) | `Migrations root directory does not exist: ` |
-| [`abilities`](modules/abilities/) | `Abilities root directory does not exist: ` |
-| [`fields`](modules/fields/) | `Fields root directory does not exist: ` |
-| [`meta-boxes`](modules/meta-boxes/) | `Meta boxes root directory does not exist: ` |
-| [`site-health`](modules/site-health/) | `Health checks root directory does not exist: `, `Debug sections root directory does not exist: ` |
-
-> [!IMPORTANT]
-> **Only a root named through a `set_*_root()` call throws.** A *default* root that does not exist is not an error — the module discovers nothing and says nothing, so adding `cron` before you have written your first schedule is fine. Asking for a directory by name and getting nothing is a typo worth hearing about; having no files yet is not.
+> [!NOTE]
+> **A missing directory is not one of the five.** The directory each module reads is fixed, so one that does not exist means you have none of those files yet — the module discovers nothing and says nothing. Adding `cron` before writing your first schedule is fine. [Modules](modules/) lists the directory each one reads.
 
 **Two files claim one name.**
 
@@ -210,7 +238,17 @@ WordPress refuses: an ability name takes only lowercase letters, digits and dash
 on either side of the `/`. Rename the file.
 ```
 
-Two destinations hold a filename to their own character set: an [admin page](modules/admin-pages/)'s slug goes into `?page=`, and an [ability](modules/abilities/)'s name is matched against `^[a-z0-9-]+$`. Neither is repaired for you — a name spelled for you is one you cannot find again — so rename the file. `wp zt make` writes an acceptable name in the first place, and says when it had to.
+Three destinations hold a filename to their own character set: an [admin page](modules/admin-pages/)'s slug goes into `?page=`, an [ability](modules/abilities/)'s name is matched against `^[a-z0-9-]+$`, and an [icon](modules/icons-library/)'s takes lowercase letters, digits, dashes and underscores, starting and ending with a letter or digit — so an icon name fires for capitals, spaces and punctuation rather than for the separator you chose. None is repaired for you — a name spelled for you is one you cannot find again — so rename the file. `wp zt make` writes an acceptable name in the first place, and says when it had to.
+
+**An SVG icon WordPress would quietly alter.**
+
+```
+WordPress would remove stroke, stroke-width from the icon "logo.svg", which leaves it
+rendering as less than it is. Only `<svg>`, `<path>` and `<polygon>` survive, with a
+few attributes each.
+```
+
+WordPress runs every icon through `wp_kses()` and keeps whatever survives, so an icon drawn as outlines loses `stroke`, keeps `fill="none"`, and registers as invisible. Raised only while your plugin's own debug constant is on — `wp zt debug on` — which is where a picture that renders blank is still cheap to fix. Redraw it with filled paths; most vector editors offer that as "outline stroke" or "expand".
 
 **WordPress refused the registration.**
 

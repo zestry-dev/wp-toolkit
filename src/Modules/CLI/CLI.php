@@ -12,11 +12,12 @@ namespace Zestry\WPToolkit\Modules\CLI;
 \defined( 'ABSPATH' ) || exit;
 
 use Closure;
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Plugin;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 /**
  * Discovers plugin WP-CLI commands and registers them with WP-CLI.
@@ -42,8 +43,10 @@ use Zestry\WPToolkit\Services\Path;
  * `DiscoveryException`, as does a commands directory you named yourself with
  * a file beneath `commands/` that returns something other than a Command.
  *
+ *
+ * @setup-hook init
  */
-class CLI extends Module {
+class CLI extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -51,13 +54,6 @@ class CLI extends Module {
 	 * Default plugin-relative directory of command files.
 	 */
 	const COMMANDS_ROOT = 'commands';
-
-	/**
-	 * Path module injected by the plugin to resolve the command directory.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
 
 	/**
 	 * Wire (if applicable) and register an already-built command instance
@@ -107,7 +103,7 @@ class CLI extends Module {
 	 */
 	public function register_commands(): void {
 		// Resolve relative to the plugin root so discovery does not depend on the CWD.
-		$root_dir = $this->path->get_plugin_path( self::COMMANDS_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::COMMANDS_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
@@ -137,16 +133,12 @@ class CLI extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		if ( ! $this->get_plugin()->is_wp_cli() ) {
 			return;
 		}
 
-		$this->on_wp_init(
-			static function ( self $module ): void {
-				$module->register_commands();
-			}
-		);
+		$this->register_commands();
 	}
 
 	/**

@@ -7,6 +7,9 @@
 declare( strict_types=1 );
 
 use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
+use Zestry\WPToolkit\DevTools\ConsumerPlugin;
+use Zestry\WPToolkit\DevTools\RuntimePlugin;
+use Zestry\WPToolkit\DevTools\StubRenderer;
 
 return new class() extends MakeCommand {
 
@@ -17,7 +20,7 @@ return new class() extends MakeCommand {
 	 * `build/entries/<name>` and the `assets` module registers on `init`. Using
 	 * it is then one call, from an admin page, a shortcode, anywhere:
 	 *
-	 *     $this->assets->enqueue_entry( 'settings' );
+	 *     $this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
 	 *
 	 * An entry is built by the `webpack.config.js` that `wp zt add module assets`
 	 * writes, which is what lets one build produce blocks and entries together.
@@ -76,9 +79,9 @@ return new class() extends MakeCommand {
 	 * @return array<string, string>
 	 */
 	protected function get_extra_values( string $name, array $assoc_args ): array {
-		$plugin_root = $this->consumer_plugin->get_plugin_root();
-		$slug        = $this->stub_renderer->to_slug(
-			$this->runtime->get_slug_or_default( $plugin_root )
+		$plugin_root = $this->with( ConsumerPlugin::class )->get_plugin_root();
+		$slug        = $this->with( StubRenderer::class )->to_slug(
+			$this->with( RuntimePlugin::class )->get_slug_or_default( $plugin_root )
 		);
 
 		// Deliberately not the registered handle: `Assets::get_asset_slug()`

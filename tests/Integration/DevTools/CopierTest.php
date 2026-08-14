@@ -268,11 +268,11 @@ final class CopierTest extends TestCase {
 	 * the file while making `wp zt add <name>` install whichever section was
 	 * read last. A single array could not hide this; two can.
 	 */
-	public function test_flatten_registry_refuses_a_name_declared_in_both_sections(): void {
+	public function test_normalize_registry_refuses_a_name_declared_in_both_sections(): void {
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( 'declared in both' );
 
-		Copier::flatten_registry(
+		Copier::normalize_registry(
 			array(
 				'services' => array( 'cache' => array( 'source' => 'A', 'depends' => array() ) ),
 				'modules'  => array( 'cache' => array( 'source' => 'B', 'depends' => array() ) ),
@@ -280,8 +280,8 @@ final class CopierTest extends TestCase {
 		);
 	}
 
-	public function test_flatten_registry_carries_the_section_each_entry_was_filed_under(): void {
-		$flat = Copier::flatten_registry( require dirname( __DIR__, 3 ) . '/src/DevTools/registry.php' );
+	public function test_normalize_registry_carries_the_section_each_entry_was_filed_under(): void {
+		$flat = Copier::normalize_registry( require dirname( __DIR__, 3 ) . '/src/DevTools/registry.php' );
 
 		$this->assertSame( 'services', $flat['path']['section'] );
 		$this->assertSame( 'modules', $flat['ajax']['section'] );

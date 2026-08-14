@@ -138,14 +138,18 @@ return array(
     AdminPages::class,
     Assets::class,
     Log::class,
-    Options::class => static function ( Options $options ): void {
-        $options->autoload_default_group();
-    },
+    Options::class => array(
+        'before_boot' => static function ( Options $options ): void {
+            $options->autoload_default_group();
+        },
+    ),
     Activation::class,
 );
 ```
 
-An entry's value is its **initializer** — the callback that configures the module before it boots. `Options` gets one here so its row is loaded with the rest of WordPress's autoloaded options, since the REST route reads a setting on every request. The other four need no configuration, so they are written bare.
+A configured module gets an **array**, whose `before_boot` is the callback that configures it before it boots. `Options` gets one here so its row is loaded with the rest of WordPress's autoloaded options, since the REST route reads a setting on every request. The other four need no configuration, so they are written bare.
+
+That array also takes `boots_on` and `priority`, for a module that cannot do its work as the plugin loads. Configuration is always the array and never a bare callback, so all three read the same way.
 
 `Assets` and `Activation` are the two lines you do not add by hand — `wp zt add module assets` appends the first in section 7, and `wp zt make activation` the second in section 8. Both are shown here so the finished file is in one place.
 
@@ -227,12 +231,10 @@ use Acme\Books\Core\Modules\Log;
 use Acme\Books\Core\Modules\Options;
 use Acme\Books\Core\Modules\RestApi\RestRoute;
 use Acme\Books\Core\Modules\RestApi\Route;
+use Acme\Books\Core\Modules\RestApi\Route;
 use Acme\Books\Core\Services\Request\Attributes\RequestArgument;
 
 return Route::get( 'v1', '/books', new class extends RestRoute {
-
-    public Options $options;
-    public Log $log;
 
     #[RequestArgument( 'Words to match in the title.', sanitize: 'sanitize_text_field' )]
     public string $search = '';
@@ -242,16 +244,18 @@ return Route::get( 'v1', '/books', new class extends RestRoute {
     }
 
     public function handle( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+        $options = $this->get_plugin()->get( Options::class );
+
         $books = get_posts(
             array(
                 'post_type'      => 'book',
                 'post_status'    => 'publish',
-                'posts_per_page' => (int) $this->options->get( 'per_page', 10 ),
+                'posts_per_page' => (int) $options->get( 'per_page', 10 ),
                 's'              => $this->search,
             )
         );
 
-        $this->log->info(
+        $this->get_plugin()->get( Log::class )->info(
             'Books requested',
             array(
                 'search' => $this->search,
@@ -261,11 +265,13 @@ return Route::get( 'v1', '/books', new class extends RestRoute {
 
         return new WP_REST_Response(
             array_map(
-                static fn ( WP_Post $book ): array => array(
-                    'id'    => $book->ID,
-                    'title' => get_the_title( $book ),
-                    'url'   => (string) get_permalink( $book ),
-                ),
+                static function ( WP_Post $book ): array {
+                    return array(
+                        'id'    => $book->ID,
+                        'title' => get_the_title( $book ),
+                        'url'   => (string) get_permalink( $book ),
+                    );
+                },
                 $books
             )
         );
@@ -336,9 +342,6 @@ use Acme\Books\Core\Services\Request\Attributes\RequestArgument;
 
 return new class extends AdminPage {
 
-    public Options $options;
-    public Log $log;
-
     #[RequestArgument( 'Books per API response.', schema: array( 'minimum' => 1, 'maximum' => 100 ) )]
     public int $per_page = 10;
 
@@ -355,10 +358,12 @@ return new class extends AdminPage {
     }
 
     public function handle_submit(): void {
-        $this->options->set( 'per_page', $this->per_page );
-        $this->options->save();
+        $options = $this->get_plugin()->get( Options::class );
 
-        $this->log->info( 'Book settings saved', array( 'per_page' => $this->per_page ) );
+        $options->set( 'per_page', $this->per_page );
+        $options->save();
+
+        $this->get_plugin()->get( Log::class )->info( 'Book settings saved', array( 'per_page' => $this->per_page ) );
 
         $this->set_flash( __( 'Settings saved.', 'acme-books' ) );
 
@@ -374,7 +379,7 @@ return new class extends AdminPage {
                 'action'   => $this->get_page_url(),
                 'nonce'    => $this->get_nonce_action(),
                 'notice'   => $this->get_flash( '' ),
-                'per_page' => (int) $this->options->get( 'per_page', 10 ),
+                'per_page' => (int) $this->get_plugin()->get( Options::class )->get( 'per_page', 10 ),
             )
         );
     }
@@ -439,16 +444,21 @@ The module enforces `capability()` before anything on the page runs, verifies th
 
 ### Where the dependencies came from
 
-Both files declare a public typed property and use it without ever building it:
+Neither file builds anything. When a module discovers a file, it **wires** the object it returns: it assigns the plugin, then walks the object's public and protected properties and fills in every one typed as a **service**, before your code runs.
 
 ```php
-public Options $options;
-public Log $log;
+public Views $views;    // a service: injected, ready to use
 ```
 
-That is the whole mechanism. When a module discovers a file, it **wires** the object it returns: it assigns the plugin, then walks the object's public and protected properties, and any property typed as a service or module gets that instance assigned before your code runs. Ask for `Options` in ten files and all ten get the same instance.
+`Options` and `Log` are **modules**, so they are asked for instead:
 
-This is why nothing here declares a constructor. `Service::__construct()` is `final` and takes no arguments, so dependencies arrive as properties and configuration arrives from the initializer in `bootstrap.php`. Mark a property `#[NoInject]` to opt one out.
+```php
+$this->get_plugin()->get( Options::class );
+```
+
+Building a module boots it — it binds hooks, walks a directory, registers things with WordPress — and a property declaration would hide all of that behind a type name, so declaring one throws. Either way you get the same instance every time: ask for `Options` in ten files and all ten share it.
+
+This is why nothing here declares a constructor. `Service::__construct()` is `final` and takes no arguments, so services arrive as properties and configuration arrives from the `before_boot` in `bootstrap.php`. Mark a property `#[NoInject]` to opt one out.
 
 ## 7. A script for the settings page
 
@@ -487,10 +497,8 @@ $ npm install && npm run build
 ```
 
 ```php
-public Assets $assets;
-
 public function enqueue_assets(): void {
-    $this->assets->enqueue_entry( 'settings' );
+    $this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
 }
 ```
 
@@ -531,12 +539,10 @@ use Acme\Books\Core\Modules\Log;
 
 class Activation extends ActivationHandler {
 
-    public Log $log;
-
     public function activate( bool $network_wide ): void {
         flush_rewrite_rules();
 
-        $this->log->info( 'Acme Books activated' );
+        $this->get_plugin()->get( Log::class )->info( 'Acme Books activated' );
     }
 
     public function deactivate( bool $network_wide ): void {

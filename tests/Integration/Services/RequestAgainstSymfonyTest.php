@@ -4,8 +4,8 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\Services;
 
-use Zestry\WPToolkit\Services\Request\Attributes\RequestArgument;
-use Zestry\WPToolkit\Services\Request\Request;
+use Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument;
+use Zestry\WPToolkit\Modules\Request\Request;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
@@ -40,7 +40,7 @@ final class SymfonyParcel {
  * Where they disagree, they disagree on purpose, and those are noted below
  * rather than papered over.
  *
- * @covers \Zestry\WPToolkit\Services\Request\Request
+ * @covers \Zestry\WPToolkit\Modules\Request\Request
  */
 final class RequestAgainstSymfonyTest extends TestCase {
 

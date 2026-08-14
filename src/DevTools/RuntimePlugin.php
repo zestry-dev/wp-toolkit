@@ -11,7 +11,7 @@ namespace Zestry\WPToolkit\DevTools;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Finds the `Plugin` the consuming plugin built for itself, if it built one.
@@ -22,8 +22,8 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * all a file can say.
  *
  * What no file says is what the plugin *became*. A slug can be passed to the
- * constructor and appear in no configuration at all; a discovery root can be
- * moved by a `set_*_root()` call inside an initializer. Both are decided at run
+ * constructor and appear in no configuration at all, and the bootstrap file a
+ * plugin reads is whatever path it handed `bootstrap()`. Both are decided at run
  * time, on an instance -- and by the time a `wp zt` command runs, WordPress
  * has already loaded the plugin and built it. There is nothing to construct
  * here, only something to find.
@@ -43,10 +43,10 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * ```
  * public RuntimePlugin $runtime;
  *
- * $slug = $this->runtime->get_slug( $plugin_root ) ?? basename( $plugin_root );
+ * $slug = $this->with( RuntimePlugin::class )->get_slug( $plugin_root ) ?? basename( $plugin_root );
  * ```
  */
-class RuntimePlugin extends Service {
+class RuntimePlugin extends Module {
 
 	/**
 	 * The global every copied `Plugin` publishes itself into.

@@ -98,7 +98,7 @@ final class OptionsTest extends TestCase {
 	 */
 	public function test_get_agrees_with_globals_on_a_stored_null(): void {
 		$options = $this->options();
-		$globals = $this->plugin->get( \Zestry\WPToolkit\Services\Globals::class );
+		$globals = $this->plugin->get( \Zestry\WPToolkit\Modules\Globals::class );
 
 		$options->set( 'stored_null', null );
 		$globals->set( 'stored_null', null );

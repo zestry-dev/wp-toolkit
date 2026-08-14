@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Devtool command: `wp zt add module <module>...`.
+ * Devtool command: `wp zt add <module>...`.
  *
  * Copies one or more feature modules into a project already set up with
  * `wp zt init`, resolving each one's transitive dependencies against the registry
  * first (see registry.php) so a module never ends up copied without something
  * it needs. Every `namespace Zestry\WPToolkit\...;`/`use Zestry\WPToolkit\...;` in each copied file is
  * rewritten to the namespace zestry.json recorded during init. Never overwrites a
- * module already present on disk -- use `wp zt overwrite module` for that.
+ * module already present on disk -- use `wp zt overwrite` for that.
  */
 
 declare( strict_types=1 );
@@ -27,7 +27,7 @@ return new class() extends AddCommand {
 	 * for by name. Every `namespace Zestry\WPToolkit\...;` declaration and `use Zestry\WPToolkit\...;`
 	 * import in each copied file is rewritten to the project's own namespace. A
 	 * module already present at its destination is left untouched and logged as
-	 * skipped -- run `wp zt overwrite module <module>` to replace it
+	 * skipped -- run `wp zt overwrite <module>` to replace it
 	 * deliberately.
 	 *
 	 * Each copied module is also declared in the plugin's `bootstrap.php`, which
@@ -39,7 +39,7 @@ return new class() extends AddCommand {
 	 * either writes is additive: anything already there is kept as it is and
 	 * reported as such.
 	 *
-	 * `add module blocks` writes the toolchain -- the scripts and
+	 * `add blocks` writes the toolchain -- the scripts and
 	 * devDependencies in your package.json, a tsconfig.json, an
 	 * eslint.config.mjs, a `.prettierrc.js` if you have no Prettier config
 	 * already, and `build/`, `vendor/` and `node_modules/` in your .gitignore.
@@ -47,19 +47,10 @@ return new class() extends AddCommand {
 	 * globbing for a `block.json` anywhere under `src/`, so blocks alone need
 	 * no config file.
 	 *
-	 * `add module assets` writes the `webpack.config.js`, which is what lets one
+	 * `add assets` writes the `webpack.config.js`, which is what lets one
 	 * build produce all three directories -- blocks, entries and shared
 	 * packages. The JavaScript guide covers what it does, and why a stock
 	 * `wp-scripts` setup cannot.
-	 *
-	 * ## DEPENDENCIES CROSS THE TWO KINDS
-	 *
-	 * A module may depend on services, and most do: everything but `log` and
-	 * `options` needs `path`, and `migrations` also needs `db`. Those arrive
-	 * with it. This command asks which kind you are naming, not which kinds it
-	 * is allowed to copy.
-	 *
-	 * To copy a service on its own, use `wp zt add service <service>`.
 	 *
 	 * ## OPTIONS
 	 *
@@ -70,7 +61,7 @@ return new class() extends AddCommand {
 	 * ## EXAMPLES
 	 *
 	 *     # Copy the REST API module, and the service it needs.
-	 *     $ wp zt add module rest-api
+	 *     $ wp zt add rest-api
 	 *     Also adding required dependencies: path
 	 *     Added path
 	 *     Added rest-api
@@ -78,16 +69,16 @@ return new class() extends AddCommand {
 	 *     Success: Done.
 	 *
 	 *     # Copy several in one call.
-	 *     $ wp zt add module cli admin-pages
+	 *     $ wp zt add cli admin-pages
 	 *     Success: Done.
 	 *
 	 *     # Already on disk, so it is left exactly as it is.
-	 *     $ wp zt add module cli
+	 *     $ wp zt add cli
 	 *     Skipped cli (already present)
 	 *     Success: Done.
 	 *
 	 *     # Naming a service here says where to find it.
-	 *     $ wp zt add module path
+	 *     $ wp zt add path
 	 *     Error: "path" is a service, not a module. Run `wp zt add service path`.
 	 *
 	 * @param array $args
@@ -113,9 +104,5 @@ return new class() extends AddCommand {
 
 	protected static function get_past_tense(): string {
 		return 'Added';
-	}
-
-	protected static function get_kind(): string {
-		return 'modules';
 	}
 };

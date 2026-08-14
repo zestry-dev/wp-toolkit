@@ -15,22 +15,24 @@ use {{copied_namespace}}\Kernel\Abstracts\Module;
 
 class {{class_name}} extends Module {
 
-	// Declare a public or protected typed property to have another service or
-	// module injected automatically, e.g.:
+	// Declare a public or protected typed property to have a service injected.
+	// A module is asked for instead: `$this->get_plugin()->get( Options::class )`.
 	// public Path $path;
 
 	/*
 	 * A module is built with no arguments -- the constructor is final -- so
-	 * anything this needs comes in through a `set_*()` called from its entry in
-	 * bootstrap.php, whose value is the initializer:
+	 * anything this needs comes in through a `set_*()` called from the
+	 * `configure` in its bootstrap.php entry:
 	 *
 	 * ```
 	 * public function set_api_key( string $key ): void { ... }
 	 *
 	 * // bootstrap.php
-	 * {{class_name}}::class => static function ( {{class_name}} $module ): void {
-	 *     $module->set_api_key( 'abc123' );
-	 * },
+	 * {{class_name}}::class => array(
+	 *     'configure' => static function ( {{class_name}} $module ): void {
+	 *         $module->set_api_key( 'abc123' );
+	 *     },
+	 * ),
 	 * ```
 	 *
 	 * A class that wants constructor arguments is a value object, not a module.

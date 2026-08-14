@@ -124,7 +124,7 @@ abstract class Ability implements PluginAware {
 	 * and your own PHP alike. This is the gate, so a capability check belongs
 	 * here rather than in `handle()`.
 	 *
-	 * Any {@see \Zestry\WPToolkit\Services\Request\Attributes\RequestArgument} properties are already bound, so a
+	 * Any {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument} properties are already bound, so a
 	 * check can name the thing being acted on:
 	 * `current_user_can( 'edit_post', $this->id )`.
 	 *
@@ -151,7 +151,7 @@ abstract class Ability implements PluginAware {
 	 * Return a `WP_Error` for a failure the caller should see; its message is
 	 * read by whatever called you, so make it a sentence rather than a code.
 	 *
-	 * Any {@see \Zestry\WPToolkit\Services\Request\Attributes\RequestArgument} properties are bound by the time this
+	 * Any {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument} properties are bound by the time this
 	 * runs, so read `$this->order_id` rather than `$input['order_id']`.
 	 *
 	 * @param mixed $input The validated input.
@@ -186,7 +186,7 @@ abstract class Ability implements PluginAware {
 	 * sees input that does not fit.
 	 *
 	 * The schema is built for you from your
-	 * {@see \Zestry\WPToolkit\Services\Request\Attributes\RequestArgument} properties, which
+	 * {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument} properties, which
 	 * is the shorter way to say the same thing and binds the values onto the
 	 * object as well. What you return here is stated *over* that rather than
 	 * instead of it, so a declaration you say nothing about keeps everything it

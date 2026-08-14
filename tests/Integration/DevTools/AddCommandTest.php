@@ -241,9 +241,11 @@ final class AddCommandTest extends TestCase {
 		file_put_contents(
 			$this->target_plugin_dir . '/bootstrap.php',
 			"<?php\n\nreturn array(\n"
-				. "\t\\Acme\\Plugin\\Core\\Modules\\Cron\\Cron::class => static function ( \$cron ): void {\n"
-				. "\t\t\$cron->configured_by_hand();\n"
-				. "\t},\n"
+				. "\t\\Acme\\Plugin\\Core\\Modules\\Cron\\Cron::class => array(\n"
+				. "\t\t'configure' => static function ( \$cron ): void {\n"
+				. "\t\t\t\$cron->configured_by_hand();\n"
+				. "\t\t},\n"
+				. "\t),\n"
 				. ");\n"
 		);
 
@@ -527,7 +529,7 @@ final class AddCommandTest extends TestCase {
 	private function run_add( array $modules, string $kind = 'module' ): void {
 		\WP_CLI::reset();
 
-		$package_plugin = new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-add-test' );
+		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-add-test' ) )->declare_modules( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
 		$command = require dirname( __DIR__, 3 ) . '/commands/add/' . $kind . '.php';

@@ -13,7 +13,7 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\Core;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
-final class NotLoadedProbe extends Service {
+final class NotLoadedProbe extends Module {
 }

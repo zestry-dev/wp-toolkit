@@ -14,6 +14,14 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  */
 final class ActivationHandlerTest extends TestCase {
 
+	public function set_up(): void {
+		parent::set_up();
+
+		// Nothing is built without being declared, and this fixture is a
+		// module like any other.
+		$this->plugin->declare_modules( array( SpyActivation::class ) );
+	}
+
 	public function test_registers_activation_and_deactivation_hooks_at_load_time(): void {
 		$this->plugin->get( SpyActivation::class );
 

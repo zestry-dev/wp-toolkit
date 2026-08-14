@@ -11,11 +11,12 @@ namespace Zestry\WPToolkit\Modules\Abilities;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
-use Zestry\WPToolkit\Services\Path;
-use Zestry\WPToolkit\Services\Request\Request;
+use Zestry\WPToolkit\Modules\Path;
+use Zestry\WPToolkit\Modules\Request\Request;
 
 /**
  * Publishes what your plugin can do, for the REST API and for AI agents.
@@ -64,7 +65,7 @@ use Zestry\WPToolkit\Services\Request\Request;
  * {@see run()} — instead of the same operation written four times.
  *
  * @example An ability
- * A typed property carrying a {@see \Zestry\WPToolkit\Services\Request\Attributes\RequestArgument} is both the
+ * A typed property carrying a {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument} is both the
  * input schema and the value: it is described once, validated by WordPress, and
  * bound before your code runs. The property says the type, and whether it is
  * required — one with no default has to be supplied.
@@ -104,7 +105,9 @@ use Zestry\WPToolkit\Services\Request\Request;
  *
  * @example Calling one from your own code
  * ```
- * $result = $this->abilities->run( 'publish-post', array( 'id' => 42 ) );
+ * $abilities = $this->get_plugin()->get( Abilities::class );
+ *
+ * $result = $abilities->run( 'publish-post', array( 'id' => 42 ) );
  *
  * if ( is_wp_error( $result ) ) {
  *     // Invalid input, no permission, or the ability said no.
@@ -116,7 +119,7 @@ use Zestry\WPToolkit\Services\Request\Request;
  * ```
  * Abilities::class => array(
  *     'boots_on'    => 'init',
- *     'before_boot' => static function ( Abilities $abilities ): void {
+ *     'configure' => static function ( Abilities $abilities ): void {
  *         $abilities->add_categories(
  *             array(
  *                 'acme-billing' => array(
@@ -129,11 +132,11 @@ use Zestry\WPToolkit\Services\Request\Request;
  * ),
  * ```
  *
- * `before_boot` runs on the hook, right before the module registers anything,
+ * `configure` runs on the hook, right before the module registers anything,
  * which is what makes the `__()` calls safe -- an initializer running at plugin
  * load would report `_load_textdomain_just_in_time` on every request.
  */
-class Abilities extends Module {
+class Abilities extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -141,18 +144,6 @@ class Abilities extends Module {
 	 * Where abilities are discovered, relative to the plugin root.
 	 */
 	const ABILITIES_ROOT = 'abilities';
-
-	/**
-	 * @var Path
-	 */
-	public Path $path;
-
-	/**
-	 * Builds each ability's input schema, and binds the values onto it.
-	 *
-	 * @var Request
-	 */
-	public Request $request;
 
 	/**
 	 * Discovered abilities by local name, once the directory has been walked.
@@ -215,11 +206,11 @@ class Abilities extends Module {
 	 * distinctive enough not to collide — a category already registered by
 	 * WordPress or another plugin is left as it is rather than replaced.
 	 *
-	 * **Call it from the entry's `before_boot`, as the example does.** A label and
+	 * **Call it from the entry's `configure`, as the example does.** A label and
 	 * a description are both user-visible, so they usually want translating, and
 	 * an initializer running at plugin load would load the text domain before
 	 * WordPress is ready, reporting `_load_textdomain_just_in_time` on every
-	 * request. `before_boot` runs on the boot hook, where ordinary `__()` is
+	 * request. `configure` runs on the boot hook, where ordinary `__()` is
 	 * correct -- which is why both are plain strings and nothing here is lazy.
 	 *
 	 * @param array<string, string|array{label: string, description?: string}> $categories Labels or configuration, keyed by slug.
@@ -254,7 +245,7 @@ class Abilities extends Module {
 			return $this->discovered;
 		}
 
-		$root_dir = $this->path->get_plugin_path( self::ABILITIES_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::ABILITIES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
@@ -455,7 +446,7 @@ class Abilities extends Module {
 				'execute_callback'    => function ( $input = null ) use ( $ability ) {
 					if ( \is_array( $input ) ) {
 						// The code WordPress itself uses when an ability's schema rejects input.
-						$prepared = $this->request->get_prepared_values( $ability, $input, 'ability_invalid_input' );
+						$prepared = $this->with( Request::class )->get_prepared_values( $ability, $input, 'ability_invalid_input' );
 
 						if ( \is_wp_error( $prepared ) ) {
 							return $prepared;
@@ -471,12 +462,12 @@ class Abilities extends Module {
 					 * exactly the call that would otherwise still be holding
 					 * them.
 					 */
-					$this->request->bind( $ability, \is_array( $input ) ? $input : array() );
+					$this->with( Request::class )->bind( $ability, \is_array( $input ) ? $input : array() );
 
 					return $ability->handle( $input );
 				},
 				'permission_callback' => function ( $input = null ) use ( $ability ) {
-					$this->request->bind( $ability, \is_array( $input ) ? $input : array() );
+					$this->with( Request::class )->bind( $ability, \is_array( $input ) ? $input : array() );
 
 					return $ability->permission_check( $input );
 				},
@@ -504,7 +495,7 @@ class Abilities extends Module {
 			// The declarations are the schema, and input_schema() is stated over
 			// them -- which is the only way to reach the parts an attribute cannot
 			// carry, a translated description first among them.
-			$input_schema = $this->request->get_schema( $ability, $ability->input_schema() );
+			$input_schema = $this->with( Request::class )->get_schema( $ability, $ability->input_schema() );
 			if ( array() !== $input_schema ) {
 				$args['input_schema'] = $input_schema;
 			}
@@ -533,16 +524,9 @@ class Abilities extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		if ( ! \function_exists( 'wp_register_ability' ) ) {
-			\_doing_it_wrong(
-				__METHOD__,
-				// Deliberately not translated: this runs at plugin load, before
-				// `init`, where a __() call would itself trigger
-				// _load_textdomain_just_in_time.
-				'The Abilities module requires the Abilities API, added in WordPress 6.9. Nothing was registered.',
-				'6.9.0'
-			);
+			$this->report_missing_api();
 
 			return;
 		}
@@ -617,5 +601,20 @@ class Abilities extends Module {
 	 */
 	private function is_registrable_segment( string $value ): bool {
 		return 1 === \preg_match( '/^[a-z0-9-]+$/', $value );
+	}
+
+	/**
+	 * Say that this WordPress has no Abilities API, so nothing was registered.
+	 *
+	 * @return void
+	 */
+	private function report_missing_api(): void {
+		\_doing_it_wrong(
+			__METHOD__,
+			// Deliberately not translated: this runs before `init`, where a
+			// __() call would itself trigger _load_textdomain_just_in_time.
+			'The Abilities module requires the Abilities API, added in WordPress 6.9. Nothing was registered.',
+			'6.9.0'
+		);
 	}
 }

@@ -11,6 +11,7 @@ namespace Zestry\WPToolkit\Modules;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
@@ -56,16 +57,18 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * ```
  * // bootstrap.php
  * return array(
- *     Options::class => static function ( Options $options ): void {
- *         $options->add_autoloaded_groups( array( 'my_frequently_read_group' ) );
+ *     Options::class => array(
+ *         'configure' => static function ( Options $options ): void {
+ *             $options->add_autoloaded_groups( array( 'my_frequently_read_group' ) );
  *
- *         // Or, for the default (ungrouped) instance's own option:
- *         $options->autoload_default_group();
- *     },
+ *             // Or, for the default (ungrouped) instance's own option:
+ *             $options->autoload_default_group();
+ *         },
+ *     ),
  * );
  * ```
  */
-class Options extends Module {
+class Options extends Module implements Bootable {
 
 	/**
 	 * Group name the default (ungrouped) instance uses.
@@ -321,19 +324,11 @@ class Options extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		// Load persisted values first, then consolidate all writes at shutdown.
 		$this->db_retrieve();
-		\add_action(
-			'shutdown',
-			function () {
-				try {
-					$this->save();
-				} catch ( \RuntimeException $exception ) {
-					$this->report_failed_save( $exception );
-				}
-			}
-		);
+
+		\add_action( 'shutdown', $this->save_pending_writes( ... ) );
 	}
 
 	/**
@@ -394,5 +389,21 @@ class Options extends Module {
 	private function db_retrieve(): void {
 		$stored      = \get_option( $this->get_option_name(), array() );
 		$this->value = \is_array( $stored ) ? $stored : array();
+	}
+
+	/**
+	 * Write whatever `set()` marked dirty, at the end of the request.
+	 *
+	 * A failure here has nowhere to go -- the response is already sent -- so it
+	 * is reported rather than thrown.
+	 *
+	 * @return void
+	 */
+	private function save_pending_writes(): void {
+		try {
+			$this->save();
+		} catch ( \RuntimeException $exception ) {
+			$this->report_failed_save( $exception );
+		}
 	}
 }

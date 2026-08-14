@@ -336,7 +336,7 @@ final class UpdateCommandTest extends TestCase {
 	 * @return array<string, string>
 	 */
 	private function compare(): array {
-		$plugin  = new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-update-test' );
+		$plugin  = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-update-test' ) )->declare_modules( $this->get_toolkit_modules() );
 		$copier  = $plugin->get( \Zestry\WPToolkit\DevTools\Copier::class );
 		$rendered = $copier->render_directory(
 			dirname( __DIR__, 3 ) . '/src/Services',
@@ -366,7 +366,7 @@ final class UpdateCommandTest extends TestCase {
 	private function run_command( string $file, array $args, array $assoc_args ): void {
 		\WP_CLI::reset();
 
-		$package_plugin = new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-update-test' );
+		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-update-test' ) )->declare_modules( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
 		$command = require dirname( __DIR__, 3 ) . '/commands/' . $file;

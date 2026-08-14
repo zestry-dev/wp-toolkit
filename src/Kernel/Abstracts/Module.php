@@ -11,42 +11,59 @@ namespace Zestry\WPToolkit\Kernel\Abstracts;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
+use Zestry\WPToolkit\Kernel\Contracts\PluginAware;
+use Zestry\WPToolkit\Kernel\Traits\WithPlugin;
+
 /**
- * Base class for something that acts on its own.
+ * Base class for everything a plugin is made of.
  *
- * A module does something without being called: it binds a hook, registers a
- * post type, walks a directory, schedules a job. That is the whole distinction
- * from {@see Service}, which sits there until something asks it for something.
+ * One kind of thing, listed in `bootstrap.php`. `Path` resolves paths, `Ajax`
+ * binds hooks, `Options` does both -- all three are modules, built by the plugin
+ * and reached the same way.
  *
- * Because it acts on its own, it has to be built for that to happen -- so every
- * module is listed in `bootstrap.php`, and the plugin resolves
- * each one as it loads. {@see on_boot()} then runs, once, and is where the
- * acting-on-its-own goes. Nothing has to be said about *when*: being a module is
- * the declaration.
+ * **Listing it in `bootstrap.php` is what makes it exist.** Nothing else builds
+ * a module, and asking for one that is not listed throws rather than quietly
+ * constructing it -- so that file is the whole inventory of what a plugin is
+ * made of, and reading it tells you what the plugin has.
  *
- * `Options` is the case worth understanding. It is something you call --
- * `$options->get( 'key' )` -- which makes it look like a service. But it also
- * loads its persisted values and binds `shutdown` to flush deferred writes,
- * without being asked. That is acting on its own, so it is a module.
+ * ```
+ * $path = $this->with( Path::class );
+ * ```
  *
- * Everything {@see Service} says about construction applies here too: your
- * class may not declare a constructor, since `__construct()` is `final` and
- * takes no arguments. Dependencies arrive as injected typed properties, and
- * configuration from the initializer in `bootstrap.php`.
+ * {@see \Zestry\WPToolkit\Kernel\Traits\WithPlugin::with()} is how a module reaches another,
+ * and how a discovered file reaches any of them. There is nothing to construct
+ * and nothing to declare in advance.
  *
- * @example A module
- * `on_boot()` is abstract, so a module cannot be written without saying what it
- * does at boot. Listing it in `bootstrap.php` is what builds it.
+ * **Implement {@see Bootable} to do something without being called.** That is
+ * the only difference between one module and another, and it is on the line that
+ * names the class: a `Bootable` module binds hooks, registers a post type or
+ * walks a directory when the plugin builds it, and one that is not sits there
+ * until something calls it.
+ *
+ * **Your class may not declare a constructor.** `__construct()` is `final` here
+ * and takes no arguments, so every module is built as `new YourModule()`.
+ * Configuration comes from the `configure` in its `bootstrap.php` entry, and
+ * dependencies from `with()`. A class that genuinely needs constructor arguments
+ * is a value object rather than a module: write it as a plain class, and if it
+ * also needs the plugin, have it `use WithPlugin` and pass it through
+ * `$plugin->wire( $object )`.
+ *
+ * @example One that only works when called
+ * No {@see Bootable}, so nothing happens until something calls it.
  *
  * ```
  * namespace Acme\Plugin\Modules;
  *
  * use Acme\Plugin\Core\Kernel\Abstracts\Module;
+ * use Acme\Plugin\Core\Modules\Path;
  *
- * class Shortcode extends Module {
+ * class Cache extends Module {
  *
- *     protected function on_boot(): void {
- *         add_shortcode( 'acme_form', array( $this, 'render' ) );
+ *     public function remember( string $key, callable $compute ): mixed {
+ *         $file = $this->with( Path::class )->get_plugin_path( 'cache/' . $key );
+ *
+ *         // ...
  *     }
  * }
  * ```
@@ -54,20 +71,39 @@ namespace Zestry\WPToolkit\Kernel\Abstracts;
  * ```
  * // bootstrap.php
  * return array(
- *     Shortcode::class,
+ *     Cache::class,
  * );
  * ```
  *
+ * @example One that acts on its own
+ * `on_boot()` runs once, when the plugin builds the module -- which is what
+ * being listed causes.
+ *
+ * ```
+ * use Acme\Plugin\Core\Kernel\Abstracts\Module;
+ * use Acme\Plugin\Core\Kernel\Contracts\Bootable;
+ *
+ * class Shortcode extends Module implements Bootable {
+ *
+ *     public function on_boot(): void {
+ *         add_shortcode( 'acme_form', array( $this, 'render' ) );
+ *     }
+ * }
+ * ```
+ *
  * @example One that takes configuration
- * The entry's value is the initializer, which runs after wiring and before
- * `on_boot()` -- so `on_boot()` can rely on whatever it set.
+ * A configured entry is an array, whose `configure` runs after the module is
+ * built and before `on_boot()` -- so `on_boot()` can rely on whatever it set.
+ * A module needing no configuration stays bare, as `CLI::class` does here.
  *
  * ```
  * // bootstrap.php
  * return array(
- *     Cron::class => static function ( Cron $cron ): void {
- *         $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
- *     },
+ *     Cron::class => array(
+ *         'configure' => static function ( Cron $cron ): void {
+ *             $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
+ *         },
+ *     ),
  *     CLI::class,
  * );
  * ```
@@ -84,7 +120,7 @@ namespace Zestry\WPToolkit\Kernel\Abstracts;
  * load asks WordPress for translations before it is ready to give them.
  *
  * ```
- * protected function on_boot(): void {
+ * public function on_boot(): void {
  *     $this->on_wp_init( function ( self $module ): void {
  *         register_post_type( 'acme_report', array(
  *             'label' => __( 'Reports', 'acme-plugin' ),
@@ -93,50 +129,26 @@ namespace Zestry\WPToolkit\Kernel\Abstracts;
  * }
  * ```
  */
-abstract class Module extends Service {
+abstract class Module implements PluginAware {
+
+	use WithPlugin;
 
 	/**
-	 * Whether boot() has already run for this instance.
+	 * Build with no arguments, and stop a subclass declaring a constructor.
 	 *
-	 * @var bool
-	 */
-	private bool $booted = false;
-
-	/**
-	 * Run the module's one-time setup.
-	 *
-	 * Guarded and idempotent, because a module can reach here by more than one
-	 * path in the same request: an initializer may boot it explicitly to pass
-	 * custom configuration, and the repository boots any module it resolves.
-	 * Without the guard, hooks would bind twice, files would be discovered
-	 * twice, or persisted state would load twice -- silently, since both callers
-	 * believe they are the first. Guarding it lets either call freely without
-	 * coordinating with the other.
+	 * The repository always constructs with no arguments and assigns the plugin
+	 * afterwards. `final` is what holds that: a subclass declaring its own
+	 * constructor is a fatal error, so none can take constructor arguments or
+	 * run setup before the plugin is there. Anything that needs to run after
+	 * that goes in the `configure` from its `bootstrap.php` entry, or -- if it
+	 * should run without being asked -- in a {@see Bootable} `on_boot()`.
 	 *
 	 * @return void
-	 *
-	 * @internal
 	 */
-	final public function boot(): void {
-		if ( $this->booted ) {
-			return;
-		}
-
-		$this->booted = true;
-
-		$this->on_boot();
+	// @codeCoverageIgnoreStart
+	final public function __construct() {
 	}
-
-	/**
-	 * Whether boot() has already run for this instance.
-	 *
-	 * @return bool
-	 *
-	 *  @internal
-	 */
-	final public function is_booted(): bool {
-		return $this->booted;
-	}
+	// @codeCoverageIgnoreEnd
 
 	/**
 	 * Run a callback on `init`, or immediately if `init` has already fired.
@@ -144,17 +156,16 @@ abstract class Module extends Service {
 	 * Almost everything a module registers -- a post type, a block, a WP-CLI
 	 * command -- has to happen on `init`, and a plain `add_action( 'init', ... )`
 	 * is a callback that never runs once `init` has passed. A module can be
-	 * resolved on either side of it: {@see \Zestry\WPToolkit\Kernel\Plugin::run()} is
+	 * built on either side of it: {@see \Zestry\WPToolkit\Kernel\Plugin::run()} is
 	 * synchronous, so an entry file that calls it at plugin load is ahead of
-	 * `init`, while one that calls it from a later hook -- or a `get()` during a
-	 * request -- is behind. This behaves the same either way, so a module never
-	 * has to care which.
+	 * `init`, while one that calls it from a later hook is behind. This behaves
+	 * the same either way, so a module never has to care which.
 	 *
-	 * The callback receives the module, matching the initializer signature, so a
-	 * closure declared elsewhere needs no `use` to reach it:
+	 * The callback receives the module, so a closure declared elsewhere needs no
+	 * `use` to reach it:
 	 *
 	 * ```
-	 * protected function on_boot(): void {
+	 * public function on_boot(): void {
 	 *     $this->on_wp_init( function ( self $module ): void {
 	 *         $module->register_widgets();
 	 *     } );
@@ -163,13 +174,10 @@ abstract class Module extends Service {
 	 *
 	 * `$priority` is WordPress's own, for ordering against something else on
 	 * `init` -- another plugin's registration, or a post type a taxonomy of
-	 * yours attaches to. **It applies only when `init` is still ahead**, which
-	 * is the case for the documented entry file, since `run()` at plugin load
-	 * is well before `init`. A module resolved *after* `init` has fired runs its
-	 * callback immediately, because there is no longer a queue to be ordered in
-	 * -- so two callbacks registered then run in the order they were registered,
-	 * whatever priority each asked for. Ordering that has to hold in both cases
-	 * belongs inside one callback.
+	 * yours attaches to. **It applies only while `init` is still ahead**: a
+	 * module built after `init` has fired runs its callback immediately, in
+	 * registration order, whatever priority it asked for. Ordering that has to
+	 * hold either way belongs inside one callback.
 	 *
 	 * @param callable(static $module): void $callback What to run.
 	 * @param int                            $priority WordPress hook priority, honoured only while `init` is still ahead.
@@ -197,26 +205,4 @@ abstract class Module extends Service {
 
 		\add_action( 'init', $run, $priority );
 	}
-
-	/**
-	 * What this module does on its own.
-	 *
-	 * Runs once, when the plugin builds the module. Abstract rather than
-	 * optional: a module with nothing to do here is a {@see Service}.
-	 *
-	 * **Bind hooks here; do the work in them.** An entry file that calls `run()`
-	 * as it loads -- which is the documented shape, and what
-	 * {@see \Zestry\WPToolkit\Kernel\Abstracts\ActivationHandler} requires -- reaches this
-	 * before WordPress has required `pluggable.php`, so there is no current user
-	 * yet: `current_user_can()`, `wp_mail()` and the nonce functions are not
-	 * defined and calling one is a fatal. It is also before `init`, so `__()` here
-	 * asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works
-	 * -- but it runs on every request, including the ones that never needed it.
-	 *
-	 * {@see on_wp_init()} is the way out of all three, and where anything a
-	 * module registers belongs.
-	 *
-	 * @return void
-	 */
-	abstract protected function on_boot(): void;
 }

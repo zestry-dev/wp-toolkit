@@ -11,12 +11,13 @@ namespace Zestry\WPToolkit\Modules\RestApi;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
-use Zestry\WPToolkit\Services\Path;
-use Zestry\WPToolkit\Services\Request\Attributes\RequestArgument;
-use Zestry\WPToolkit\Services\Request\Request;
+use Zestry\WPToolkit\Modules\Path;
+use Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument;
+use Zestry\WPToolkit\Modules\Request\Request;
 
 /**
  * Discovers plugin REST API routes and registers them with WordPress.
@@ -117,7 +118,7 @@ use Zestry\WPToolkit\Services\Request\Request;
  * Each file's RestRoute instance handles exactly one HTTP method (see
  * {@see RestRoute} for why). The module wires it, assigning the plugin and
  * injecting typed module dependencies, then hands it to
- * {@see \Zestry\WPToolkit\Services\Request\Request} to turn its declared properties into
+ * {@see \Zestry\WPToolkit\Modules\Request\Request} to turn its declared properties into
  * WordPress's args schema.
  *
  * `handle()` is wrapped, so each validated and sanitized request value is
@@ -126,7 +127,7 @@ use Zestry\WPToolkit\Services\Request\Request;
  * one.
  *
  */
-class RestApi extends Module {
+class RestApi extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -134,21 +135,6 @@ class RestApi extends Module {
 	 * Default plugin-relative directory of route files.
 	 */
 	const ROUTES_ROOT = 'routes';
-
-	/**
-	 * Path module injected by the plugin to resolve the routes directory.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
-
-	/**
-	 * Builds each route's args from its declared properties, and binds the
-	 * values onto them.
-	 *
-	 * @var Request
-	 */
-	public Request $request;
 
 	/**
 	 * Discover route files, wire them, and register each with WordPress.
@@ -166,7 +152,7 @@ class RestApi extends Module {
 	 * @internal
 	 */
 	public function register_routes(): void {
-		$root_dir = $this->path->get_plugin_path( self::ROUTES_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::ROUTES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
@@ -215,7 +201,7 @@ class RestApi extends Module {
 				// property declares. And args() states whatever the attribute
 				// could not hold: a translated description, or anything else
 				// this request works out rather than declares.
-				'args'                => $this->request->get_rest_args( $instance, $placeholders, $instance->args() ),
+				'args'                => $this->with( Request::class )->get_rest_args( $instance, $placeholders, $instance->args() ),
 			);
 
 			// Only publish a schema callback when the route explicitly returns one
@@ -280,7 +266,7 @@ class RestApi extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		\add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 	}
 
@@ -327,7 +313,7 @@ class RestApi extends Module {
 	 * @throws \InvalidArgumentException When a token has no property to bind to.
 	 */
 	private function assert_placeholders_are_bound( string $route_file, array $placeholders, RestRoute $route ): void {
-		$unbound = \array_diff( $placeholders, \array_keys( $this->request->get_arguments( $route ) ) );
+		$unbound = \array_diff( $placeholders, \array_keys( $this->with( Request::class )->get_arguments( $route ) ) );
 
 		if ( array() === $unbound ) {
 			return;
@@ -361,7 +347,7 @@ class RestApi extends Module {
 		return function ( \WP_REST_Request $request ) use ( $route ) {
 			$values = array();
 
-			foreach ( \array_keys( $this->request->get_arguments( $route ) ) as $name ) {
+			foreach ( \array_keys( $this->with( Request::class )->get_arguments( $route ) ) as $name ) {
 				$value = $request->get_param( $name );
 
 				if ( null !== $value ) {
@@ -378,7 +364,7 @@ class RestApi extends Module {
 			 */
 			$files = $request->get_file_params();
 
-			foreach ( $this->request->get_file_arguments( $route ) as $name => $is_required ) {
+			foreach ( $this->with( Request::class )->get_file_arguments( $route ) as $name => $is_required ) {
 				if ( isset( $files[ $name ] ) ) {
 					$values[ $name ] = $files[ $name ];
 					continue;
@@ -400,7 +386,7 @@ class RestApi extends Module {
 				}
 			}
 
-			$this->request->bind( $route, $values );
+			$this->with( Request::class )->bind( $route, $values );
 
 			return $route->handle( $request );
 		};

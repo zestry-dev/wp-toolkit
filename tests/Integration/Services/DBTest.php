@@ -5,7 +5,7 @@ declare( strict_types=1 );
 namespace Zestry\WPToolkit\Tests\Integration\Services;
 
 use Zestry\WPToolkit\Kernel\Plugin;
-use Zestry\WPToolkit\Services\DB;
+use Zestry\WPToolkit\Modules\DB;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
@@ -16,7 +16,7 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  * which is what dbDelta() needs -- and dbDelta() reports success either way, so
  * an unnormalised name creates nothing and says nothing.
  *
- * @covers \Zestry\WPToolkit\Services\DB
+ * @covers \Zestry\WPToolkit\Modules\DB
  */
 final class DBTest extends TestCase {
 

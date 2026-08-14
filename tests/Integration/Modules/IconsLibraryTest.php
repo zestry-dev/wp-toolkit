@@ -52,7 +52,6 @@ final class IconsLibraryTest extends TestCase {
 	public function test_a_discovered_icon_is_registered_under_the_plugin_namespace(): void {
 		$this->write_icon( 'arrow-right' );
 
-		$this->boot();
 
 		$this->assertNotSame( '', wp_get_icon( 'zestry-test/arrow-right' ) );
 	}
@@ -65,7 +64,6 @@ final class IconsLibraryTest extends TestCase {
 	public function test_the_filename_is_the_name_verbatim(): void {
 		$this->write_icon( 'brand_mark' );
 
-		$this->boot();
 
 		$this->assertNotSame( '', wp_get_icon( 'zestry-test/brand_mark' ) );
 	}
@@ -73,7 +71,6 @@ final class IconsLibraryTest extends TestCase {
 	public function test_the_collection_is_registered_for_the_plugin(): void {
 		$this->write_icon( 'arrow-right' );
 
-		$this->boot();
 
 		$this->assertTrue(
 			\WP_Icon_Collections_Registry::get_instance()->is_registered( 'zestry-test' )
@@ -86,7 +83,6 @@ final class IconsLibraryTest extends TestCase {
 	 * the editor's picker to list and nothing to find inside it.
 	 */
 	public function test_the_derived_collection_waits_for_an_icon(): void {
-		$this->boot();
 
 		$this->assertFalse(
 			\WP_Icon_Collections_Registry::get_instance()->is_registered( 'zestry-test' )
@@ -121,7 +117,6 @@ final class IconsLibraryTest extends TestCase {
 	public function test_a_label_is_built_from_the_filename_when_none_is_given(): void {
 		$this->write_icon( 'arrow-right' );
 
-		$this->boot();
 
 		$this->assertSame(
 			'Arrow Right',
@@ -141,13 +136,11 @@ final class IconsLibraryTest extends TestCase {
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'zestry-test/Arrow Right' );
 
-		$this->boot();
 	}
 
 	public function test_a_returned_label_replaces_the_derived_one(): void {
 		$this->write_icon( 'arrow-right', self::VALID_ICON, "array( 'label' => 'Arrow, pointing right' )" );
 
-		$this->boot();
 
 		$this->assertSame(
 			'Arrow, pointing right',
@@ -162,7 +155,6 @@ final class IconsLibraryTest extends TestCase {
 	public function test_a_returned_name_replaces_the_one_from_the_filename(): void {
 		$this->write_icon( 'logo-2024', self::VALID_ICON, "array( 'name' => 'brand_mark', 'label' => 'Acme logo' )" );
 
-		$this->boot();
 
 		$this->assertNotSame( '', wp_get_icon( 'zestry-test/brand_mark' ) );
 		$this->assertSame( '', wp_get_icon( 'zestry-test/logo-2024' ) );
@@ -179,7 +171,6 @@ final class IconsLibraryTest extends TestCase {
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'resolve to the name "zestry-test/shared"' );
 
-		$this->boot();
 	}
 
 	/**
@@ -195,7 +186,6 @@ final class IconsLibraryTest extends TestCase {
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'rendered nothing' );
 
-		$this->boot();
 	}
 
 	/**
@@ -223,7 +213,6 @@ final class IconsLibraryTest extends TestCase {
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( '<circle>' );
 
-		$this->boot();
 	}
 
 	/**
@@ -241,13 +230,11 @@ final class IconsLibraryTest extends TestCase {
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'path[stroke]' );
 
-		$this->boot();
 	}
 
 	public function test_an_icon_that_survives_sanitizing_registers_without_complaint(): void {
 		$this->write_icon( 'arrow-right' );
 
-		$this->boot();
 
 		$this->assertStringContainsString( 'M5 12h14', wp_get_icon( 'zestry-test/arrow-right' ) );
 	}
@@ -321,7 +308,6 @@ final class IconsLibraryTest extends TestCase {
 	public function test_a_plain_svg_is_registered_too(): void {
 		file_put_contents( $this->plugin_dir . '/svg-icons/logo.svg', self::VALID_ICON );
 
-		$this->boot();
 
 		$this->assertNotSame( '', wp_get_icon( 'zestry-test/logo' ) );
 		$this->assertSame(
@@ -337,7 +323,6 @@ final class IconsLibraryTest extends TestCase {
 	public function test_a_plain_svg_is_registered_by_path(): void {
 		file_put_contents( $this->plugin_dir . '/svg-icons/logo.svg', self::VALID_ICON );
 
-		$this->boot();
 
 		$this->assertArrayHasKey(
 			'file_path',
@@ -356,7 +341,6 @@ final class IconsLibraryTest extends TestCase {
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'resolve to the name "arrow"' );
 
-		$this->boot();
 	}
 
 	/**
@@ -373,7 +357,6 @@ final class IconsLibraryTest extends TestCase {
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( '<circle>' );
 
-		$this->boot();
 	}
 
 
@@ -384,7 +367,6 @@ final class IconsLibraryTest extends TestCase {
 	public function test_the_default_collection_is_labelled_from_the_slug(): void {
 		$this->write_icon( 'arrow-right' );
 
-		$this->boot();
 
 		$this->assertSame(
 			'zestry-test icons',
@@ -481,7 +463,6 @@ final class IconsLibraryTest extends TestCase {
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'nowhere' );
 
-		$this->boot();
 	}
 
 	/**

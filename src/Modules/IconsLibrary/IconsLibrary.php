@@ -11,11 +11,12 @@ namespace Zestry\WPToolkit\Modules\IconsLibrary;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Helpers\Str;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 /**
  * Publishes your plugin's SVG icons, for the Icon block and for your own markup.
@@ -23,7 +24,7 @@ use Zestry\WPToolkit\Services\Path;
  * An icon is a file in `svg-icons/`. `arrow-right.php` registers as
  * `{plugin-slug}/arrow-right` -- offered in the editor's icon picker under a
  * collection named after your plugin, served on the REST API at `wp/v2/icons`,
- * and rendered in PHP as `$this->icons->get( 'arrow-right' )`. Requires
+ * and rendered in PHP as `$icons->get( 'arrow-right' )`. Requires
  * WordPress 7.1 or newer.
  *
  * > [!IMPORTANT]
@@ -79,11 +80,14 @@ use Zestry\WPToolkit\Services\Path;
  * error rather than a preference: `arrow.php` and `arrow.svg` are one icon.
  *
  * @example Using one
- * ```
- * public IconsLibrary $icons;
+ * A module is asked for where it is needed rather than declared as a property,
+ * since building one boots it.
  *
+ * ```
  * public function render(): string {
- *     return $this->icons->get( 'arrow-right', array( 'size' => 32 ) );
+ *     $icons = $this->get_plugin()->get( IconsLibrary::class );
+ *
+ *     return $icons->get( 'arrow-right', array( 'size' => 32 ) );
  * }
  * ```
  *
@@ -112,13 +116,11 @@ use Zestry\WPToolkit\Services\Path;
  * file cannot be called what the icon is.
  *
  * @setup-hook init
- * @setup-hook-priority 100
  * @setup Group them
  * ```
  * IconsLibrary::class => array(
- *     'boots_on'    => 'init',
- *     'priority'    => 100,
- *     'before_boot' => static function ( IconsLibrary $icons ): void {
+ *     'boots_on'  => 'init',
+ *     'configure' => static function ( IconsLibrary $icons ): void {
  *         $icons->set_default_collection_details(
  *             __( 'Acme icons', 'acme-plugin' ),
  *             __( 'Everything Acme draws.', 'acme-plugin' )
@@ -132,15 +134,15 @@ use Zestry\WPToolkit\Services\Path;
  * ```
  *
  * You have one collection already, slugged with your plugin slug and labelled
- * `{slug} icons` until you say otherwise. `before_boot` runs on the hook, right
+ * `{slug} icons` until you say otherwise. `configure` runs on the hook, right
  * before the module registers anything -- which is what makes the `__()` calls
  * safe, and why this module names a hook at all.
  *
- * Late on `init` because it goes after WordPress's own registries, built at 0
- * and 10, and after any other plugin registering a collection an icon of yours
- * might name.
+ * An icon may name a collection another plugin registers, and this module
+ * refuses one it cannot find. If yours does, add a `'priority'` above 10 to the
+ * entry so that plugin gets its turn first.
  */
-class IconsLibrary extends Module {
+class IconsLibrary extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -148,11 +150,6 @@ class IconsLibrary extends Module {
 	 * Where icons are discovered, relative to the plugin root.
 	 */
 	const SVG_ICONS_ROOT = 'svg-icons';
-
-	/**
-	 * @var Path
-	 */
-	public Path $path;
 
 	/**
 	 * Discovered icons as local name => absolute path, once the directory has been walked.
@@ -221,9 +218,9 @@ class IconsLibrary extends Module {
 	 * enough not to collide. One another plugin already registered is left as it
 	 * is rather than replaced, and an icon may file itself under it.
 	 *
-	 * **Call it from the entry's `before_boot`, as the example does.** A label and
+	 * **Call it from the entry's `configure`, as the example does.** A label and
 	 * a description are both user-visible, so they want translating, and
-	 * `before_boot` runs on the boot hook rather than at plugin load, where a
+	 * `configure` runs on the boot hook rather than at plugin load, where a
 	 * `__()` reports `_load_textdomain_just_in_time` on every request.
 	 *
 	 * @param array<string, string|array{label: string, description?: string}> $collections Labels or configuration, keyed by slug.
@@ -258,7 +255,7 @@ class IconsLibrary extends Module {
 	 * entirely when it is: an absent description is honest, where a generated
 	 * sentence occupies the space a real one would go in.
 	 *
-	 * **Call it from the entry's `before_boot`**, for the reason
+	 * **Call it from the entry's `configure`**, for the reason
 	 * {@see add_collections()} gives -- both of these are read by a person, so
 	 * both want translating.
 	 *
@@ -284,7 +281,7 @@ class IconsLibrary extends Module {
 			return $this->discovered;
 		}
 
-		$root_dir = $this->path->get_plugin_path( self::SVG_ICONS_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::SVG_ICONS_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
@@ -474,42 +471,14 @@ class IconsLibrary extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		if ( ! \function_exists( 'wp_register_icon' ) ) {
-			\_doing_it_wrong(
-				__METHOD__,
-				// Deliberately not translated: this runs at plugin load, before
-				// `init`, where a __() call would itself trigger
-				// _load_textdomain_just_in_time.
-				'The icons module requires the Icons API, added in WordPress 7.1. Nothing was registered.',
-				'7.1.0'
-			);
+			$this->report_missing_api();
 
 			return;
 		}
 
-		/*
-		 * Late on `init`, where WordPress registers its own at 0 and 10. Nothing
-		 * in core requires it -- `wp_register_icon()` splits the name and checks
-		 * only the half after the slash, never that the collection exists -- but
-		 * two things here do.
-		 *
-		 * `add_collections()` and `set_default_collection_details()` are called
-		 * from `on_wp_init()`, which defaults to 10. At 10 this would work only
-		 * because a module's initializer runs before its boot, so the consumer's
-		 * callback happens to be added first; running later makes that ordering a
-		 * fact rather than a coincidence.
-		 *
-		 * And an icon may name a collection another plugin registers, which this
-		 * module refuses if it cannot find it. Going last is what gives that
-		 * plugin its turn.
-		 */
-		$this->on_wp_init(
-			static function ( self $module ): void {
-				$module->register_icons();
-			},
-			100
-		);
+		$this->register_icons();
 	}
 
 	/**
@@ -560,7 +529,7 @@ class IconsLibrary extends Module {
 			$markup   = null;
 
 			if ( \str_ends_with( $path, '.php' ) ) {
-				$included = $this->path->include_file( $path );
+				$included = $this->with( Path::class )->include_file( $path );
 				$declared = $this->get_declared( $included['returned'] );
 				$markup   = \trim( $included['buffer'] );
 
@@ -764,5 +733,20 @@ class IconsLibrary extends Module {
 	 */
 	private function is_registrable_segment( string $value ): bool {
 		return 1 === \preg_match( '/^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$/', $value );
+	}
+
+	/**
+	 * Say that this WordPress has no Icons API, so nothing was registered.
+	 *
+	 * @return void
+	 */
+	private function report_missing_api(): void {
+		\_doing_it_wrong(
+			__METHOD__,
+			// Deliberately not translated: this runs before `init`, where a
+			// __() call would itself trigger _load_textdomain_just_in_time.
+			'The icons module requires the Icons API, added in WordPress 7.1. Nothing was registered.',
+			'7.1.0'
+		);
 	}
 }

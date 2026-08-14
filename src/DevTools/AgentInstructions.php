@@ -11,8 +11,8 @@ namespace Zestry\WPToolkit\DevTools;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
+use Zestry\WPToolkit\Modules\Path;
 
 /**
  * Renders the `AGENTS.md` that `wp zt init` leaves in a consuming plugin.
@@ -39,7 +39,7 @@ use Zestry\WPToolkit\Services\Path;
  * answers it from the plugin itself, so the instructions point at the command
  * rather than snapshotting its output.
  */
-class AgentInstructions extends Service {
+class AgentInstructions extends Module {
 
 	/**
 	 * The page the rules are read from, relative to this package's root.
@@ -47,13 +47,6 @@ class AgentInstructions extends Service {
 	 * @var string
 	 */
 	public const RULES_PAGE = 'docs/rules.md';
-
-	/**
-	 * Resolver for this package's own paths.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
 
 	/**
 	 * The `AGENTS.md` for a plugin.
@@ -153,7 +146,7 @@ class AgentInstructions extends Service {
 	 * @throws \RuntimeException When the rules page cannot be read.
 	 */
 	private function get_rules(): array {
-		$page = $this->path->get_plugin_path( self::RULES_PAGE );
+		$page = $this->with( Path::class )->get_plugin_path( self::RULES_PAGE );
 
 		if ( ! \is_file( $page ) ) {
 			throw new \RuntimeException( 'Cannot read the rules to render: ' . $page );

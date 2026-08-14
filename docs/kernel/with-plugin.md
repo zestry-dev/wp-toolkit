@@ -13,7 +13,7 @@ Satisfies the PluginAware contract. A class using the trait asks for a service b
 
 Private properties are never injected (reflection cannot reach a private property declared on an ancestor class). Mark a property with #[NoInject] to exclude it from injection.
 
-Declare injected dependencies `public` by convention: every module and DevTools command in this toolkit does, which keeps a module's dependencies uniformly inspectable. `protected` is equally supported by the mechanism and is the right choice only when a subclass hierarchy genuinely needs the dependency hidden from callers.
+Declare injected dependencies `public` by convention, which keeps a class's dependencies inspectable. `protected` is equally supported, and is the right choice only when a subclass hierarchy genuinely needs the dependency hidden from callers.
 
 Typical usage, matching how Command, AdminPage, and AjaxAction consume this trait directly (a Service or Module gets the same behavior by extending the Service base class, which already uses this trait):
 

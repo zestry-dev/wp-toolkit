@@ -13,15 +13,11 @@ declare( strict_types=1 );
 
 use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
 use Zestry\WPToolkit\DevTools\RuntimePlugin;
+use Zestry\WPToolkit\DevTools\ConsumerPlugin;
+use Zestry\WPToolkit\DevTools\StubRenderer;
+use Zestry\WPToolkit\DevTools\ZestryConfig;
 
 return new class() extends MakeCommand {
-
-	/**
-	 * The consuming plugin's own running instance, when it has one.
-	 *
-	 * @var RuntimePlugin
-	 */
-	public RuntimePlugin $runtime;
 
 	/**
 	 * Whether the block renders in PHP, once resolved.
@@ -166,12 +162,12 @@ return new class() extends MakeCommand {
 	 * @return array<string, string>
 	 */
 	protected function get_extra_values( string $name, array $assoc_args ): array {
-		$config = $this->zestry_config->read( $this->consumer_plugin->get_plugin_root() );
+		$config = $this->with( ZestryConfig::class )->read( $this->with( ConsumerPlugin::class )->get_plugin_root() );
 
 		$dynamic = $this->resolve_dynamic( $assoc_args );
 		$view    = $this->resolve_view( $assoc_args );
 
-		$pascal = str_replace( ' ', '', $this->stub_renderer->to_title( $name ) );
+		$pascal = str_replace( ' ', '', $this->with( StubRenderer::class )->to_title( $name ) );
 
 		return array(
 			// WordPress validates a block name against /^[a-z0-9-]+\/[a-z0-9-]+$/,
@@ -278,7 +274,7 @@ return new class() extends MakeCommand {
 	 * @return string
 	 */
 	protected function normalize_name( string $name ): string {
-		return $this->stub_renderer->to_slug( $name );
+		return $this->with( StubRenderer::class )->to_slug( $name );
 	}
 
 	/**
@@ -318,7 +314,7 @@ return new class() extends MakeCommand {
 	 * @return string
 	 */
 	private function get_block_namespace( array $config ): string {
-		$slug = $this->runtime->get_slug_or_default( $this->consumer_plugin->get_plugin_root() );
+		$slug = $this->with( RuntimePlugin::class )->get_slug_or_default( $this->with( ConsumerPlugin::class )->get_plugin_root() );
 
 		return (string) preg_replace(
 			'/[^a-z0-9-]/',
@@ -336,7 +332,7 @@ return new class() extends MakeCommand {
 	 * @return string
 	 */
 	private function get_php_field(): string {
-		return $this->get_block_namespace( $this->zestry_config->read( $this->consumer_plugin->get_plugin_root() ) ) . '-php';
+		return $this->get_block_namespace( $this->with( ZestryConfig::class )->read( $this->with( ConsumerPlugin::class )->get_plugin_root() ) ) . '-php';
 	}
 
 	/**

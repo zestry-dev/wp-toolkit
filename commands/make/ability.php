@@ -7,6 +7,7 @@
 declare( strict_types=1 );
 
 use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
+use Zestry\WPToolkit\DevTools\StubRenderer;
 
 return new class() extends MakeCommand {
 
@@ -75,7 +76,7 @@ return new class() extends MakeCommand {
 	 * @return string
 	 */
 	protected function normalize_name( string $name ): string {
-		return $this->stub_renderer->to_slug( $name );
+		return $this->with( StubRenderer::class )->to_slug( $name );
 	}
 
 	/**

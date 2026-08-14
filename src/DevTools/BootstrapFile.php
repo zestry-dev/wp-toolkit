@@ -11,7 +11,7 @@ namespace Zestry\WPToolkit\DevTools;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Declares modules in a consuming plugin's `bootstrap.php`.
@@ -25,14 +25,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * everything already there untouched. A module already declared is skipped
  * rather than duplicated, keeping whatever configuration is on it.
  */
-class BootstrapFile extends Service {
-
-	/**
-	 * The consuming plugin's own running instance, when it has one.
-	 *
-	 * @var RuntimePlugin
-	 */
-	public RuntimePlugin $runtime;
+class BootstrapFile extends Module {
 
 	/**
 	 * Declare a module, unless it is already in the file.
@@ -190,7 +183,7 @@ class BootstrapFile extends Service {
 		$declarations = array();
 
 		/*
-		 * The same shapes `bootstrap()` accepts: `Foo::class => $initializer`
+		 * The same two shapes `bootstrap()` accepts: `Foo::class => array( … )`
 		 * gives a string key, and a bare `Foo::class,` gives an integer key
 		 * whose value is the class name.
 		 */
@@ -202,7 +195,7 @@ class BootstrapFile extends Service {
 			}
 
 			$declarations[ \ltrim( $class_name, '\\' ) ] = array(
-				'initialize' => \is_string( $key ) && \is_callable( $value ),
+				'initialize' => \is_array( $value ) && \is_callable( $value['configure'] ?? null ),
 			);
 		}
 
@@ -298,7 +291,7 @@ class BootstrapFile extends Service {
 	 * @return string
 	 */
 	private function get_path( string $plugin_root ): string {
-		$declared = $this->runtime->get( $plugin_root )?->get_bootstrap_file();
+		$declared = $this->with( RuntimePlugin::class )->get( $plugin_root )?->get_bootstrap_file();
 
 		return null === $declared
 			? \rtrim( $plugin_root, '/\\' ) . '/bootstrap.php'

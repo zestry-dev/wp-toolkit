@@ -12,7 +12,7 @@ namespace Zestry\WPToolkit\DevTools;
 \defined( 'ABSPATH' ) || exit;
 
 use Zestry\WPToolkit\Kernel\Helpers\Str;
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Copies toolkit source into a consuming project, rewriting its namespace
@@ -33,7 +33,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * a standalone string token whose content is exactly `wp-toolkit` (for the
  * text domain) is rewritten, not a substring match inside some other string.
  */
-class Copier extends Service {
+class Copier extends Module {
 
 	/**
 	 * The one segment separating copied source from the consumer's own code.
@@ -272,7 +272,7 @@ class Copier extends Service {
 	 * Three kinds of name are rewritten, and they are the three ways a class
 	 * can be named in executable code: the file's own `namespace` declaration,
 	 * each `use` import, and a name written out in full where it is used --
-	 * `\Zestry\WPToolkit\Services\Request\Request::class`, a return type, an enum case.
+	 * `\Zestry\WPToolkit\Modules\Request\Request::class`, a return type, an enum case.
 	 *
 	 * That last one is why this cannot skip it: a copied file naming
 	 * `\Zestry\WPToolkit\...` inline is naming a class the plugin does not have, and the
@@ -413,63 +413,30 @@ class Copier extends Service {
 	}
 
 	/**
-	 * The registry as one lookup table, keyed by name.
+	 * The registry, normalised for a caller.
 	 *
-	 * `registry.php` groups entries under `services` and `modules` so it reads
-	 * like `bootstrap.php` does. Every consumer wants a flat lookup, though --
-	 * the commands take a bare name (`wp zt add path`), and dependency
-	 * resolution walks a closure that crosses the two freely: nine of the ten
-	 * modules depend on `path`, a service. Flattening once here keeps that
-	 * structure in the file without pushing a section search into every caller,
-	 * and `depends` comes back merged for the same reason.
+	 * `registry.php` is one flat list keyed by name, which is what every caller
+	 * wants -- the commands take a bare name (`wp zt add path`), and dependency
+	 * resolution walks a closure over the same keys. This fills in the optional
+	 * parts so nothing downstream has to ask whether a key is there.
 	 *
-	 * The section each entry was filed under is carried through as `section`,
-	 * which is the one thing the grouping is actually good for: telling a reader
-	 * which kind they just added.
-	 *
-	 * A name appearing in both sections throws rather than being flattened. The
-	 * commands take a bare name, so two entries answering to one would make
-	 * `wp zt add <name>` install whichever section happened to be read last --
-	 * and each section reads correctly on its own, so nothing about the file
-	 * would look wrong. A single array could not hide this; two can.
-	 *
-	 * @param array<string, array<string, array{source: class-string, requires?: string, depends: array{services: string[], modules: string[]}}>> $registry The registry as declared.
-	 * @return array<string, array{source: class-string, depends: string[], section: string, requires: string|null}> Keyed by entry name.
-	 * @throws \InvalidArgumentException When one name is declared in more than one section.
+	 * @param array<string, array{source: class-string, requires?: string, depends?: string[]}> $registry The registry as declared.
+	 * @return array<string, array{source: class-string, depends: string[], requires: string|null}> Keyed by entry name.
 	 */
-	public static function flatten_registry( array $registry ): array {
-		$flat = array();
+	public static function normalize_registry( array $registry ): array {
+		$normalized = array();
 
-		foreach ( $registry as $section => $entries ) {
-			foreach ( $entries as $name => $entry ) {
-				if ( isset( $flat[ $name ] ) ) {
-					throw new \InvalidArgumentException(
-						\sprintf(
-							'Registry name "%s" is declared in both "%s" and "%s". Every name must be unique across sections, since `wp zt add %1$s` names no section.',
-							$name,
-							$flat[ $name ]['section'],
-							$section
-						)
-					);
-				}
-
-				$depends = $entry['depends'] ?? array();
-
-				$flat[ $name ] = array(
-					'source'   => $entry['source'],
-					'depends'  => \array_merge(
-						$depends['services'] ?? array(),
-						$depends['modules'] ?? array()
-					),
-					'section'  => $section,
-					// Null rather than absent, so a reader never has to ask
-					// whether the key is there before asking what it says.
-					'requires' => $entry['requires'] ?? null,
-				);
-			}
+		foreach ( $registry as $name => $entry ) {
+			$normalized[ $name ] = array(
+				'source'   => $entry['source'],
+				'depends'  => $entry['depends'] ?? array(),
+				// Null rather than absent, so a reader never has to ask
+				// whether the key is there before asking what it says.
+				'requires' => $entry['requires'] ?? null,
+			);
 		}
 
-		return $flat;
+		return $normalized;
 	}
 
 	/**

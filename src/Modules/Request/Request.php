@@ -6,14 +6,14 @@
 
 declare( strict_types=1 );
 
-namespace Zestry\WPToolkit\Services\Request;
+namespace Zestry\WPToolkit\Modules\Request;
 
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Helpers\Arr;
-use Zestry\WPToolkit\Services\Request\Attributes\RequestArgument;
+use Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument;
 
 /**
  * Turns declared arguments into schemas, and incoming values into properties.
@@ -54,7 +54,7 @@ use Zestry\WPToolkit\Services\Request\Attributes\RequestArgument;
  *
  * and the values arrive on `$this->order_id` and `$this->notify`.
  */
-class Request extends Service {
+class Request extends Module {
 
 	/**
 	 * How deep a structure may nest before this is a cycle rather than a shape.

@@ -263,7 +263,7 @@ final class InitCommandTest extends TestCase {
 	private function run_init( array $overrides = array() ): void {
 		\WP_CLI::reset();
 
-		$package_plugin = new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-init-demo' );
+		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-init-demo' ) )->declare_modules( $this->get_toolkit_modules() );
 		$command        = require dirname( __DIR__, 3 ) . '/commands/init.php';
 		$package_plugin->wire( $command );
 

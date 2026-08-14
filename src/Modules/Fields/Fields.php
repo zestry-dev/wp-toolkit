@@ -11,10 +11,11 @@ namespace Zestry\WPToolkit\Modules\Fields;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 /**
  * Registers post meta from files, with types, sanitisers and permissions.
@@ -81,8 +82,10 @@ use Zestry\WPToolkit\Services\Path;
  * };
  * ```
  *
+ *
+ * @setup-hook init
  */
-class Fields extends Module {
+class Fields extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -90,11 +93,6 @@ class Fields extends Module {
 	 * Where fields are discovered, relative to the plugin root.
 	 */
 	const FIELDS_ROOT = 'fields';
-
-	/**
-	 * @var Path
-	 */
-	public Path $path;
 
 	/**
 	 * Discovered fields keyed by filename, once the directory has been walked.
@@ -402,31 +400,9 @@ class Fields extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
-		$this->on_wp_init(
-			static function ( self $module ): void {
-				$module->register_fields();
-			}
-		);
-
-		/*
-		 * Validation belongs in the write, not in one accessor. WordPress lets
-		 * these two short-circuit a write of any meta type, so hooking them
-		 * applies a field's validate() to `update_post_meta()` and everything
-		 * else -- not only to set(). WordPress has no validate callback of its
-		 * own for meta; this is the closest thing to one.
-		 */
-		foreach ( MetaType::cases() as $type ) {
-			// Bound per type, and the type is carried into the check: these
-			// filters fire for every key of their type, and the same key can
-			// exist on a post and a term and mean different things.
-			$guard = function ( $check, $object_id, $meta_key, $meta_value ) use ( $type ) {
-				return $this->block_invalid_write( $type, $check, (int) $object_id, (string) $meta_key, $meta_value );
-			};
-
-			\add_filter( 'add_' . $type->value . '_metadata', $guard, 10, 4 );
-			\add_filter( 'update_' . $type->value . '_metadata', $guard, 10, 4 );
-		}
+	public function on_boot(): void {
+		$this->register_fields();
+		$this->guard_every_write();
 	}
 
 	/**
@@ -486,7 +462,7 @@ class Fields extends Module {
 			return $this->discovered;
 		}
 
-		$root_dir = $this->path->get_plugin_path( self::FIELDS_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::FIELDS_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
@@ -596,5 +572,30 @@ class Fields extends Module {
 			10,
 			3
 		);
+	}
+
+	/**
+	 * Apply each field's `validate()` to every write of its meta key.
+	 *
+	 * Validation belongs in the write, not in one accessor. WordPress lets these
+	 * two filters short-circuit a write of any meta type, so hooking them applies
+	 * a field's `validate()` to `update_post_meta()` and everything else -- not
+	 * only to `set()`. WordPress has no validate callback of its own for meta;
+	 * this is the closest thing to one.
+	 *
+	 * @return void
+	 */
+	private function guard_every_write(): void {
+		foreach ( MetaType::cases() as $type ) {
+			// Bound per type, and the type is carried into the check: these
+			// filters fire for every key of their type, and the same key can
+			// exist on a post and a term and mean different things.
+			$guard = function ( $check, $object_id, $meta_key, $meta_value ) use ( $type ) {
+				return $this->block_invalid_write( $type, $check, (int) $object_id, (string) $meta_key, $meta_value );
+			};
+
+			\add_filter( 'add_' . $type->value . '_metadata', $guard, 10, 4 );
+			\add_filter( 'update_' . $type->value . '_metadata', $guard, 10, 4 );
+		}
 	}
 }

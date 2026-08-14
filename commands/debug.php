@@ -17,20 +17,6 @@ use Zestry\WPToolkit\Modules\CLI\Command;
 return new class() extends Command {
 
 	/**
-	 * The plugin whose directory `wp zt` was run from.
-	 *
-	 * @var ConsumerPlugin
-	 */
-	public ConsumerPlugin $consumer_plugin;
-
-	/**
-	 * The consuming plugin's own running instance, read for its slug.
-	 *
-	 * @var RuntimePlugin
-	 */
-	public RuntimePlugin $runtime;
-
-	/**
 	 * Turn this plugin's debug mode on or off.
 	 *
 	 * Your plugin has a debug switch of its own, separate from `WP_DEBUG`: the
@@ -81,13 +67,13 @@ return new class() extends Command {
 	 */
 	public function handle( array $args, array $assoc_args ): void {
 		try {
-			$plugin_root = $this->consumer_plugin->get_plugin_root();
+			$plugin_root = $this->with( ConsumerPlugin::class )->get_plugin_root();
 		} catch ( \RuntimeException $exception ) {
 			$this->error( $exception->getMessage() );
 			return;
 		}
 
-		$constant = Plugin::get_debug_constant( $this->runtime->get_slug_or_default( $plugin_root ) );
+		$constant = Plugin::get_debug_constant( $this->with( RuntimePlugin::class )->get_slug_or_default( $plugin_root ) );
 
 		/*
 		 * Read from this process, which loaded wp-config.php on the way in. A

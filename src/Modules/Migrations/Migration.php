@@ -13,7 +13,7 @@ namespace Zestry\WPToolkit\Modules\Migrations;
 
 use Zestry\WPToolkit\Kernel\Contracts\PluginAware;
 use Zestry\WPToolkit\Kernel\Traits\WithPlugin;
-use Zestry\WPToolkit\Services\DB;
+use Zestry\WPToolkit\Modules\DB;
 
 /**
  * Base class for a file-based, one-time database migration.
@@ -43,13 +43,6 @@ use Zestry\WPToolkit\Services\DB;
 abstract class Migration implements PluginAware {
 
 	use WithPlugin;
-
-	/**
-	 * DB module injected by the plugin, for naming tables.
-	 *
-	 * @var DB
-	 */
-	public DB $db;
 
 	/**
 	 * Prevent direct construction from bypassing plugin initialization.
@@ -139,7 +132,7 @@ abstract class Migration implements PluginAware {
 	 * @throws \InvalidArgumentException When the name is empty, illegal, or too long for MySQL.
 	 */
 	final public function get_table( string $name ): string {
-		return $this->db->get_table( $name );
+		return $this->with( DB::class )->get_table( $name );
 	}
 
 	/**
@@ -152,6 +145,6 @@ abstract class Migration implements PluginAware {
 	 * @return string
 	 */
 	final public function get_charset_collate(): string {
-		return $this->db->get_charset_collate();
+		return $this->with( DB::class )->get_charset_collate();
 	}
 }

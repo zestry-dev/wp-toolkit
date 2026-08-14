@@ -12,8 +12,8 @@ namespace Zestry\WPToolkit\Modules\AdminPages;
 \defined( 'ABSPATH' ) || exit;
 
 use Zestry\WPToolkit\Kernel\Contracts\PluginAware;
-use Zestry\WPToolkit\Services\Cookie;
-use Zestry\WPToolkit\Services\Views;
+use Zestry\WPToolkit\Modules\Cookie;
+use Zestry\WPToolkit\Modules\Views;
 use Zestry\WPToolkit\Kernel\Traits\WithPlugin;
 use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
 
@@ -248,7 +248,7 @@ abstract class AdminPage implements PluginAware {
 	 * of the template's inputs, and you can read it without opening the
 	 * template.
 	 *
-	 * {@see \Zestry\WPToolkit\Services\Views} puts one thing of its own in
+	 * {@see \Zestry\WPToolkit\Modules\Views} puts one thing of its own in
 	 * scope: `$this`, the service itself, so a subview is
 	 * `$this->render( 'admin-pages/-fields', array( ... ) )`.
 	 *
@@ -271,7 +271,7 @@ abstract class AdminPage implements PluginAware {
 	 *
 	 * ```
 	 * public function handle_submit(): void {
-	 *     $this->options->set( 'threshold', $this->threshold );
+	 *     $this->get_plugin()->get( Options::class )->set( 'threshold', $this->threshold );
 	 *     $this->set_flash( __( 'Settings saved.', 'acme-plugin' ) );
 	 *
 	 *     wp_safe_redirect( $this->get_page_url() );
@@ -284,7 +284,7 @@ abstract class AdminPage implements PluginAware {
 	 * ```
 	 *
 	 * Anything serializable, so an array carries a notice and a count together.
-	 * Encrypted on the way out by {@see \Zestry\WPToolkit\Services\Cookie}, so nothing of it is
+	 * Encrypted on the way out by {@see \Zestry\WPToolkit\Modules\Cookie}, so nothing of it is
 	 * readable in the browser.
 	 *
 	 * @param mixed $value What the next request should be told.

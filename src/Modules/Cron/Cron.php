@@ -11,10 +11,11 @@ namespace Zestry\WPToolkit\Modules\Cron;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 /**
  * Discovers plugin WP-Cron schedules and keeps them registered.
@@ -53,13 +54,17 @@ use Zestry\WPToolkit\Services\Path;
  * ```
  * // bootstrap.php
  * return array(
- *     Cron::class => static function ( Cron $cron ): void {
- *         $cron->add_custom_interval( 'every_15_minutes', 15 * MINUTE_IN_SECONDS, 'Every 15 Minutes' );
- *     },
+ *     Cron::class => array(
+ *         'configure' => static function ( Cron $cron ): void {
+ *             $cron->add_custom_interval( 'every_15_minutes', 15 * MINUTE_IN_SECONDS, 'Every 15 Minutes' );
+ *         },
+ *     ),
  * );
  * ```
+ *
+ * @setup-hook init
  */
-class Cron extends Module {
+class Cron extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -69,13 +74,6 @@ class Cron extends Module {
 	const SCHEDULES_ROOT = 'schedules';
 
 	private const BUILTIN_INTERVALS = array( 'hourly', 'twicedaily', 'daily' );
-
-	/**
-	 * Path module injected by the plugin to resolve the schedules directory.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
 
 	/**
 	 * Custom interval definitions registered via add_custom_interval(), keyed
@@ -325,14 +323,10 @@ class Cron extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		\add_filter( 'cron_schedules', array( $this, 'filter_cron_schedules' ) ); // phpcs:ignore WordPress.WP.CronInterval.ChangeDetected
 
-		$this->on_wp_init(
-			static function ( self $module ): void {
-				$module->register_schedules();
-			}
-		);
+		$this->register_schedules();
 	}
 
 	/**
@@ -362,7 +356,7 @@ class Cron extends Module {
 			return $this->discovered;
 		}
 
-		$root_dir = $this->path->get_plugin_path( self::SCHEDULES_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::SCHEDULES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
@@ -401,7 +395,7 @@ class Cron extends Module {
 	 * @throws \InvalidArgumentException When no schedule file matches $name.
 	 */
 	private function load_schedule( string $name ): Schedule {
-		$root_dir = $this->path->get_plugin_path( self::SCHEDULES_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::SCHEDULES_ROOT );
 		$file     = $root_dir . '/' . $name . '.php';
 
 		if ( ! \is_file( $file ) ) {

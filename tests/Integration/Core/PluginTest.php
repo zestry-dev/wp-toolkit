@@ -6,7 +6,7 @@ namespace Zestry\WPToolkit\Tests\Integration\Core;
 
 use Zestry\WPToolkit\Kernel\Exceptions\ModuleException;
 use Zestry\WPToolkit\Kernel\Plugin;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
@@ -218,9 +218,11 @@ final class PluginTest extends TestCase {
 		$this->write_plugin_file(
 			'bootstrap.php',
 			"<?php\nreturn array(\n"
-				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class => static function ( \\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe \$probe ): void {\n"
-				. "\t\t\$GLOBALS['zestry_bootstrap_ran'] = true;\n"
-				. "\t},\n);\n"
+				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class => array(\n"
+				. "\t\t'configure' => static function ( \\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe \$probe ): void {\n"
+				. "\t\t\t\$GLOBALS['zestry_bootstrap_ran'] = true;\n"
+				. "\t\t},\n"
+				. "\t),\n);\n"
 		);
 
 		$GLOBALS['zestry_bootstrap_ran'] = false;
@@ -294,7 +296,7 @@ final class PluginTest extends TestCase {
 		$this->write_plugin_file(
 			'bootstrap.php',
 			"<?php\nreturn array(\n"
-				. "\t'Zestry\\WPToolkit\\\\Tests\\\\Integration\\\\Core\\\\NotLoadedProbe' => static function ( \$m ): void {},\n"
+				. "\t'Zestry\\WPToolkit\\\\Tests\\\\Integration\\\\Core\\\\NotLoadedProbe' => array( 'configure' => static function ( \$m ): void {} ),\n"
 				. ");\n"
 		);
 
@@ -341,6 +343,78 @@ final class PluginTest extends TestCase {
 		$this->expectExceptionMessage( 'Bootstrap file must return an array' );
 
 		$this->plugin->bootstrap( $this->plugin_dir . '/bootstrap.php' );
+	}
+
+	/**
+	 * Configuration is an array and never a bare callback, so `configure`,
+	 * `boots_on` and `priority` are all written the same way -- and adding the
+	 * second to an entry that has the first is one more line, not a rewrite.
+	 */
+	public function test_bootstrap_rejects_configuration_that_is_not_an_array(): void {
+		$this->write_plugin_file(
+			'bootstrap.php',
+			"<?php\nreturn array(\n"
+				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class => static function ( \$probe ): void {},\n"
+				. ");\n"
+		);
+
+		try {
+			$this->plugin->bootstrap( $this->plugin_dir . '/bootstrap.php' );
+			$this->fail( 'A callable value must be refused.' );
+		} catch ( ModuleException $exception ) {
+			$this->assertStringContainsString(
+				'is Closure',
+				$exception->getMessage(),
+				'The message names what the entry is instead.'
+			);
+			$this->assertStringContainsString(
+				"'configure' => \$callback",
+				$exception->getMessage(),
+				'The message names the shape to write.'
+			);
+		}
+	}
+
+	/**
+	 * A `configure` that is not callable is the one thing the array shape can
+	 * still get wrong, and it is worth saying which key is at fault.
+	 */
+	public function test_bootstrap_rejects_a_before_boot_that_is_not_callable(): void {
+		$this->write_plugin_file(
+			'bootstrap.php',
+			"<?php\nreturn array(\n"
+				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class => array( 'configure' => 'nope' ),\n"
+				. ");\n"
+		);
+
+		$this->expectException( ModuleException::class );
+		$this->expectExceptionMessage( '`configure`' );
+
+		$this->plugin->bootstrap( $this->plugin_dir . '/bootstrap.php' );
+	}
+
+	/**
+	 * `boots_on` holds a module back until its hook, and every other shape in
+	 * the array keeps working alongside it.
+	 */
+	public function test_bootstrap_defers_a_module_that_names_a_boot_hook(): void {
+		$this->write_plugin_file(
+			'bootstrap.php',
+			"<?php\nreturn array(\n"
+				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class => array(\n"
+				. "\t\t'boots_on' => 'zestry_test_boot_hook',\n"
+				. "\t),\n);\n"
+		);
+
+		BootstrapProbe::$boots = 0;
+
+		$this->plugin->bootstrap( $this->plugin_dir . '/bootstrap.php' )->run();
+
+		$this->assertSame( 0, BootstrapProbe::$boots, 'run() leaves it for the hook.' );
+
+		do_action( 'zestry_test_boot_hook' );
+
+		$this->assertSame( 1, BootstrapProbe::$boots, 'The hook is what builds it.' );
 	}
 
 	public function test_get_entry_file_returns_the_entry_path(): void {
@@ -466,7 +540,7 @@ final class PluginTest extends TestCase {
 		);
 		$this->assertSame(
 			$this->plugin,
-			$this->plugin->autoload( array() ),
+			$this->plugin->declare_modules( array() ),
 			'autoload() returns the plugin for chaining.'
 		);
 
@@ -505,7 +579,7 @@ final class PluginTest extends TestCase {
 			}
 		);
 
-		$returned = $this->plugin->autoload( array( Path::class ) );
+		$returned = $this->plugin->declare_modules( array( Path::class ) );
 
 		$this->assertSame( $this->plugin, $returned, 'autoload() returns the plugin for chaining.' );
 		$this->assertFalse( $initialized, 'autoload() queues without resolving.' );

@@ -35,7 +35,7 @@ because that is the only format the ESLint bundled with current `@wordpress/scri
 CommonJS, so rename it to `.prettierrc.cjs` if your package.json declares `"type": "module"`. Adds its npm packages and `npm run format`, plus a `.prettierignore` — that script is `prettier --write .`, and without one it reformats your `composer.json` and your Markdown too.
 
 - `AGENTS.md`, the invariants an agent working in this plugin needs, and a
-`.claude/CLAUDE.md` pointing at it. Rendered from the toolkit's own rules page rather than written twice, and describing no feature of your plugin — `wp zt describe` answers that from the plugin itself.
+`.claude/CLAUDE.md` pointing at it. It carries the invariants, not a description of your plugin — `wp zt describe` answers that from the plugin itself.
 
 Dependencies are added unversioned. The pin belongs in your lock file, written the first time you install.
 

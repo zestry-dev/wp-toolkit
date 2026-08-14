@@ -4,13 +4,13 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\Services;
 
-use Zestry\WPToolkit\Services\Globals;
+use Zestry\WPToolkit\Modules\Globals;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
  * In-memory global registry: set()/get()/has() semantics.
  *
- * @covers \Zestry\WPToolkit\Services\Globals
+ * @covers \Zestry\WPToolkit\Modules\Globals
  */
 final class GlobalsTest extends TestCase {
 

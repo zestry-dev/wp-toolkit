@@ -8,8 +8,25 @@ For the absolutes alone, with the tables and the caveats stripped out, see [Rule
 
 **Does it do anything without being called?**
 
-- **No → [`Service`](services/service.md).** Built the first time something asks for it. Never appears in `bootstrap.php`; configure it with `$plugin->configure()` in the entry file.
-- **Yes → [`Module`](modules/module.md).** Binds a hook, registers a post type, walks a directory. Listed in `bootstrap.php` — listing it is what builds it — and `on_boot()` runs once. Defer work to `init` with `$this->on_wp_init( $callback )`.
+- **No → [`Service`](services/service.md).** Built the first time something asks for it. Never appears in `bootstrap.php`; configure it with `$plugin->configure()` in the entry file. Reach one by declaring a typed property.
+- **Yes → [`Module`](modules/module.md).** Binds a hook, registers a post type, walks a directory. Listed in `bootstrap.php` — listing it is what builds it — and `on_boot()` runs once. Defer work to `init` with `$this->on_wp_init( $callback )`. Reach one with `$this->get_plugin()->get( X::class )`; a property typed as a module throws.
+
+## `bootstrap.php`
+
+Modules only. A module needing nothing is written bare; one that needs configuration gets an array, never a bare callback.
+
+```php
+return array(
+    CLI::class,
+    Blocks::class => array(
+        'boots_on'    => 'init',                                   // a hook to boot on; omit to boot as the plugin loads
+        'priority'    => 10,                                       // what that hook binds at
+        'before_boot' => static fn ( Blocks $b ) => $b->add_categories( $categories ),
+    ),
+);
+```
+
+All three keys are optional. Asking for a module before its `boots_on` fires throws, naming the hook; a hook that has already fired builds it immediately, so the declaration reads as "not before".
 
 ## Namespaces
 
@@ -42,17 +59,17 @@ Add any of them with `wp zt add module <name>`; dependencies come along.
 | [`fields`](modules/fields/) | `fields/` | [`Field`](modules/fields/field.md) | [`make field`](commands/make-field.md) |
 | [`meta-boxes`](modules/meta-boxes/) | `meta-boxes/` | [`MetaBox`](modules/meta-boxes/meta-box.md) | [`make meta-box`](commands/make-meta-box.md) |
 | [`abilities`](modules/abilities/) | `abilities/` | [`Ability`](modules/abilities/ability.md) | [`make ability`](commands/make-ability.md) |
-| [`icons-library`](modules/icons-library/) | `svg-icons/` | — (a `.php` echoing the SVG and returning `array( 'label' => … )`, or a plain `.svg`) | — |
+| [`icons-library`](modules/icons-library/) **(WP 7.1+)** | `svg-icons/` | — (a `.php` echoing the SVG and returning `array( 'label' => … )`, or a plain `.svg`) | — |
 | [`site-health`](modules/site-health/) | `health-checks/` | [`HealthCheck`](modules/site-health/health-check.md) | [`make health-check`](commands/make-health-check.md) |
 | [`site-health`](modules/site-health/) | `debug-sections/` | [`DebugSection`](modules/site-health/debug-section.md) | [`make debug-section`](commands/make-debug-section.md) |
 | [`blocks`](modules/blocks/) | `build/blocks/` | [`Block`](modules/blocks/block.md) | [`make block`](commands/make-block.md) |
 | [`migrations`](modules/migrations/) | `migrations/` | [`Migration`](modules/migrations/migration.md) | [`make migration`](commands/make-migration.md) |
 | [`assets`](modules/assets/) | `assets/`, `build/` (via its manifest) | — | [`make entry`](commands/make-entry.md), [`make shared`](commands/make-shared.md) |
-| [`options`](modules/options/) | — | — | `set_group_name()` | — |
-| [`log`](modules/log/) | — | — | `set_min_level()` | — |
+| [`options`](modules/options/) | — | — | — |
+| [`log`](modules/log/) | — | — | — |
 
 - **A route, an ability, an AJAX action and an admin page declare their inputs the same way**, with [`#[RequestArgument]`](services/request/request-argument.md) on a typed property — the type and the presence of a default state what the schema says, and the value is bound before your handler runs. That page is the full guide: every type you can declare, and every one you cannot.
-- **Prefer [`rest-api`](modules/rest-api/) to [`ajax`](modules/ajax/) for anything new.** A route declares its input with [`#[RequestArgument]`](services/request/request-argument.md), publishes a schema, and is callable by anything; an action reads `$_POST` by hand and answers only WordPress-shaped callers. Reach for `ajax` when something already speaks it — an admin screen's existing JavaScript, another plugin's action, the heartbeat.
+- **Prefer [`rest-api`](modules/rest-api/) to [`ajax`](modules/ajax/) for anything new.** Both declare their input the same way, but a route also publishes a schema and is callable by anything, where an action answers only WordPress-shaped callers. Reach for `ajax` when something already speaks it — an admin screen's existing JavaScript, another plugin's action, the heartbeat.
 - **`abilities` is the AI-agent surface.** WordPress 6.9+ gives each one a REST endpoint, and an MCP adapter on the site turns it into a tool an agent can call — with no protocol code from you. Call your own with `$abilities->run( 'name', $input )`.
 - **`site-health` has two directories, one per tab.** A `health-checks/` file reports a verdict on **Status**; a `debug-sections/` file lists values on **Info**, which is what the "Copy site info" button copies.
 - **`taxonomies/` is its own directory.** One module, two roots — a `Taxonomy` file under `post-types/` is discovered as a `PostType` and throws.
@@ -80,7 +97,7 @@ Add any of them with `wp zt add module <name>`; dependencies come along.
 - **`migrations` never triggers itself.** Call `$plugin->get( Migrations::class )->run_pending()`, or run `wp {slug} migrations run` / `wp {slug} migrations list`.
 - **A migration's identity is its filename**, description included, so renaming one makes it a migration your site has never run. `migrations list` shows the recorded name as `orphaned` beside the new name's `pending`, and `run` refuses the whole batch when the two share a timestamp — rename the file back, or `--force` to run it as new.
 - **`options` and `log` discover nothing, and are still modules.** `Options` loads its row and flushes on `shutdown`, `Log` binds its hook — both act unasked, so both are declared in `bootstrap.php` like any other.
-- A **default** directory that does not exist discovers nothing and says nothing. One named by a `set_*_root()` call and then missing throws.
+- **The directory each module reads is fixed**, and one that does not exist discovers nothing and says nothing — so adding a module before writing its first file is fine.
 - **Name a discovered file with hyphens** — `book-details.php`. It is a convention, not a rewrite: your filename registers exactly as written. Two destinations hold their filename to their own charset and **throw** rather than respell it — an admin page whose name a URL would have to encode, and an ability outside WordPress's `[a-z0-9-]`.
 - **A name the toolkit builds carries your slug; a name it takes is yours.** A hook, a handle, a meta box id, an ability and a command are built — your slug is prefixed on with the separator that destination takes, and an accessor hands you the result. A post type, a taxonomy and a meta key are taken: those are columns in the database and appear in your REST responses, so they are left exactly as you named the file.
 - **A file or directory starting with `.` or `-` is skipped.** Use `-partials/` for something inside a discovered directory that is not itself a discoverable unit. A leading `_` is *not* skipped — WordPress uses it for protected meta, so `fields/_acme_secret.php` has to be a valid name.
@@ -150,9 +167,10 @@ An [`ActivationHandler`](modules/activation-handler.md) subclass only works if `
 
 ## Injection
 
-1. A **public or protected** property typed as a `Service` subclass — which every `Module` is — is resolved and assigned before any of your code runs.
-2. **Private is never injected**, and `#[NoInject]` opts a property out. Scalars, unions, untyped and other class types are left alone.
-3. A class the plugin did not build gets the same by `use WithPlugin;` and `$plugin->wire( $object )` — which is how discovered commands, actions and pages are wired.
+1. A **public or protected** property typed as a `Service` is resolved and assigned before any of your code runs.
+2. **A property typed as a `Module` throws.** Building a module boots it, so you ask for one where you need it: `$this->get_plugin()->get( Options::class )`.
+3. **Private is never injected**, and `#[NoInject]` opts a property out. Scalars, unions, untyped and other class types are left alone.
+4. A class the plugin did not build gets the same by `use WithPlugin;` and `$plugin->wire( $object )` — which is how discovered commands, actions and pages are wired.
 
 See [`WithPlugin`](kernel/with-plugin.md), [`NoInject`](kernel/no-inject.md), [`PluginAware`](kernel/plugin-aware.md).
 
@@ -213,8 +231,8 @@ The last four land beside the copied `lib/Core/` tree, never inside it — that 
 
 | Exception | Raised when |
 |---|---|
-| [`ModuleException`](kernel/module-exception.md) | Base class for every declaration, resolution and boot failure. Thrown directly for a `bootstrap.php` that returns something other than an array, or an entry naming no class. One `catch` covers all four |
-| [`DiscoveryException`](kernel/discovery-exception.md) | A directory named by a `set_*_root()` call does not exist, or a discovered file returned something other than the base class that module expects |
+| [`ModuleException`](kernel/module-exception.md) | Base class for every declaration, resolution and boot failure, so one `catch` covers all four. Thrown directly for a `bootstrap.php` it cannot read, a property typed as a `Module`, and a module asked for before its `boots_on` hook |
+| [`DiscoveryException`](kernel/discovery-exception.md) | A discovered file returned something other than the base class that module expects, two files claim one registered name, a filename a destination cannot carry, an SVG icon WordPress would strip, or WordPress refused the registration |
 | [`ModuleNotFoundException`](kernel/module-not-found-exception.md) | `get()`, `make()` or an injected property named a class that does not exist or does not extend `Service` |
 | [`CircularDependencyException`](kernel/circular-dependency-exception.md) | Two classes are typed as properties of each other, directly or through a chain |
 | [`RenamedMigrationException`](modules/migrations/) | A pending migration shares a timestamp with one that ran and no longer has a file. Nothing ran when this is thrown |

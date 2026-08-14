@@ -33,11 +33,13 @@ return new class extends MetaBox {
     }
 
     public function render( object $post ): void {
+        $fields = $this->get_plugin()->get( Fields::class );
+
         printf(
             '<label for="acme_rating">%s</label>
              <input type="number" id="acme_rating" name="acme_rating" value="%s" min="1" max="5">',
             esc_html__( 'Rating', 'acme-plugin' ),
-            esc_attr( (string) $this->fields->get( $post->ID, 'acme_rating', '' ) )
+            esc_attr( (string) $fields->get( $post->ID, 'acme_rating', '' ) )
         );
     }
 

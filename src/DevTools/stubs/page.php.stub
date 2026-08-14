@@ -77,8 +77,8 @@ return new class() extends AdminPage {
 	// keeps the notice off a refresh -- and off a bookmark, as `?updated=1` in
 	// the URL would not.
 	public function handle_submit(): void {
-		// Save $this->example. With `$this->get_plugin()->get( Options::class )`,
-		// that is $this->options->set( '{{name}}_example', $this->example );
+		// Save $this->example, e.g.
+		// $this->get_plugin()->get( Options::class )->set( '{{name}}_example', $this->example );
 
 		$this->set_flash( \__( 'Saved.', '{{text_domain}}' ) );
 

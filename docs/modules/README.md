@@ -48,4 +48,4 @@ Add nothing up front. Reach for one when you hit what it solves:
 One worth calling out: **`ajax` serves `admin-ajax.php`**, not the REST API. Reach for it when something already speaks that protocol — an existing script, a third-party integration — and `rest-api` otherwise.
 
 > [!NOTE]
-> **A module whose directory does not exist yet discovers nothing, and says nothing.** Adding one before writing its first file is fine. What does throw is a directory named explicitly through a `set_*_root()` call and then not found, since asking for a directory by name and getting nothing is a typo worth hearing about rather than a module quietly registering zero of everything.
+> **A module whose directory does not exist yet discovers nothing, and says nothing.** The directory each one reads is fixed, so adding a module before writing its first file is fine.

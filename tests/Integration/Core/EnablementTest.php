@@ -54,7 +54,7 @@ final class EnablementTest extends TestCase {
 				. "public function plural_name(): string { return 'Things'; }\n};\n"
 		);
 
-		$this->plugin->get( PostTypes::class )->boot();
+		$this->plugin->get( PostTypes::class );
 		do_action( 'init' );
 
 		$this->assertTrue( post_type_exists( 'thing' ) );
@@ -72,7 +72,7 @@ final class EnablementTest extends TestCase {
 				. "public function plural_name(): string { return 'Offs'; }\n};\n"
 		);
 
-		$this->plugin->get( PostTypes::class )->boot();
+		$this->plugin->get( PostTypes::class );
 		do_action( 'init' );
 
 		$this->assertFalse( post_type_exists( 'switched-off' ) );
@@ -96,7 +96,6 @@ final class EnablementTest extends TestCase {
 		);
 
 		$post_types = $this->plugin->get( PostTypes::class );
-		$post_types->boot();
 		do_action( 'init' );
 
 		$discovered = $post_types->get_discovered_post_types();
@@ -120,7 +119,6 @@ final class EnablementTest extends TestCase {
 		);
 
 		$post_types = $this->plugin->get( PostTypes::class );
-		$post_types->boot();
 		do_action( 'init' );
 
 		$this->assertArrayHasKey( 'off-tax', $post_types->get_discovered_taxonomies(), 'Declared, so listed.' );
@@ -143,7 +141,6 @@ final class EnablementTest extends TestCase {
 		);
 
 		$ajax = $this->plugin->get( Ajax::class );
-		$ajax->boot();
 
 		$this->assertFalse(
 			has_action( 'wp_ajax_' . $ajax->get_action_slug( 'off' ) ),
@@ -194,7 +191,7 @@ final class EnablementTest extends TestCase {
 				. "public function schema(): ?array { return null; }\n} );\n"
 		);
 
-		$this->plugin->get( RestApi::class )->boot();
+		$this->plugin->get( RestApi::class );
 		do_action( 'rest_api_init', rest_get_server() );
 
 		$routes = rest_get_server()->get_routes();
@@ -217,7 +214,7 @@ final class EnablementTest extends TestCase {
 				. "public function type(): string { return 'string'; }\n};\n"
 		);
 
-		$this->plugin->get( Fields::class )->boot();
+		$this->plugin->get( Fields::class );
 		do_action( 'init' );
 
 		$registered = get_registered_meta_keys( 'post', 'zestry_conditional' );
@@ -240,7 +237,6 @@ final class EnablementTest extends TestCase {
 		);
 
 		$fields = $this->plugin->get( Fields::class );
-		$fields->boot();
 		do_action( 'init' );
 
 		$this->assertArrayHasKey( 'off_key', $fields->get_all_fields(), 'Declared, so listed.' );
@@ -269,7 +265,6 @@ final class EnablementTest extends TestCase {
 		);
 
 		$fields = $this->plugin->get( Fields::class );
-		$fields->boot();
 		do_action( 'init' );
 
 		$this->expectException( \InvalidArgumentException::class );
@@ -293,7 +288,6 @@ final class EnablementTest extends TestCase {
 		);
 
 		$cron = $this->plugin->get( Cron::class );
-		$cron->boot();
 		do_action( 'init' );
 
 		$this->assertFalse(
@@ -321,7 +315,7 @@ final class EnablementTest extends TestCase {
 		);
 
 		// Off: the property is injected, read, and answers false.
-		$this->plugin->get( PostTypes::class )->boot();
+		$this->plugin->get( PostTypes::class );
 		do_action( 'init' );
 
 		$this->assertFalse( post_type_exists( 'conditional' ), 'The injected service decided.' );
@@ -330,8 +324,8 @@ final class EnablementTest extends TestCase {
 		// assertion above would pass just as well if the switch were stuck off, or
 		// if the file had failed to load at all.
 		$second = new \Zestry\WPToolkit\Kernel\Plugin( $this->entry_file, 'zestry-second' );
-		$second->get( \Zestry\WPToolkit\Services\Globals::class )->set( 'feature_on', true );
-		$second->get( PostTypes::class )->boot();
+		$second->get( \Zestry\WPToolkit\Modules\Globals::class )->set( 'feature_on', true );
+		$second->get( PostTypes::class );
 		do_action( 'init' );
 
 		$this->assertTrue( post_type_exists( 'conditional' ), 'The same file registers when the service says so.' );

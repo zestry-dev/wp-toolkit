@@ -4,13 +4,13 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\Services;
 
-use Zestry\WPToolkit\Services\Views;
+use Zestry\WPToolkit\Modules\Views;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
  * View resolution, rendering, and path-traversal defense (review finding #3).
  *
- * @covers \Zestry\WPToolkit\Services\Views
+ * @covers \Zestry\WPToolkit\Modules\Views
  */
 final class ViewsTest extends TestCase {
 

@@ -5,7 +5,7 @@ declare( strict_types=1 );
 namespace Zestry\WPToolkit\Tests\Integration\Services;
 
 use Zestry\WPToolkit\Kernel\Plugin;
-use Zestry\WPToolkit\Services\Cookie;
+use Zestry\WPToolkit\Modules\Cookie;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
@@ -19,7 +19,7 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  * The round trips are real either way: `set()` puts the value into `$_COOKIE`
  * itself, exactly as it does in a request whose header did go out.
  *
- * @covers \Zestry\WPToolkit\Services\Cookie
+ * @covers \Zestry\WPToolkit\Modules\Cookie
  */
 final class CookieTest extends TestCase {
 
@@ -47,7 +47,7 @@ final class CookieTest extends TestCase {
 	 * @return Cookie
 	 */
 	private function writing_cookies(): Cookie {
-		$this->setExpectedIncorrectUsage( 'Zestry\WPToolkit\Services\Cookie::send' );
+		$this->setExpectedIncorrectUsage( 'Zestry\WPToolkit\Modules\Cookie::send' );
 
 		return $this->plugin->get( Cookie::class );
 	}
@@ -253,7 +253,7 @@ final class CookieTest extends TestCase {
 	 * @return void
 	 */
 	public function test_an_oversized_value_is_refused_out_loud(): void {
-		$this->setExpectedIncorrectUsage( 'Zestry\WPToolkit\Services\Cookie::set_encrypted' );
+		$this->setExpectedIncorrectUsage( 'Zestry\WPToolkit\Modules\Cookie::set_encrypted' );
 
 		$cookies = $this->cookies();
 
@@ -268,7 +268,7 @@ final class CookieTest extends TestCase {
 	 * @return void
 	 */
 	public function test_writing_after_output_has_started_says_so(): void {
-		$this->setExpectedIncorrectUsage( 'Zestry\WPToolkit\Services\Cookie::send' );
+		$this->setExpectedIncorrectUsage( 'Zestry\WPToolkit\Modules\Cookie::send' );
 
 		// PHPUnit has written to stdout already, so headers are sent for real here.
 		$this->assertFalse( $this->cookies()->set( 'late', '1' ) );

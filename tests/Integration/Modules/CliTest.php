@@ -31,7 +31,6 @@ final class CliTest extends TestCase {
 		$this->write_plugin_file( 'commands/greet.php', $this->command_file() );
 
 		$cli = $this->plugin->get( CLI::class );
-		$cli->boot();
 
 		$this->assertNull( \WP_CLI::last( 'add_command' ), 'No commands are registered outside WP-CLI.' );
 	}
@@ -41,7 +40,6 @@ final class CliTest extends TestCase {
 		$this->write_plugin_file( 'commands/greet.php', $this->command_file() );
 
 		$cli = $this->plugin->get( CLI::class );
-		$cli->boot();
 
 		$registered = \WP_CLI::last( 'add_command' );
 		$this->assertNotNull( $registered );
@@ -57,7 +55,6 @@ final class CliTest extends TestCase {
 		$this->write_plugin_file( 'commands/cache/clear.php', $this->command_file() );
 
 		$cli = $this->plugin->get( CLI::class );
-		$cli->boot();
 
 		$this->assertSame(
 			'zestry-test cache clear',
@@ -79,12 +76,11 @@ final class CliTest extends TestCase {
 		);
 
 		$cli = $this->plugin->get( CLI::class );
-		$cli->boot();
 
 		// The registered callable is a closure bound to the command (see
 		// CLI::register_command_for()), so the instance comes off the binding.
 		$command = ( new \ReflectionFunction( \WP_CLI::last( 'add_command' )[1] ) )->getClosureThis();
-		$this->assertInstanceOf( \Zestry\WPToolkit\Services\Path::class, $command->path, 'The command was wired.' );
+		$this->assertInstanceOf( \Zestry\WPToolkit\Modules\Path::class, $command->path, 'The command was wired.' );
 	}
 
 	/**

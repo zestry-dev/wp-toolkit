@@ -127,21 +127,29 @@ A **[service](services/)** does not. It is built the first time something asks f
 
 A **[module](modules/)** does. It binds a hook, registers a post type, walks a directory. Because it acts without being called, it has to be built for that to happen — so **`bootstrap.php` lists every module, and listing one is what builds it**. That file is modules only, and `wp zt add module` writes the entry for you.
 
-Either kind reaches your code the same way. Declare a public typed property and the plugin injects it before your code runs:
+**A service reaches your code by type.** Declare a public typed property and the plugin injects it before your code runs:
 
 ```php
 use Acme\Plugin\Core\Modules\CLI\Command;
-use Acme\Plugin\Core\Modules\Options;
+use Acme\Plugin\Core\Services\Views;
 
 return new class extends Command {
 
-    public Options $options;
+    public Views $views;
 
     public function handle( array $args, array $assoc_args ): void {
-        $this->success( $this->options->get( 'greeting', 'hi' ) );
+        $this->success( $this->views->get( 'greeting', array( 'name' => $args[0] ?? 'world' ) ) );
     }
 };
 ```
+
+**A module you ask for**, where you need it — because building one boots it, and a property declaration would hide a whole feature coming up behind a type name:
+
+```php
+$options = $this->get_plugin()->get( Options::class );
+```
+
+Declaring a module as a property throws, naming the property and this call.
 
 ## Documentation
 

@@ -6,12 +6,12 @@
 
 declare( strict_types=1 );
 
-namespace Zestry\WPToolkit\Services;
+namespace Zestry\WPToolkit\Modules;
 
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Provides utilities for accessing plugin files, directories, and URLs.
@@ -40,7 +40,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * $dir = $path->get_plugin_uploads_dir();
  * ```
  */
-class Path extends Service {
+class Path extends Module {
 
 	/**
 	 * Cached plugin directory path.
@@ -244,7 +244,7 @@ class Path extends Service {
 	 * anything out of it.
 	 *
 	 * Inside the file, `$this` is `$scope`, or this service when none is given.
-	 * {@see \Zestry\WPToolkit\Services\Views} passes itself, which is what makes a
+	 * {@see \Zestry\WPToolkit\Modules\Views} passes itself, which is what makes a
 	 * subview `$this->render( … )` from inside a template.
 	 *
 	 * Each key in `$data` becomes a local variable. Only names beginning

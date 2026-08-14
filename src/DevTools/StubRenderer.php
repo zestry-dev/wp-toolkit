@@ -12,7 +12,7 @@ namespace Zestry\WPToolkit\DevTools;
 \defined( 'ABSPATH' ) || exit;
 
 use Zestry\WPToolkit\Kernel\Helpers\Str;
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Renders a `wp zt make` stub file into a new, ready-to-edit PHP file.
@@ -24,7 +24,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * deliberately not shared machinery with Copier: a stub is authored content
  * being filled in, not existing source being namespace-rewritten.
  */
-class StubRenderer extends Service {
+class StubRenderer extends Module {
 
 	/**
 	 * Render a stub's contents, substituting every `{{key}}` placeholder.

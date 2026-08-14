@@ -30,7 +30,9 @@ return new class extends HealthCheck {
     }
 
     public function run(): array {
-        if ( '' !== (string) $this->options->get( 'api_key', '' ) ) {
+        $options = $this->get_plugin()->get( Options::class );
+
+        if ( '' !== (string) $options->get( 'api_key', '' ) ) {
             return $this->good( __( 'Your API key is set.', 'acme-plugin' ) );
         }
 

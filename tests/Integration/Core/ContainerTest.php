@@ -5,21 +5,31 @@ declare( strict_types=1 );
 namespace Zestry\WPToolkit\Tests\Integration\Core;
 
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Contracts\PluginAware;
 use Zestry\WPToolkit\Kernel\Exceptions\CircularDependencyException;
 use Zestry\WPToolkit\Kernel\Exceptions\ModuleException;
 use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
  * Core resolution, injection, boot, and exception behavior of the Plugin/repository.
  *
  * @covers \Zestry\WPToolkit\Kernel\Plugin
- * @covers \Zestry\WPToolkit\Kernel\ServicesRepository
+ * @covers \Zestry\WPToolkit\Kernel\ModulesRepository
  */
 final class ContainerTest extends TestCase {
+
+	public function set_up(): void {
+		parent::set_up();
+
+		// Nothing is built without being declared, and these fixtures are
+		// modules like any other.
+		$this->plugin->declare_modules(
+			array( CycleA::class, CycleB::class, BootCounter::class, SelfWiringBooter::class )
+		);
+	}
 
 	public function test_get_module_returns_the_same_instance_each_time(): void {
 		$first  = $this->plugin->get( Path::class );
@@ -75,13 +85,6 @@ final class ContainerTest extends TestCase {
 		$this->plugin->wire( new \stdClass() );
 	}
 
-	public function test_public_and_protected_properties_are_injected_private_is_not(): void {
-		$module = $this->plugin->get( InjectionProbe::class );
-
-		$this->assertInstanceOf( Path::class, $module->public_path );
-		$this->assertInstanceOf( Path::class, $module->protected_path_value() );
-		$this->assertNull( $module->private_path_value(), 'Private properties must not be injected.' );
-	}
 
 	public function test_circular_dependency_is_detected(): void {
 		$this->expectException( CircularDependencyException::class );
@@ -95,7 +98,6 @@ final class ContainerTest extends TestCase {
 		// boot run, which is what makes the re-entrant get() safe.
 		$module = $this->plugin->get( SelfWiringBooter::class );
 
-		$this->assertTrue( $module->is_booted() );
 		$this->assertSame(
 			$module,
 			$module->wired_dependent()->booter(),
@@ -103,34 +105,10 @@ final class ContainerTest extends TestCase {
 		);
 	}
 
-	/**
-	 * Injection is for services. Building a module boots it -- binding hooks,
-	 * walking a directory, registering with WordPress -- and a property
-	 * declaration hides all of that behind a type name.
-	 */
-	public function test_a_property_typed_as_a_module_is_refused(): void {
-		$this->expectException( ModuleException::class );
-		$this->expectExceptionMessage( '$booter' );
 
-		$this->plugin->wire( new ModuleInjectingDependent() );
-	}
 
 	/**
-	 * Thrown rather than skipped: skipping would leave the typed property
-	 * uninitialized, and the first read of it fatals with PHP's own message
-	 * about initialization, which names neither the module nor the reason.
-	 */
-	public function test_the_refusal_names_the_call_to_use_instead(): void {
-		try {
-			$this->plugin->wire( new ModuleInjectingDependent() );
-			$this->fail( 'Wiring should have refused the module property.' );
-		} catch ( ModuleException $exception ) {
-			$this->assertStringContainsString( 'get( SelfWiringBooter::class )', $exception->getMessage() );
-		}
-	}
-
-	/**
-	 * The whole point of naming a hook: the entry's `before_boot` runs on it too,
+	 * The whole point of naming a hook: the entry's `configure` runs on it too,
 	 * immediately before the module boots -- so a `__()` in there is safe, where
 	 * an initializer running at plugin load is not.
 	 */
@@ -142,7 +120,7 @@ final class ContainerTest extends TestCase {
 		do_action( 'zestry_test_boot_hook' );
 
 		$this->assertSame(
-			array( 'before_boot', 'on_boot' ),
+			array( 'configure', 'on_boot' ),
 			$GLOBALS['zestry_boot_order'],
 			'Configuration runs immediately before boot, on the hook.'
 		);
@@ -171,7 +149,9 @@ final class ContainerTest extends TestCase {
 
 		$this->plugin->bootstrap( $this->write_bootstrap() )->run();
 
-		$this->assertTrue( $this->plugin->get( DeferredBooter::class )->is_booted() );
+		$this->plugin->get( DeferredBooter::class );
+
+		$this->assertSame( array( 'on_boot' ), $GLOBALS['zestry_boot_order'] );
 	}
 
 	/**
@@ -189,8 +169,8 @@ final class ContainerTest extends TestCase {
 			"<?php\nreturn array(\n"
 				. "\t'" . str_replace( '\\', '\\\\', DeferredBooter::class ) . "' => array(\n"
 				. "\t\t'boots_on' => 'zestry_test_boot_hook',\n"
-				. "\t\t'before_boot' => static function ( \$module ): void {\n"
-				. "\t\t\t\$GLOBALS['zestry_boot_order'][] = 'before_boot';\n"
+				. "\t\t'configure' => static function ( \$module ): void {\n"
+				. "\t\t\t\$GLOBALS['zestry_boot_order'][] = 'configure';\n"
 				. "\t\t},\n"
 				. "\t),\n);\n"
 		);
@@ -201,33 +181,31 @@ final class ContainerTest extends TestCase {
 	public function test_bootable_module_is_booted_once_after_resolution(): void {
 		$module = $this->plugin->get( BootCounter::class );
 
-		$this->assertTrue( $module->is_booted() );
 		$this->assertSame( 1, $module::$boot_count );
 
 		$this->plugin->get( BootCounter::class );
 		$this->assertSame( 1, $module::$boot_count, 'Cached resolution must not re-boot.' );
 	}
 
-	public function test_run_resolves_autoloaded_modules_and_ready_callback(): void {
+	public function test_run_builds_declared_modules_and_runs_the_ready_callback(): void {
 		$ran = false;
 
+		BootCounter::$boot_count = 0;
+
 		$returned = $this->plugin
-			->autoload( array( BootCounter::class ) )
+			->declare_modules( array( BootCounter::class ) )
 			->run(
 				function ( $plugin ) use ( &$ran ): void {
 					$ran = true;
-					// The callback runs after the queue is resolved, so a
-					// queued module has already booted by now.
-					$this->assertTrue( $plugin->get( BootCounter::class )->is_booted() );
+					// The callback runs after every declared module is built, so
+					// a declared module has already booted by now.
+					$this->assertSame( 1, $plugin->get( BootCounter::class )::$boot_count );
 				}
 			);
 
 		$this->assertTrue( $ran, 'run() must invoke the ready callback.' );
 		$this->assertSame( $this->plugin, $returned, 'run() returns the plugin for chaining.' );
-		$this->assertTrue(
-			$this->plugin->get( BootCounter::class )->is_booted(),
-			'A queued module is booted during run().'
-		);
+		$this->assertSame( 1, BootCounter::$boot_count, 'A declared module is booted during run().' );
 	}
 }
 
@@ -235,51 +213,28 @@ final class ContainerTest extends TestCase {
 
 // phpcs:disable Generic.Files.OneObjectStructurePerFile.MultipleFound -- test fixtures.
 
-final class InjectionProbe extends Service {
-
-	public Path $public_path;
-	protected Path $protected_path;
-	private ?Path $private_path = null;
-
-	public function protected_path_value(): Path {
-		return $this->protected_path;
-	}
-
-	public function private_path_value(): ?Path {
-		return $this->private_path;
-	}
-}
-
-final class CycleA extends Service {
+final class CycleA extends Module {
 	public CycleB $b;
 }
 
-final class CycleB extends Service {
+final class CycleB extends Module {
 	public CycleA $a;
 }
 
-final class BootCounter extends Module {
-
+final class BootCounter extends Module implements Bootable {
 
 	public static int $boot_count = 0;
 
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		++self::$boot_count;
 	}
 }
 
-final class DeferredBooter extends Module {
+final class DeferredBooter extends Module implements Bootable {
 
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		$GLOBALS['zestry_boot_order'][] = 'on_boot';
 	}
-}
-
-final class ModuleInjectingDependent implements PluginAware {
-
-	use \Zestry\WPToolkit\Kernel\Traits\WithPlugin;
-
-	public SelfWiringBooter $booter;
 }
 
 final class SelfWiringDependent implements PluginAware {
@@ -291,8 +246,7 @@ final class SelfWiringDependent implements PluginAware {
 	}
 }
 
-final class SelfWiringBooter extends Module {
-
+final class SelfWiringBooter extends Module implements Bootable {
 
 	private ?SelfWiringDependent $dependent = null;
 
@@ -300,7 +254,7 @@ final class SelfWiringBooter extends Module {
 		return $this->dependent;
 	}
 
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		$dependent = new SelfWiringDependent();
 		$this->get_plugin()->wire( $dependent );
 		$this->dependent = $dependent;

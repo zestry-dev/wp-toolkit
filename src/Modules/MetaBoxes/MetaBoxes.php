@@ -11,12 +11,13 @@ namespace Zestry\WPToolkit\Modules\MetaBoxes;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
 use Zestry\WPToolkit\Modules\Fields\Fields;
 use Zestry\WPToolkit\Modules\Fields\MetaType;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 /**
  * Puts panels on the post and comment edit screens, and owns the part that is
@@ -87,7 +88,7 @@ use Zestry\WPToolkit\Services\Path;
  * ```
  *
  */
-class MetaBoxes extends Module {
+class MetaBoxes extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -95,11 +96,6 @@ class MetaBoxes extends Module {
 	 * Where boxes are discovered, relative to the plugin root.
 	 */
 	const BOXES_ROOT = 'meta-boxes';
-
-	/**
-	 * @var Path
-	 */
-	public Path $path;
 
 	/**
 	 * Discovered boxes by screen type, then identifier.
@@ -123,7 +119,7 @@ class MetaBoxes extends Module {
 			return $this->discovered;
 		}
 
-		$root_dir = $this->path->get_plugin_path( self::BOXES_ROOT );
+		$root_dir = $this->with( Path::class )->get_plugin_path( self::BOXES_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			// Never named, and the default is absent: this plugin has none of
@@ -281,7 +277,7 @@ class MetaBoxes extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		\add_action( 'add_meta_boxes', array( $this, 'register_all' ) );
 		\add_action( 'save_post', array( $this, 'save_all' ), 10, 2 );
 		\add_action( 'edit_comment', array( $this, 'save_comment' ) );

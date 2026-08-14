@@ -4,7 +4,7 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\Core;
 
-use Zestry\WPToolkit\Services\Globals;
+use Zestry\WPToolkit\Modules\Globals;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**

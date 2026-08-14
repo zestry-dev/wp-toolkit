@@ -19,7 +19,7 @@ namespace Zestry\WPToolkit\Kernel\Helpers;
  * accept, plucking one field off a list of rows. If you have used Laravel's
  * `Arr`, these are the same names doing the same things.
  *
- * Static, and not a {@see \Zestry\WPToolkit\Kernel\Abstracts\Service}, because there is
+ * Static, and not a {@see \Zestry\WPToolkit\Kernel\Abstracts\Module}, because there is
  * nothing here to configure or inject: every method is a pure function of its
  * arguments.
  *

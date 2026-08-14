@@ -359,13 +359,13 @@ final class MigrationsTest extends TestCase {
 		);
 
 		$migrations = $this->plugin->get( Migrations::class );
-		$table      = $this->plugin->get( \Zestry\WPToolkit\Services\DB::class )->get_table( 'probe' );
+		$table      = $this->plugin->get( \Zestry\WPToolkit\Modules\DB::class )->get_table( 'probe' );
 
 		try {
 			$migrations->run_pending();
 
 			$this->assertTrue(
-				$this->plugin->get( \Zestry\WPToolkit\Services\DB::class )->table_exists( 'probe' ),
+				$this->plugin->get( \Zestry\WPToolkit\Modules\DB::class )->table_exists( 'probe' ),
 				'The table exists after the migration ran.'
 			);
 		} finally {

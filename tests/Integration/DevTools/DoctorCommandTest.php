@@ -157,7 +157,7 @@ final class DoctorCommandTest extends TestCase {
 	 */
 	public function test_a_declaration_with_an_initializer_counts_too(): void {
 		$this->write_registry_module( 'AdminPages' );
-		$this->write_bootstrap( array( '\\Acme\\Plugin\\Core\\Modules\\AdminPages\\AdminPages::class => static function ( $m ): void {}' ) );
+		$this->write_bootstrap( array( '\\Acme\\Plugin\\Core\\Modules\\AdminPages\\AdminPages::class => array( \'configure\' => static function ( $m ): void {} )' ) );
 
 		$this->run_doctor();
 
@@ -447,7 +447,7 @@ final class DoctorCommandTest extends TestCase {
 	private function run_doctor( array $assoc_args = array() ): Command {
 		\WP_CLI::reset();
 
-		$package_plugin = new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-doctor-test' );
+		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-doctor-test' ) )->declare_modules( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
 		$command = require dirname( __DIR__, 3 ) . '/commands/doctor.php';

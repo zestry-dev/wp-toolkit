@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Devtool command: `wp zt overwrite service <service>...`.
+ * Devtool command: `wp zt overwrite <module>...`.
  *
- * Like `wp zt add service`, but deliberately replaces a service already
- * present on disk instead of skipping it -- warns once, listing every
- * already-present entry the batch would touch, and proceeds only after a single
- * explicit confirmation covering the whole batch. Any local edits to those
- * files are lost; there is no per-file undo.
+ * Like `wp zt add`, but deliberately replaces a module already present
+ * on disk instead of skipping it -- warns once, listing every already-present
+ * module the batch would touch, and proceeds only after a single explicit
+ * confirmation covering the whole batch. Any local edits to those files are
+ * lost; there is no per-file undo.
  */
 
 declare( strict_types=1 );
@@ -17,44 +17,43 @@ use Zestry\WPToolkit\DevTools\Abstracts\AddCommand;
 return new class() extends AddCommand {
 
 	/**
-	 * Copy one or more services into an initialized plugin, replacing any of
-	 * them (or their dependencies) already present.
+	 * Copy one or more feature modules into an initialized plugin, replacing
+	 * any of them (or their dependencies) already present.
 	 *
-	 * Requires `wp zt init` to have already run in this plugin. Warns before
+	 * Requires `wp zt init` to have already run in this plugin. Resolves
+	 * dependencies exactly like `wp zt add`, but warns before
 	 * overwriting anything already on disk: local edits to an already-present
-	 * service are destroyed by the copy, with no confirmation per file -- only
+	 * module are destroyed by the copy, with no confirmation per file -- only
 	 * one confirmation for the whole resolved batch. Answering "no" cancels the
-	 * command entirely; nothing is copied, not even services that were not
+	 * command entirely; nothing is copied, not even modules that were not
 	 * already present.
 	 *
-	 * Reach for this to force one named service back to the source the toolkit
-	 * currently ships. To bring the whole copied tree up to date instead, run
-	 * `wp zt update`: it re-copies everything under `Core/` -- the kernel and
-	 * every module and service you have added -- and keeps the files you have
-	 * edited rather than discarding them.
+	 * Dependencies cross the two kinds, so a module's services are re-copied
+	 * with it. To replace a service on its own, use
+	 * `wp zt overwrite service <service>`.
 	 *
 	 * ## OPTIONS
 	 *
-	 * <service>...
-	 * : One or more service names to overwrite (or add, if not already present).
-	 * Available services: path, request, cookie, globals, transients, db, views.
+	 * <module>...
+	 * : One or more module names to overwrite (or add, if not already present).
+	 * Available modules: log, options, assets, ajax, admin-pages, rest-api, cli, cron, fields, meta-boxes, post-types, blocks, site-health, abilities, icons-library, migrations.
 	 *
 	 * [--yes]
 	 * : Answer any confirmation prompt affirmatively, for an unattended run.
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # Re-copy path from the toolkit, discarding any local edits to it.
-	 *     $ wp zt overwrite service path
-	 *     Warning: This will overwrite existing files for: path
+	 *     # Re-copy cli from the toolkit, discarding any local edits to it.
+	 *     $ wp zt overwrite cli
+	 *     Warning: This will overwrite existing files for: cli
 	 *     Any local changes to these files will be lost. Continue? [y/N] y
-	 *     Overwrote path
+	 *     Overwrote cli
 	 *     Success: Done.
 	 *
 	 *     # Declining leaves every file untouched, including new deps.
-	 *     $ wp zt overwrite service views
+	 *     $ wp zt overwrite rest-api
 	 *     Also adding required dependencies: path
-	 *     Warning: This will overwrite existing files for: views
+	 *     Warning: This will overwrite existing files for: rest-api
 	 *     Any local changes to these files will be lost. Continue? [y/N] n
 	 *     Cancelled.
 	 *
@@ -96,9 +95,5 @@ return new class() extends AddCommand {
 
 	protected static function get_past_tense(): string {
 		return 'Overwrote';
-	}
-
-	protected static function get_kind(): string {
-		return 'services';
 	}
 };

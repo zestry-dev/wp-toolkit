@@ -30,7 +30,7 @@ final class AgentInstructionsTest extends TestCase {
 		 * how it resolves in use: `wp zt` builds a second Plugin entry-rooted
 		 * here, and every devtool service comes from that one.
 		 */
-		$package_plugin = new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-agents-test' );
+		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-agents-test' ) )->declare_modules( $this->get_toolkit_modules() );
 
 		$this->instructions = $package_plugin->get( AgentInstructions::class );
 	}

@@ -14,44 +14,64 @@ namespace Zestry\WPToolkit\Kernel\Exceptions;
 /**
  * Base exception for declaration, resolution, and boot failures.
  *
- * Catch this to handle any error raised while declaring, resolving, or booting
- * a service or a module, without also catching unrelated runtime exceptions.
- * More specific failures extend this class: Plugin throws this directly for a
- * malformed `bootstrap.php` -- one that returns something other than an array,
- * or holds an entry naming no class. Resolving one raises the
- * ModuleNotFoundException and CircularDependencyException subclasses, and every file-discovery module throws
- * DiscoveryException for a layout it cannot read.
+ * Catch this to handle any error raised while declaring, building, or booting a
+ * module, without also catching unrelated runtime exceptions. Plugin throws it
+ * directly for a `bootstrap.php` it cannot read -- one that returns something
+ * other than an array, holds an entry naming no class, or configures an entry
+ * with something other than an array -- and for a module asked for that the file
+ * never declared, or that has not reached its `boots_on` hook yet. Building one
+ * raises the ModuleNotFoundException and CircularDependencyException subclasses,
+ * and every file-discovery module throws DiscoveryException for a layout it
+ * cannot read.
  */
 class ModuleException extends \RuntimeException {
 
 	/**
-	 * The message raised when a property asks for a module by type.
+	 * The message raised when a bootstrap entry is configured with anything but an array.
 	 *
-	 * Injection is for services. A service is built when something asks for it
-	 * and does nothing else, so a typed property is an honest way to ask. A
-	 * module *boots* when it is built -- it binds hooks, walks a directory,
-	 * registers things with WordPress -- and a property declaration hides all of
-	 * that behind a type name.
+	 * A configured entry is an array, so `configure`, `boots_on` and `priority`
+	 * are all written the same way and adding the second one to an entry never
+	 * means rewriting the first.
 	 *
-	 * Asking through `get()` puts the cost back where a reader can see it, and
-	 * keeps two modules from reaching for each other by accident: a property is
-	 * declared once and forgotten, while a call sits in the method that needs it.
-	 *
-	 * @param string $owner    The class declaring the property.
-	 * @param string $property Its name.
-	 * @param string $module   The module class it asked for.
+	 * @param string $module The module class the entry names.
+	 * @param string $given  What the entry's value is instead, as a type name.
 	 * @return self
 	 *
 	 * @internal
 	 */
-	public static function module_property( string $owner, string $property, string $module ): self {
+	public static function bootstrap_entry_shape( string $module, string $given ): self {
 		return new self(
 			\sprintf(
-				'%1$s declares `%3$s $%2$s`, and a module is not injected: building one boots it. Drop the'
-					. ' property and ask where you need it -- `$this->get_plugin()->get( %3$s::class )`.',
-				$owner,
-				$property,
-				\substr( (string) \strrchr( '\\' . $module, '\\' ), 1 )
+				'The `bootstrap.php` entry for %1$s is %2$s. Configuration is an array:'
+					. ' `%1$s::class => array( \'configure\' => $callback )`, which is also where'
+					. ' `boots_on` and `priority` go. A module needing none is written bare.',
+				$module,
+				$given
+			)
+		);
+	}
+
+	/**
+	 * The message raised when something asks for a module nothing declared.
+	 *
+	 * `bootstrap.php` is the whole inventory of what a plugin is made of, which
+	 * only holds while nothing is built without being listed there. So an
+	 * undeclared class is refused rather than constructed on the spot: reading
+	 * that file tells you what the plugin has, and it stays true.
+	 *
+	 * @param string      $module The module class asked for.
+	 * @param string|null $file   The bootstrap file the plugin reads, when it has one.
+	 * @return self
+	 *
+	 * @internal
+	 */
+	public static function not_declared( string $module, ?string $file = null ): self {
+		return new self(
+			\sprintf(
+				'%s is not declared, so nothing built it. Add it to %s -- that file is'
+					. ' everything this plugin is made of, and nothing outside it is ever built.',
+				$module,
+				null === $file ? '`bootstrap.php`' : $file
 			)
 		);
 	}

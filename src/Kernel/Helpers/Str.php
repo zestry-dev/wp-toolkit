@@ -21,7 +21,7 @@ namespace Zestry\WPToolkit\Kernel\Helpers;
  * `_wp_to_kebab_case()` splits a name, `remove_accents()` transliterates,
  * `wp_trim_words()` trims to whole words.
  *
- * Static, and not a {@see \Zestry\WPToolkit\Kernel\Abstracts\Service}, because there is
+ * Static, and not a {@see \Zestry\WPToolkit\Kernel\Abstracts\Module}, because there is
  * nothing here to configure or inject: every method is a pure function of its
  * arguments.
  *

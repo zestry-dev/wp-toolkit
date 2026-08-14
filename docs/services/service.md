@@ -20,7 +20,7 @@ A service never appears in `bootstrap.php`. That file is modules only, and listi
 - **Dependencies** are typed properties, injected before any of your code
 runs (see below).
 - **Configuration** comes from `configure()` in your entry file, or — for a
-module — from the initializer in `bootstrap.php`.
+module — from the `before_boot` in its `bootstrap.php` entry.
 - **A class that needs constructor arguments** is a value object, not a
 service. Write it as a plain class; if it also needs the plugin, have it `use WithPlugin` and pass it through `$plugin->wire( $object )`.
 
@@ -62,9 +62,11 @@ A service that takes configuration gets it from `configure()` in your entry file
 
 ## Which properties get injected
 
-A property is injected when it is `public` or `protected` and its type is a single class name that extends Service or Module — `?Path $path` included, since a nullable type still names one class. Everything else is left alone as your own state: scalars, union and intersection types, untyped properties, and classes that are neither kind.
+A property is injected when it is `public` or `protected` and its type is a single class name that extends Service — `?Path $path` included, since a nullable type still names one class. Everything else is left alone as your own state: scalars, union and intersection types, untyped properties, and classes that are not services.
 
 Injection assigns the property outright, so a declared default is replaced rather than respected. That happens once, when the object is wired, before any of your own code runs.
+
+**A property typed as a Module is refused, not injected.** Building a module boots it — it binds hooks, walks a directory, registers things with WordPress — and a property declaration hides all of that behind a type name. Ask for one where you need it instead, which puts the cost where a reader can see it: `$this->get_plugin()->get( Options::class )`. Declaring the property throws a `ModuleException` naming the property and the call to use.
 
 Two cases fail quietly, so check them first when a property is not there:
 
@@ -80,6 +82,7 @@ class Reports extends Service {
     public Path $path;          // injected
     protected Views $views;     // injected
     private DB $db;             // NEVER injected -- make it public or protected
+    public Options $options;    // THROWS -- Options is a module; get() it instead
 
     #[NoInject]
     public Path $override;      // skipped; yours to assign

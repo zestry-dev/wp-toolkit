@@ -11,7 +11,7 @@ namespace Zestry\WPToolkit\DevTools;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Reads and writes a consuming project's `zestry.json`.
@@ -35,7 +35,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * which `Copier` treats as "leave text-domain strings untouched" rather than as
  * a malformed file.
  */
-class ZestryConfig extends Service {
+class ZestryConfig extends Module {
 
 	/**
 	 * Check whether a project has already been initialized.

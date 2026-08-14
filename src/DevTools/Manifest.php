@@ -11,7 +11,7 @@ namespace Zestry\WPToolkit\DevTools;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Records the exact bytes `init` and `add` wrote, so an update can say what it
@@ -51,7 +51,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  *
  * @see \Zestry\WPToolkit\DevTools\Copier::render() The rewrite these hashes are taken over.
  */
-class Manifest extends Service {
+class Manifest extends Module {
 
 	/**
 	 * A file on disk matching the hash recorded when it was copied.

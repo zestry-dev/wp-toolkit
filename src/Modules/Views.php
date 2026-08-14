@@ -6,12 +6,12 @@
 
 declare( strict_types=1 );
 
-namespace Zestry\WPToolkit\Services;
+namespace Zestry\WPToolkit\Modules;
 
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Resolves and renders PHP view templates from the plugin directory.
@@ -77,19 +77,12 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * ```
  *
  */
-class Views extends Service {
+class Views extends Module {
 
 	/**
 	 * Default plugin-relative directory of view files.
 	 */
 	const VIEWS_ROOT = 'views';
-
-	/**
-	 * Path service injected by the plugin to resolve the view's absolute path.
-	 *
-	 * @var Path
-	 */
-	public Path $path;
 
 	/**
 	 * Cached real (symlink-resolved) absolute path of the views root.
@@ -117,7 +110,7 @@ class Views extends Service {
 	 * `get( 'card', array( 'title' => 'Hello' ) )` makes `$title` available to
 	 * `views/card.php`. Escape the data in the template according to context.
 	 *
-	 * The including is {@see \Zestry\WPToolkit\Services\Path::include_file()}, which is
+	 * The including is {@see \Zestry\WPToolkit\Modules\Path::include_file()}, which is
 	 * also what reserves the names: only keys beginning `__include_` are, and
 	 * every ordinary name reaches the template, `view` and `data` included.
 	 * Rendering a subview costs no name at all, since a template reaches this
@@ -129,7 +122,7 @@ class Views extends Service {
 	 * @throws \InvalidArgumentException When the views root or the view is missing, or the view resolves outside the root.
 	 */
 	public function get( string $view, array $data = array() ): string {
-		return $this->path->include_file( $this->normalize_view_path( $view ), $data, $this )['buffer'];
+		return $this->with( Path::class )->include_file( $this->normalize_view_path( $view ), $data, $this )['buffer'];
 	}
 
 	/**
@@ -142,7 +135,7 @@ class Views extends Service {
 	 */
 	private function get_real_root(): string|false {
 		if ( $this->real_root === null ) {
-			$resolved = \realpath( $this->path->get_plugin_path( self::VIEWS_ROOT ) );
+			$resolved = \realpath( $this->with( Path::class )->get_plugin_path( self::VIEWS_ROOT ) );
 			if ( $resolved === false ) {
 				return false;
 			}
@@ -176,7 +169,7 @@ class Views extends Service {
 			$view = \substr( $view, 0, -4 );
 		}
 
-		$full_path = $this->path->get_plugin_path( self::VIEWS_ROOT . '/' . $view . '.php' );
+		$full_path = $this->with( Path::class )->get_plugin_path( self::VIEWS_ROOT . '/' . $view . '.php' );
 
 		// Resolve symlinks and .. segments on both the candidate and the root, then
 		// require the candidate to sit inside the root. realpath() returns false for

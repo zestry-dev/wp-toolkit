@@ -11,6 +11,7 @@ namespace Zestry\WPToolkit\Modules;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
@@ -32,9 +33,11 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * ```
  * // bootstrap.php
  * return array(
- *     Log::class => static function ( Log $log ): void {
- *         $log->set_min_level( Log::LEVEL_WARNING );
- *     },
+ *     Log::class => array(
+ *         'configure' => static function ( Log $log ): void {
+ *             $log->set_min_level( Log::LEVEL_WARNING );
+ *         },
+ *     ),
  * );
  * ```
  *
@@ -71,7 +74,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * nothing is listening, they fall back to `error_log()` rather than lose the
  * message.
  */
-class Log extends Module {
+class Log extends Module implements Bootable {
 
 	/**
 	 * The system is unusable.
@@ -339,17 +342,10 @@ class Log extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
-		\add_action(
-			$this->get_hook(),
-			// A closure rather than array( $this, 'write' ), so write() can stay
-			// private: the plugin edits it, nothing calls it from outside.
-			function ( string $level, string $message, array $context = array() ): void {
-				$this->write( $level, $message, $context );
-			},
-			10,
-			3
-		);
+	public function on_boot(): void {
+		// A first-class callable rather than array( $this, 'write' ), so write()
+		// can stay private: the plugin edits it, nothing calls it from outside.
+		\add_action( $this->get_hook(), $this->write( ... ), 10, 3 );
 	}
 
 	/**

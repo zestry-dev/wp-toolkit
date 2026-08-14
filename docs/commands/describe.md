@@ -17,7 +17,7 @@ Reads only. Nothing here edits a file, and no module is ever built.
 
 ## What it cannot tell you
 
-The directory reported for a module is its **default**. A `set_*_root()` call inside an initializer changes it, and finding that out would mean running your closures against live module instances — which this command does not do, for the same reason `wp zt doctor` does not. A module whose entry carries an initializer is marked `configured`, so the report says where to look rather than guessing.
+What a module was configured to do. A module whose entry carries a `before_boot` is marked `configured`, but what that callback does is only found by running it — which this command does not do, for the same reason `wp zt doctor` does not. The report says where to look rather than guessing.
 
 ## Options
 

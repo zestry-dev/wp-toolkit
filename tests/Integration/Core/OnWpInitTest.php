@@ -19,6 +19,14 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  */
 final class OnWpInitTest extends TestCase {
 
+	public function set_up(): void {
+		parent::set_up();
+
+		// Nothing is built without being declared, and this fixture is a
+		// module like any other.
+		$this->plugin->declare_modules( array( RunAtInitProbe::class ) );
+	}
+
 	public function test_it_runs_immediately_when_init_has_fired(): void {
 		$module = $this->plugin->get( RunAtInitProbe::class );
 		$ran    = 0;

@@ -39,16 +39,14 @@ namespace Zestry\WPToolkit\Kernel\Traits;
  * ```
  *
  * @example Behind one of your own settings
- * The instance is wired before it is asked, so an injected service is available
+ * The instance is wired before it is asked, so it can reach the whole plugin
  * here -- which is what makes a stored setting usable as the switch.
  *
  * ```
  * return new class() extends RestRoute {
  *
- *     public Options $options;
- *
  *     public function is_enabled(): bool {
- *         return (bool) $this->options->get( 'expose_public_api' );
+ *         return (bool) $this->get_plugin()->get( Options::class )->get( 'expose_public_api' );
  *     }
  *
  *     // ...

@@ -6,12 +6,12 @@
 
 declare( strict_types=1 );
 
-namespace Zestry\WPToolkit\Services;
+namespace Zestry\WPToolkit\Modules;
 
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Provides an in-memory registry for values shared during one request.
@@ -38,7 +38,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * $mode = $globals->get( 'render_mode', 'default' );
  * ```
  */
-class Globals extends Service {
+class Globals extends Module {
 
 	/**
 	 * Global values registry.

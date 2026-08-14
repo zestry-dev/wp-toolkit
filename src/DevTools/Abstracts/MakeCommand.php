@@ -22,8 +22,7 @@ use Zestry\WPToolkit\DevTools\ParentClass;
 use Zestry\WPToolkit\DevTools\ZestryConfig;
 use Zestry\WPToolkit\DevTools\StubRenderer;
 use Zestry\WPToolkit\Modules\CLI\Command;
-use Zestry\WPToolkit\Services\Path;
-use Zestry\WPToolkit\DevTools\RuntimePlugin;
+use Zestry\WPToolkit\Modules\Path;
 
 /**
  * MakeCommand class.
@@ -45,46 +44,6 @@ use Zestry\WPToolkit\DevTools\RuntimePlugin;
 abstract class MakeCommand extends Command {
 
 	use WithFolderWalker;
-
-	/**
-	 * @var ConsumerPlugin
-	 */
-	public ConsumerPlugin $consumer_plugin;
-
-	/**
-	 * @var ZestryConfig
-	 */
-	public ZestryConfig $zestry_config;
-
-	/**
-	 * @var StubRenderer
-	 */
-	public StubRenderer $stub_renderer;
-
-	/**
-	 * @var Formatter
-	 */
-	public Formatter $formatter;
-
-	/**
-	 * @var BootstrapFile
-	 */
-	public BootstrapFile $bootstrap_file;
-
-	/**
-	 * @var Path
-	 */
-	public Path $path;
-
-	/**
-	 * @var RuntimePlugin
-	 */
-	public RuntimePlugin $runtime;
-
-	/**
-	 * @var ParentClass
-	 */
-	public ParentClass $parent_class;
 
 	/**
 	 * Parse errors in the files just written, keyed by absolute path.
@@ -140,10 +99,10 @@ abstract class MakeCommand extends Command {
 			);
 		}
 
-		$plugin_root = $this->consumer_plugin->get_plugin_root();
+		$plugin_root = $this->with( ConsumerPlugin::class )->get_plugin_root();
 
 		try {
-			$config = $this->zestry_config->read( $plugin_root );
+			$config = $this->with( ZestryConfig::class )->read( $plugin_root );
 		} catch ( \RuntimeException $exception ) {
 			$this->error( $exception->getMessage() );
 			return;
@@ -162,7 +121,7 @@ abstract class MakeCommand extends Command {
 			'namespace'        => $namespace,
 			'copied_namespace' => Copier::get_target_namespace( $namespace ),
 			'name'             => $name,
-			'title'            => $this->stub_renderer->to_title( $name ),
+			'title'            => $this->with( StubRenderer::class )->to_title( $name ),
 			'text_domain'      => self::get_text_domain( $config, $plugin_root ),
 		);
 
@@ -195,7 +154,7 @@ abstract class MakeCommand extends Command {
 		 * what each default means -- and none of that is true of someone else's
 		 * abstract, whose whole purpose is to have settled those already.
 		 */
-		$stub = $this->path->get_plugin_path(
+		$stub = $this->with( Path::class )->get_plugin_path(
 			'src/DevTools/stubs/' . ( null === $parent ? $this->get_stub() : 'extends.php.stub' )
 		);
 
@@ -235,7 +194,7 @@ abstract class MakeCommand extends Command {
 				\wp_mkdir_p( \dirname( $target ) );
 			}
 
-			if ( false === \file_put_contents( $target, $this->stub_renderer->render( $source, $values ) ) ) {
+			if ( false === \file_put_contents( $target, $this->with( StubRenderer::class )->render( $source, $values ) ) ) {
 				$this->error( 'Failed to write ' . $target );
 				return;
 			}
@@ -250,7 +209,7 @@ abstract class MakeCommand extends Command {
 		 * declared -- and so declare_generated_module() can format bootstrap.php
 		 * knowing nothing else will touch it afterwards.
 		 */
-		$this->formatter->format( $plugin_root, $written );
+		$this->with( Formatter::class )->format( $plugin_root, $written );
 
 		$this->after_write( $name, $plugin_root, $config );
 
@@ -315,7 +274,7 @@ abstract class MakeCommand extends Command {
 		// module is declared under the namespace it actually declares.
 		$class = $this->get_generated_namespace( $segments ) . '\\' . $class_name;
 
-		if ( ! $this->bootstrap_file->exists( $plugin_root ) ) {
+		if ( ! $this->with( BootstrapFile::class )->exists( $plugin_root ) ) {
 			$this->log( 'No bootstrap.php found. Declare it in bootstrap.php to have the plugin build it.' );
 
 			return;
@@ -341,11 +300,11 @@ abstract class MakeCommand extends Command {
 		 */
 		$hint = "\t// " . $class_name . "::class => array( 'boots_on' => 'init' ),\n";
 
-		if ( DeclarationResult::Declared === $this->bootstrap_file->declare_module( $plugin_root, $class, $hint ) ) {
+		if ( DeclarationResult::Declared === $this->with( BootstrapFile::class )->declare_module( $plugin_root, $class, $hint ) ) {
 			// An edited file is worth formatting for the same reason a generated
 			// one is: the appended entry lands in someone else's file, and should
 			// not be the line that makes their lint fail.
-			$this->formatter->format( $plugin_root, array( \rtrim( $plugin_root, '/\\' ) . '/bootstrap.php' ) );
+			$this->with( Formatter::class )->format( $plugin_root, array( \rtrim( $plugin_root, '/\\' ) . '/bootstrap.php' ) );
 
 			$this->log( 'Declared in bootstrap.php, so the plugin builds it and on_boot() runs.' );
 		}
@@ -379,7 +338,7 @@ abstract class MakeCommand extends Command {
 	 * @return string
 	 */
 	protected function get_generated_namespace( array $segments ): string {
-		$config    = $this->zestry_config->read( $this->consumer_plugin->get_plugin_root() );
+		$config    = $this->with( ZestryConfig::class )->read( $this->with( ConsumerPlugin::class )->get_plugin_root() );
 		$namespace = \rtrim( $config['namespace'], '\\' ) . '\\Modules';
 
 		foreach ( $segments as $segment ) {
@@ -671,17 +630,13 @@ abstract class MakeCommand extends Command {
 	 * @return string|null The module's registry name, or null when nothing owns it.
 	 */
 	private function get_module_providing( string $base ): ?string {
-		$registry = Copier::flatten_registry(
-			require $this->path->get_plugin_path( 'src/DevTools/registry.php' )
+		$registry = Copier::normalize_registry(
+			require $this->with( Path::class )->get_plugin_path( 'src/DevTools/registry.php' )
 		);
 
 		$wanted = $this->get_declaring_namespace( $base );
 
 		foreach ( $registry as $name => $entry ) {
-			if ( 'modules' !== ( $entry['section'] ?? '' ) ) {
-				continue;
-			}
-
 			if ( $this->get_declaring_namespace( Copier::get_relative_class( $entry['source'] ) ) === $wanted ) {
 				return $name;
 			}
@@ -714,7 +669,7 @@ abstract class MakeCommand extends Command {
 	 * @return void
 	 */
 	private function add_module( string $module ): void {
-		$command = require $this->path->get_plugin_path( 'commands/add/module.php' );
+		$command = require $this->with( Path::class )->get_plugin_path( 'commands/add/module.php' );
 
 		$this->get_plugin()->wire( $command );
 
@@ -749,16 +704,16 @@ abstract class MakeCommand extends Command {
 		}
 
 		try {
-			$parent = $this->parent_class->resolve( $requested, $root );
+			$parent = $this->with( ParentClass::class )->resolve( $requested, $root );
 
-			$this->parent_class->assert_usable( $parent, Copier::get_target_namespace( $root ) . '\\' . $base );
+			$this->with( ParentClass::class )->assert_usable( $parent, Copier::get_target_namespace( $root ) . '\\' . $base );
 		} catch ( \InvalidArgumentException $exception ) {
 			$this->error( $exception->getMessage() );
 
 			return null;
 		}
 
-		$methods = $this->parent_class->get_abstract_methods( $parent );
+		$methods = $this->with( ParentClass::class )->get_abstract_methods( $parent );
 
 		if ( '' === $methods ) {
 			// Not a failure, and worth saying: a parent leaving nothing abstract

@@ -11,7 +11,7 @@ namespace Zestry\WPToolkit\DevTools;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Runs a consuming plugin's own formatters over the files a command wrote.
@@ -51,7 +51,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * > every copied file as edited, which is the one thing the manifest exists to
  * > get right. This is for generated and edited files only.
  */
-class Formatter extends Service {
+class Formatter extends Module {
 
 	/**
 	 * Extensions `phpcbf` is asked to fix.

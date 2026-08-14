@@ -4,6 +4,7 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Support;
 
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Plugin;
 use Yoast\WPTestUtils\WPIntegration\TestCase as WPTestCase;
 
@@ -95,6 +96,40 @@ abstract class TestCase extends WPTestCase {
 		file_put_contents( $this->entry_file, "<?php\n/* Plugin Name: Zestry Test */\n" );
 
 		$this->plugin = new Plugin( $this->entry_file, 'zestry-test' );
+		$this->plugin->declare_modules( $this->get_toolkit_modules() );
+	}
+
+	/**
+	 * Every module this toolkit ships, declared but not built.
+	 *
+	 * Nothing is built without being declared, so a test asking for a module has
+	 * to have declared it -- and a test harness is the one plugin that is made of
+	 * everything. Read from `registry.php` rather than listed here, so a module
+	 * added to the toolkit is reachable from a test without a second edit.
+	 *
+	 * Declaring is not building: each is constructed by the first `get()` that
+	 * asks for it, exactly as before, and a test that never asks pays nothing.
+	 *
+	 * @return array<class-string>
+	 */
+	protected function get_toolkit_modules(): array {
+		/** @var array<string, array{source: class-string}> $registry */
+		$registry = require dirname( __DIR__, 2 ) . '/src/DevTools/registry.php';
+
+		$modules = array_column( $registry, 'source' );
+
+		// The DevTools helpers are not in the registry -- nothing copies them
+		// into a consuming plugin -- but the command tests reach for them the
+		// same way `devtool.php` does.
+		foreach ( (array) glob( dirname( __DIR__, 2 ) . '/src/DevTools/*.php' ) as $file ) {
+			$class = 'Zestry\\WPToolkit\\DevTools\\' . basename( (string) $file, '.php' );
+
+			if ( class_exists( $class ) && is_subclass_of( $class, Module::class ) ) {
+				$modules[] = $class;
+			}
+		}
+
+		return $modules;
 	}
 
 	public function tear_down(): void {

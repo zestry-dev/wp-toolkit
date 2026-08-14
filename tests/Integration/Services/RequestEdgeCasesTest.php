@@ -4,8 +4,8 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\Services;
 
-use Zestry\WPToolkit\Services\Request\Attributes\RequestArgument;
-use Zestry\WPToolkit\Services\Request\Request;
+use Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument;
+use Zestry\WPToolkit\Modules\Request\Request;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
@@ -69,7 +69,7 @@ abstract class EdgeBase {
  * Everything a declaration can get wrong, and everything a caller can send that
  * a schema would have stopped.
  *
- * @covers \Zestry\WPToolkit\Services\Request\Request
+ * @covers \Zestry\WPToolkit\Modules\Request\Request
  */
 final class RequestEdgeCasesTest extends TestCase {
 
@@ -487,9 +487,9 @@ final class EdgeStatic {
 final class EdgeUnwired {
 
 	/**
-	 * @var \Zestry\WPToolkit\Services\Path
+	 * @var \Zestry\WPToolkit\Modules\Path
 	 */
-	public \Zestry\WPToolkit\Services\Path $path;
+	public \Zestry\WPToolkit\Modules\Path $path;
 
 	#[RequestArgument( 'A label.' )]
 	public string $label = '';

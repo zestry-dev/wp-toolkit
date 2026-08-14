@@ -11,7 +11,7 @@ namespace Zestry\WPToolkit\DevTools;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Abstracts\Service;
+use Zestry\WPToolkit\Kernel\Abstracts\Module;
 
 /**
  * Locates the plugin `wp zt` should operate on.
@@ -32,7 +32,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Service;
  * plugin the CWD is inside, so this class only ever runs in the context of
  * that one plugin's own DevTools instance to begin with.
  */
-class ConsumerPlugin extends Service {
+class ConsumerPlugin extends Module {
 
 	/**
 	 * Resolve the absolute root directory of the plugin to operate on.

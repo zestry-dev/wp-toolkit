@@ -70,7 +70,6 @@ final class AjaxDispatchTest extends TestCase {
 		// Resolving the module boots it, and init has already fired, so the file
 		// written above is discovered and registered immediately.
 		$ajax = $this->ajax();
-		$ajax->boot();
 
 		return $ajax->get_action_slug( $name );
 	}

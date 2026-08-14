@@ -10,7 +10,7 @@ Generate a script entry of this plugin's own.
 Writes `src/entries/<name>/`, which the build compiles to `build/entries/<name>` and the `assets` module registers on `init`. Using it is then one call, from an admin page, a shortcode, anywhere:
 
 ```php
-$this->assets->enqueue_entry( 'settings' );
+$this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
 ```
 
 An entry is built by the `webpack.config.js` that `wp zt add module assets` writes, which is what lets one build produce blocks and entries together. A stock `@wordpress/scripts` setup cannot; the JavaScript guide covers why.

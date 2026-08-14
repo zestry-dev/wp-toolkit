@@ -26,7 +26,7 @@ use WP_REST_Response;
  * convention).
  *
  * The module wires the instance, binds its `#[RequestArgument]` properties
- * (see {@see \Zestry\WPToolkit\Services\Request\Attributes\RequestArgument}) from the
+ * (see {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument}) from the
  * request, and registers it with `register_rest_route()`. A response
  * `schema()` is published only if you override it.
  *
@@ -135,7 +135,7 @@ abstract class RestRoute implements PluginAware {
 	 *
 	 * Runs only after permission_check() has allowed the request and, if this
 	 * route has any `#[RequestArgument]`-attributed properties (see
-	 * {@see \Zestry\WPToolkit\Services\Request\Attributes\RequestArgument}), after WordPress has
+	 * {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument}), after WordPress has
 	 * validated and sanitized their values and RestApi has bound them onto
 	 * those properties — so this method can read `$this->id` for a bound
 	 * parameter instead of reaching into `$request` for it. Implementations
@@ -166,7 +166,7 @@ abstract class RestRoute implements PluginAware {
 	/**
 	 * State the parts of an argument's schema an attribute cannot carry.
 	 *
-	 * Your {@see \Zestry\WPToolkit\Services\Request\Attributes\RequestArgument} properties
+	 * Your {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument} properties
 	 * already become the `args` WordPress validates this route against, and their
 	 * values are bound before {@see handle()} runs. What you return here is stated
 	 * *over* that rather than instead of it, keyed by argument name — so an

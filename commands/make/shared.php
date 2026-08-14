@@ -7,6 +7,9 @@
 declare( strict_types=1 );
 
 use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
+use Zestry\WPToolkit\DevTools\ConsumerPlugin;
+use Zestry\WPToolkit\DevTools\RuntimePlugin;
+use Zestry\WPToolkit\DevTools\StubRenderer;
 
 return new class() extends MakeCommand {
 
@@ -136,7 +139,7 @@ return new class() extends MakeCommand {
 	 * @return string
 	 */
 	protected function normalize_name( string $name ): string {
-		return $this->stub_renderer->to_slug( $name );
+		return $this->with( StubRenderer::class )->to_slug( $name );
 	}
 
 	/**
@@ -166,8 +169,8 @@ return new class() extends MakeCommand {
 	 * @return string
 	 */
 	private function get_scope(): string {
-		return $this->stub_renderer->to_slug(
-			$this->runtime->get_slug_or_default( $this->consumer_plugin->get_plugin_root() )
+		return $this->with( StubRenderer::class )->to_slug(
+			$this->with( RuntimePlugin::class )->get_slug_or_default( $this->with( ConsumerPlugin::class )->get_plugin_root() )
 		);
 	}
 

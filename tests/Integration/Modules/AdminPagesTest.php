@@ -47,7 +47,7 @@ final class AdminPagesTest extends TestCase {
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'reports.php and reports/index.php' );
-		$this->admin_pages()->boot();
+		$this->admin_pages();
 		do_action( 'admin_menu' );
 	}
 
@@ -62,7 +62,7 @@ final class AdminPagesTest extends TestCase {
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'would register as "zestry-test-settings&more"' );
-		$this->admin_pages()->boot();
+		$this->admin_pages();
 		do_action( 'admin_menu' );
 	}
 

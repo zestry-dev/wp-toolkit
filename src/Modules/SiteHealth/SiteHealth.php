@@ -11,10 +11,11 @@ namespace Zestry\WPToolkit\Modules\SiteHealth;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 
 /**
  * Puts your plugin on WordPress's Site Health screen.
@@ -73,7 +74,7 @@ use Zestry\WPToolkit\Services\Path;
  * ```
  *
  */
-class SiteHealth extends Module {
+class SiteHealth extends Module implements Bootable {
 
 	use WithFolderWalker;
 
@@ -86,11 +87,6 @@ class SiteHealth extends Module {
 	 * Where debug sections are discovered, relative to the plugin root.
 	 */
 	const SECTIONS_ROOT = 'debug-sections';
-
-	/**
-	 * @var Path
-	 */
-	public Path $path;
 
 	/**
 	 * Discovered checks by identifier, once the directory has been walked.
@@ -192,7 +188,7 @@ class SiteHealth extends Module {
 	 *
 	 * Registered as `direct` tests, which run in the same request as the screen.
 	 * WordPress's `async` alternative exists for tests that make an outbound
-	 * request; one of those belongs behind a {@see \Zestry\WPToolkit\Services\Transients}
+	 * request; one of those belongs behind a {@see \Zestry\WPToolkit\Modules\Transients}
 	 * entry and a direct check reading it, rather than blocking the screen.
 	 *
 	 * @param array<string, array<string, mixed>> $tests The tests WordPress has so far.
@@ -244,7 +240,7 @@ class SiteHealth extends Module {
 	 *
 	 * @internal
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		\add_filter( 'site_status_tests', array( $this, 'filter_site_status_tests' ) );
 		\add_filter( 'debug_information', array( $this, 'filter_debug_information' ) );
 	}
@@ -294,7 +290,7 @@ class SiteHealth extends Module {
 	 * @throws DiscoveryException When a file returns the wrong value.
 	 */
 	private function get_discovered( string $root, string $expected, string $label ): array {
-		$root_dir = $this->path->get_plugin_path( $root );
+		$root_dir = $this->with( Path::class )->get_plugin_path( $root );
 
 		if ( ! \is_dir( $root_dir ) ) {
 			return array();

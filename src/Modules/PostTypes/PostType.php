@@ -353,20 +353,11 @@ abstract class PostType implements PluginAware {
 	 * tutorials -- this is the boilerplate `get_args()` exists to eliminate.
 	 * `labels()` overrides are merged on top by the caller, not here.
 	 *
-	 * Every format string is wrapped in `__( '...', 'zestry-toolkit' )` so this
-	 * file is picked up by `wp i18n make-pot`, matching every other
-	 * user-facing string in this toolkit (see `Ajax`/`AdminPages`). The
-	 * `'zestry-toolkit'` text domain here is this toolkit's own -- `Copier`
-	 * rewrites it to the consuming project's own text domain when this file
-	 * is copied via `wp zt add post-types`/`wp zt init`, the same way
-	 * it rewrites the `Zestry\WPToolkit` namespace, so this string should never
-	 * be hand-edited to something else here. `$singular`/`$plural` are NOT
-	 * translated here -- they are runtime values from the consumer's own
-	 * `singular_name()`/`plural_name()`, not strings this base class owns; a
-	 * consumer wanting `Book`/`Books` translated wraps its own return values
-	 * in `__()` inside those methods. This mirrors the pattern WordPress's
-	 * own Codex documents for custom post type labels: translate the
-	 * surrounding phrase, `sprintf()` the caller-supplied name into it.
+	 * `$singular` and `$plural` are not translated here -- they are your own
+	 * `singular_name()`/`plural_name()` return values, so wrap those in `__()`
+	 * yourself if you want them translated. This is the pattern WordPress
+	 * documents for custom post type labels: translate the surrounding phrase,
+	 * and `sprintf()` the caller-supplied name into it.
 	 *
 	 * @return array<string, string>
 	 */

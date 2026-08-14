@@ -4,13 +4,13 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\Services;
 
-use Zestry\WPToolkit\Services\Path;
+use Zestry\WPToolkit\Modules\Path;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
  * Path traversal / containment behavior (review findings #18, #36).
  *
- * @covers \Zestry\WPToolkit\Services\Path
+ * @covers \Zestry\WPToolkit\Modules\Path
  */
 final class PathContainmentTest extends TestCase {
 
