@@ -106,7 +106,7 @@ Two other causes worth ruling out once the declaration is there:
 |---|---|---|
 | The kernel (`wp zt init`) | `lib/Core/Kernel/Plugin.php` | `Acme\Plugin\Core\Kernel\Plugin` |
 | A module you added (`wp zt add module ajax`) | `lib/Core/Modules/Ajax/Ajax.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax` |
-| A service you added (`wp zt add service path`) | `lib/Core/Services/Path.php` | `Acme\Plugin\Core\Services\Path` |
+| A service you added (`wp zt add service path`) | `lib/Core/Services/Path.php` | `Acme\Plugin\Core\Modules\Path` |
 | A module you wrote (`wp zt make module`) | `lib/Modules/Shortcode.php` | `Acme\Plugin\Modules\Shortcode` |
 | A service you wrote (`wp zt make service`) | `lib/Services/Cache.php` | `Acme\Plugin\Services\Cache` |
 
@@ -146,8 +146,8 @@ Everything else is left alone as your own state: scalars, untyped properties, un
 ```php
 use Acme\Plugin\Core\Kernel\Abstracts\Module;
 use Acme\Plugin\Core\Kernel\Attributes\NoInject;
-use Acme\Plugin\Core\Services\Path;
-use Acme\Plugin\Core\Services\Views;
+use Acme\Plugin\Core\Modules\Path;
+use Acme\Plugin\Core\Modules\Views;
 
 class Reports extends Module {
 

@@ -12,7 +12,7 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  * `wp zt overwrite <module>...`: the batch warning, single confirmation, and
  * cancel-leaves-nothing-copied behavior.
  *
- * Exercises a local subclass of AddCommand replicating commands/overwrite/module.php
+ * Exercises a local subclass of AddCommand replicating commands/overwrite.php
  * exactly (rather than requiring that file directly), so read_line() can be
  * scripted the same way CommandTest.php does for Command::confirm() -- an
  * anonymous class instance returned by `require` cannot have a test-only
@@ -63,12 +63,12 @@ final class OverwriteCommandTest extends TestCase {
 	}
 
 	public function test_overwrites_an_already_present_module_after_confirmation(): void {
-		mkdir( $this->target_plugin_dir . '/lib/Core/Services', 0777, true );
-		file_put_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php', '<?php // hand-edited' );
+		mkdir( $this->target_plugin_dir . '/lib/Core/Modules', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php', '<?php // hand-edited' );
 
 		$this->run_overwrite( array( 'path' ), "y\n", 'services' );
 
-		$contents = (string) file_get_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php' );
+		$contents = (string) file_get_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' );
 		$this->assertStringNotContainsString( 'hand-edited', $contents );
 		$this->assertStringContainsString( 'namespace Acme\\Plugin', $contents );
 
@@ -77,8 +77,8 @@ final class OverwriteCommandTest extends TestCase {
 	}
 
 	public function test_warns_listing_every_already_present_module_before_confirming(): void {
-		mkdir( $this->target_plugin_dir . '/lib/Core/Services', 0777, true );
-		file_put_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php', '<?php // hand-edited' );
+		mkdir( $this->target_plugin_dir . '/lib/Core/Modules', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php', '<?php // hand-edited' );
 
 		$this->run_overwrite( array( 'rest-api' ), "y\n" );
 
@@ -87,8 +87,8 @@ final class OverwriteCommandTest extends TestCase {
 	}
 
 	public function test_declining_cancels_and_copies_nothing_including_new_dependencies(): void {
-		mkdir( $this->target_plugin_dir . '/lib/Core/Services', 0777, true );
-		file_put_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php', '<?php // hand-edited' );
+		mkdir( $this->target_plugin_dir . '/lib/Core/Modules', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php', '<?php // hand-edited' );
 
 		$this->run_overwrite( array( 'rest-api' ), "n\n" );
 
@@ -96,7 +96,7 @@ final class OverwriteCommandTest extends TestCase {
 		// still not copied, since declining cancels the whole batch.
 		$this->assertSame(
 			'<?php // hand-edited',
-			file_get_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php' )
+			file_get_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' )
 		);
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/lib/Core/Modules/RestApi/RestApi.php' );
 
@@ -109,7 +109,7 @@ final class OverwriteCommandTest extends TestCase {
 		// is never called and no confirmation is needed.
 		$this->run_overwrite( array( 'path' ), false, 'services' );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Services/Path.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' );
 		$this->assertNull( \WP_CLI::last( 'warning' ) );
 		$this->assertNotNull( \WP_CLI::last( 'success' ) );
 	}
@@ -130,7 +130,7 @@ final class OverwriteCommandTest extends TestCase {
 	}
 
 	/**
-	 * Build a subclass of AddCommand replicating commands/overwrite/module.php, with
+	 * Build a subclass of AddCommand replicating commands/overwrite.php, with
 	 * read_line() scripted to return $confirm_input, and invoke handle() with
 	 * the CWD inside the throwaway target plugin directory.
 	 *

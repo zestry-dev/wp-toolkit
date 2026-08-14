@@ -113,6 +113,9 @@ final class ImportVerificationTest extends TestCase {
 	public static function setUpBeforeClass(): void {
 		parent::setUpBeforeClass();
 
+		// extractor.php first: verify-examples.php calls its
+		// zestry_without_root_namespace(), and nothing else loads it here.
+		require_once dirname( __DIR__, 3 ) . '/bin/docs/extractor.php';
 		require_once dirname( __DIR__, 3 ) . '/bin/docs/verify-examples.php';
 	}
 }

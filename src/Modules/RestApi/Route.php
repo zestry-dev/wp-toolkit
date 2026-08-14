@@ -26,7 +26,7 @@ namespace Zestry\WPToolkit\Modules\RestApi;
  * `widgets/delete-one.php` is for a human's benefit, not RestApi's.
  *
  * ```
- * use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+ * use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
  * use Acme\Plugin\Core\Modules\RestApi\Route;
  * use Acme\Plugin\Core\Modules\RestApi\RestRoute;
  *

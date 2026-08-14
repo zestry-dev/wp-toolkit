@@ -24,7 +24,7 @@ namespace Zestry\WPToolkit\Modules\Request\Attributes;
  * your handler runs.
  *
  * ```
- * use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+ * use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
  *
  * #[RequestArgument( 'The order to cancel.' )]
  * public int $order_id;

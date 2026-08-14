@@ -10,7 +10,7 @@ Declares a property as one of the arguments its class accepts.
 One attribute for both callable surfaces this toolkit registers — a `RestRoute` and an `Ability` — because they ask the same question. Each is a named operation, described to a caller who cannot read your code, validated before it runs. Declare the argument once and the `Request` service builds the route's `args` or the ability's input schema from it, and binds the value onto the property before your handler runs.
 
 ```php
-use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 
 #[RequestArgument( 'The order to cancel.' )]
 public int $order_id;

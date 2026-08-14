@@ -669,7 +669,7 @@ abstract class MakeCommand extends Command {
 	 * @return void
 	 */
 	private function add_module( string $module ): void {
-		$command = require $this->with( Path::class )->get_plugin_path( 'commands/add/module.php' );
+		$command = require $this->with( Path::class )->get_plugin_path( 'commands/add.php' );
 
 		$this->get_plugin()->wire( $command );
 

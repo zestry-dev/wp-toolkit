@@ -131,7 +131,7 @@ A **[module](modules/)** does. It binds a hook, registers a post type, walks a d
 
 ```php
 use Acme\Plugin\Core\Modules\CLI\Command;
-use Acme\Plugin\Core\Services\Views;
+use Acme\Plugin\Core\Modules\Views;
 
 return new class extends Command {
 

@@ -12,7 +12,7 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  * `wp zt add <module>...`: dependency resolution, copying, and the
  * already-present skip guard.
  *
- * Exercises the real commands/add/module.php file. Path resolves toolkit source
+ * Exercises the real commands/add.php file. Path resolves toolkit source
  * against this package's own real src/Core/Modules/ (this repository doubles as
  * the zestry-dev/wp-toolkit package root), while ConsumerPlugin's target plugin
  * root is a throwaway directory under WP_PLUGIN_DIR, matching the pattern
@@ -48,48 +48,48 @@ final class AddCommandTest extends TestCase {
 	}
 
 	public function test_copies_a_module_with_no_dependencies(): void {
-		$this->run_add( array( 'path' ), 'service' );
+		$this->run_add( array( 'path' ) );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Services/Path.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' );
 		$this->assertNotNull( \WP_CLI::last( 'success' ) );
 	}
 
 	public function test_copies_a_transitive_dependency_first(): void {
 		$this->run_add( array( 'rest-api' ) );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Services/Path.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' );
 		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/RestApi/RestApi.php' );
 
 		$this->assertContains( 'Also adding required dependencies: path, request', $this->logged_messages() );
 	}
 
 	public function test_skips_a_module_already_present_instead_of_overwriting_it(): void {
-		mkdir( $this->target_plugin_dir . '/lib/Core/Services', 0777, true );
-		file_put_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php', '<?php // hand-edited' );
+		mkdir( $this->target_plugin_dir . '/lib/Core/Modules', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php', '<?php // hand-edited' );
 
-		$this->run_add( array( 'path' ), 'service' );
+		$this->run_add( array( 'path' ) );
 
 		// The existing, hand-edited file is left untouched, not overwritten
 		// with the toolkit's own copy of Path.php.
 		$this->assertSame(
 			'<?php // hand-edited',
-			file_get_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php' )
+			file_get_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' )
 		);
 
 		$this->assertContains( 'Skipped path (already present)', $this->logged_messages() );
 	}
 
 	public function test_skips_only_the_already_present_module_among_several(): void {
-		mkdir( $this->target_plugin_dir . '/lib/Core/Services', 0777, true );
-		file_put_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php', '<?php // hand-edited' );
+		mkdir( $this->target_plugin_dir . '/lib/Core/Modules', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php', '<?php // hand-edited' );
 
-		$this->run_add( array( 'path', 'globals' ), 'service' );
+		$this->run_add( array( 'path', 'globals' ) );
 
 		$this->assertSame(
 			'<?php // hand-edited',
-			file_get_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php' )
+			file_get_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' )
 		);
-		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Services/Globals.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/Globals.php' );
 	}
 
 	/**
@@ -276,7 +276,7 @@ final class AddCommandTest extends TestCase {
 		// a line pasted without its autoload key declares something different
 		// from what `add` intended.
 		$this->assertStringContainsString(
-			"\t\\Acme\\Plugin\\Core\\Modules\\Cron\\Cron::class,",
+			"\t\\Acme\\Plugin\\Core\\Modules\\Cron\\Cron::class => array(",
 			implode( "\n", $this->logged_messages() )
 		);
 		$this->assertNull(
@@ -305,20 +305,22 @@ final class AddCommandTest extends TestCase {
 
 		$bootstrap = (string) file_get_contents( $this->target_plugin_dir . '/bootstrap.php' );
 
-		$this->assertStringContainsString( 'Cron::class,', $bootstrap );
+		$this->assertStringContainsString( 'Cron::class => array(', $bootstrap );
 		$this->assertStringContainsString( 'use Acme\\Plugin\\Core\\Modules\\Cron\\Cron;', $bootstrap );
-		// path came along as a dependency but is a service, so it is copied
-		// without being declared -- only cron is named here.
-		$this->assertContains( 'Declared in bootstrap.php: cron', $this->logged_messages() );
+		// path came along as a dependency, and a dependency is a module like any
+		// other -- so it is declared too, and named alongside cron.
+		$this->assertContains( 'Declared in bootstrap.php: path, cron', $this->logged_messages() );
 
 		// Still valid PHP returning an array, rather than text that merely
 		// contains the right substrings.
 		$declared = require $this->target_plugin_dir . '/bootstrap.php';
 
 		$this->assertIsArray( $declared );
-		// A bare entry is a value rather than a key: a key's value would be an
-		// initializer, and `add` has none to supply.
-		$this->assertContains( 'Acme\\Plugin\\Core\\Modules\\Cron\\Cron', $declared );
+		// cron names a boot hook, so its entry is the configured form: a key,
+		// whose value carries the `boots_on` the module declared.
+		$this->assertArrayHasKey( 'Acme\\Plugin\\Core\\Modules\\Cron\\Cron', $declared );
+		// path does not, so it is written bare -- a value rather than a key.
+		$this->assertContains( 'Acme\\Plugin\\Core\\Modules\\Path', $declared );
 	}
 
 	/**
@@ -335,7 +337,7 @@ final class AddCommandTest extends TestCase {
 
 		$this->assertNotNull( \WP_CLI::last( 'warning' ) );
 		$this->assertStringContainsString(
-			"\t\\Acme\\Plugin\\Core\\Modules\\Cron\\Cron::class,",
+			"\t\\Acme\\Plugin\\Core\\Modules\\Cron\\Cron::class => array(",
 			implode( "\n", $this->logged_messages() )
 		);
 	}
@@ -356,11 +358,13 @@ final class AddCommandTest extends TestCase {
 
 		$bootstrap = (string) file_get_contents( $this->target_plugin_dir . '/bootstrap.php' );
 
-		// Only the modules appear: path and views are services, copied but never
-		// declared, so they bind no import here.
+		// Every copied module binds an import, dependencies included, in the
+		// order they were added.
 		$this->assertStringContainsString(
-			"use Acme\\Plugin\\Core\\Modules\\Cron\\Cron;\n"
-				. "use Acme\\Plugin\\Core\\Modules\\Options;\n\n"
+			"use Acme\\Plugin\\Core\\Modules\\Path;\n"
+				. "use Acme\\Plugin\\Core\\Modules\\Cron\\Cron;\n"
+				. "use Acme\\Plugin\\Core\\Modules\\Options;\n"
+				. "use Acme\\Plugin\\Core\\Modules\\Views;\n\n"
 				. 'return array(',
 			$bootstrap
 		);
@@ -371,22 +375,23 @@ final class AddCommandTest extends TestCase {
 	}
 
 	/**
-	 * `wp zt add service` copies a service, and declares nothing.
+	 * A module with no `on_boot()` is declared like any other.
 	 *
-	 * A service is built the first time something asks for it, so an entry
-	 * naming one in bootstrap.php would do nothing.
+	 * Nothing is built that `bootstrap.php` does not declare, so a module that
+	 * only works when called still has to be listed -- there is no second kind
+	 * of entry, and no kind of module that gets there another way.
 	 */
-	public function test_add_service_copies_without_declaring(): void {
+	public function test_a_module_with_no_on_boot_is_declared_like_any_other(): void {
 		file_put_contents( $this->target_plugin_dir . '/bootstrap.php', "<?php\n\nreturn array(\n);\n" );
 
-		$this->run_add( array( 'views' ), 'service' );
+		$this->run_add( array( 'views' ) );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Services/Views.php' );
-		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Services/Path.php', 'Its dependency comes too.' );
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/Views.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/Path.php', 'Its dependency comes too.' );
 
 		$bootstrap = (string) file_get_contents( $this->target_plugin_dir . '/bootstrap.php' );
-		$this->assertStringNotContainsString( 'Views::class', $bootstrap );
-		$this->assertStringNotContainsString( 'Path::class', $bootstrap );
+		$this->assertStringContainsString( 'Views::class', $bootstrap );
+		$this->assertStringContainsString( 'Path::class', $bootstrap, 'A dependency is declared too.' );
 	}
 
 	/**
@@ -394,42 +399,15 @@ final class AddCommandTest extends TestCase {
 	 * copy. Nine of the ten modules depend on `path`, a service, so refusing to
 	 * cross the boundary would make the command useless.
 	 */
-	public function test_add_module_still_copies_the_services_it_depends_on(): void {
+	public function test_a_module_copies_what_it_depends_on(): void {
 		$this->run_add( array( 'rest-api' ) );
 
 		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/RestApi/RestApi.php' );
-		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Services/Path.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' );
 	}
 
-	public function test_add_module_rejects_a_service_and_names_the_right_subcommand(): void {
-		$this->run_add( array( 'path' ) );
 
-		$error = \WP_CLI::last( 'error' );
-		$this->assertNotNull( $error );
-		$this->assertStringContainsString( '"path" is a service, not a module', (string) $error[0] );
-		$this->assertStringContainsString( 'wp zt add service path', (string) $error[0] );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/lib/Core/Services/Path.php', 'Nothing is copied.' );
-	}
 
-	public function test_add_service_rejects_a_module_and_names_the_right_subcommand(): void {
-		$this->run_add( array( 'cli' ), 'service' );
-
-		$error = \WP_CLI::last( 'error' );
-		$this->assertNotNull( $error );
-		$this->assertStringContainsString( '"cli" is a module, not a service', (string) $error[0] );
-		$this->assertStringContainsString( 'wp zt add module cli', (string) $error[0] );
-	}
-
-	/**
-	 * A rejection stops the whole batch before anything is written, rather than
-	 * copying the valid names and failing on the last one.
-	 */
-	public function test_one_wrong_kind_cancels_the_whole_batch(): void {
-		$this->run_add( array( 'cli', 'path' ) );
-
-		$this->assertNotNull( \WP_CLI::last( 'error' ) );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/lib/Core/Modules/CLI/CLI.php' );
-	}
 
 	/**
 	 * Measured against the plugin's own `Requires at least:` header, not against
@@ -476,7 +454,7 @@ final class AddCommandTest extends TestCase {
 
 		$this->run_add( array( 'icons-library' ) );
 
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/lib/Core/Services/Path.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' );
 	}
 
 	public function test_copies_a_module_the_plugin_promises_a_new_enough_wordpress_for(): void {
@@ -495,9 +473,9 @@ final class AddCommandTest extends TestCase {
 	public function test_warns_about_a_missing_header_even_when_nothing_needs_a_version(): void {
 		$this->write_entry_file( null );
 
-		$this->run_add( array( 'path' ), 'service' );
+		$this->run_add( array( 'path' ) );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Services/Path.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' );
 		$this->assertStringContainsString(
 			'does not declare a `Requires at least:` header',
 			(string) \WP_CLI::last( 'warning' )[0]
@@ -520,19 +498,19 @@ final class AddCommandTest extends TestCase {
 	}
 
 	/**
-	 * Require the real commands/add/module.php, wire it, and invoke handle() with the
+	 * Require the real commands/add.php, wire it, and invoke handle() with the
 	 * CWD inside the throwaway target plugin directory.
 	 *
 	 * @param string[] $modules Module names to pass as positional args.
 	 * @return void
 	 */
-	private function run_add( array $modules, string $kind = 'module' ): void {
+	private function run_add( array $modules ): void {
 		\WP_CLI::reset();
 
 		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-add-test' ) )->declare_modules( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
-		$command = require dirname( __DIR__, 3 ) . '/commands/add/' . $kind . '.php';
+		$command = require dirname( __DIR__, 3 ) . '/commands/add.php';
 		$package_plugin->wire( $command );
 
 		$previous_cwd = (string) getcwd();

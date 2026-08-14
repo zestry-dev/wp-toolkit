@@ -43,7 +43,7 @@ final class CopierTest extends TestCase {
 		$contents = file_get_contents( $destination );
 		$this->assertStringContainsString( 'namespace Acme\\Plugin\\Vendor\\Core\\Modules\\RestApi;', $contents );
 		$this->assertStringContainsString( 'use Acme\\Plugin\\Vendor\\Core\\Kernel\\Abstracts\\Module;', $contents );
-		$this->assertStringContainsString( 'use Acme\\Plugin\\Vendor\\Core\\Services\\Path;', $contents );
+		$this->assertStringContainsString( 'use Acme\\Plugin\\Vendor\\Core\\Modules\\Path;', $contents );
 	}
 
 	/**
@@ -68,7 +68,7 @@ final class CopierTest extends TestCase {
 
 		$contents = (string) file_get_contents( $destination );
 
-		$this->assertStringContainsString( 'get( \\Acme\\Plugin\\Core\\Services\\Request\\Request::class )', $contents );
+		$this->assertStringContainsString( 'get( \\Acme\\Plugin\\Core\\Modules\\Request\\Request::class )', $contents );
 		$this->assertStringContainsString( '): \\Acme\\Plugin\\Core\\Modules\\Fields\\MetaType {', $contents );
 		$this->assertStringContainsString( 'return \\Acme\\Plugin\\Core\\Modules\\Fields\\MetaType::Post;', $contents );
 		$this->assertStringNotContainsString( 'Zestry\\WPToolkit\\', $contents, 'Nothing naming the toolkit survives the copy.' );
@@ -268,25 +268,19 @@ final class CopierTest extends TestCase {
 	 * the file while making `wp zt add <name>` install whichever section was
 	 * read last. A single array could not hide this; two can.
 	 */
-	public function test_normalize_registry_refuses_a_name_declared_in_both_sections(): void {
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'declared in both' );
 
-		Copier::normalize_registry(
-			array(
-				'services' => array( 'cache' => array( 'source' => 'A', 'depends' => array() ) ),
-				'modules'  => array( 'cache' => array( 'source' => 'B', 'depends' => array() ) ),
-			)
-		);
-	}
+	/**
+	 * The optional parts are filled in, so nothing downstream has to ask whether
+	 * a key is there before asking what it says.
+	 */
+	public function test_normalize_registry_fills_in_what_an_entry_leaves_out(): void {
+		$normalized = Copier::normalize_registry( require dirname( __DIR__, 3 ) . '/src/DevTools/registry.php' );
 
-	public function test_normalize_registry_carries_the_section_each_entry_was_filed_under(): void {
-		$flat = Copier::normalize_registry( require dirname( __DIR__, 3 ) . '/src/DevTools/registry.php' );
+		$this->assertSame( array(), $normalized['path']['depends'], 'An entry with no depends gets an empty list.' );
+		$this->assertNull( $normalized['path']['requires'], 'An entry with no minimum gets null, not a missing key.' );
 
-		$this->assertSame( 'services', $flat['path']['section'] );
-		$this->assertSame( 'modules', $flat['ajax']['section'] );
-		// depends comes back merged: the closure crosses the two freely.
-		$this->assertContains( 'path', $flat['migrations']['depends'] );
-		$this->assertContains( 'cli', $flat['migrations']['depends'] );
+		$this->assertContains( 'path', $normalized['migrations']['depends'] );
+		$this->assertContains( 'cli', $normalized['migrations']['depends'] );
+		$this->assertSame( '6.9', $normalized['abilities']['requires'] );
 	}
 }

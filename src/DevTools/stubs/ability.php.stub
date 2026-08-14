@@ -9,7 +9,7 @@ declare( strict_types=1 );
 \defined( 'ABSPATH' ) || exit;
 
 use {{copied_namespace}}\Modules\Abilities\Ability;
-use {{copied_namespace}}\Services\Request\Attributes\RequestArgument;
+use {{copied_namespace}}\Modules\Request\Attributes\RequestArgument;
 use {{copied_namespace}}\Modules\Abilities\Effect;
 
 return new class() extends Ability {

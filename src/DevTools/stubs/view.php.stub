@@ -20,7 +20,7 @@
  * Escape on output, in the right context: esc_html() for text, esc_attr() for
  * an attribute, esc_url() for a URL.
  *
- * @var \{{copied_namespace}}\Services\Views $this
+ * @var \{{copied_namespace}}\Modules\Views $this
  */
 
 declare( strict_types=1 );

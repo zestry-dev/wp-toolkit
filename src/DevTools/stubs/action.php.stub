@@ -9,7 +9,7 @@ declare( strict_types=1 );
 \defined( 'ABSPATH' ) || exit;
 
 use {{copied_namespace}}\Modules\Ajax\AjaxAction;
-// use {{copied_namespace}}\Services\Request\Attributes\RequestArgument;
+// use {{copied_namespace}}\Modules\Request\Attributes\RequestArgument;
 
 return new class() extends AjaxAction {
 

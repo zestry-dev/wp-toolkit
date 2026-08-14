@@ -46,7 +46,7 @@ declare( strict_types=1 );
 \defined( 'ABSPATH' ) || exit;
 
 use Acme\Plugin\Core\Modules\Ajax\AjaxAction;
-// use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+// use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 
 return new class() extends AjaxAction {
 

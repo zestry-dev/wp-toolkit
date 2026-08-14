@@ -232,7 +232,7 @@ use Acme\Books\Core\Modules\Options;
 use Acme\Books\Core\Modules\RestApi\RestRoute;
 use Acme\Books\Core\Modules\RestApi\Route;
 use Acme\Books\Core\Modules\RestApi\Route;
-use Acme\Books\Core\Services\Request\Attributes\RequestArgument;
+use Acme\Books\Core\Modules\Request\Attributes\RequestArgument;
 
 return Route::get( 'v1', '/books', new class extends RestRoute {
 
@@ -338,7 +338,7 @@ use Acme\Books\Core\Modules\AdminPages\AdminPage;
 use Acme\Books\Core\Modules\AdminPages\ParentMenu;
 use Acme\Books\Core\Modules\Log;
 use Acme\Books\Core\Modules\Options;
-use Acme\Books\Core\Services\Request\Attributes\RequestArgument;
+use Acme\Books\Core\Modules\Request\Attributes\RequestArgument;
 
 return new class extends AdminPage {
 
@@ -390,7 +390,7 @@ And the template it renders:
 
 ```php
 <?php
-/** @var \Acme\Books\Core\Services\Views $this */
+/** @var \Acme\Books\Core\Modules\Views $this */
 /** @var string $title */
 /** @var string $action */
 /** @var string $nonce */

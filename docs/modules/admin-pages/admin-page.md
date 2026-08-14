@@ -34,7 +34,7 @@ declare( strict_types=1 );
 
 use Acme\Plugin\Core\Modules\AdminPages\AdminPage;
 use Acme\Plugin\Core\Modules\AdminPages\ParentMenu;
-use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 
 // Rendering your own full-width UI rather than the usual WordPress "wrap"
 // layout? Swap AdminPage for ModernAdminPage above and below -- same class plus

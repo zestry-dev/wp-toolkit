@@ -58,7 +58,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * `$this` included -- which is what the generated templates do:
  *
  * ```
- * @var \Acme\Plugin\Core\Services\Views $this
+ * @var \Acme\Plugin\Core\Modules\Views $this
  * @var string                             $title
  * ```
  *

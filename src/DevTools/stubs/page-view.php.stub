@@ -14,7 +14,7 @@
  * what makes an editor complete it -- a template is included, not called, so
  * nothing else tells your editor what `$this` is here.
  *
- * @var \{{copied_namespace}}\Services\Views $this
+ * @var \{{copied_namespace}}\Modules\Views $this
  * @var string $title  The page title.
  * @var string $action Where this page's form posts to.
  * @var string $nonce  The nonce action scoping it.

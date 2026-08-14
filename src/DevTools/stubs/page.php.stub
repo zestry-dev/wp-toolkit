@@ -10,7 +10,7 @@ declare( strict_types=1 );
 
 use {{copied_namespace}}\Modules\AdminPages\AdminPage;
 use {{copied_namespace}}\Modules\AdminPages\ParentMenu;
-use {{copied_namespace}}\Services\Request\Attributes\RequestArgument;
+use {{copied_namespace}}\Modules\Request\Attributes\RequestArgument;
 
 // Rendering your own full-width UI rather than the usual WordPress "wrap"
 // layout? Swap AdminPage for ModernAdminPage above and below -- same class plus

@@ -51,7 +51,7 @@ A template is included rather than called, so nothing tells your editor what
 is in scope. Say so at the top and you get completion for all of it,
 `$this` included -- which is what the generated templates do:
 
-@var \Acme\Plugin\Core\Services\Views $this
+@var \Acme\Plugin\Core\Modules\Views $this
 @var string                             $title
 ```
 

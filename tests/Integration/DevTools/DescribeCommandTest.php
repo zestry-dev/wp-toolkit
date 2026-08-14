@@ -129,11 +129,15 @@ final class DescribeCommandTest extends TestCase {
 	 * declared is doing exactly what it should. Reporting it as undeclared
 	 * would be reporting every service in the registry as a problem.
 	 */
-	public function test_a_service_is_never_reported_as_undeclared(): void {
+	/**
+	 * Every module has to be declared, so an undeclared one is reported
+	 * whatever it does -- there is no kind that is exempt.
+	 */
+	public function test_an_undeclared_module_is_reported_whatever_it_does(): void {
 		$rows = $this->describe_rows();
 
-		$this->assertTrue( $rows['path']['declared'] );
-		$this->assertTrue( $rows['views']['declared'] );
+		$this->assertFalse( $rows['path']['declared'] );
+		$this->assertFalse( $rows['views']['declared'] );
 	}
 
 	/**
@@ -163,11 +167,14 @@ final class DescribeCommandTest extends TestCase {
 		$this->assertArrayNotHasKey( 'ajax', $rows );
 	}
 
-	public function test_kind_flag_limits_the_report_to_one_side(): void {
-		$rows = $this->describe_rows( array( 'kind' => 'services' ) );
+	/**
+	 * One kind of thing, so the report is one list.
+	 */
+	public function test_every_registry_entry_is_reported(): void {
+		$rows = $this->describe_rows();
 
 		$this->assertArrayHasKey( 'path', $rows );
-		$this->assertArrayNotHasKey( 'cli', $rows );
+		$this->assertArrayHasKey( 'cli', $rows );
 	}
 
 	public function test_requires_an_initialized_plugin(): void {

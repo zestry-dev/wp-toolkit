@@ -19,7 +19,7 @@ Write for that reader. `description()` is the entire brief an agent gets for dec
 
 ```php
 use Acme\Plugin\Core\Modules\Abilities\Ability;
-use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 use Acme\Plugin\Core\Modules\Abilities\Effect;
 
 return new class extends Ability {
@@ -68,7 +68,7 @@ declare( strict_types=1 );
 \defined( 'ABSPATH' ) || exit;
 
 use Acme\Plugin\Core\Modules\Abilities\Ability;
-use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 use Acme\Plugin\Core\Modules\Abilities\Effect;
 
 return new class() extends Ability {

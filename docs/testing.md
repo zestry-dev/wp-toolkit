@@ -179,7 +179,7 @@ use Acme\Plugin\Core\Kernel\Exceptions\DiscoveryException;
 use Acme\Plugin\Core\Modules\Ajax\Ajax;
 use Acme\Plugin\Core\Modules\CLI\CLI;
 use Acme\Plugin\Core\Modules\Options;
-use Acme\Plugin\Core\Services\Views;
+use Acme\Plugin\Core\Modules\Views;
 ```
 
 To exercise the files you actually ship instead, point the `Plugin` at your real entry file:

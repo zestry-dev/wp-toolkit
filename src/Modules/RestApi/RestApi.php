@@ -33,7 +33,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  *
  * @example A minimal route file
  * // routes/widgets/get-one.php
- * use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+ * use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
  * use Acme\Plugin\Core\Modules\RestApi\Route;
  * use Acme\Plugin\Core\Modules\RestApi\RestRoute;
  *
@@ -63,7 +63,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * a callback:
  *
  * ```
- * use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+ * use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
  * use Acme\Plugin\Core\Modules\RestApi\Route;
  * use Acme\Plugin\Core\Modules\RestApi\RestRoute;
  *

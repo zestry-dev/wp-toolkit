@@ -10,7 +10,7 @@ declare( strict_types=1 );
 
 use {{copied_namespace}}\Modules\RestApi\Route;
 use {{copied_namespace}}\Modules\RestApi\RestRoute;
-// use {{copied_namespace}}\Services\Request\Attributes\RequestArgument;
+// use {{copied_namespace}}\Modules\Request\Attributes\RequestArgument;
 
 return Route::{{method}}(
 	'{{version}}',

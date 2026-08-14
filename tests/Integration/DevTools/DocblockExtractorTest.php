@@ -138,26 +138,4 @@ final class DocblockExtractorTest extends TestCase {
 		$this->assertStringContainsString( 'Path::class', $block['code'] );
 	}
 
-	/**
-	 * The parser is what every generated page comes through, so the real
-	 * docblock that exposed this is asserted against its real source.
-	 */
-	public function test_the_service_docblock_round_trips_with_its_list_intact(): void {
-		$source   = (string) file_get_contents( dirname( __DIR__, 3 ) . '/src/Kernel/Abstracts/Service.php' );
-		$docblock = zestry_docblock_before( $source, 'abstract class Service\b' );
-
-		$this->assertNotNull( $docblock );
-
-		$parsed   = zestry_extract_custom_tags( $docblock );
-		$captions = array_column( $parsed['examples'], 'caption' );
-		$index    = array_search( 'Which properties get injected', $captions, true );
-
-		$this->assertIsInt( $index, 'The injection example is still there to check.' );
-
-		$block = $parsed['examples'][ $index ];
-
-		$this->assertStringContainsString( 'is never injected', $block['description'] );
-		$this->assertStringContainsString( 'opts a property out', $block['description'] );
-		$this->assertStringStartsWith( 'use Acme\\Plugin\\Core\\Kernel\\Attributes\\NoInject;', $block['code'] );
-	}
 }

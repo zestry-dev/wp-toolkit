@@ -229,19 +229,6 @@ final class DoctorCommandTest extends TestCase {
 	 * A service is built the moment something asks for it, so one that is copied
 	 * in and never declared is doing exactly what it should.
 	 */
-	public function test_a_copied_in_service_that_is_never_declared_is_not_reported(): void {
-		mkdir( $this->target_plugin_dir . '/lib/Core/Services', 0777, true );
-		file_put_contents(
-			$this->target_plugin_dir . '/lib/Core/Services/Path.php',
-			"<?php\nnamespace Acme\\Plugin\\Core\\Services;\nclass Path extends Service {}\n"
-		);
-		$this->write_bootstrap( array() );
-
-		$this->run_doctor();
-
-		$this->assertNotNull( \WP_CLI::last( 'success' ) );
-	}
-
 	public function test_an_zestry_json_root_that_does_not_exist_is_reported(): void {
 		$this->remove_dir( $this->target_plugin_dir . '/lib' );
 		$this->write_bootstrap( array() );

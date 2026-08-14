@@ -33,7 +33,7 @@ return array(
 
 ## A minimal route file
 
-// routes/widgets/get-one.php use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument; use Acme\Plugin\Core\Modules\RestApi\Route; use Acme\Plugin\Core\Modules\RestApi\RestRoute;
+// routes/widgets/get-one.php use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument; use Acme\Plugin\Core\Modules\RestApi\Route; use Acme\Plugin\Core\Modules\RestApi\RestRoute;
 
 return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
 
@@ -61,7 +61,7 @@ public function schema(): ?array {
 The property's type is already a rule — `int $id` rejects `abc` with a 400 before `handle()` runs — and `schema:` states the rest. A client can read every one of those before calling, which is why they are worth preferring to a callback:
 
 ```php
-use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 use Acme\Plugin\Core\Modules\RestApi\Route;
 use Acme\Plugin\Core\Modules\RestApi\RestRoute;
 

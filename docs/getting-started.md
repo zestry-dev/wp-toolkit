@@ -158,7 +158,7 @@ Configuration is always the array and never a bare callback, so adding a `boots_
 A service never appears here. It is built the moment something asks for it — a `$plugin->get()`, or another class declaring a property of its type. One that takes configuration gets it from `configure()` in your entry file:
 
 ```php
-use Acme\Plugin\Core\Services\DB;
+use Acme\Plugin\Core\Modules\DB;
 
 $plugin ??= ( new Plugin( __FILE__ ) )
     ->declare_modules(

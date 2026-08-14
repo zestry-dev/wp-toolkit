@@ -38,7 +38,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * @example An ability
  * ```
  * use Acme\Plugin\Core\Modules\Abilities\Ability;
- * use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+ * use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
  * use Acme\Plugin\Core\Modules\Abilities\Effect;
  *
  * return new class extends Ability {

@@ -43,7 +43,7 @@ final class UpdateCommandTest extends TestCase {
 			)
 		);
 
-		$this->run_command( 'add/service.php', array( 'path' ), array() );
+		$this->run_command( 'add.php', array( 'path' ), array() );
 	}
 
 	public function tear_down(): void {
@@ -58,7 +58,7 @@ final class UpdateCommandTest extends TestCase {
 		$this->assertFileExists( $this->target_plugin_dir . '/zestry.lock.json' );
 
 		$files = $this->read_manifest()['files'];
-		$this->assertArrayHasKey( 'lib/Core/Services/Path.php', $files );
+		$this->assertArrayHasKey( 'lib/Core/Modules/Path.php', $files );
 	}
 
 	public function test_a_freshly_added_plugin_is_already_up_to_date(): void {
@@ -69,7 +69,7 @@ final class UpdateCommandTest extends TestCase {
 	}
 
 	public function test_an_upstream_change_is_taken(): void {
-		$this->pretend_upstream_changed( 'lib/Core/Services/Path.php' );
+		$this->pretend_upstream_changed( 'lib/Core/Modules/Path.php' );
 
 		$this->run_command( 'update.php', array(), array( 'yes' => true ) );
 
@@ -80,7 +80,7 @@ final class UpdateCommandTest extends TestCase {
 		// run has nothing left to do.
 		$this->assertSame(
 			Manifest::UNCHANGED,
-			$this->compare()['lib/Core/Services/Path.php'],
+			$this->compare()['lib/Core/Modules/Path.php'],
 			'The manifest describes the tree as it now stands.'
 		);
 	}
@@ -90,35 +90,35 @@ final class UpdateCommandTest extends TestCase {
 	 * with no upstream change to gain by destroying it.
 	 */
 	public function test_a_locally_edited_file_is_kept_and_named(): void {
-		file_put_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php', '<?php // hand-edited' );
+		file_put_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php', '<?php // hand-edited' );
 
 		$this->run_command( 'update.php', array(), array( 'yes' => true ) );
 
 		$this->assertStringContainsString( '1 you have edited', $this->stdout() );
-		$this->assertStringContainsString( 'edited    lib/Core/Services/Path.php', $this->stdout() );
+		$this->assertStringContainsString( 'edited    lib/Core/Modules/Path.php', $this->stdout() );
 		$this->assertStringContainsString(
 			'hand-edited',
-			(string) file_get_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php' )
+			(string) file_get_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' )
 		);
 	}
 
 	public function test_a_conflict_is_reported_and_still_kept(): void {
-		$this->pretend_upstream_changed( 'lib/Core/Services/Path.php' );
-		file_put_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php', '<?php // hand-edited' );
+		$this->pretend_upstream_changed( 'lib/Core/Modules/Path.php' );
+		file_put_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php', '<?php // hand-edited' );
 
 		$this->run_command( 'update.php', array(), array( 'yes' => true ) );
 
 		$this->assertStringContainsString( '1 conflicted', $this->stdout() );
-		$this->assertStringContainsString( 'conflict  lib/Core/Services/Path.php', $this->stdout() );
+		$this->assertStringContainsString( 'conflict  lib/Core/Modules/Path.php', $this->stdout() );
 		$this->assertStringContainsString(
 			'hand-edited',
-			(string) file_get_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php' ),
+			(string) file_get_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' ),
 			'Kept without --force, since a conflict is the consumer\'s decision.'
 		);
 	}
 
 	public function test_force_replaces_an_edited_file(): void {
-		file_put_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php', '<?php // hand-edited' );
+		file_put_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php', '<?php // hand-edited' );
 
 		$this->run_command(
 			'update.php',
@@ -129,14 +129,14 @@ final class UpdateCommandTest extends TestCase {
 			)
 		);
 
-		$contents = (string) file_get_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php' );
+		$contents = (string) file_get_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' );
 		$this->assertStringNotContainsString( 'hand-edited', $contents );
-		$this->assertStringContainsString( 'namespace Acme\\Plugin\\Core\\Services;', $contents );
+		$this->assertStringContainsString( 'namespace Acme\\Plugin\\Core\\Modules;', $contents );
 	}
 
 	public function test_a_dry_run_reports_without_writing(): void {
-		$this->pretend_upstream_changed( 'lib/Core/Services/Path.php' );
-		$before = (string) file_get_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php' );
+		$this->pretend_upstream_changed( 'lib/Core/Modules/Path.php' );
+		$before = (string) file_get_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' );
 
 		$this->run_command( 'update.php', array(), array( 'dry-run' => true ) );
 
@@ -144,7 +144,7 @@ final class UpdateCommandTest extends TestCase {
 		$this->assertStringContainsString( 'Dry run; nothing written', (string) \WP_CLI::last( 'success' )[0] );
 		$this->assertSame(
 			$before,
-			(string) file_get_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php' )
+			(string) file_get_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' )
 		);
 	}
 
@@ -185,7 +185,7 @@ final class UpdateCommandTest extends TestCase {
 	 * every file the tree copy touched.
 	 */
 	public function test_the_prompt_and_the_result_agree(): void {
-		$this->pretend_upstream_changed( 'lib/Core/Services/Path.php' );
+		$this->pretend_upstream_changed( 'lib/Core/Modules/Path.php' );
 
 		$this->run_command( 'update.php', array(), array( 'yes' => true ) );
 
@@ -198,8 +198,8 @@ final class UpdateCommandTest extends TestCase {
 	 * to change it -- the copy rewrites whole directories on purpose.
 	 */
 	public function test_the_count_is_not_the_size_of_the_tree(): void {
-		$this->run_command( 'add/module.php', array( 'ajax' ), array() );
-		$this->pretend_upstream_changed( 'lib/Core/Services/Path.php' );
+		$this->run_command( 'add.php', array( 'ajax' ), array() );
+		$this->pretend_upstream_changed( 'lib/Core/Modules/Path.php' );
 
 		\WP_CLI::reset();
 		$this->run_command( 'update.php', array(), array( 'yes' => true ) );
@@ -216,7 +216,7 @@ final class UpdateCommandTest extends TestCase {
 	 * it. Saying "missing" would promise a write that cannot happen.
 	 */
 	public function test_a_deleted_module_is_reported_as_removed_rather_than_missing(): void {
-		$this->run_command( 'add/module.php', array( 'ajax' ), array() );
+		$this->run_command( 'add.php', array( 'ajax' ), array() );
 		$this->remove_dir( $this->target_plugin_dir . '/lib/Core/Modules/Ajax' );
 
 		$this->run_command( 'update.php', array(), array( 'dry-run' => true ) );
@@ -231,7 +231,7 @@ final class UpdateCommandTest extends TestCase {
 	 * as the plugin exists.
 	 */
 	public function test_a_deleted_module_is_dropped_from_the_lock(): void {
-		$this->run_command( 'add/module.php', array( 'ajax' ), array() );
+		$this->run_command( 'add.php', array( 'ajax' ), array() );
 		$this->remove_dir( $this->target_plugin_dir . '/lib/Core/Modules/Ajax' );
 
 		$this->run_command( 'update.php', array(), array( 'dry-run' => true ) );
@@ -251,7 +251,7 @@ final class UpdateCommandTest extends TestCase {
 	 * and an update does write it back.
 	 */
 	public function test_a_deleted_file_inside_an_installed_module_is_restored(): void {
-		$this->run_command( 'add/module.php', array( 'ajax' ), array() );
+		$this->run_command( 'add.php', array( 'ajax' ), array() );
 		unlink( $this->target_plugin_dir . '/lib/Core/Modules/Ajax/AjaxAction.php' );
 
 		\WP_CLI::reset();
@@ -265,7 +265,7 @@ final class UpdateCommandTest extends TestCase {
 	 * exactly when a copy cannot happen, which is when a wrong number is worst.
 	 */
 	public function test_the_count_reports_what_was_written(): void {
-		$this->run_command( 'add/module.php', array( 'ajax' ), array() );
+		$this->run_command( 'add.php', array( 'ajax' ), array() );
 		$this->remove_dir( $this->target_plugin_dir . '/lib/Core/Modules/Ajax' );
 
 		\WP_CLI::reset();
@@ -283,15 +283,15 @@ final class UpdateCommandTest extends TestCase {
 	 * files -- and says nothing extra when a module was never touched.
 	 */
 	public function test_overwrite_names_the_edited_files_it_would_discard(): void {
-		file_put_contents( $this->target_plugin_dir . '/lib/Core/Services/Path.php', '<?php // hand-edited' );
+		file_put_contents( $this->target_plugin_dir . '/lib/Core/Modules/Path.php', '<?php // hand-edited' );
 
-		$this->run_command( 'overwrite/service.php', array( 'path' ), array( 'yes' => true ) );
+		$this->run_command( 'overwrite.php', array( 'path' ), array( 'yes' => true ) );
 
-		$this->assertStringContainsString( 'edited  lib/Core/Services/Path.php', $this->stdout() );
+		$this->assertStringContainsString( 'edited  lib/Core/Modules/Path.php', $this->stdout() );
 	}
 
 	public function test_overwrite_says_nothing_extra_when_nothing_was_edited(): void {
-		$this->run_command( 'overwrite/service.php', array( 'path' ), array( 'yes' => true ) );
+		$this->run_command( 'overwrite.php', array( 'path' ), array( 'yes' => true ) );
 
 		$this->assertStringNotContainsString( 'edited', $this->stdout() );
 		$this->assertNotNull( \WP_CLI::last( 'success' ) );
@@ -339,8 +339,8 @@ final class UpdateCommandTest extends TestCase {
 		$plugin  = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-update-test' ) )->declare_modules( $this->get_toolkit_modules() );
 		$copier  = $plugin->get( \Zestry\WPToolkit\DevTools\Copier::class );
 		$rendered = $copier->render_directory(
-			dirname( __DIR__, 3 ) . '/src/Services',
-			$this->target_plugin_dir . '/lib/Core/Services',
+			dirname( __DIR__, 3 ) . '/src/Modules',
+			$this->target_plugin_dir . '/lib/Core/Modules',
 			'Acme\\Plugin\\Core',
 			'acme-plugin'
 		);

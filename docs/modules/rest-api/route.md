@@ -12,7 +12,7 @@ A route file returns one of these, built with the static constructor matching it
 RestApi discovers route files the way Ajax discovers actions and AdminPages discovers pages: one file per route, in a configured directory. The directory structure is purely organizational, so grouping `widgets/get-one.php` beside `widgets/delete-one.php` is for a human's benefit, not RestApi's.
 
 ```php
-use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 use Acme\Plugin\Core\Modules\RestApi\Route;
 use Acme\Plugin\Core\Modules\RestApi\RestRoute;
 
@@ -67,7 +67,7 @@ declare( strict_types=1 );
 
 use Acme\Plugin\Core\Modules\RestApi\Route;
 use Acme\Plugin\Core\Modules\RestApi\RestRoute;
-// use Acme\Plugin\Core\Services\Request\Attributes\RequestArgument;
+// use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 
 return Route::get(
 	'v1',

@@ -35,7 +35,7 @@ All three keys are optional. Asking for a module before its `boots_on` fires thr
 | Written by | On disk | Namespace |
 |---|---|---|
 | `wp zt init` | `lib/Core/Kernel/` | `Acme\Plugin\Core\Kernel\Plugin` |
-| `wp zt add module ajax`, `wp zt add service path` | `lib/Core/Modules/Ajax/`, `lib/Core/Services/Path.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax`, `Acme\Plugin\Core\Services\Path` |
+| `wp zt add module ajax`, `wp zt add service path` | `lib/Core/Modules/Ajax/`, `lib/Core/Services/Path.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax`, `Acme\Plugin\Core\Modules\Path` |
 | `wp zt make module`, `wp zt make service`, `wp zt make abstract` | `lib/Modules/Shortcode.php`, `lib/Services/Cache.php`, `lib/Abstracts/EntityField.php` | `Acme\Plugin\Modules\Shortcode`, `Acme\Plugin\Services\Cache`, `Acme\Plugin\Abstracts\EntityField` |
 | you, anywhere else under `lib/` | `lib/Data/LineItem.php` | `Acme\Plugin\Data\LineItem` |
 

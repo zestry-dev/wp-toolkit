@@ -682,7 +682,7 @@ final class MakeCommandTest extends TestCase {
 
 		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/receipt.php' );
 
-		$this->assertStringContainsString( '@var \Acme\Plugin\Core\Services\Views $this', $view );
+		$this->assertStringContainsString( '@var \Acme\Plugin\Core\Modules\Views $this', $view );
 	}
 
 	/**
@@ -789,7 +789,7 @@ final class MakeCommandTest extends TestCase {
 
 		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
 
-		$this->assertStringContainsString( '@var \Acme\Plugin\Core\Services\Views $this', $view );
+		$this->assertStringContainsString( '@var \Acme\Plugin\Core\Modules\Views $this', $view );
 		$this->assertStringContainsString( '@var string $title', $view );
 	}
 
@@ -1284,7 +1284,7 @@ final class MakeCommandTest extends TestCase {
 			'The module was copied in, by the real `add` command.'
 		);
 		$this->assertFileExists(
-			$this->target_plugin_dir . '/lib/Core/Services/Request/Request.php',
+			$this->target_plugin_dir . '/lib/Core/Modules/Request/Request.php',
 			'Along with the dependencies the registry resolves for it.'
 		);
 		$this->assertFileExists( $this->target_plugin_dir . '/admin-pages/reports.php' );
