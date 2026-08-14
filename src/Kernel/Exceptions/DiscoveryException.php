@@ -48,20 +48,13 @@ namespace Zestry\WPToolkit\Kernel\Exceptions;
  * sentence the built-in modules do, so yours fails the way the rest of the plugin
  * already does.
  *
- * A root directory that is simply absent is not here, and never was an error
- * worth raising: with the directories fixed, an empty one means the plugin has
- * none of those files yet, which is what adding a module before writing its first
- * file looks like.
- *
  * @rationale
- * The SPL argument for `\RuntimeException` over `\InvalidArgumentException`:
- * the latter means "an argument is not of the expected type", but nothing is
- * passed to these guards -- the offending value is what `require` returned. And
- * its parent `\LogicException` is documented for errors detectable by reading
- * the code, whereas which files exist on disk is the definition of a runtime
- * error. Bad arguments that are not discovery -- an unsafe path, an unknown
- * schedule name, a placeholder that binds to nothing -- stay
- * `\InvalidArgumentException`.
+ * `\RuntimeException` over `\InvalidArgumentException`: nothing is passed to
+ * these guards -- the offending value is what `require` returned -- and
+ * `\LogicException` is documented for errors detectable by reading the code,
+ * whereas which files exist on disk is the definition of a runtime error. Bad
+ * arguments that are not discovery -- an unsafe path, an unknown schedule name,
+ * a placeholder that binds to nothing -- stay `\InvalidArgumentException`.
  */
 class DiscoveryException extends ModuleException {
 
@@ -104,17 +97,6 @@ class DiscoveryException extends ModuleException {
 	/**
 	 * The message every module raises when two files claim one name.
 	 *
-	 * A discovered file's name is what it registers as, read exactly as written,
-	 * so two files usually cannot collide. Where they can is a destination whose
-	 * name is built from more than the filename: `dashboard.php` and
-	 * `dashboard/index.php` are two paths meaning one admin page, and only one of
-	 * them can be it.
-	 *
-	 * Refused rather than resolved, because either resolution is wrong. Keeping
-	 * the first leaves the second registered against nothing; keeping the last
-	 * makes the answer depend on directory order. Neither says anything, and the
-	 * file that lost still looks like working code.
-	 *
 	 * @param string $label What the module discovers, e.g. `commands`.
 	 * @param string $name  The name both files resolved to.
 	 * @param string $first The file that claimed it.
@@ -142,9 +124,7 @@ class DiscoveryException extends ModuleException {
 	 * cannot exist. The refusal is `_doing_it_wrong()` inside WordPress, arriving
 	 * long after boot and naming no file.
 	 *
-	 * Refused rather than rewritten, for the same reason as everywhere else here:
-	 * a name spelled for you is a name you cannot find again. `$abilities->run()`
-	 * takes the local name, and it has to be the one on disk.
+	 * `$abilities->run()` takes the local name, so it has to be the one on disk.
 	 *
 	 * @param string $file The discovered path, relative to the abilities root.
 	 * @param string $name The full name it asked to register under.
@@ -172,10 +152,6 @@ class DiscoveryException extends ModuleException {
 	 * encode does not survive that round trip: `settings&more.php` asks for
 	 * `?page={slug}-settings&more`, where the `&` ends the query argument and the
 	 * page answers with a permissions error instead of itself.
-	 *
-	 * Refused rather than rewritten. Stripping the character would register a
-	 * page under a name nobody typed, and the file would keep looking like
-	 * working code -- rename the file and the slug is yours again.
 	 *
 	 * @param string $file The discovered path, relative to the pages root.
 	 * @param string $slug The slug it asked to register under.

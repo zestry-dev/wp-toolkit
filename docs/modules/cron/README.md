@@ -191,7 +191,7 @@ public function get_orphaned_events(): array
 
 A schedule's hook is its filename — `resources/schedules/sync.php` is `{slug}-sync` — so renaming the file schedules a new event and abandons the old one. Nothing cleans it up: booting only schedules what discovery finds, and `unschedule_all()` clears the same set, so an event whose file is gone is in neither list. WordPress keeps firing it, on time, forever, with nothing listening.
 
-Reporting rather than pruning, and never called automatically, for the reason `Migrations` never triggers itself: a `{slug}-` event this module did not create is indistinguishable from one it did. A plugin is free to `wp_schedule_event()` under its own prefix by hand, and deleting that because no file claims it would be this module destroying something it does not own. `unschedule_orphaned()` does the clearing, when a consumer decides.
+This reports; `unschedule_orphaned()` clears.
 
 Every occurrence of a hook is one orphan, so a hook due several times reports once, at the first.
 
@@ -247,7 +247,7 @@ final public function on_wp_init( callable $callback, int $priority = 10 ): void
 | **Return** | — |
 | **Throws** | — |
 
-Almost everything a module registers — a post type, a block, a WP-CLI command — has to happen on `init`, and a plain `add_action( 'init', ... )` is a callback that never runs once `init` has passed. A module can be built on either side of it: `Plugin::run()` is synchronous, so an entry file that calls it at plugin load is ahead of `init`, while one that calls it from a later hook is behind. This behaves the same either way, so a module never has to care which.
+Reach for this wherever a plain `add_action( 'init', ... )` would go: that callback never runs once `init` has passed, and a module can be built on either side of it.
 
 The callback receives the module, so a closure declared elsewhere needs no `use` to reach it:
 

@@ -319,10 +319,8 @@ class Request extends Module {
 	 * {@see \WP_REST_Request} exactly the way {@see \WP_REST_Server::serve_request()}
 	 * loads them, and {@see \WP_REST_Request::get_param()} is what resolves each
 	 * name. So the order *is* `get_parameter_order()` rather than a copy of it
-	 * that can fall behind, and the JSON body is parsed by the parser core already
-	 * ships. What differs from a route is only what is absent: no `URL`
-	 * placeholders off a route, and `defaults` are the property's own, applied by
-	 * get_validated_values().
+	 * that can fall behind, and the JSON body is parsed by the parser core
+	 * already ships.
 	 *
 	 * `$_REQUEST` was the obvious way to write this, and is why none of it reads
 	 * one. What that superglobal merges is set by PHP's `request_order`, empty on

@@ -1477,16 +1477,17 @@ function zestry_generate_module_pages( string $root ): int {
 	/*
 	 * "Also copies" lists modules and services, which is what a reader
 	 * needs for every row but two: `blocks` and `assets` each also write
-	 * build tooling into files they do not own -- package.json scripts and
-	 * devDependencies, a tsconfig, a webpack config, .gitignore entries.
-	 * Naming that here because this table is where a reader decides what
-	 * to add, and "copies a class" and "reconfigures my toolchain" are
-	 * different enough to be worth the sentence.
+	 * build tooling into files they do not own. Split per module, because
+	 * only `assets` writes the webpack config and a reader who adds `blocks`
+	 * expecting one gets a build that silently drops half its entries.
 	 */
 	$index[] = '**`blocks` and `assets` also write build tooling outside their own'
-		. ' tree** -- npm scripts and devDependencies, a `tsconfig.json`, a'
-		. ' `webpack.config.js`, `.gitignore` entries. Everything either writes is'
-		. ' additive, and [`wp zt add`](../commands/add.md) lists it.';
+		. ' tree.** `blocks` writes npm scripts and devDependencies, a'
+		. ' `tsconfig.json`, an `eslint.config.mjs` and `.gitignore` entries.'
+		. ' `assets` writes the `webpack.config.js`, which is what lets one build'
+		. ' produce blocks, entries and shared packages together -- blocks alone'
+		. ' need no config file. Everything either writes is additive, and'
+		. ' [`wp zt add`](../commands/add.md) lists it.';
 	$index[] = '';
 	$index[] = 'One worth calling out: **`ajax` serves `admin-ajax.php`**, not the REST'
 		. ' API. Reach for it when something already speaks that protocol -- an'

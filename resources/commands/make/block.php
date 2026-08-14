@@ -66,12 +66,13 @@ return new class() extends MakeCommand {
 	 * : The local name, e.g. 'hero'. Becomes the directory (`src/blocks/{name}/`)
 	 * and the second half of the block's own name, `{plugin-slug}/{name}`.
 	 *
-	 * **The slug, not the text domain.** The two are answered separately and are
-	 * often equal, so it is worth checking which you have: the module decides a
-	 * block is yours by comparing the namespace in its name against your slug,
-	 * and looks for its PHP under a `supports.{plugin-slug}-php` entry. A block
-	 * namespaced anything else registers, works in the editor, and renders
-	 * nothing on the front end.
+	 * **The slug, not the text domain.** Your slug is the plugin's directory
+	 * name; the text domain is what you answered at `wp zt init`. They are often
+	 * equal, and `wp zt describe` reports the slug if you are unsure. It matters
+	 * because the module decides a block is yours by comparing the namespace in
+	 * its name against your slug, and looks for its PHP under a
+	 * `supports.{plugin-slug}-php` entry. A block namespaced anything else
+	 * registers, works in the editor, and renders nothing on the front end.
 	 *
 	 *
 	 * [--dynamic]

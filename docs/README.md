@@ -137,7 +137,7 @@ return array(
 );
 ```
 
-**A module that does something on its own implements [`Bootable`](kernel/bootable.md)**, on the line that names the class:
+**A module that does something on its own implements [`Bootable`](kernel/bootable.md):**
 
 ```php
 class Shortcode extends Module implements Bootable {
@@ -148,7 +148,7 @@ class Shortcode extends Module implements Bootable {
 }
 ```
 
-`Path` resolves a path when you ask it and has no `on_boot()`; `Ajax` binds hooks the moment the plugin builds it and does. That is why `Ajax` sits under a heading and `Path` does not — a module that acts on its own has to say when, and the top level throws for one that will not.
+`Path` resolves a path when you ask it and has no `on_boot()`; `Ajax` binds its hooks when the plugin builds it, on the requests it serves, and does. That is why `Ajax` sits under a heading and `Path` does not — a module that acts on its own has to say when, and the top level throws for one that will not.
 
 **`with()` is how anything reaches anything** — in a module, and in every file a module discovers:
 

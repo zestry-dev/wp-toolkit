@@ -245,7 +245,7 @@ public function test_a_command_is_registered_from_the_commands_directory(): void
 ```
 
 > [!IMPORTANT]
-> **Order is the whole thing here.** Most modules defer discovery to `init` with `on_wp_init()` — and `init` fired long before your test method ran, so the callback runs *immediately*, inside the `get()` call. A fixture written afterwards is never seen, and `do_action( 'init' )` will not give you a second pass (it only re-runs every other `init` callback the suite has registered). Write files first, resolve second.
+> **Order is the whole thing here.** A discovery module walks its directory inside `on_boot()`, and `on_boot()` runs inside the `get()` call. A fixture written afterwards is never seen. Write files first, resolve second.
 
 A module hanging its work on a later hook needs that hook fired: `AdminPages` registers on `admin_menu`, so resolve it, then `do_action( 'admin_menu' )`, then assert. Each module's page names the hook it uses.
 
@@ -269,7 +269,9 @@ Each module gates itself on the request it serves, and the gate runs before disc
 Every module reads one fixed directory, so write your fixtures into the one its page names. An absent directory registers nothing and throws nothing — which is worth a test of its own, since it is what a module looks like before you have written the first file:
 
 ```php
-$this->assertSame( array(), $this->plugin->get( CLI::class )->get_discovered_commands() );
+$this->plugin->get( CLI::class );
+
+$this->assertNull( \WP_CLI::last( 'add_command' ) );
 ```
 
 ## 5. Test one file, without its module

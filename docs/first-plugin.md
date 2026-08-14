@@ -263,11 +263,11 @@ return Route::get( 'v1', '/books', new class extends RestRoute {
     #[RequestArgument( 'Words to match in the title.', sanitize: 'sanitize_text_field' )]
     public string $search = '';
 
-    public function permission_check( WP_REST_Request $request ): bool|\WP_Error {
+    public function permission_check( WP_REST_Request $request ): bool|WP_Error {
         return true;
     }
 
-    public function handle( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+    public function handle( WP_REST_Request $request ): WP_REST_Response|WP_Error {
         $options = $this->with( Options::class );
 
         $books = get_posts(
@@ -484,9 +484,15 @@ The page works without JavaScript. Giving it some is two commands:
 
 ```bash
 $ wp zt add assets
+Added assets
+Declared in bootstrap.php: assets
 Created webpack.config.js
-Declared the src/shared/* npm workspace in package.json
+Added to package.json: @wordpress/scripts, @wordpress/dependency-extraction-webpack-plugin, webpack-remove-empty-scripts
 Added npm scripts: build, start
+Declared the src/shared/* npm workspace in package.json
+Added build/ to .gitignore
+Added node_modules/ to .gitignore
+Success: Done.
 
 $ wp zt make entry settings
 Success: Created src/entries/settings (2 files)

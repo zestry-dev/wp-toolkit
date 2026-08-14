@@ -66,20 +66,18 @@ Configure it only to shorten the table prefix. It defaults to the plugin slug, w
 
 Decide it before the first migration runs: changing it later renames nothing, so the existing tables stay under the old name and your plugin stops finding them.
 
-`bootstrap.php` is modules only, so the configuration goes in your entry file, where the callback runs the first time something asks for the module.
+The configurator is this module's `bootstrap.php` entry, and runs when the plugin builds it — which for a top-level entry is as `run()` reaches it, so the prefix is set before anything can ask for a table name.
 
 ```php
-// acme-plugin.php
-( new Plugin( __FILE__ ) )
-    ->configure(
-        DB::class,
-        static function ( DB $db ): void {
-            $db->set_table_prefix( 'mc' );   // wp_mc_submissions
-        }
-    )
-    ->bootstrap()
-    ->run();
+// bootstrap.php
+return array(
+    DB::class => static function ( DB $db ): void {
+        $db->set_table_prefix( 'mc' );   // wp_mc_submissions
+    },
+);
 ```
+
+`Plugin::configure()` takes the same callback from the entry file, for a plugin that keeps its configuration there instead.
 
 ## Constants
 
@@ -249,7 +247,7 @@ final public function on_wp_init( callable $callback, int $priority = 10 ): void
 | **Return** | — |
 | **Throws** | — |
 
-Almost everything a module registers — a post type, a block, a WP-CLI command — has to happen on `init`, and a plain `add_action( 'init', ... )` is a callback that never runs once `init` has passed. A module can be built on either side of it: `Plugin::run()` is synchronous, so an entry file that calls it at plugin load is ahead of `init`, while one that calls it from a later hook is behind. This behaves the same either way, so a module never has to care which.
+Reach for this wherever a plain `add_action( 'init', ... )` would go: that callback never runs once `init` has passed, and a module can be built on either side of it.
 
 The callback receives the module, so a closure declared elsewhere needs no `use` to reach it:
 

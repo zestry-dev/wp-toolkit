@@ -255,9 +255,7 @@ namespace Zestry\WPToolkit\Modules\Request\Attributes;
  * ```
  *
  * A `pattern` is a bare regex — no delimiters, and a `#` in it is escaped for
- * you. A check spanning **two** arguments belongs in your handler, where every
- * property is bound at once and the error can name the combination that was
- * wrong; a callback here sees one value in isolation.
+ * you.
  *
  * **Only public and protected properties are read.** A private one carrying
  * this attribute is left alone entirely: it appears in no schema and is never

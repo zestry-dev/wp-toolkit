@@ -52,8 +52,8 @@ It does not ask where anything goes. The layout is fixed: **`lib/`** holds your 
 Answer those two and it writes, in order:
 
 - `lib/Core/Kernel/` — the toolkit's kernel copied, with every `Zestry\WPToolkit\` namespace and text-domain literal rewritten to yours;
-- `zestry.lock.json` — a hash per copied file, so a later `wp zt update` can tell your edits from upstream's changes. Commit it;
 - `zestry.json` — both answers, read by every later `wp zt` command;
+- `zestry.lock.json` — a hash per copied file, so a later `wp zt update` can tell your edits from upstream's changes. Commit it;
 - an `"Acme\\Plugin\\": "lib/"` PSR-4 entry in your `composer.json`, followed by a `composer dump-autoload` so it is live immediately;
 - `bootstrap.php` — where modules get declared;
 - `.gitignore` — covering what is built rather than authored;
@@ -111,7 +111,7 @@ acme_plugin();
 
 That is the whole file, and it stays this size however many modules you add. The slug defaults to the entry file's directory name — `acme-plugin` — and every hook, option and handle the modules register is namespaced with it. `bootstrap()` reads `bootstrap.php`; `run()` builds and boots what it found, synchronously, so you control the timing.
 
-`wp zt add` already appended to `bootstrap.php` in step 4 — under the heading each module needs — so it now reads:
+`wp zt add` already appended to `bootstrap.php` in step 4 — every module it copied, dependencies included, under the heading each one needs — so it now reads:
 
 ```php
 <?php
@@ -123,8 +123,19 @@ declare( strict_types=1 );
 
 use Acme\Plugin\Core\Modules\AdminPages\AdminPages;
 use Acme\Plugin\Core\Modules\CLI\CLI;
+use Acme\Plugin\Core\Modules\Cookie;
+use Acme\Plugin\Core\Modules\Path;
+use Acme\Plugin\Core\Modules\Request\Request;
+use Acme\Plugin\Core\Modules\Transients;
+use Acme\Plugin\Core\Modules\Views;
 
 return array(
+    Path::class,
+    Request::class,
+    Transients::class,
+    Cookie::class,
+    Views::class,
+
     'acme_plugin_loaded' => array(
         AdminPages::class,
     ),
@@ -135,12 +146,14 @@ return array(
 );
 ```
 
+Seven entries for the two modules you asked for: `admin-pages` needs `views` to render, `request` for its declared arguments and `cookie` for the notice it carries across a redirect, `cookie` needs `transients`, and almost everything needs `path`. They are modules like the rest, and leaving one out breaks the module that reaches for it.
+
 **Everything the plugin is made of is here, and listing one is what builds it.** The key says when.
 
 - **The top level** is for modules that do nothing until something asks — `Path`, `Views`, `DB`. They are built as `run()` reaches them and then wait.
 - **A heading** is a hook, and every module under it is built when that hook fires. `acme_plugin_loaded` is your own plugin's action, fired at the end of `run()` once every module exists; `init` is WordPress's, and is where anything WordPress will not accept earlier belongs — a post type, a block, a meta key.
 
-A module that acts on its own has to be under a heading. Left at the top level it throws, naming the two above — because the top level promises it does nothing until asked, and such a module cannot keep that promise.
+A module that acts on its own has to be under a heading. Left at the top level it throws, naming the two above.
 
 A class entry's value is the callback that configures it, run when the module is built and before it boots:
 

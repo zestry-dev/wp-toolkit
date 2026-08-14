@@ -147,10 +147,9 @@ class Assets extends Module implements Bootable {
 	 * what keeps the two halves agreeing.
 	 *
 	 * @rationale
-	 * Composing a handle here as well would be a second opinion about a name
-	 * the build already decided, and the two silently disagreeing is how an
-	 * entry and a shared package of the same name ended up claiming one
-	 * registration.
+	 * Composing a handle here as well would be a second opinion about a name the
+	 * build already decided, and the two silently disagreeing is how an entry and
+	 * a shared package of the same name ended up claiming one registration.
 	 */
 	const MANIFEST_FILENAMES = array( 'assets-manifest.php', 'assets-module-manifest.php' );
 

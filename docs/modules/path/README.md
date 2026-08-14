@@ -118,8 +118,6 @@ public function is_plugin_dir( string $path = '' ): bool
 | **Return** | True if the resource exists and is a directory, false otherwise |
 | **Throws** | `InvalidArgumentException` — When the path escapes the plugin root |
 
-A path that escapes the plugin root throws rather than answering false, and there is no `$allow_escape` opt-out here — so validate anything that came from request input before passing it in.
-
 <br>
 
 ### `get_uploads_dir()`
@@ -218,7 +216,7 @@ final public function on_wp_init( callable $callback, int $priority = 10 ): void
 | **Return** | — |
 | **Throws** | — |
 
-Almost everything a module registers — a post type, a block, a WP-CLI command — has to happen on `init`, and a plain `add_action( 'init', ... )` is a callback that never runs once `init` has passed. A module can be built on either side of it: `Plugin::run()` is synchronous, so an entry file that calls it at plugin load is ahead of `init`, while one that calls it from a later hook is behind. This behaves the same either way, so a module never has to care which.
+Reach for this wherever a plain `add_action( 'init', ... )` would go: that callback never runs once `init` has passed, and a module can be built on either side of it.
 
 The callback receives the module, so a closure declared elsewhere needs no `use` to reach it:
 

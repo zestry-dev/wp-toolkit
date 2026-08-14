@@ -311,12 +311,11 @@ class Log extends Module implements Bootable {
 	 * on the same hook this one listens to.
 	 *
 	 * @rationale
-	 * {@see Plugin::get_namespaced_name()} is the only place this name is composed.
-	 * A caller building the string itself would put the slug in verbatim and get
-	 * the mixed-separator `acme-plugin_log`, and a second copy of the rule means
-	 * a change to either silently unbinds the other. `Cron` reaches the hook
-	 * without depending on this class, which is what lets it report to a `Log`
-	 * that may not be there.
+	 * {@see Plugin::get_namespaced_name()} is the only place this name is
+	 * composed. A caller building the string itself gets the mixed-separator
+	 * `acme-plugin_log`, and a second copy of the rule means a change to either
+	 * silently unbinds the other. `Cron` reaches the hook without depending on
+	 * this class, which is what lets it report to a `Log` that may not be there.
 	 *
 	 * @return string The action name, e.g. `acme-plugin-log`.
 	 */

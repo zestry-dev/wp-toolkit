@@ -200,13 +200,7 @@ class Cron extends Module implements Bootable {
 	 * file is gone is in neither list. WordPress keeps firing it, on time,
 	 * forever, with nothing listening.
 	 *
-	 * Reporting rather than pruning, and never called automatically, for the
-	 * reason `Migrations` never triggers itself: a `{slug}-` event this module
-	 * did not create is indistinguishable from one it did. A plugin is free to
-	 * `wp_schedule_event()` under its own prefix by hand, and deleting that
-	 * because no file claims it would be this module destroying something it
-	 * does not own. {@see unschedule_orphaned()} does the clearing, when a
-	 * consumer decides.
+	 * This reports; {@see unschedule_orphaned()} clears.
 	 *
 	 * Every occurrence of a hook is one orphan, so a hook due several times
 	 * reports once, at the first.
@@ -313,12 +307,10 @@ class Cron extends Module implements Bootable {
 	/**
 	 * Resolve the schedules directory and schedule discovery on every request.
 	 *
-	 * Deferred to `init` for the same reason as the Ajax module: a stable
-	 * point regardless of when the plugin's run() happens to execute. Unlike
-	 * Ajax, discovery is not limited to a particular request type — WP-Cron's
-	 * pseudo-cron dispatch is itself an ordinary request, so the hook must be
-	 * bound (and the cron_schedules filter attached) on every request for a
-	 * due event to have anything listening when it fires.
+	 * Not limited to a particular request type: WP-Cron's pseudo-cron dispatch is
+	 * itself an ordinary request, so the hook must be bound (and the
+	 * cron_schedules filter attached) on every request for a due event to have
+	 * anything listening when it fires.
 	 *
 	 * @return void
 	 *

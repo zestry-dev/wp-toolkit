@@ -364,15 +364,11 @@ return new class() extends Command {
 	 * worse than saying nothing.
 	 *
 	 * @rationale
-	 * Read from the source rather than reflected off the discovered instances,
-	 * which is what the modules now hand back publicly and would have been the
-	 * shorter route. Reflecting means booting the consumer's module, and booting
-	 * one walks its directory and `require`s every file in it -- arbitrary code,
-	 * during a command whose entire job is to report. `describe` derives
-	 * everything else statically for that reason, and `doctor` has the same rule
-	 * written down. Reading the files also answers for a module that is
-	 * installed but not declared, which is exactly the plugin most in need of
-	 * being described.
+	 * Read from the source, never reflected off a discovered instance: booting a
+	 * module walks its directory and `require`s every file in it -- arbitrary
+	 * code, during a command whose whole job is to report. Reading the files also
+	 * answers for a module that is installed but not declared, which is exactly
+	 * the plugin most in need of being described.
 	 *
 	 * @param string   $plugin_root Absolute path to the consuming plugin's root.
 	 * @param string[] $bases       The base class names files here may return.

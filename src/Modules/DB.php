@@ -37,21 +37,21 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * nothing, so the existing tables stay under the old name and your plugin
  * stops finding them.
  *
- * `bootstrap.php` is modules only, so the configuration goes in your entry
- * file, where the callback runs the first time something asks for the module.
+ * The configurator is this module's `bootstrap.php` entry, and runs when the
+ * plugin builds it -- which for a top-level entry is as `run()` reaches it, so
+ * the prefix is set before anything can ask for a table name.
  *
  * ```
- * // acme-plugin.php
- * ( new Plugin( __FILE__ ) )
- *     ->configure(
- *         DB::class,
- *         static function ( DB $db ): void {
- *             $db->set_table_prefix( 'mc' );   // wp_mc_submissions
- *         }
- *     )
- *     ->bootstrap()
- *     ->run();
+ * // bootstrap.php
+ * return array(
+ *     DB::class => static function ( DB $db ): void {
+ *         $db->set_table_prefix( 'mc' );   // wp_mc_submissions
+ *     },
+ * );
  * ```
+ *
+ * {@see \Zestry\WPToolkit\Kernel\Plugin::configure()} takes the same callback from the
+ * entry file, for a plugin that keeps its configuration there instead.
  *
  * @example Naming a table
  * ```
@@ -191,9 +191,8 @@ class DB extends Module {
 	 * @rationale
 	 * Reading `$wpdb->{$name}` alone would accept any non-empty string, making
 	 * `get_core_table( 'prefix' )` return `wp_` and
-	 * `get_core_table( 'last_query' )` return the last SQL statement -- neither
-	 * a table, neither an error. Checking against `$wpdb->tables()` first is
-	 * what makes the method's name true. Keep the property read afterwards:
+	 * `get_core_table( 'last_query' )` return the last SQL statement -- neither a
+	 * table, neither an error. Keep the property read after the check:
 	 * `tables()` lists unprefixed names, and only the property carries the
 	 * multisite-correct prefix.
 	 *

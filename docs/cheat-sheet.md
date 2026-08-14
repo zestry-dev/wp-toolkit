@@ -107,7 +107,7 @@ Add any of them with `wp zt add <name>`; dependencies come along.
 - **Nothing empty is registered.** A stylesheet that compiles to nothing is deleted and left out of the manifest, an entry that is only a stylesheet loses the JavaScript webpack generates for it, and a block's `block.json` loses any `file:` field whose target compiled away — so no page pays for an empty `<link>` or `<script>`.
 - **An entry or a shared package can be `--kind=module`**, built as an ES module and registered with `wp_register_script_module()`.
 
-- **`assets` is a module because of one thing it does unasked.** Called, it composes asset URLs and registers scripts and styles. Unasked, on `init`, it registers every shared package `npm run build` compiled from `src/shared/` into `build/shared/`, so an entry that imports one can declare it as a dependency instead of bundling a copy.
+- **`assets` is a module because of one thing it does unasked.** Called, it composes asset URLs and registers scripts and styles. Unasked, on `init`, it registers everything `npm run build` produced — every entry and every shared package — so `enqueue_entry( 'settings' )` needs no registration call first, and an entry importing a shared package declares it as a dependency instead of bundling a copy.
 - **An admin page's markup goes in a template**, and [`make page`](commands/make-page.md) writes both files. The template gets exactly what the `render()` call names and nothing of the page itself. Echoing markup from `render()` works for something tiny and stops working sooner than it looks.
 - **[`make view`](commands/make-view.md) writes a standalone template**, and a name with a slash nests: `wp zt make view emails/receipt` is `resources/views/emails/receipt.php`, rendered as `emails/receipt`.
 - **`$this` inside any template is the [`views`](modules/views/) module**, so a subview is `$this->render( 'admin-pages/-fields', array( … ) )` — the same call every other caller makes, costing no variable name. Declare `@var` at the top of a template and your editor completes all of it.
@@ -141,10 +141,11 @@ The filename is what a file registers as. Whether your slug is prefixed onto it 
 >
 > Those four are not prefixed for a reason — WordPress caps post type names at 20 characters and taxonomies at 32, a meta key is part of your own REST responses, and a block's namespace already lives in its `block.json`. So put your prefix in the filename: `resources/post-types/acme-book.php`, `resources/fields/acme_rating.php`.
 
-The last seven do nothing on their own — no `Bootable`, no `on_boot()`. They are listed in `bootstrap.php` like the rest, and reached the same way:
+Eight modules do nothing on their own — no `Bootable`, no `on_boot()`. They are listed in `bootstrap.php` like the rest, and reached the same way:
 
 | Module | What it does | A first call |
 |---|---|---|
+| [`options`](modules/options/) | Settings, one array per plugin or group | `$this->with( Options::class )->get( 'per_page', 10 )` |
 | [`path`](modules/path/) | Plugin-relative paths and URLs | `$this->with( Path::class )->get_plugin_url( 'logo.png' )` |
 | [`request`](modules/request/) | Declared arguments become schemas and bound properties | `#[RequestArgument( 'Which one.' )] public int $id;` |
 | [`views`](modules/views/) | Renders `resources/views/*.php` templates | `$this->with( Views::class )->render( 'emails/receipt', $data )` |

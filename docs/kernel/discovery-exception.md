@@ -26,8 +26,6 @@ Extends `ModuleException`, and therefore `\RuntimeException`: a discovery failur
 
 Writing a discovery module of your own? `name_collision()` raises the same sentence the built-in modules do, so yours fails the way the rest of the plugin already does.
 
-A root directory that is simply absent is not here, and never was an error worth raising: with the directories fixed, an empty one means the plugin has none of those files yet, which is what adding a module before writing its first file looks like.
-
 ## Methods
 
 ### `name_collision( $label, $name, $first, $other )`
@@ -43,7 +41,3 @@ public static function name_collision( string $label, string $name, string $firs
 | **Parameters** | `$label` — What the module discovers, e.g. `commands`<br>`$name` — The name both files resolved to<br>`$first` — The file that claimed it<br>`$other` — The file that collided with it |
 | **Return** | `self` |
 | **Throws** | — |
-
-A discovered file's name is what it registers as, read exactly as written, so two files usually cannot collide. Where they can is a destination whose name is built from more than the filename: `dashboard.php` and `dashboard/index.php` are two paths meaning one admin page, and only one of them can be it.
-
-Refused rather than resolved, because either resolution is wrong. Keeping the first leaves the second registered against nothing; keeping the last makes the answer depend on directory order. Neither says anything, and the file that lost still looks like working code.

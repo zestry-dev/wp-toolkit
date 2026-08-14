@@ -50,7 +50,7 @@ Add nothing up front. Reach for one when you hit what it solves:
 | [`transients`](transients/) | keep a value past the request, with an expiry | — | — | — |
 | [`views`](views/) | render a PHP template | `resources/views/` (read, not walked) | — | `path` |
 
-**`blocks` and `assets` also write build tooling outside their own tree** — npm scripts and devDependencies, a `tsconfig.json`, a `webpack.config.js`, `.gitignore` entries. Everything either writes is additive, and [`wp zt add`](../commands/add.md) lists it.
+**`blocks` and `assets` also write build tooling outside their own tree.** `blocks` writes npm scripts and devDependencies, a `tsconfig.json`, an `eslint.config.mjs` and `.gitignore` entries. `assets` writes the `webpack.config.js`, which is what lets one build produce blocks, entries and shared packages together — blocks alone need no config file. Everything either writes is additive, and [`wp zt add`](../commands/add.md) lists it.
 
 One worth calling out: **`ajax` serves `admin-ajax.php`**, not the REST API. Reach for it when something already speaks that protocol — an existing script, a third-party integration — and `rest-api` otherwise.
 

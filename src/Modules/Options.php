@@ -313,12 +313,7 @@ class Options extends Module {
 	/**
 	 * Write this group's pending changes to the database.
 	 *
-	 * **The only thing that writes.** `set()` and `delete()` change memory and
-	 * nothing else, so call this once the work behind the change is finished and
-	 * correct — after a form has validated, at the end of a migration step,
-	 * before a redirect. A request that dies before reaching it leaves the stored
-	 * settings exactly as they were, which is the point: a half-finished write is
-	 * worse than no write.
+	 * **The only thing that writes.**
 	 *
 	 * Each group saves on its own; saving the default instance does not save a
 	 * `group()` reached from it.

@@ -243,7 +243,7 @@ public function save(): void
 | **Return** | — |
 | **Throws** | `RuntimeException` — When the write fails for a value that is actually changing |
 
-**The only thing that writes.** `set()` and `delete()` change memory and nothing else, so call this once the work behind the change is finished and correct — after a form has validated, at the end of a migration step, before a redirect. A request that dies before reaching it leaves the stored settings exactly as they were, which is the point: a half-finished write is worse than no write.
+**The only thing that writes.**
 
 Each group saves on its own; saving the default instance does not save a `group()` reached from it.
 
@@ -267,7 +267,7 @@ final public function on_wp_init( callable $callback, int $priority = 10 ): void
 | **Return** | — |
 | **Throws** | — |
 
-Almost everything a module registers — a post type, a block, a WP-CLI command — has to happen on `init`, and a plain `add_action( 'init', ... )` is a callback that never runs once `init` has passed. A module can be built on either side of it: `Plugin::run()` is synchronous, so an entry file that calls it at plugin load is ahead of `init`, while one that calls it from a later hook is behind. This behaves the same either way, so a module never has to care which.
+Reach for this wherever a plain `add_action( 'init', ... )` would go: that callback never runs once `init` has passed, and a module can be built on either side of it.
 
 The callback receives the module, so a closure declared elsewhere needs no `use` to reach it:
 

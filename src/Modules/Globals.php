@@ -50,13 +50,12 @@ class Globals extends Module {
 	/**
 	 * Set a global value.
 	 *
-	 * Returns void, like every other setter here, so calls do not chain. Only
-	 * `Plugin`'s builder methods are fluent.
+	 * Setters here do not chain. Only `Plugin`'s builder methods are fluent.
 	 *
 	 * @rationale
-	 * This returned `$this` once, which made `$globals->set(...)->set(...)`
-	 * work while the identical-looking call on the sibling `Options` store was
-	 * a fatal. Keep every setter void; chaining belongs to `Plugin` alone.
+	 * This returned `$this` once, which made `$globals->set(...)->set(...)` work
+	 * while the identical-looking call on the sibling `Options` store was a
+	 * fatal. Keep every setter void.
 	 *
 	 * @param string $key   The registry key.
 	 * @param mixed  $value The value to store.

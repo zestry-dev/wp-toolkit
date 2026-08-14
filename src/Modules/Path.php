@@ -148,10 +148,6 @@ class Path extends Module {
 	/**
 	 * Check if a plugin resource is a directory.
 	 *
-	 * A path that escapes the plugin root throws rather than answering false,
-	 * and there is no `$allow_escape` opt-out here -- so validate anything that
-	 * came from request input before passing it in.
-	 *
 	 * @param string $path The resource path relative to the plugin directory.
 	 * @return bool True if the resource exists and is a directory, false otherwise.
 	 * @throws \InvalidArgumentException When the path escapes the plugin root.

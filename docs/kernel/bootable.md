@@ -18,7 +18,7 @@ class Shortcode extends Module implements Bootable {
 }
 ```
 
-**The `implements` clause is the declaration**, and it is on the line that names the class — so what a module does without being asked is visible before you read the body.
+**The `implements` clause is the declaration** — so what a module does without being asked is visible before you read the body.
 
 Every module is listed in `bootstrap.php` either way. What this changes is *where*: a module implementing it goes under the hook it acts on, and the top level throws for one that does — because the top level is for modules that do nothing until something asks, and this one cannot keep that promise.
 
@@ -30,8 +30,6 @@ return array(
     ),
 );
 ```
-
-`ModulesRepository` calls this once, as it builds the module, and a module that does not implement this has nothing for it to call.
 
 ## Methods
 
@@ -48,5 +46,3 @@ Runs once, when the plugin builds the module — which is what listing it in `bo
 **Bind hooks here; do the work in them.** An entry file that calls `run()` as it loads — which is the documented shape, and what `ActivationHandler` requires — reaches this before WordPress has required `pluggable.php`, so there is no current user yet: `current_user_can()`, `wp_mail()` and the nonce functions are not defined and calling one is a fatal. It is also before `init`, so `__()` here asks for a text domain nothing has loaded. `$wpdb` *is* up, so a query works — but it runs on every request, including the ones that never needed it.
 
 `Module::on_wp_init()` is the way out of all three, and where anything a module registers belongs.
-
-Public because an interface has no other option, but it is the plugin's to call: the plugin runs it once as it builds the module, and calling it yourself runs it again.

@@ -117,7 +117,7 @@ and nothing outside it is ever built.
 
 **What causes it.** Something called `with()` or `get()` for a module the file never lists. Nothing is built on demand, so there is no instance to hand back.
 
-**What to do.** Add it to `bootstrap.php`, or let `wp zt add <name>` do it. That refusal is what keeps the file worth reading: if an unlisted class could be built by asking, the inventory would be a suggestion rather than the answer.
+**What to do.** Add it to `bootstrap.php`, or let `wp zt add <name>` do it.
 
 ### A module asked for before its hook
 
@@ -228,7 +228,7 @@ Two admin pages resolve to the name "acme-plugin-reports": resources/admin-pages
 and resources/admin-pages/reports/index.php. Only one of them can be it, so rename the other.
 ```
 
-Your filenames register as written, so this only happens where a name is built from more than the filename — `reports.php` and `reports/index.php` are two paths meaning one admin page. Neither is dropped in favour of the other, because keeping the first leaves the second registered against nothing and keeping the last makes the answer depend on directory order.
+Your filenames register as written, so this only happens where a name is built from more than the filename — `reports.php` and `reports/index.php` are two paths meaning one admin page. Rename one of them.
 
 **A name the destination cannot carry.**
 
@@ -290,7 +290,7 @@ Two families sit outside the hierarchy, so `catch ( ModuleException $e )` around
 | [`Request`](modules/request/) | `A file cannot be described in a schema, so only a REST route can take one.` |
 | [`Log`](modules/log/) | `Unknown log level "verbose". Expected one of: emergency, alert, critical, error, warning, notice, info, debug.` |
 
-Every one of those is thrown while your route or ability registers, not while it answers a call, and names the property. [`#[RequestArgument]`](modules/request/request-argument.md) lists what you can declare and what you cannot.
+A route or an ability raises these while it registers. An AJAX action or an admin page has no registration pass that reads its declarations, so the same mistake surfaces on the first call that reaches it — the message is identical and still names the property. [`#[RequestArgument]`](modules/request/request-argument.md) lists what you can declare and what you cannot.
 
 **`\RuntimeException` — the environment refused.** WordPress or MySQL would not do what was asked: `Could not create upload directory: …`, `Options::save() failed to persist option "acme-plugin__options_"`, `dbDelta() reported creating "wp_acme_reports", but the table does not exist.` These mean a filesystem permission, a full disk, or a database privilege — not a wiring mistake.
 

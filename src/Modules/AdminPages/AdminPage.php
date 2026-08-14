@@ -128,18 +128,15 @@ abstract class AdminPage implements PluginAware {
 	 * no menu to sit in, and no other page may nest under this one.
 	 *
 	 * @rationale
-	 * WordPress's mechanism is `add_submenu_page( null, ... )`, which registers the
-	 * hook in `$_registered_pages` -- the thing `admin.php` checks before serving
-	 * `?page=` -- while adding no menu item anywhere. Verified against WP 7.1 on
-	 * PHP 8.1: no deprecation, and no entry in `$menu` or `$submenu`.
+	 * WordPress's mechanism is `add_submenu_page( null, ... )`, which registers
+	 * the hook in `$_registered_pages` -- the thing `admin.php` checks before
+	 * serving `?page=` -- while adding no menu item anywhere. Verified against WP
+	 * 7.1 on PHP 8.1: no deprecation, and no entry in `$menu` or `$submenu`.
 	 *
 	 * Not a `ParentMenu` case, and not a sentinel from `parent()`: that enum
 	 * answers "which core menu is above me" with a file, and a hidden page has no
-	 * file to name. `parent()` has also already spent `null` on "decide by folder".
-	 *
-	 * The alternative a plugin reaches for otherwise is registering a real menu
-	 * entry and hiding it with CSS, which leaves the item in the DOM and in
-	 * `$submenu` for anything else reading the menu.
+	 * file to name. `parent()` has also already spent `null` on "decide by
+	 * folder".
 	 *
 	 * @return bool
 	 */

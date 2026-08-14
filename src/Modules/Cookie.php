@@ -98,40 +98,29 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * > refuses and says so, past {@see MAX_COOKIE_BYTES}.
  *
  * @rationale
- * The value lives in the cookie, which is Laravel's `cookie` session driver
- * rather than its `file` or `database` ones, for the same reasons: no write, no
- * read, no cleanup, and no table growing from traffic that never comes back for
- * its notice. Keyed by the cookie rather than the current user, so a visitor who
- * is not logged in -- a front-end form, the case with no admin notice API at all
- * -- is served the same way.
- *
- * A flash too large for a cookie falls back to a transient with an unguessable
- * id in the cookie, which was the whole design first and is now the exception:
- * paying a database write for a notice is the wrong default, and refusing a
- * payload outright is the wrong answer to the case that needs one. The
- * discriminator is a single leading character, so which of the two a cookie holds
- * is readable without a second cookie or a length heuristic.
+ * The payload lives in the cookie, keyed by the cookie rather than by the
+ * current user -- so a visitor who is not logged in, the case with no admin
+ * notice API at all, is served the same way, and no table grows from traffic
+ * that never comes back for its notice. A flash past {@see MAX_COOKIE_BYTES}
+ * falls back to a transient with an unguessable id in the cookie; the
+ * discriminator is a single leading character, so which of the two a cookie
+ * holds is readable without a second cookie or a length heuristic.
  *
  * `sodium_crypto_secretbox()` does the work: authenticated encryption, so one
- * primitive covers both secrecy and tampering and there is no
- * encrypt-then-MAC to assemble by hand. It is always available -- WordPress
- * loads `sodium_compat` from `compat.php` when the extension is not -- which is
- * what makes it preferable to an OpenSSL path that would need a fallback anyway.
- * Signing alone with `wp_hash()` was the previous version and is what
- * `wp_generate_auth_cookie()` does; encryption replaced it because a serialized
- * payload the browser can read is a payload a consumer will eventually put
- * something private in.
+ * primitive covers both secrecy and tampering. It is always available --
+ * WordPress loads `sodium_compat` from `compat.php` when the extension is not
+ * -- which is what makes it preferable to an OpenSSL path that would need a
+ * fallback anyway. Signing alone is not enough: a serialized payload the browser
+ * can read is one a consumer will eventually put something private in.
  *
  * The key is derived per plugin, so two plugins built with this toolkit on one
  * site cannot read each other's cookies, and rotating the site's salts
- * invalidates every outstanding value -- which is the correct answer to a
- * rotated salt.
+ * invalidates every outstanding value.
  *
- * `maybe_serialize()` rather than `json_encode()`: it is what WordPress uses for
- * every option and every meta value, so an object survives instead of flattening
- * to an array. `maybe_unserialize()` on untrusted input would be an
- * object-injection hole; the authentication is what makes it safe here, since a
- * payload that did not come from this key never reaches it.
+ * `maybe_serialize()` rather than `json_encode()`, so an object survives instead
+ * of flattening to an array. `maybe_unserialize()` on untrusted input would be
+ * an object-injection hole; the authentication is what makes it safe here, since
+ * a payload that did not come from this key never reaches it.
  */
 class Cookie extends Module {
 

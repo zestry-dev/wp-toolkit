@@ -121,13 +121,6 @@ class CLI extends Module implements Bootable {
 	 * Only runs under WP-CLI; on a normal request this is a no-op, since nothing
 	 * needs command registration outside of a CLI invocation.
 	 *
-	 * Discovery is deferred to `init` rather than run inline, matching every
-	 * sibling discovery module (Ajax, Cron and PostTypes defer to `init`,
-	 * AdminPages to `admin_menu`, RestApi to `rest_api_init`). Walking the
-	 * filesystem at boot would `require` every command file in a materially
-	 * earlier environment than an action/page/route/schedule file sees, and
-	 * WP-CLI does not need it that early -- dispatch happens well after `init`.
-	 *
 	 * @return void
 	 *
 	 * @internal

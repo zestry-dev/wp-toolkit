@@ -28,15 +28,14 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  * Every module is declared in a `bootstrap.php`, which {@see bootstrap()} reads
  * and {@see run()} builds. `wp zt init` creates that file and `wp zt add`
  * appends to it, so a module works as soon as it is copied and the entry file
- * never has to change. {@see declare_multiple()} is public and takes the same
- * entries, so a plugin that prefers to declare everything in the entry file can
- * do that instead, and the two approaches can be combined.
+ * never has to change.
  *
  * **That file is the whole inventory.** Nothing is built without being listed
  * there, and asking for an undeclared class throws -- so reading it tells you
  * what the plugin is made of, and that stays true. To reach a module your plugin
- * may not have declared, emit a hook instead of asking for it, the way `Options`
- * and `Cron` reach `Log`.
+ * may not have declared, emit a hook instead of asking for it: compose the name
+ * with {@see get_namespaced_name()}, check `has_action()`, and fall back when
+ * nothing is listening.
  *
  * @example The entry file
  * Constructs the plugin and runs it. Module declarations live in
@@ -423,24 +422,11 @@ class Plugin {
 	 * );
 	 * ```
 	 *
-	 * {@see declare_multiple()} has the whole grammar. In short: the top level is
-	 * for modules that do nothing until something asks, a class entry's value is
-	 * the callback that configures it, and a module that acts on its own goes
-	 * under the hook it acts on.
+	 * {@see declare_multiple()} has the whole grammar.
 	 *
 	 * A module under a heading cannot be built before that hook: asking for it
 	 * beforehand throws, naming the hook, rather than booting it on the wrong
 	 * side of whatever it was waiting for.
-	 *
-	 * **This file is the whole inventory of what the plugin is made of.** Every
-	 * module is here -- the ones that act on their own and the ones that only
-	 * work when called -- and nothing outside it is ever built: asking for an
-	 * undeclared class throws rather than quietly constructing it. That is what
-	 * makes reading this file worth doing.
-	 *
-	 * Nothing here loads a class. An entry remembers a name, and a configurator
-	 * remembers a closure against it, so a file naming a dozen classes reads
-	 * without compiling any of them -- they load when `run()` builds them.
 	 *
 	 * A missing file is not an error. If there is no `bootstrap.php` the plugin
 	 * is returned unchanged, so you can call this unconditionally from a

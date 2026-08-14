@@ -55,15 +55,11 @@ namespace Zestry\WPToolkit\Kernel\Traits;
  *
  * @rationale
  * A trait rather than a method on each base class, because there are twelve of
- * them and one default; and a trait rather than something on `WithPlugin`, which
- * they all already use, because a `Module` uses it too and would come out with
- * an `is_enabled()` that nothing reads -- a method that looks like it works.
- * Listing a module in `bootstrap.php` is what makes it exist, and a second way
- * to say the same thing would drift from it.
- *
- * No interface accompanies it. Every caller reaches an instance through its own
- * discovery guard, which has already established the base class, so an interface
- * would be a second name for a fact the `instanceof` above it just proved.
+ * them and one default; and a trait rather than something on `WithPlugin`,
+ * which they all already use, because a `Module` uses it too and would come out
+ * with an `is_enabled()` that nothing reads. No interface accompanies it: every
+ * caller reaches an instance through its own discovery guard, which has already
+ * established the base class.
  *
  * `Migration` deliberately does not use this. Migrations run at most once ever,
  * in filename order, and a skipped one leaves a permanent gap -- enabling it

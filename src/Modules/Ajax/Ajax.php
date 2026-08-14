@@ -124,12 +124,10 @@ class Ajax extends Module implements Bootable {
 	 * like any other value.
 	 *
 	 * @rationale
-	 * This guarded on `if ( $context )`, so a post ID of `0` was silently
-	 * treated as no context at all. Minting and verifying agreed with each
-	 * other, so nothing visibly broke -- an action returning `0` just got an
-	 * unscoped nonce while believing it was scoped. Both guards have to test
-	 * the same way; changing one alone lets a nonce verify against a different
-	 * action name than it was minted for.
+	 * This guarded on `if ( $context )`, so a post ID of `0` was treated as no
+	 * context at all -- minting and verifying agreed, so nothing visibly broke,
+	 * and the action just got an unscoped nonce while believing it was scoped.
+	 * Both guards have to test the same way.
 	 *
 	 * @param string          $name The local action name.
 	 * @param string|int|null $context The optional nonce context.

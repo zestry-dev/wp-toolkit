@@ -149,8 +149,6 @@ return array(
 );
 ```
 
-`wp zt add <name>` writes that entry for you. A module added by hand, or one whose declaration was lost in a merge, is the case to check — `wp zt doctor` finds it.
-
 The other shape is a module you *did* declare, listed under a heading:
 
 ```

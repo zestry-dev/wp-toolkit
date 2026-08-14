@@ -35,13 +35,11 @@ use Zestry\WPToolkit\Kernel\Traits\WithPlugin;
  * and how a discovered file reaches any of them. There is nothing to construct
  * and nothing to declare in advance.
  *
- * **Implement {@see Bootable} to do something without being called.** It goes on
- * the line that names the class, so what a module does unasked is visible before
- * you read the body: a `Bootable` module binds hooks, registers a post type or
- * walks a directory when the plugin builds it, and one without it sits there
- * until something calls it. It is also what decides where the module's
- * `bootstrap.php` entry goes -- under the hook it acts on, rather than at the
- * top level.
+ * **Implement {@see Bootable} to do something without being called.** A
+ * `Bootable` module binds hooks, registers a post type or walks a directory when
+ * the plugin builds it; one without it sits there until something calls it. It
+ * is also what decides where the module's `bootstrap.php` entry goes -- under
+ * the hook it acts on, rather than at the top level.
  *
  * **Your class may not declare a constructor.** `__construct()` is `final` here
  * and takes no arguments, so every module is built as `new YourModule()`.
@@ -165,13 +163,9 @@ abstract class Module implements PluginAware {
 	/**
 	 * Run a callback on `init`, or immediately if `init` has already fired.
 	 *
-	 * Almost everything a module registers -- a post type, a block, a WP-CLI
-	 * command -- has to happen on `init`, and a plain `add_action( 'init', ... )`
-	 * is a callback that never runs once `init` has passed. A module can be
-	 * built on either side of it: {@see \Zestry\WPToolkit\Kernel\Plugin::run()} is
-	 * synchronous, so an entry file that calls it at plugin load is ahead of
-	 * `init`, while one that calls it from a later hook is behind. This behaves
-	 * the same either way, so a module never has to care which.
+	 * Reach for this wherever a plain `add_action( 'init', ... )` would go: that
+	 * callback never runs once `init` has passed, and a module can be built on
+	 * either side of it.
 	 *
 	 * The callback receives the module, so a closure declared elsewhere needs no
 	 * `use` to reach it:
