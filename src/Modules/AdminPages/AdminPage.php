@@ -213,12 +213,6 @@ abstract class AdminPage implements PluginAware {
 	 * from here works -- which is what it is for. Falling through to `render()`
 	 * instead leaves the browser's current request a POST, so a refresh resubmits.
 	 *
-	 * **The values are yours to read.** A page is reached twice by two methods --
-	 * the GET that draws the form and the POST that submits it -- so it declares
-	 * no arguments the way a route or an ability does; a field required on the
-	 * second is absent on the first. Read `$_POST` here and `$_GET` in
-	 * {@see render()}, each unslashed and sanitised for what it is.
-	 *
 	 * @return void
 	 */
 	public function handle_submit(): void {}
