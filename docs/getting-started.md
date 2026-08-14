@@ -134,13 +134,11 @@ use Acme\Plugin\Core\Modules\AdminPages\AdminPages;
 use Acme\Plugin\Core\Modules\CLI\CLI;
 use Acme\Plugin\Core\Modules\Cookie;
 use Acme\Plugin\Core\Modules\Path;
-use Acme\Plugin\Core\Modules\Request\Request;
 use Acme\Plugin\Core\Modules\Transients;
 use Acme\Plugin\Core\Modules\Views;
 
 return array(
     Path::class,
-    Request::class,
     Transients::class,
     Cookie::class,
     Views::class,
@@ -155,7 +153,7 @@ return array(
 );
 ```
 
-Seven entries for the two modules you asked for: `admin-pages` needs `views` to render, `request` for its declared arguments and `cookie` for the notice it carries across a redirect, `cookie` needs `transients`, and almost everything needs `path`. They are modules like the rest, and leaving one out breaks the module that reaches for it.
+Six entries for the two modules you asked for: `admin-pages` needs `views` to render and `cookie` for the notice it carries across a redirect, `cookie` needs `transients`, and almost everything needs `path`. They are modules like the rest, and leaving one out breaks the module that reaches for it.
 
 **Everything the plugin is made of is here, and listing one is what builds it.** The key says when.
 

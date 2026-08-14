@@ -496,20 +496,27 @@ final class AdminPagesTest extends TestCase {
 	}
 
 	/**
-	 * A page declares what it takes the same way a route, an ability and an AJAX
-	 * action do, and reads `$this->title` rather than `$_POST['title']`. The
-	 * declared type is what turns the posted string into an int.
+	 * A page binds nothing, and `#[RequestArgument]` on one does nothing.
+	 *
+	 * A page is reached twice by two methods -- the GET that draws the form and
+	 * the POST that submits it -- so one declaration cannot describe both: an
+	 * argument required on the second is absent on the first. The values are the
+	 * page's own to read. This pins the absence, since restoring the binding
+	 * would break every page whose form has a required field.
 	 *
 	 * @return void
 	 */
-	public function test_a_page_reads_its_declared_arguments_rather_than_the_post(): void {
+	public function test_a_page_binds_nothing_and_reads_the_post_itself(): void {
 		$this->write_page(
 			'declared',
 			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How many.' )]\n"
-				. "public int \$quantity;\n"
+				. "public int \$quantity = 1;\n"
 				. "public function title(): string { return 'Declared'; }\n"
 				. "public function capability(): string { return 'manage_options'; }\n"
-				. "public function handle_submit(): void { \$GLOBALS['zestry_bound'] = \$this->quantity; }\n"
+				. "public function handle_submit(): void {\n"
+				. "\t\$GLOBALS['zestry_property'] = \$this->quantity;\n"
+				. "\t\$GLOBALS['zestry_posted']   = (int) \$_POST['quantity'];\n"
+				. "}\n"
 				. "public function render(): void { echo 'body'; }"
 		);
 
@@ -520,8 +527,6 @@ final class AdminPagesTest extends TestCase {
 		$_GET['page'] = $slug;
 		$_POST        = array( 'quantity' => '7' );
 
-		// PHP fills $_POST on a real POST only, and WP_REST_Request reads a body on
-		// a method that carries one -- so a test standing one up has to say both.
 		$_SERVER['REQUEST_METHOD'] = 'POST';
 
 		$_REQUEST['_wpnonce'] = wp_create_nonce( $pages->get_pages()[ $slug ]->get_nonce_action() );
@@ -529,52 +534,10 @@ final class AdminPagesTest extends TestCase {
 		try {
 			$pages->handle_submit();
 
-			$this->assertSame( 7, $GLOBALS['zestry_bound'] ?? null, 'The posted string arrived as the declared int.' );
+			$this->assertSame( 1, $GLOBALS['zestry_property'] ?? null, 'The declaration bound nothing.' );
+			$this->assertSame( 7, $GLOBALS['zestry_posted'] ?? null, 'handle_submit() still ran, and read the POST itself.' );
 		} finally {
-			unset( $GLOBALS['zestry_bound'], $_SERVER['REQUEST_METHOD'] );
-		}
-	}
-
-	/**
-	 * A value that does not fit stops the submission the same way a failed
-	 * capability and a failed nonce already stop it, rather than saving a page
-	 * whose declared properties were never bound.
-	 *
-	 * @return void
-	 */
-	public function test_a_refused_argument_stops_the_submission(): void {
-		$this->write_page(
-			'refuses',
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How many.' )]\n"
-				. "public int \$quantity;\n"
-				. "public function title(): string { return 'Refuses'; }\n"
-				. "public function capability(): string { return 'manage_options'; }\n"
-				. "public function handle_submit(): void { \$GLOBALS['zestry_saved'] = true; }\n"
-				. "public function render(): void { echo 'body'; }"
-		);
-
-		$pages = $this->admin_pages();
-		do_action( 'admin_menu' );
-
-		$slug         = 'zestry-test-refuses';
-		$_GET['page'] = $slug;
-		$_POST        = array( 'quantity' => 'not-a-number' );
-
-		// PHP fills $_POST on a real POST only, and WP_REST_Request reads a body on
-		// a method that carries one -- so a test standing one up has to say both.
-		$_SERVER['REQUEST_METHOD'] = 'POST';
-
-		$_REQUEST['_wpnonce'] = wp_create_nonce( $pages->get_pages()[ $slug ]->get_nonce_action() );
-
-		try {
-			$pages->handle_submit();
-
-			$this->fail( 'A refused argument should have stopped the submission.' );
-		} catch ( \WPDieException $e ) {
-			$this->assertStringContainsString( 'quantity', $e->getMessage(), 'The message names what did not fit.' );
-			$this->assertArrayNotHasKey( 'zestry_saved', $GLOBALS, 'handle_submit() never ran.' );
-		} finally {
-			unset( $GLOBALS['zestry_saved'], $_SERVER['REQUEST_METHOD'] );
+			unset( $GLOBALS['zestry_property'], $GLOBALS['zestry_posted'], $_SERVER['REQUEST_METHOD'] );
 		}
 	}
 

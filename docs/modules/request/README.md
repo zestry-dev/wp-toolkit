@@ -7,9 +7,9 @@
 
 Turns declared arguments into schemas, and incoming values into properties.
 
-The machinery behind `RequestArgument`, shared by every part of a plugin that takes arguments from somewhere it does not control — a `RestRoute`, an `Ability`, an `AjaxAction` and an `AdminPage`. That is why the attribute is one attribute: they ask the same question, and answering it four times would mean four vocabularies for one idea.
+The machinery behind `RequestArgument`, shared by every part of a plugin that answers a caller who cannot read the code — a `RestRoute`, an `Ability` and an `AjaxAction`. That is why the attribute is one attribute: the three ask the same question, and answering it three times would mean three vocabularies for one idea.
 
-You rarely call this. Declare the properties, and the module that discovered your route, ability, action or page does the rest.
+You rarely call this. Declare the properties, and the module that discovered your route, ability or action does the rest.
 
 [Adding it](#adding-it) &nbsp;·&nbsp; [What it does for you](#what-it-does-for-you) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
@@ -130,7 +130,7 @@ public function get_submitted_values( object $target ): array
 | **Return** | The values present, unslashed and otherwise raw |
 | **Throws** | `InvalidArgumentException` — When an argument cannot be described |
 
-For a caller whose platform hands it no parameters of its own. A route gets them from `WP_REST_Request::get_param()` and an ability is passed them outright; an admin page and an AJAX action are plain hooks, so this is the equivalent for them, resolving each name the same way a route does:
+For a caller whose platform hands it no parameters of its own. A route gets them from `WP_REST_Request::get_param()` and an ability is passed them outright; an AJAX action is a plain hook, so this is the equivalent for it, resolving each name the same way a route does:
 
 1. the **JSON body**, when the `Content-Type` says the body is one
 2. the **form body** — `$_POST`, on a method that carries one

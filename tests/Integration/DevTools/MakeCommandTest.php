@@ -750,15 +750,14 @@ final class MakeCommandTest extends TestCase {
 		$this->assertStringContainsString( '$this->set_flash(', $page );
 		$this->assertStringNotContainsString( "'updated' => '1'", $page );
 
-		// The generated page declares what it takes rather than reaching into
-		// $_POST -- code teaches louder than the comment above it, and this is the
-		// shape a consumer copies for their second field.
-		$this->assertStringContainsString( "#[RequestArgument( 'An example value.' )]", $page );
-		$this->assertStringContainsString( 'public string $example', $page );
-		$this->assertStringNotContainsString(
-			'sanitize_text_field( \wp_unslash( $_POST',
+		// A page is reached by two methods and declares no arguments, so the stub
+		// must not teach an attribute that binds nothing -- code teaches louder
+		// than the comment above it, and this is the shape a consumer copies.
+		$this->assertStringNotContainsString( 'RequestArgument', $page );
+		$this->assertStringContainsString(
+			'\sanitize_text_field( \wp_unslash( $_POST',
 			$page,
-			'The declaration does the unslashing and the checking, so the page does neither by hand.'
+			'The page reads its own values, so the stub shows the unslash and the sanitise.'
 		);
 	}
 
@@ -1286,7 +1285,7 @@ final class MakeCommandTest extends TestCase {
 			'The module was copied in, by the real `add` command.'
 		);
 		$this->assertFileExists(
-			$this->target_plugin_dir . '/lib/Core/Modules/Request/Request.php',
+			$this->target_plugin_dir . '/lib/Core/Modules/Views.php',
 			'Along with the dependencies the registry resolves for it.'
 		);
 		$this->assertFileExists( $this->target_plugin_dir . '/resources/admin-pages/reports.php' );

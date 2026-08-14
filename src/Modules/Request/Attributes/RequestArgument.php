@@ -261,32 +261,38 @@ namespace Zestry\WPToolkit\Modules\Request\Attributes;
  * this attribute is left alone entirely: it appears in no schema and is never
  * bound.
  *
- * ## The four surfaces are not checked identically
+ * ## The three surfaces are not checked identically
  *
- * A route, an ability, an AJAX action and an admin page all declare their input
- * this way, but WordPress does different amounts of the work on each:
+ * A route, an ability and an AJAX action all declare their input this way, but
+ * WordPress does different amounts of the work on each:
  *
- * | | Route | Ability | AJAX action | Admin page |
- * |---|---|---|---|---|
- * | Schema validated | by WordPress | by WordPress | by this module | by this module |
- * | Value unslashed | by WordPress | not slashed | by this module | by this module |
- * | Value cast to its type | by WordPress | by this module | by this module | by this module |
- * | Your `validate` / `sanitize` | in WordPress's own slots | run before binding | run before binding | run before binding |
- * | Bound before the permission check | no | yes | yes | after it |
- * | A refusal reads as | `rest_invalid_param`, 400 | `ability_invalid_input` | `rest_invalid_param`, 400 | `wp_die()`, 400 |
- * | A refusal points at | the item, `fields[0].name` | the item | the argument, `fields` | the argument |
+ * | | Route | Ability | AJAX action |
+ * |---|---|---|---|
+ * | Schema validated | by WordPress | by WordPress | by this module |
+ * | Value unslashed | by WordPress | not slashed | by this module |
+ * | Value cast to its type | by WordPress | by this module | by this module |
+ * | Your `validate` / `sanitize` | in WordPress's own slots | run before binding | run before binding |
+ * | Bound before the permission check | no | yes | yes |
+ * | A refusal reads as | `rest_invalid_param`, 400 | `ability_invalid_input` | `rest_invalid_param`, 400 |
+ * | A refusal points at | the item, `fields[0].name` | the item | the argument, `fields` |
  *
- * An action and a page are the two WordPress does nothing for: both are plain
- * hooks handed the superglobals as they arrived, slashed and unchecked, so
- * declaring arguments is how either stops reading them by hand. That is also
- * what the last row is about — where WordPress validates, it walks into an
- * array and names the item that failed; where this module does, it names the
- * argument and stops, so a rejected `of:` list says `fields` rather than which
- * entry in it. A page cannot
- * answer a refusal the way the other three do — what is waiting is a browser
- * mid-POST — so it stops with `wp_die()`, and `handle_submit()` never runs.
+ * An action is the one WordPress does nothing for: a plain hook handed the
+ * superglobals as they arrived, slashed and unchecked, so declaring arguments
+ * is how it stops reading them by hand. That is also what the last row is
+ * about — where WordPress validates, it walks into an array and names the item
+ * that failed; where this module does, it names the argument and stops, so a
+ * rejected `of:` list says `fields` rather than which entry in it.
  *
- * **Where the value comes from** is the same answer on all four: the values are
+ * **An admin page is not one of these**, and declaring arguments on one does
+ * nothing. Its caller is a browser the same author wrote the form for, so there
+ * is nobody to publish a schema to, and a page is reached twice by two methods
+ * — the GET that draws the form and the POST that submits it — which one
+ * declaration cannot describe: an argument required on the second is absent on
+ * the first. Read `$_POST` in `handle_submit()` and `$_GET` in `render()`,
+ * unslashed and sanitised for what each one is. The nonce and the capability
+ * are still checked for you.
+ *
+ * **Where the value comes from** is the same answer on all three: the values are
  * loaded into a `WP_REST_Request` and resolved by `get_param()`, so the JSON
  * body wins, then the form body, then the query string. A cookie is never a
  * parameter.
@@ -334,9 +340,9 @@ namespace Zestry\WPToolkit\Modules\Request\Attributes;
  *
  * The same door takes everything else an attribute cannot hold:
  * `'enum' => get_post_types()` is a function call, and a function call is not a
- * constant expression either. **An AJAX action and an admin page have no
- * equivalent and need none** — nothing publishes their schema, so a rule you
- * would have stated there belongs in `validate`.
+ * constant expression either. **An AJAX action has no equivalent and needs
+ * none** — nothing publishes its schema, so a rule you would have stated there
+ * belongs in `validate`.
  *
  * ## Limitations
  *

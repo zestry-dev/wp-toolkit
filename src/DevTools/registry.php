@@ -115,7 +115,7 @@ return array(
 		// `views` because AdminPage::view() is the default way a page
 		// renders, and a page whose markup is a concatenated string
 		// stops being reviewable long before it stops growing.
-		'depends' => array( 'cookie', 'path', 'request', 'views' ),
+		'depends' => array( 'cookie', 'path', 'views' ),
 	),
 	'rest-api'      => array(
 		'source'  => RestApi::class,

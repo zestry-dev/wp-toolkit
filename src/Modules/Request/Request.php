@@ -19,16 +19,15 @@ use Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument;
  * Turns declared arguments into schemas, and incoming values into properties.
  *
  * The machinery behind {@see Attributes\RequestArgument}, shared by every part
- * of a plugin that takes arguments from somewhere it does not control -- a
+ * of a plugin that answers a caller who cannot read the code -- a
  * {@see \Zestry\WPToolkit\Modules\RestApi\RestRoute}, an
- * {@see \Zestry\WPToolkit\Modules\Abilities\Ability}, an
- * {@see \Zestry\WPToolkit\Modules\Ajax\AjaxAction} and an
- * {@see \Zestry\WPToolkit\Modules\AdminPages\AdminPage}. That is why the attribute is one
- * attribute: they ask the same question, and answering it four times would mean
- * four vocabularies for one idea.
+ * {@see \Zestry\WPToolkit\Modules\Abilities\Ability} and an
+ * {@see \Zestry\WPToolkit\Modules\Ajax\AjaxAction}. That is why the attribute is one
+ * attribute: the three ask the same question, and answering it three times
+ * would mean three vocabularies for one idea.
  *
  * You rarely call this. Declare the properties, and the module that discovered
- * your route, ability, action or page does the rest.
+ * your route, ability or action does the rest.
  *
  * @example What it does for you
  * ```
@@ -302,8 +301,8 @@ class Request extends Module {
 	 *
 	 * For a caller whose platform hands it no parameters of its own. A route gets
 	 * them from {@see \WP_REST_Request::get_param()} and an ability is passed them
-	 * outright; an admin page and an AJAX action are plain hooks, so this is the
-	 * equivalent for them, resolving each name the same way a route does:
+	 * outright; an AJAX action is a plain hook, so this is the equivalent for it,
+	 * resolving each name the same way a route does:
 	 *
 	 * 1. the **JSON body**, when the `Content-Type` says the body is one
 	 * 2. the **form body** -- `$_POST`, on a method that carries one

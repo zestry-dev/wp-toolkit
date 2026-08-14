@@ -34,7 +34,6 @@ declare( strict_types=1 );
 
 use Acme\Plugin\Core\Modules\AdminPages\AdminPage;
 use Acme\Plugin\Core\Modules\AdminPages\ParentMenu;
-use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 
 // Rendering your own full-width UI rather than the usual WordPress "wrap"
 // layout? Swap AdminPage for ModernAdminPage above and below -- same class plus
@@ -45,13 +44,6 @@ return new class() extends AdminPage {
 	// The page slug is this file's name -- ?page={plugin-slug}-example.
 	// Renaming the file changes the URL, so every bookmark, link and redirect
 	// to the old one stops working.
-
-	// What this form takes, declared once. The value is checked against the type
-	// and bound before handle_submit() runs, so read $this->example rather than
-	// $_POST['example'] -- the same declaration a route, an ability and an AJAX
-	// action use. A default makes it optional; drop it to make it required.
-	#[RequestArgument( 'An example value.' )]
-	public string $example = '';
 
 	// Page title: shown in the browser tab and as the <h1> if render() uses it.
 	public function title(): string {
@@ -100,10 +92,11 @@ return new class() extends AdminPage {
 	// request should say goes through set_flash(). It reads once, which is what
 	// keeps the notice off a refresh -- and off a bookmark, as `?updated=1` in
 	// the URL would not.
+	//
+	// The nonce and the capability are checked for you; the values are not. Read
+	// each one yourself, unslashed and sanitised for what it is, e.g.
+	// $name = isset( $_POST['name'] ) ? \sanitize_text_field( \wp_unslash( $_POST['name'] ) ) : '';
 	public function handle_submit(): void {
-		// Save $this->example, e.g.
-		// $this->with( Options::class )->set( 'example_example', $this->example );
-
 		$this->set_flash( \__( 'Saved.', 'acme-plugin' ) );
 
 		\wp_safe_redirect( $this->get_page_url() );
@@ -111,7 +104,7 @@ return new class() extends AdminPage {
 	}
 
 	// Outputs the page's markup, wrapped in the admin container. Called on
-	// every GET view, and again after handle_submit() on a validated POST.
+	// every GET view, and again after handle_submit() unless that redirected.
 	//
 	// The markup lives in views/admin-pages/settings.php, generated alongside
 	// this file. The template gets exactly what is named here and nothing else
@@ -324,13 +317,15 @@ public function enqueue_assets(): void
 
 ### `handle_submit()`
 
-Handle a validated POST submission (called after the nonce check passes).
+Handle a POST submission, once its nonce and capability have passed.
 
 ```php
 public function handle_submit(): void
 ```
 
 Runs on `load-{$hook}`, before WordPress has emitted anything, so a redirect from here works — which is what it is for. Falling through to `render()` instead leaves the browser's current request a POST, so a refresh resubmits.
+
+**The values are yours to read.** A page is reached twice by two methods — the GET that draws the form and the POST that submits it — so it declares no arguments the way a route or an ability does; a field required on the second is absent on the first. Read `$_POST` here and `$_GET` in `render()`, each unslashed and sanitised for what it is.
 
 <br>
 

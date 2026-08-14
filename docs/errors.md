@@ -290,7 +290,7 @@ Two families sit outside the hierarchy, so `catch ( ModuleException $e )` around
 | [`Request`](modules/request/) | `A file cannot be described in a schema, so only a REST route can take one.` |
 | [`Log`](modules/log/) | `Unknown log level "verbose". Expected one of: emergency, alert, critical, error, warning, notice, info, debug.` |
 
-A route or an ability raises these while it registers. An AJAX action or an admin page has no registration pass that reads its declarations, so the same mistake surfaces on the first call that reaches it — the message is identical and still names the property. [`#[RequestArgument]`](modules/request/request-argument.md) lists what you can declare and what you cannot.
+A route or an ability raises these while it registers. An AJAX action has no registration pass that reads its declarations, so the same mistake surfaces on the first call that reaches it — the message is identical and still names the property. [`#[RequestArgument]`](modules/request/request-argument.md) lists what you can declare and what you cannot.
 
 **`\RuntimeException` — the environment refused.** WordPress or MySQL would not do what was asked: `Could not create upload directory: …`, `Options::save() failed to persist option "acme-plugin__options_"`, `dbDelta() reported creating "wp_acme_reports", but the table does not exist.` These mean a filesystem permission, a full disk, or a database privilege — not a wiring mistake.
 

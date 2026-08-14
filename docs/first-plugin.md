@@ -366,12 +366,8 @@ use Acme\Books\Core\Modules\AdminPages\AdminPage;
 use Acme\Books\Core\Modules\AdminPages\ParentMenu;
 use Acme\Books\Core\Modules\Log;
 use Acme\Books\Core\Modules\Options;
-use Acme\Books\Core\Modules\Request\Attributes\RequestArgument;
 
 return new class extends AdminPage {
-
-    #[RequestArgument( 'Books per API response.', schema: array( 'minimum' => 1, 'maximum' => 100 ) )]
-    public int $per_page = 10;
 
     public function title(): string {
         return __( 'Book Settings', 'acme-books' );
@@ -386,12 +382,16 @@ return new class extends AdminPage {
     }
 
     public function handle_submit(): void {
+        $per_page = isset( $_POST['per_page'] )
+            ? min( 100, max( 1, absint( wp_unslash( $_POST['per_page'] ) ) ) )
+            : 10;
+
         $options = $this->with( Options::class );
 
-        $options->set( 'per_page', $this->per_page );
+        $options->set( 'per_page', $per_page );
         $options->save();
 
-        $this->with( Log::class )->info( 'Book settings saved', array( 'per_page' => $this->per_page ) );
+        $this->with( Log::class )->info( 'Book settings saved', array( 'per_page' => $per_page ) );
 
         $this->set_flash( __( 'Settings saved.', 'acme-books' ) );
 
@@ -464,7 +464,7 @@ Inside any template `$this` is the [`views`](modules/views/) module, so a subvie
 
 The module enforces `capability()` before anything on the page runs, verifies the nonce on every POST, and only then calls `handle_submit()`. `nonce_field()` emits the matching field. There is no `add_menu_page()`, no `admin_menu` hook, and no `check_admin_referer()` to write.
 
-`#[RequestArgument]` is why `handle_submit()` reads `$this->per_page` rather than `$_POST['per_page']`. The value is checked against the type and the `minimum`/`maximum` before the method runs, so there is nothing to unslash, cast or clamp by hand — the same declaration a [route and an ability](modules/request/request-argument.md) use, and a submission that fails it never reaches your code.
+**An admin page reads its own values**, unlike the route in section 5. `#[RequestArgument]` describes one call to a caller who cannot read the code; a page is two — the GET that draws the form and the POST that submits it — and one declaration cannot describe both, since a field required on the second is absent on the first. The module checks the nonce and the capability; unslashing, casting and clamping are yours.
 
 **`handle_submit()` redirects rather than falling through to `render()`.** Without that, the browser's current request is still the POST: a refresh resubmits the form and saves a second time. The redirect throws away everything the method knew, so the notice travels in `set_flash()` — which reads once, so a refresh shows nothing for a save that already happened.
 

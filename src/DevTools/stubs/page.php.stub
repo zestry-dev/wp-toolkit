@@ -10,7 +10,6 @@ declare( strict_types=1 );
 
 use {{copied_namespace}}\Modules\AdminPages\AdminPage;
 use {{copied_namespace}}\Modules\AdminPages\ParentMenu;
-use {{copied_namespace}}\Modules\Request\Attributes\RequestArgument;
 
 // Rendering your own full-width UI rather than the usual WordPress "wrap"
 // layout? Swap AdminPage for ModernAdminPage above and below -- same class plus
@@ -21,13 +20,6 @@ return new class() extends AdminPage {
 	// The page slug is this file's name -- ?page={plugin-slug}-{{name}}.
 	// Renaming the file changes the URL, so every bookmark, link and redirect
 	// to the old one stops working.
-
-	// What this form takes, declared once. The value is checked against the type
-	// and bound before handle_submit() runs, so read $this->example rather than
-	// $_POST['example'] -- the same declaration a route, an ability and an AJAX
-	// action use. A default makes it optional; drop it to make it required.
-	#[RequestArgument( 'An example value.' )]
-	public string $example = '';
 
 	// Page title: shown in the browser tab and as the <h1> if render() uses it.
 	public function title(): string {
@@ -76,10 +68,11 @@ return new class() extends AdminPage {
 	// request should say goes through set_flash(). It reads once, which is what
 	// keeps the notice off a refresh -- and off a bookmark, as `?updated=1` in
 	// the URL would not.
+	//
+	// The nonce and the capability are checked for you; the values are not. Read
+	// each one yourself, unslashed and sanitised for what it is, e.g.
+	// $name = isset( $_POST['name'] ) ? \sanitize_text_field( \wp_unslash( $_POST['name'] ) ) : '';
 	public function handle_submit(): void {
-		// Save $this->example, e.g.
-		// $this->with( Options::class )->set( '{{name}}_example', $this->example );
-
 		$this->set_flash( \__( 'Saved.', '{{text_domain}}' ) );
 
 		\wp_safe_redirect( $this->get_page_url() );
@@ -87,7 +80,7 @@ return new class() extends AdminPage {
 	}
 
 	// Outputs the page's markup, wrapped in the admin container. Called on
-	// every GET view, and again after handle_submit() on a validated POST.
+	// every GET view, and again after handle_submit() unless that redirected.
 	//
 {{render_note}}
 	public function render(): void {

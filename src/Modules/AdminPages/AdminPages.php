@@ -17,7 +17,6 @@ use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Modules\AdminPages\Contracts\RendersCriticalStyles;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
 use Zestry\WPToolkit\Modules\Path;
-use Zestry\WPToolkit\Modules\Request\Request;
 
 /**
  * Discovers plugin admin pages and registers them in the WordPress admin menu.
@@ -333,8 +332,6 @@ class AdminPages extends Module implements Bootable {
 			\wp_nonce_ays( $page->get_nonce_action() );
 		}
 
-		$this->bind_arguments( $page );
-
 		$page->handle_submit();
 	}
 
@@ -483,47 +480,6 @@ class AdminPages extends Module implements Bootable {
 				$this->get_page_css_classname( $page ),
 			)
 		);
-	}
-
-	/**
-	 * Read this page's declared arguments out of the submission and onto it.
-	 *
-	 * A page that declares arguments reads `$this->title` rather than
-	 * `$_POST['title']`, the same as a route, an ability and an AJAX action --
-	 * {@see \Zestry\WPToolkit\Modules\Request\Request::get_submitted_values()} resolves each
-	 * name through the same ordered sources, so the four cannot disagree about
-	 * where a value came from.
-	 *
-	 * A value that does not fit stops the submission with `wp_die()`, the same way
-	 * this pass already answers a failed capability and a failed nonce -- the
-	 * message names the arguments, and `back_link` returns the browser to the
-	 * form. `handle_submit()` never runs.
-	 *
-	 * A page that declares none is untouched, and reads the request itself.
-	 *
-	 * @param AdminPage $page The wired page.
-	 * @return void
-	 */
-	private function bind_arguments( AdminPage $page ): void {
-		if ( array() === $this->with( Request::class )->get_arguments( $page ) ) {
-			return;
-		}
-
-		$values  = $this->with( Request::class )->get_submitted_values( $page );
-		$checked = $this->with( Request::class )->get_validated_values( $page, $values, 'rest_invalid_param' );
-
-		if ( \is_wp_error( $checked ) ) {
-			\wp_die(
-				\esc_html( $checked->get_error_message() ),
-				'',
-				array(
-					'response'  => 400,
-					'back_link' => true,
-				)
-			);
-		}
-
-		$this->with( Request::class )->bind( $page, $checked );
 	}
 
 	/**

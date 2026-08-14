@@ -5,7 +5,7 @@
 
 # AdminPages
 
-Discovers `resources/admin-pages/` &nbsp;·&nbsp; Each file returns [`AdminPage`](admin-page.md) &nbsp;·&nbsp; Dependencies [`cookie`](../cookie/), [`path`](../path/), [`request`](../request/), [`views`](../views/)
+Discovers `resources/admin-pages/` &nbsp;·&nbsp; Each file returns [`AdminPage`](admin-page.md) &nbsp;·&nbsp; Dependencies [`cookie`](../cookie/), [`path`](../path/), [`views`](../views/)
 
 Discovers plugin admin pages and registers them in the WordPress admin menu.
 
@@ -282,7 +282,6 @@ final public function with( string $name ): object
 - [`AdminPage`](admin-page.md) — what a file in `resources/admin-pages/` returns
 - [`cookie`](../cookie/) — copied in alongside this one
 - [`path`](../path/) — copied in alongside this one
-- [`request`](../request/) — copied in alongside this one
 - [`views`](../views/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
 - [`wp zt add admin-pages`](../../commands/add.md) — the command that copies it

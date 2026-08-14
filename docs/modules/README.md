@@ -27,7 +27,7 @@ Add nothing up front. Reach for one when you hit what it solves:
 | Module | Reach for it to… | Discovers | A file returns | Also copies |
 |---|---|---|---|---|
 | [`abilities`](abilities/) | give an AI agent a tool it can call (WordPress 6.9+) | `resources/abilities/` | [`Ability`](abilities/ability.md) | `path`, `request` |
-| [`admin-pages`](admin-pages/) | add a screen to the admin menu | `resources/admin-pages/` | [`AdminPage`](admin-pages/admin-page.md), [`ModernAdminPage`](admin-pages/modern-admin-page.md) | `cookie`, `path`, `request`, `views` |
+| [`admin-pages`](admin-pages/) | add a screen to the admin menu | `resources/admin-pages/` | [`AdminPage`](admin-pages/admin-page.md), [`ModernAdminPage`](admin-pages/modern-admin-page.md) | `cookie`, `path`, `views` |
 | [`ajax`](ajax/) | answer `admin-ajax.php`, for callers that already speak it | `resources/actions/` | [`AjaxAction`](ajax/ajax-action.md) | `path`, `request` |
 | [`assets`](assets/) | enqueue a script or stylesheet, and share code between them | `assets/`, `build/` (read, not walked) | — | `path` |
 | [`blocks`](blocks/) | build a block for the editor | `build/blocks/` | [`Block`](blocks/block.md) | `path` |
