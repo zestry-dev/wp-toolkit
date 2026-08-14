@@ -35,6 +35,14 @@ return new class() extends AddCommand {
 	 * `bootstrap.php` to append to, the entry line is printed for you to paste
 	 * wherever the plugin declares its modules instead.
 	 *
+	 * **Two modules need a newer WordPress than the rest**: `abilities` needs
+	 * 6.9, `icons-library` needs 7.1. Both are measured against your entry file's
+	 * own `Requires at least:` header -- the version your users' sites are held
+	 * to -- rather than against the WordPress you are developing on, since a
+	 * module that works here and not on the oldest site you support is a module
+	 * you would ship broken. A header promising less, or missing entirely,
+	 * refuses the whole batch and copies nothing, naming the version to set.
+	 *
 	 * Two modules also write build tooling outside their own tree. Everything
 	 * either writes is additive: anything already there is kept as it is and
 	 * reported as such.

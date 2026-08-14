@@ -28,9 +28,11 @@ Three files, and `wp acme-plugin greet Alice` works.
 ```php
 <?php
 /**
- * Plugin Name: Acme Plugin
- * Text Domain: acme-plugin
- * Version:     1.0.0
+ * Plugin Name:       Acme Plugin
+ * Text Domain:       acme-plugin
+ * Version:           1.0.0
+ * Requires at least: 6.9
+ * Requires PHP:      8.1
  */
 
 declare( strict_types=1 );

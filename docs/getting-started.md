@@ -19,9 +19,11 @@ composer require zestry-dev/wp-toolkit --dev
 ```php
 <?php
 /**
- * Plugin Name: Acme Plugin
- * Text Domain: acme-plugin
- * Version:     1.0.0
+ * Plugin Name:       Acme Plugin
+ * Text Domain:       acme-plugin
+ * Version:           1.0.0
+ * Requires at least: 6.9
+ * Requires PHP:      8.1
  */
 
 declare( strict_types=1 );
@@ -32,6 +34,8 @@ require_once __DIR__ . '/vendor/autoload.php';
 ```bash
 wp plugin activate acme-plugin
 ```
+
+**Declare both version headers now.** WordPress checks them before it will activate the plugin anywhere, and `wp zt add` reads `Requires at least:` to decide whether a module is safe to give you — see step 4.
 
 > [!IMPORTANT]
 > **`wp zt` — short for *zestry toolkit* — only exists inside a plugin that requires this package, and only while that plugin is active.** Run it from inside the plugin's own directory. Anything else reports `'zt' is not a registered wp command`; add `--debug` to any `wp` command to see which condition failed.
@@ -72,6 +76,9 @@ wp zt add cli admin-pages
 
 Dependencies come along automatically — nearly everything needs `path`, so it arrives too, and `migrations` also pulls in `db`, `options` and `cli`.
 
+> [!IMPORTANT]
+> **Two modules need a newer WordPress than the rest**, and `add` checks your header rather than your site: `abilities` needs 6.9, `icons-library` needs 7.1. Both are measured against the `Requires at least:` your entry file declares — the number your *users'* sites are held to — not against the WordPress you happen to be developing on. A header that promises less refuses the whole batch and copies nothing, naming the version to set. Raise the header first.
+
 Everything you can add is a **[module](modules/)**:
 
 <!-- zestry:include generator="module-names" -->
@@ -87,9 +94,11 @@ Some act on their own — `ajax` binds hooks, `post-types` walks a directory —
 ```php
 <?php
 /**
- * Plugin Name: Acme Plugin
- * Text Domain: acme-plugin
- * Version:     1.0.0
+ * Plugin Name:       Acme Plugin
+ * Text Domain:       acme-plugin
+ * Version:           1.0.0
+ * Requires at least: 6.9
+ * Requires PHP:      8.1
  */
 
 declare( strict_types=1 );

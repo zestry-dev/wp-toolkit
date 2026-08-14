@@ -19,10 +19,12 @@ composer require zestry-dev/wp-toolkit --dev
 ```php
 <?php
 /**
- * Plugin Name: Acme Books
- * Description: A book library with a REST endpoint and a settings page.
- * Version:     1.0.0
- * Text Domain: acme-books
+ * Plugin Name:       Acme Books
+ * Description:       A book library with a REST endpoint and a settings page.
+ * Version:           1.0.0
+ * Text Domain:       acme-books
+ * Requires at least: 6.9
+ * Requires PHP:      8.1
  */
 
 declare( strict_types=1 );
@@ -76,10 +78,12 @@ Each module arrives after whatever it needs, which is why the list interleaves. 
 ```php
 <?php
 /**
- * Plugin Name: Acme Books
- * Description: A book library with a REST endpoint and a settings page.
- * Version:     1.0.0
- * Text Domain: acme-books
+ * Plugin Name:       Acme Books
+ * Description:       A book library with a REST endpoint and a settings page.
+ * Version:           1.0.0
+ * Text Domain:       acme-books
+ * Requires at least: 6.9
+ * Requires PHP:      8.1
  */
 
 declare( strict_types=1 );
