@@ -104,7 +104,7 @@ class DB extends Module {
 	public const MAX_IDENTIFIER_LENGTH = 64;
 
 	/**
-	 * Table prefix set from the entry file, or null to derive it from the slug.
+	 * Table prefix set by the configurator, or null to derive it from the slug.
 	 *
 	 * @var string|null
 	 */
@@ -113,11 +113,11 @@ class DB extends Module {
 	/**
 	 * Set the prefix this plugin's tables carry, in place of its slug.
 	 *
-	 * Call this from `configure()` in your entry file. Rejected outright if it
-	 * is not a legal SQL identifier fragment, hyphens included: a slug is
-	 * normalised because a plugin inherits it from its directory name, but a
-	 * prefix is one you chose here, so silently rewriting it would hide that
-	 * choice from you. Write the underscore.
+	 * Call this from the module's `bootstrap.php` entry, or from `configure()` in
+	 * your entry file. Rejected outright if it is not a legal SQL identifier
+	 * fragment, hyphens included: a slug is normalised because a plugin inherits
+	 * it from its directory name, but a prefix is one you chose here, so silently
+	 * rewriting it would hide that choice from you. Write the underscore.
 	 *
 	 * @param string $prefix The prefix, without a trailing underscore.
 	 * @return void

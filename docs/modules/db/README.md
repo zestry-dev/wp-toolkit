@@ -105,7 +105,7 @@ public function set_table_prefix( string $prefix ): void
 | **Return** | — |
 | **Throws** | `InvalidArgumentException` — When the prefix is empty or not a legal identifier fragment |
 
-Call this from `configure()` in your entry file. Rejected outright if it is not a legal SQL identifier fragment, hyphens included: a slug is normalised because a plugin inherits it from its directory name, but a prefix is one you chose here, so silently rewriting it would hide that choice from you. Write the underscore.
+Call this from the module's `bootstrap.php` entry, or from `configure()` in your entry file. Rejected outright if it is not a legal SQL identifier fragment, hyphens included: a slug is normalised because a plugin inherits it from its directory name, but a prefix is one you chose here, so silently rewriting it would hide that choice from you. Write the underscore.
 
 <br>
 
