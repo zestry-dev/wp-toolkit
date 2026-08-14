@@ -11,27 +11,40 @@ namespace Zestry\WPToolkit\Modules;
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
 
-use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
+use Zestry\WPToolkit\Kernel\Helpers\Arr;
 
 /**
  * Persists plugin configuration in the WordPress options table.
  *
  * The whole plugin shares one `wp_options` row, so adding a setting costs no
- * extra database row and no extra query.
+ * extra database row and no extra query. The row is read the first time you
+ * touch the group and not before, so a request that never asks for a setting
+ * never queries for one.
  *
- * Writes are deferred: `set()` only marks the value dirty, and everything is
- * persisted once on `shutdown`. Call `save()` to force an early write before a
- * redirect or a long-running task.
+ * **Nothing is written until you call `save()`.** `set()` and `delete()` change
+ * the copy in memory; `save()` is the only thing that reaches the database. Call
+ * it once, at the point the work is finished and correct -- after a form has
+ * validated, at the end of a migration step -- so a request that dies halfway
+ * leaves the stored settings exactly as they were.
+ *
+ * A key is a dotted path, so a group holds structure rather than a flat list:
+ * `set( 'mail.from.name', 'Acme' )` writes `['mail']['from']['name']`. A key
+ * with a dot already in it still *reads* back, since `get()` and `has()` try the
+ * whole string as a literal key before splitting it.
  *
  * @example Reading and writing settings
+ * `save()` writes; without it nothing leaves memory.
  *
  * ```
  * $options = $plugin->get( Options::class );
  *
  * $options->set( 'api_key', $key );
+ * $options->set( 'mail.from.name', 'Acme' );
+ * $options->save();
  *
  * $key     = $options->get( 'api_key' );
+ * $name    = $options->get( 'mail.from.name' );
  * $timeout = $options->get( 'timeout', 15 );  // with fallback
  *
  * if ( $options->has( 'api_key' ) ) { ... }
@@ -39,20 +52,27 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  *
  * @example Isolating settings in a group
  * `group( 'api' )` returns a separate instance backed by its own option row,
- * for settings worth isolating from the plugin's main blob.
+ * for settings worth isolating from the plugin's main blob. Each group is saved
+ * on its own.
  *
  * ```
  * $api = $options->group( 'api' );
  * $api->set( 'endpoint', 'https://example.test' );
+ * $api->save();
  * ```
  *
  * @setup
- * Every group defaults to autoload disabled. To autoload a specific group,
- * declare it by name via `add_autoloaded_groups()` — a static, per-request
- * registry `save()` consults live at write time, so it can be declared from
- * more than one place (a module declaring its own group, a consumer's own
- * `configure( Options::class, ... )` declaring further groups of its
- * own) without either caller needing to know about the other's list.
+ * **The plugin's own settings autoload; a group does not.** The default
+ * (ungrouped) row is what a plugin reads on ordinary requests, so it is loaded
+ * with the rest of WordPress's autoloaded options and costs no query. A `group()`
+ * is the opposite by construction -- worth isolating means read by fewer
+ * requests -- so it is written not-autoloaded and read on demand.
+ *
+ * Name a group that *is* read on most requests through `add_autoloaded_groups()`
+ * — a static, per-request registry `save()` consults live at write time, so it
+ * can be declared from more than one place (a module declaring its own group, a
+ * consumer's own `configure( Options::class, ... )` declaring further groups)
+ * without either caller needing to know about the other's list.
  *
  * ```
  * // bootstrap.php
@@ -60,15 +80,18 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  *     Options::class => array(
  *         'configure' => static function ( Options $options ): void {
  *             $options->add_autoloaded_groups( array( 'my_frequently_read_group' ) );
- *
- *             // Or, for the default (ungrouped) instance's own option:
- *             $options->autoload_default_group();
  *         },
  *     ),
  * );
  * ```
+ *
+ * Both answers are written as WordPress's `auto-on`/`auto-off` rather than
+ * `on`/`off`: this module is choosing on your behalf from where the settings
+ * live, not stating a decision you made about this particular row, and the
+ * `auto-` values are the ones core is allowed to reconsider under its own
+ * autoloaded-size limits.
  */
-class Options extends Module implements Bootable {
+class Options extends Module {
 
 	/**
 	 * Group name the default (ungrouped) instance uses.
@@ -116,74 +139,104 @@ class Options extends Module implements Bootable {
 	private array $groups_instances = array();
 
 	/**
-	 * Whether configuration has been modified.
+	 * Whether configuration has been modified since it was read.
 	 *
 	 * @var bool
 	 */
 	private bool $is_dirty = false;
 
 	/**
+	 * Whether this group's row has been read from the database yet.
+	 *
+	 * @var bool
+	 */
+	private bool $is_loaded = false;
+
+	/**
 	 * Set a configuration value.
 	 *
-	 * Marks the group dirty, so the change is written at shutdown.
+	 * Changes the copy in memory and marks the group dirty. Nothing reaches the
+	 * database until {@see save()}.
 	 *
-	 * @param string $key   The configuration key.
+	 * `$key` is a dotted path, so `set( 'mail.from.name', 'Acme' )` writes
+	 * `['mail']['from']['name']`. Unlike {@see get()}, a path is always split:
+	 * there is no existing key to prefer, so the nesting you wrote is the
+	 * nesting you get.
+	 *
+	 * @param string $key   The configuration key, or a dotted path.
 	 * @param mixed  $value The value to store.
 	 * @return void
 	 */
 	public function set( string $key, $value ): void {
-		$this->value[ $key ] = $value;
-		$this->is_dirty      = true;
+		$this->load();
+
+		Arr::set( $this->value, $key, $value );
+
+		$this->is_dirty = true;
 	}
 
 	/**
 	 * Get a configuration value.
 	 *
-	 * @param string $key      The configuration key.
-	 * @param mixed  $fallback Returned when the key is not present.
+	 * Reads the group's row on the first call and keeps it for the rest of the
+	 * request.
+	 *
+	 * @param string $key      The configuration key, or a dotted path.
+	 * @param mixed  $fallback Returned when the path does not resolve.
 	 * @return mixed The stored value, or `$fallback`.
 	 */
 	public function get( string $key, $fallback = null ): mixed {
-		return \array_key_exists( $key, $this->value ) ? $this->value[ $key ] : $fallback;
+		$this->load();
+
+		return Arr::get( $this->value, $key, $fallback );
 	}
 
 	/**
 	 * Check whether a key is present.
 	 *
-	 * Uses `array_key_exists()` rather than `isset()`, so a key stored as `null`
-	 * reports `true` instead of being indistinguishable from one never set.
+	 * Distinct from `null !== get( ... )`: a key stored as `null` answers true
+	 * here, so a setting deliberately set to nothing is not mistaken for one
+	 * that was never set.
 	 *
-	 * @param string $key The configuration key.
-	 * @return bool True when the key exists, whatever its value.
+	 * @param string $key The configuration key, or a dotted path.
+	 * @return bool True when the path resolves, whatever the value is.
 	 */
 	public function has( string $key ): bool {
-		return \array_key_exists( $key, $this->value );
+		$this->load();
+
+		return Arr::has( $this->value, $key );
 	}
 
 	/**
 	 * Remove a key.
 	 *
-	 * Removing something that was never there is not an error. Like {@see set()},
-	 * this is written at shutdown rather than immediately.
+	 * Removing something that was never there is not an error, and leaves the
+	 * group clean rather than queueing a write that would change nothing. Like
+	 * {@see set()}, this only reaches the database through {@see save()}.
 	 *
-	 * @param string $key The configuration key.
+	 * @param string $key The configuration key, or a dotted path.
 	 * @return void
 	 */
 	public function delete( string $key ): void {
-		if ( ! \array_key_exists( $key, $this->value ) ) {
+		$this->load();
+
+		if ( ! Arr::has( $this->value, $key ) ) {
 			return;
 		}
 
-		unset( $this->value[ $key ] );
+		Arr::forget( $this->value, $key );
+
 		$this->is_dirty = true;
 	}
 
 	/**
-	 * Set the group namespace before the instance boots.
+	 * Set the group namespace before the group is first read.
 	 *
-	 * Used by group() through the plugin's configurator so the correct option
-	 * is loaded when boot() runs. Setting it after boot has no effect on the
-	 * already-loaded values.
+	 * Used by {@see group()} through `make()`'s configurator, so the instance
+	 * knows which option it is before anything asks it for a value. Setting it
+	 * after a read has happened does not re-read: the values already in memory
+	 * belong to the previous name, and {@see save()} would write them under the
+	 * new one.
 	 *
 	 * @param string $group_name The namespace identifier.
 	 * @return void
@@ -193,7 +246,11 @@ class Options extends Module implements Bootable {
 	}
 
 	/**
-	 * Declare additional group names that autoload, for the whole plugin.
+	 * Declare group names that autoload, for the whole plugin.
+	 *
+	 * Only groups: the default (ungrouped) row always autoloads, since it is the
+	 * one a plugin reads on ordinary requests. A `group()` is the deliberate
+	 * exception, so it does not autoload unless it is named here.
 	 *
 	 * Adds to the registry rather than replacing it, since more than one caller
 	 * may need to declare a group autoloaded independently. A module can name a
@@ -220,27 +277,13 @@ class Options extends Module implements Bootable {
 	 *   fetched and unserialized whole, so a big group taxes every request.
 	 *
 	 * Not autoloading costs nothing but a query when the group is first read, so
-	 * the default is the safe answer and this is the deliberate exception.
+	 * it is the safe answer for a group and this is the deliberate exception.
 	 *
 	 * @param string[] $group_names Group names that should autoload.
 	 * @return void
 	 */
 	public function add_autoloaded_groups( array $group_names ): void {
 		self::$autoloaded_groups = \array_unique( \array_merge( self::$autoloaded_groups, $group_names ) );
-	}
-
-	/**
-	 * Declare the default (ungrouped) instance's own option autoloaded.
-	 *
-	 * A thin convenience over `add_autoloaded_groups()` for the one group name
-	 * that has no explicit `group()` call of its own — the plugin's default
-	 * Options instance, storing under `{slug}__options_`. Equivalent to
-	 * `add_autoloaded_groups( array( self::DEFAULT_GROUP_NAME ) )`.
-	 *
-	 * @return void
-	 */
-	public function autoload_default_group(): void {
-		$this->add_autoloaded_groups( array( self::DEFAULT_GROUP_NAME ) );
 	}
 
 	/**
@@ -256,8 +299,8 @@ class Options extends Module implements Bootable {
 			return $this->groups_instances[ $group_name ];
 		}
 
-		// Configure the group name before the plugin boots the instance, so
-		// on_boot() loads the group's option rather than the ungrouped one.
+		// Configure the group name as the instance is built, so the first read
+		// loads the group's option rather than the ungrouped one.
 		$instance = $this->get_plugin()->make(
 			self::class,
 			function ( self $group ) use ( $group_name ) {
@@ -270,12 +313,20 @@ class Options extends Module implements Bootable {
 	}
 
 	/**
-	 * Persist pending changes for the current group to the database.
+	 * Write this group's pending changes to the database.
 	 *
-	 * Called automatically on `shutdown`. Call it directly to force an early
-	 * write at a safe point — before a redirect, a long-running WP-CLI task, or
-	 * `fastcgi_finish_request()` — where waiting for shutdown risks losing the
-	 * changes. A group autoloads only if `add_autoloaded_groups()` named it.
+	 * **The only thing that writes.** `set()` and `delete()` change memory and
+	 * nothing else, so call this once the work behind the change is finished and
+	 * correct — after a form has validated, at the end of a migration step,
+	 * before a redirect. A request that dies before reaching it leaves the stored
+	 * settings exactly as they were, which is the point: a half-finished write is
+	 * worse than no write.
+	 *
+	 * Each group saves on its own; saving the default instance does not save a
+	 * `group()` reached from it.
+	 *
+	 * Does nothing when there is nothing to write, so calling it on every path
+	 * out of a handler costs at most one `get_option()` against the object cache.
 	 *
 	 * @throws \RuntimeException When the write fails for a value that is actually changing.
 	 */
@@ -284,8 +335,7 @@ class Options extends Module implements Bootable {
 			return;
 		}
 
-		$name     = $this->get_option_name();
-		$autoload = \in_array( $this->group_name, self::$autoloaded_groups, true );
+		$name = $this->get_option_name();
 
 		// update_option() returns false both for a genuine failure AND for a
 		// value identical to what is stored, so the no-op has to be recognized
@@ -296,39 +346,13 @@ class Options extends Module implements Bootable {
 			return;
 		}
 
-		if ( ! \update_option( $name, $this->value, $autoload ) ) {
-			// Leave is_dirty set so a later save() (the next shutdown, or an
-			// explicit call) can retry persisting the change, and tell the
-			// caller now rather than let the change vanish unnoticed.
+		if ( ! $this->write( $name ) ) {
+			// Leave is_dirty set so a later save() can retry persisting the
+			// change, and tell the caller now rather than let it vanish unnoticed.
 			throw new \RuntimeException( \sprintf( 'Options::save() failed to persist option "%s".', $name ) );
 		}
 
 		$this->is_dirty = false;
-	}
-
-	/**
-	 * Load the group's persisted values and schedule a deferred save.
-	 *
-	 * Saving on `shutdown` lets several calls to `set()` result in one database
-	 * write. A group instance must be booted independently because it uses a
-	 * separate option name.
-	 *
-	 * Nothing downstream of the `shutdown` hook can act on a thrown exception —
-	 * WordPress does not catch it, so it would surface as an uncaught error
-	 * during request teardown instead of the save failure it actually is. The
-	 * callback catches it and logs instead, which is the most a shutdown-time
-	 * failure can do; a caller that needs to know synchronously should call
-	 * save() directly instead of relying on the deferred write.
-	 *
-	 * @return void
-	 *
-	 * @internal
-	 */
-	public function on_boot(): void {
-		// Load persisted values first, then consolidate all writes at shutdown.
-		$this->db_retrieve();
-
-		\add_action( 'shutdown', $this->save_pending_writes( ... ) );
 	}
 
 	/**
@@ -349,61 +373,77 @@ class Options extends Module implements Bootable {
 	}
 
 	/**
-	 * Report a save that failed at shutdown, without depending on a logger.
+	 * Whether this group's row is written to autoload.
 	 *
-	 * Announced on the plugin's `{slug}-log` action, which is where a Log
-	 * module -- or a consumer's own handler -- picks it up. Nothing listening
-	 * means the message still reaches `error_log()` rather than being lost,
-	 * since a silently unsaved option is the worst outcome here.
+	 * The default (ungrouped) row always does: it holds the plugin's own
+	 * settings, which is what a request reads if it reads anything. A `group()`
+	 * exists to be read by fewer requests than that, so it does not unless
+	 * {@see add_autoloaded_groups()} named it.
 	 *
-	 * The action rather than the Log module itself: this module must keep
-	 * working for a plugin that never added one, and a hook has no class or
-	 * method signature to depend on.
-	 *
-	 * @param \RuntimeException $exception The failure save() threw.
-	 * @return void
+	 * @return bool
 	 */
-	private function report_failed_save( \RuntimeException $exception ): void {
-		// Composed through the plugin, not through Log, so this works whether or
-		// not the plugin added that module. Log listens on the same name.
-		$hook    = $this->get_plugin()->get_namespaced_name( 'log' );
-		$message = $exception->getMessage();
-
-		if ( ! \has_action( $hook ) ) {
-			\error_log( $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-
-			return;
+	private function autoloads(): bool {
+		if ( self::DEFAULT_GROUP_NAME === $this->group_name ) {
+			return true;
 		}
 
-		\do_action( $hook, 'error', $message, array( 'option' => $this->get_option_name() ) );
+		// Read live rather than snapshotted, so a name registered after this
+		// instance was built still applies to its next save.
+		return \in_array( $this->group_name, self::$autoloaded_groups, true );
 	}
 
 	/**
-	 * Retrieve the current group's option array, defaulting to an empty array.
+	 * Read this group's row, once per instance.
 	 *
-	 * A missing or non-array option is treated as an empty configuration set, so
-	 * a corrupted or externally overwritten option cannot break a read.
+	 * Called by every accessor rather than at boot, so a request that never asks
+	 * this group for anything never queries for it. A missing or non-array option
+	 * is treated as an empty configuration set, so a row corrupted or overwritten
+	 * from outside cannot break a read.
+	 *
+	 * The flag is set before the read, not after, so a `get_option()` filter that
+	 * calls back into this group cannot recurse.
 	 *
 	 * @return void
 	 */
-	private function db_retrieve(): void {
+	private function load(): void {
+		if ( $this->is_loaded ) {
+			return;
+		}
+
+		$this->is_loaded = true;
+
 		$stored      = \get_option( $this->get_option_name(), array() );
 		$this->value = \is_array( $stored ) ? $stored : array();
 	}
 
 	/**
-	 * Write whatever `set()` marked dirty, at the end of the request.
+	 * Hand the row to WordPress with the autoload value this module intends.
 	 *
-	 * A failure here has nowhere to go -- the response is already sent -- so it
-	 * is reported rather than thrown.
+	 * `update_option()` does not accept `auto-on`/`auto-off` as arguments --
+	 * {@see https://developer.wordpress.org/reference/functions/wp_determine_option_autoload_value/}
+	 * maps only booleans and `on`/`off`/`yes`/`no`, and anything else falls
+	 * through to plain `auto`. The `auto-` values are reachable only by passing
+	 * no preference and answering the filter core consults instead, which is what
+	 * this does, scoped to this one option name for the duration of the write.
 	 *
-	 * @return void
+	 * @param string $name The option name to write.
+	 * @return bool Whether WordPress reported the write.
 	 */
-	private function save_pending_writes(): void {
+	private function write( string $name ): bool {
+		$autoloads = $this->autoloads();
+
+		$decide = static function ( $decided, string $option ) use ( $name, $autoloads ) {
+			// Scoped to this option: the filter fires for every option core
+			// writes, and answering for someone else's would move their row.
+			return $option === $name ? $autoloads : $decided;
+		};
+
+		\add_filter( 'wp_default_autoload_value', $decide, 10, 2 );
+
 		try {
-			$this->save();
-		} catch ( \RuntimeException $exception ) {
-			$this->report_failed_save( $exception );
+			return \update_option( $name, $this->value, null );
+		} finally {
+			\remove_filter( 'wp_default_autoload_value', $decide, 10 );
 		}
 	}
 }

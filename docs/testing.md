@@ -473,7 +473,7 @@ A module the plugin never declared throws rather than being built. `TestCase` de
 
 ## 8. Things that bite
 
-- **`Options` writes on `shutdown`**, which never fires in a test. Call `save()` to force the row, and delete it in `tear_down()`. The option name is `{slug}_{group}` — the default group is `_options_`, so a plugin with slug `acme-test` stores under `acme-test__options_`.
+- **`Options` writes only on `save()`.** Assert against the database only after calling it, and delete the row in `tear_down()`. The option name is `{slug}_{group}` — the default group is `_options_`, so a plugin with slug `acme-test` stores under `acme-test__options_`.
 - **Do not try to reproduce activation.** `ActivationHandler` detects a late boot and calls `_doing_it_wrong()`, which PHPUnit turns into a failed test — and `register_activation_hook()` fires from WordPress's own upgrade path, not from anything a test controls. Call `activate()` and `deactivate()` directly; they are public and abstract, so they are the whole contract.
 - **Migrations never run themselves.** Call `run_pending()` explicitly in the test that needs the schema.
 - **Database changes are rolled back after each test**, but the filesystem is not. Remove your temp directory in `tear_down()`, or a long run fills `/tmp`.

@@ -68,11 +68,10 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * ```
  *
  * The one hook this module does bind is for its siblings, not for extension.
- * `Options` and `Cron` announce their failures on a `{plugin-slug}-log` action
- * because they must keep working for a plugin that never added this module --
- * naming a hook rather than a class is what keeps the three independent. When
- * nothing is listening, they fall back to `error_log()` rather than lose the
- * message.
+ * `Cron` announces a failed event on a `{plugin-slug}-log` action because it
+ * must keep working for a plugin that never added this module -- naming a hook
+ * rather than a class is what keeps the two independent. When nothing is
+ * listening, it falls back to `error_log()` rather than lose the message.
  */
 class Log extends Module implements Bootable {
 
@@ -315,9 +314,9 @@ class Log extends Module implements Bootable {
 	 * {@see Plugin::get_namespaced_name()} is the only place this name is composed.
 	 * A caller building the string itself would put the slug in verbatim and get
 	 * the mixed-separator `acme-plugin_log`, and a second copy of the rule means
-	 * a change to either silently unbinds the other. `Options` and `Cron` reach
-	 * the hook without depending on this class, which is what lets them report
-	 * to a `Log` that may not be there.
+	 * a change to either silently unbinds the other. `Cron` reaches the hook
+	 * without depending on this class, which is what lets it report to a `Log`
+	 * that may not be there.
 	 *
 	 * @return string The action name, e.g. `acme-plugin-log`.
 	 */
@@ -328,11 +327,10 @@ class Log extends Module implements Bootable {
 	/**
 	 * Listen for what sibling modules report.
 	 *
-	 * The only reason this module binds a hook at all. `Options` and `Cron`
-	 * announce their failures on it because they must keep
-	 * working for a plugin that never added this module -- so they name a hook
-	 * rather than a class. Resolving this module is what turns those
-	 * announcements into written records.
+	 * The only reason this module binds a hook at all. `Cron` announces a failed
+	 * event on it because it must keep working for a plugin that never added
+	 * this module -- so it names a hook rather than a class. Resolving this
+	 * module is what turns those announcements into written records.
 	 *
 	 * A record made through this module's own methods does not travel the
 	 * hook: `log()` calls {@see write()} directly, since routing a call

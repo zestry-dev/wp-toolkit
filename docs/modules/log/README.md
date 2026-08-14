@@ -56,7 +56,7 @@ private function write( string $level, string $message, array $context = array()
 }
 ```
 
-The one hook this module does bind is for its siblings, not for extension. `Options` and `Cron` announce their failures on a `{plugin-slug}-log` action because they must keep working for a plugin that never added this module — naming a hook rather than a class is what keeps the three independent. When nothing is listening, they fall back to `error_log()` rather than lose the message.
+The one hook this module does bind is for its siblings, not for extension. `Cron` announces a failed event on a `{plugin-slug}-log` action because it must keep working for a plugin that never added this module — naming a hook rather than a class is what keeps the two independent. When nothing is listening, it falls back to `error_log()` rather than lose the message.
 
 ## Changing the defaults
 

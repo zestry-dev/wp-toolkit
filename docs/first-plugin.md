@@ -138,16 +138,20 @@ return array(
     AdminPages::class,
     Assets::class,
     Log::class,
-    Options::class => array(
-        'configure' => static function ( Options $options ): void {
-            $options->autoload_default_group();
-        },
-    ),
+    Options::class,
     Activation::class,
 );
 ```
 
-A configured module gets an **array**, whose `configure` is the callback that configures it before it boots. `Options` gets one here so its row is loaded with the rest of WordPress's autoloaded options, since the REST route reads a setting on every request. The other six need no configuration, so they are written bare.
+Every entry here is bare, because nothing in this plugin needs configuring. A module that does gets an **array** instead, whose `configure` runs when the module is built and before it boots:
+
+```php
+Cron::class => array(
+    'configure' => static function ( Cron $cron ): void {
+        $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
+    },
+),
+```
 
 That array also takes `boots_on` and `priority`, for a module that cannot do its work as the plugin loads. Configuration is always the array and never a bare callback, so all three read the same way.
 
@@ -439,7 +443,7 @@ The module enforces `capability()` before anything on the page runs, verifies th
 
 **`handle_submit()` redirects rather than falling through to `render()`.** Without that, the browser's current request is still the POST: a refresh resubmits the form and saves a second time. The redirect throws away everything the method knew, so the notice travels in `set_flash()` — which reads once, so a refresh shows nothing for a save that already happened.
 
-`Options` writes are deferred to `shutdown` so several `set()` calls cost one database write. `save()` above forces the write early, which is what you want before a redirect.
+`Options` writes nothing until `save()`, which is why `handle_submit()` calls it: the values are only worth storing once the request has got this far, and a submission that fails before here leaves the saved settings as they were.
 
 ### Where the dependencies came from
 
