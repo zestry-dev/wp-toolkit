@@ -16,6 +16,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Modules\AdminPages\Contracts\RendersCriticalStyles;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
+use Zestry\WPToolkit\Modules\Cookie;
 use Zestry\WPToolkit\Modules\Path;
 
 /**
@@ -110,6 +111,30 @@ class AdminPages extends Module implements Bootable {
 	 * @var array<string, string|null>
 	 */
 	private array $folder_parent = array();
+
+	/**
+	 * What the request before this one flashed, read before any output.
+	 *
+	 * @var mixed
+	 */
+	private mixed $flash = null;
+
+	/**
+	 * Whether {@see consume_flash()} found one.
+	 *
+	 * Separate from the value, so a page that flashed `null` is told apart from a
+	 * page that flashed nothing.
+	 *
+	 * @var bool
+	 */
+	private bool $has_flash = false;
+
+	/**
+	 * Whether {@see consume_flash()} has run for this request.
+	 *
+	 * @var bool
+	 */
+	private bool $flash_consumed = false;
 
 	/**
 	 * Build the full, plugin-prefixed slug for a page.
@@ -299,7 +324,7 @@ class AdminPages extends Module implements Bootable {
 	/**
 	 * Verify a page's POST and hand it to its own `handle_submit()`.
 	 *
-	 * Bound to `load-{$hook}` by {@see handle_submit_before_output()}, so this runs
+	 * Bound to `load-{$hook}` by {@see bind_before_output()}, so this runs
 	 * before WordPress has emitted a byte -- which is what lets a page redirect
 	 * after saving, the thing `handle_submit()` exists to do.
 	 *
@@ -333,6 +358,51 @@ class AdminPages extends Module implements Bootable {
 		}
 
 		$page->handle_submit();
+	}
+
+	/**
+	 * Take the flashed value off the cookie, while a header can still be sent.
+	 *
+	 * Reading a flash deletes it, and deleting a cookie means sending one -- so
+	 * the read has to happen before output, while a page's own `get_flash()` is
+	 * called from `render()`, which is after. Bound to `load-{$hook}` by
+	 * {@see bind_before_output()}, this does the reading; {@see get_flash()} hands
+	 * the value over as many times as the page asks for it.
+	 *
+	 * @return void
+	 *
+	 * @internal
+	 */
+	public function consume_flash(): void {
+		if ( $this->flash_consumed ) {
+			return;
+		}
+
+		$this->flash_consumed = true;
+
+		// A sentinel rather than null, so a flashed null is not mistaken for
+		// nothing flashed.
+		$absent = new \stdClass();
+		$value  = $this->with( Cookie::class )->get_flash( $absent );
+
+		$this->has_flash = $value !== $absent;
+		$this->flash     = $this->has_flash ? $value : null;
+	}
+
+	/**
+	 * What the request before this one flashed.
+	 *
+	 * @param mixed $fallback Returned when nothing was flashed.
+	 * @return mixed
+	 */
+	public function get_flash( mixed $fallback = null ): mixed {
+		// Nothing bound `load-{$hook}` for this request -- a page reached outside
+		// the admin dispatch, or a test. Headers are open in that case anyway.
+		if ( ! $this->flash_consumed ) {
+			$this->consume_flash();
+		}
+
+		return $this->has_flash ? $this->flash : $fallback;
 	}
 
 	/**
@@ -629,95 +699,93 @@ class AdminPages extends Module implements Bootable {
 				$render
 			);
 
-			$this->handle_submit_before_output( $hook );
-			$this->set_screen_title_before_output( $hook, $page );
+			$this->bind_before_output( $hook, $page );
 
 			return;
 		}
 
 		if ( null === $placement ) {
-			$this->handle_submit_before_output(
-				\add_menu_page(
-					$page->title(),
-					$page->menu_title(),
-					$page->capability(),
-					$slug,
-					$render,
-					$page->icon(),
-					$page->position()
-				)
+			$hook = \add_menu_page(
+				$page->title(),
+				$page->menu_title(),
+				$page->capability(),
+				$slug,
+				$render,
+				$page->icon(),
+				$page->position()
 			);
+
+			$this->bind_before_output( $hook, $page );
+
 			return;
 		}
 
 		// A ParentMenu names a core section, whose admin file differs between the
 		// two menus; a string is a custom parent slug, either one of this plugin's
 		// page slugs or an existing WordPress menu slug used verbatim.
-		$this->handle_submit_before_output(
-			\add_submenu_page(
-				$placement instanceof ParentMenu ? $placement->get_parent_file( $page->menu() ) : $placement,
-				$page->title(),
-				$page->menu_title(),
-				$page->capability(),
-				$slug,
-				$render,
-				$page->position()
-			)
+		$hook = \add_submenu_page(
+			$placement instanceof ParentMenu ? $placement->get_parent_file( $page->menu() ) : $placement,
+			$page->title(),
+			$page->menu_title(),
+			$page->capability(),
+			$slug,
+			$render,
+			$page->position()
 		);
+
+		$this->bind_before_output( $hook, $page );
 	}
 
 	/**
-	 * Run a page's submit pass on `load-{$hook}`, before anything is output.
+	 * Bind everything a page needs done before a byte is output.
 	 *
 	 * WordPress calls a page's own callback from `wp-admin/admin.php` *after* it
 	 * has required `admin-header.php`, so by the time {@see render()} runs the
-	 * response body has already begun. A `handle_submit()` that redirects -- which
-	 * is what it is for, and what the generated page does -- would reach
-	 * `wp_safe_redirect()` with headers already sent: two PHP warnings, no
-	 * `Location`, and `exit` truncating the page it had just saved.
+	 * response body has already begun -- and anything that writes a header is out
+	 * of time. `load-{$hook}` is the hook immediately before that require
+	 * (`admin.php` fires it, then includes the header, then calls the page), which
+	 * is the last moment three separate things can still happen:
 	 *
-	 * `load-{$hook}` is the hook immediately before that require (`admin.php`
-	 * fires it, then includes the header, then calls the page), so binding here is
-	 * what makes a redirect possible at all. A page needs no knowledge of this:
-	 * the hook suffix comes back from the `add_*_page()` call that registered it.
+	 * - **the submit pass**, so a `handle_submit()` that redirects -- which is
+	 *   what it is for -- reaches `wp_safe_redirect()` with headers still open,
+	 *   rather than two PHP warnings, no `Location`, and `exit` truncating the
+	 *   page it had just saved;
+	 * - **the flash**, whose read deletes a cookie, and a cookie is a header;
+	 * - **a hidden page's screen title**, which core cannot find for itself.
+	 *
+	 * A page needs no knowledge of any of it: the hook suffix comes back from the
+	 * `add_*_page()` call that registered it.
 	 *
 	 * @param string|false $hook_suffix Whatever `add_menu_page()`/`add_submenu_page()` returned.
-	 * @return void
-	 */
-	private function handle_submit_before_output( string|false $hook_suffix ): void {
-		// False when the current user lacks the capability, in which case
-		// WordPress registered no page and there is nothing to submit to.
-		if ( ! \is_string( $hook_suffix ) || '' === $hook_suffix ) {
-			return;
-		}
-
-		\add_action( 'load-' . $hook_suffix, array( $this, 'handle_submit' ) );
-	}
-
-	/**
-	 * Give a hidden page's screen its title before WordPress reads one.
-	 *
-	 * `get_admin_page_title()` looks in `$menu` when a page's parent is empty and
-	 * in `$submenu[$parent]` otherwise. A hidden page is registered with the empty
-	 * parent that keeps it off every menu, so it takes the first branch and is
-	 * searched for in the one place it is guaranteed not to be -- it is in
-	 * `$submenu['']`, which that branch never reads. The global stays null, and
-	 * `wp-admin/admin-header.php` passes it to `strip_tags()`.
-	 *
-	 * Set on `load-{$hook}`, which fires before that header is required, and read
-	 * by the early return in `get_admin_page_title()`.
-	 *
-	 * @param string|false $hook_suffix What `add_submenu_page()` returned.
 	 * @param AdminPage    $page        The page it registered.
 	 * @return void
 	 */
-	private function set_screen_title_before_output( string|false $hook_suffix, AdminPage $page ): void {
+	private function bind_before_output( string|false $hook_suffix, AdminPage $page ): void {
+		// False when the current user lacks the capability, in which case
+		// WordPress registered no page and there is nothing to prepare for.
 		if ( ! \is_string( $hook_suffix ) || '' === $hook_suffix ) {
 			return;
 		}
 
+		$hook = 'load-' . $hook_suffix;
+
+		\add_action( $hook, array( $this, 'handle_submit' ) );
+		\add_action( $hook, array( $this, 'consume_flash' ) );
+
+		if ( ! $page->is_hidden() ) {
+			return;
+		}
+
+		/*
+		 * `get_admin_page_title()` looks in $menu when a page's parent is empty and
+		 * in $submenu[$parent] otherwise. A hidden page is registered with the empty
+		 * parent that keeps it off every menu, so it takes the first branch and is
+		 * searched for in the one place it is guaranteed not to be -- it is in
+		 * $submenu[''], which that branch never reads. The global stays null, and
+		 * wp-admin/admin-header.php passes it to strip_tags().
+		 */
 		\add_action(
-			'load-' . $hook_suffix,
+			$hook,
 			static function () use ( $page ): void {
 				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- the screen title, which nothing else sets for a page on no menu.
 				$GLOBALS['title'] = $page->title();

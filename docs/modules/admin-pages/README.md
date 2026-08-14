@@ -191,6 +191,22 @@ Resolved from the discovery registry, so a page never needs to store its own slu
 
 <br>
 
+### `get_flash( $fallback )`
+
+What the request before this one flashed.
+
+```php
+public function get_flash( mixed $fallback = null ): mixed
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$fallback` — Returned when nothing was flashed |
+| **Return** | `mixed` |
+| **Throws** | — |
+
+<br>
+
 ### `get_base_css_classname()`
 
 The BEM block class shared by every page of this plugin.

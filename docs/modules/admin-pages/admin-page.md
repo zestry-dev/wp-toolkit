@@ -411,6 +411,8 @@ final public function get_flash( mixed $fallback = null ): mixed
 
 The second call gives the fallback, so a refresh shows no notice for a save that already happened — the thing `?updated=1` in the URL gets wrong.
 
+Safe to call from `render()`, which is where a page wants it: the module took the value on `load-{$hook}`, while a cookie could still be sent to clear it.
+
 <br>
 
 ### `get_nonce_action()`

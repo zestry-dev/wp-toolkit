@@ -81,7 +81,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  *
  * public function render(): void {
  *     $this->view( 'admin-pages/settings', array(
- *         'notice' => $this->with( Cookie::class )->get_flash( array() )['saved'] ?? '',
+ *         'notice' => $this->get_flash( array() )['saved'] ?? '',
  *     ) );
  * }
  * ```
@@ -346,6 +346,12 @@ class Cookie extends Module {
 	 * refresh does not show a notice again for something that already happened.
 	 * WordPress's own `get_settings_errors()` consumes its transient the same way.
 	 *
+	 * Deleting a cookie means sending one, so call this before anything is echoed.
+	 * Past that the value still reads once, and the cookie lapses on its own
+	 * {@see FLASH_TTL} instead of being cleared outright. An
+	 * {@see \Zestry\WPToolkit\Modules\AdminPages\AdminPage} has this handled: its own
+	 * `get_flash()` reads a value the module took while headers were still open.
+	 *
 	 * @param mixed  $fallback Returned when nothing was flashed.
 	 * @param string $name     The cookie it travelled in.
 	 * @return mixed The flashed value, or the fallback.
@@ -357,9 +363,19 @@ class Cookie extends Module {
 
 		$carried = (string) $this->get( $name );
 
-		// Read once whatever the outcome, so a value that fails below is not
-		// re-checked on every request until it expires.
-		$this->forget( $name );
+		/*
+		 * Read once whatever the outcome, so a value that fails below is not
+		 * re-checked on every request until it expires. Dropping it from $_COOKIE
+		 * is what makes that true for this request; deleting it in the browser is
+		 * a header, so it is only attempted while one can still be sent. Past that
+		 * the cookie lapses on its own FLASH_TTL instead -- a short window, and
+		 * nothing a caller reading a flash could have done differently.
+		 */
+		unset( $_COOKIE[ $this->get_cookie_name( $name ) ] );
+
+		if ( ! \headers_sent() ) {
+			$this->forget( $name );
+		}
 
 		$sealed = \substr( $carried, 1 );
 
@@ -484,7 +500,7 @@ class Cookie extends Module {
 				\esc_html(
 					\sprintf(
 						/* translators: %s: cookie name. */
-						\__( 'The cookie "%s" cannot be sent because output has already started. Write cookies before anything is echoed -- on an admin page that means handle_submit(), not render().', 'zestry-toolkit' ),
+						\__( 'The cookie "%s" cannot be sent because output has already started. Write cookies before anything is echoed.', 'zestry-toolkit' ),
 						$full
 					)
 				),

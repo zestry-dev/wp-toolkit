@@ -596,6 +596,54 @@ final class AdminPagesTest extends TestCase {
 	}
 
 	/**
+	 * A page reads the flash its own redirect left, from `render()`.
+	 *
+	 * That is the only place a page can read it -- the request carrying a flash is
+	 * the GET after the redirect, where `handle_submit()` returns early. But
+	 * reading a flash deletes it, deleting a cookie is a header, and `render()`
+	 * runs after `admin-header.php`. So the module takes the value on
+	 * `load-{$hook}` and hands it over from there.
+	 *
+	 * @return void
+	 */
+	public function test_a_page_reads_the_flash_left_by_the_request_before_it(): void {
+		$this->write_page(
+			'flashed',
+			"public function title(): string { return 'Flashed'; }\n"
+				. "public function capability(): string { return 'manage_options'; }\n"
+				. "public function render(): void { \$GLOBALS['zestry_notice'] = \$this->get_flash( 'nothing' ); }"
+		);
+
+		// Written by the request before this one, which then redirected. The write
+		// itself trips the headers-sent guard under PHPUnit, as every cookie write
+		// in this suite does.
+		$this->setExpectedIncorrectUsage( 'Zestry\WPToolkit\Modules\Cookie::send' );
+		$this->plugin->get( \Zestry\WPToolkit\Modules\Cookie::class )->set_flash( 'Settings saved.' );
+
+		$pages = $this->admin_pages();
+		do_action( 'admin_menu' );
+
+		$slug         = 'zestry-test-flashed';
+		$_GET['page'] = $slug;
+
+		do_action( 'load-toplevel_page_' . $slug );
+
+		try {
+			ob_start();
+			$pages->render();
+			ob_end_clean();
+
+			$this->assertSame(
+				'Settings saved.',
+				$GLOBALS['zestry_notice'] ?? null,
+				'The page got what the request before it flashed.'
+			);
+		} finally {
+			unset( $GLOBALS['zestry_notice'] );
+		}
+	}
+
+	/**
 	 * A hidden page carries its own screen title.
 	 *
 	 * `get_admin_page_title()` searches `$menu` when a page's parent is empty, and

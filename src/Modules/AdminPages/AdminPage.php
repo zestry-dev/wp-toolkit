@@ -297,11 +297,15 @@ abstract class AdminPage implements PluginAware {
 	 * The second call gives the fallback, so a refresh shows no notice for a save
 	 * that already happened -- the thing `?updated=1` in the URL gets wrong.
 	 *
+	 * Safe to call from {@see render()}, which is where a page wants it: the
+	 * module took the value on `load-{$hook}`, while a cookie could still be sent
+	 * to clear it.
+	 *
 	 * @param mixed $fallback Returned when nothing was flashed.
 	 * @return mixed
 	 */
 	final public function get_flash( mixed $fallback = null ): mixed {
-		return $this->cookies()->get_flash( $fallback );
+		return $this->admin_pages()->get_flash( $fallback );
 	}
 
 	/**

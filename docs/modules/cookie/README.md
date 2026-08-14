@@ -83,7 +83,7 @@ public function handle_submit(): void {
 
 public function render(): void {
     $this->view( 'admin-pages/settings', array(
-        'notice' => $this->with( Cookie::class )->get_flash( array() )['saved'] ?? '',
+        'notice' => $this->get_flash( array() )['saved'] ?? '',
     ) );
 }
 ```
@@ -262,6 +262,8 @@ public function get_flash( mixed $fallback = null, string $name = self::FLASH_CO
 | **Throws** | — |
 
 The second call returns the fallback: reading deletes the cookie, so a refresh does not show a notice again for something that already happened. WordPress's own `get_settings_errors()` consumes its transient the same way.
+
+Deleting a cookie means sending one, so call this before anything is echoed. Past that the value still reads once, and the cookie lapses on its own `FLASH_TTL` instead of being cleared outright. An `AdminPage` has this handled: its own `get_flash()` reads a value the module took while headers were still open.
 
 <br>
 
