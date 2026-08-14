@@ -17,9 +17,9 @@ namespace Zestry\WPToolkit\Kernel\Exceptions;
  * Catch this to handle any error raised while declaring, building, or booting a
  * module, without also catching unrelated runtime exceptions. Plugin throws it
  * directly for a `bootstrap.php` it cannot read -- one that returns something
- * other than an array, holds an entry naming no class, or configures an entry
- * with something other than an array -- and for a module asked for that the file
- * never declared, or that has not reached its `boots_on` hook yet. Building one
+ * other than an array, holds an entry naming no class, or gives a class entry a
+ * value that is not a configurator -- and for a module asked for that the file
+ * never declared, or that has not reached the hook it is listed under. Building one
  * raises the ModuleNotFoundException and CircularDependencyException subclasses,
  * and every file-discovery module throws DiscoveryException for a layout it
  * cannot read.
@@ -27,11 +27,11 @@ namespace Zestry\WPToolkit\Kernel\Exceptions;
 class ModuleException extends \RuntimeException {
 
 	/**
-	 * The message raised when a bootstrap entry is configured with anything but an array.
+	 * The message raised when a class entry's value is not a configurator.
 	 *
-	 * A configured entry is an array, so `configure`, `boots_on` and `priority`
-	 * are all written the same way and adding the second one to an entry never
-	 * means rewriting the first.
+	 * A class name keys one thing: the callback that configures it. Timing is a
+	 * group heading over the modules that share it, not a key inside the entry,
+	 * so there is nothing else an entry's value could be.
 	 *
 	 * @param string $module The module class the entry names.
 	 * @param string $given  What the entry's value is instead, as a type name.
@@ -42,9 +42,10 @@ class ModuleException extends \RuntimeException {
 	public static function bootstrap_entry_shape( string $module, string $given ): self {
 		return new self(
 			\sprintf(
-				'The `bootstrap.php` entry for %1$s is %2$s. Configuration is an array:'
-					. ' `%1$s::class => array( \'configure\' => $callback )`, which is also where'
-					. ' `boots_on` and `priority` go. A module needing none is written bare.',
+				'The `bootstrap.php` entry for %1$s is %2$s. A class entry\'s value is the callback that'
+					. ' configures it: `%1$s::class => static function ( $module ) { ... }`. A module needing'
+					. ' no configuration is written bare, and when it boots is a group heading above it:'
+					. ' `\'init\' => array( %1$s::class )`.',
 				$module,
 				$given
 			)
@@ -79,7 +80,7 @@ class ModuleException extends \RuntimeException {
 	/**
 	 * The message raised when a module is asked for before its hook fires.
 	 *
-	 * A module that names a boot hook has said it cannot do its work before one
+	 * A module listed under a heading has said it cannot do its work before that
 	 * -- registering into a WordPress registry that does not exist yet, or
 	 * following other plugins onto the same hook. Building it early would bind
 	 * it on the wrong side of whatever it was waiting for.
@@ -98,10 +99,38 @@ class ModuleException extends \RuntimeException {
 	public static function not_booted_yet( string $module, string $hook ): self {
 		return new self(
 			\sprintf(
-				'%1$s boots on `%2$s`, which has not fired yet. Ask for it from `%2$s` or later, or give its'
-					. ' `bootstrap.php` entry a `boots_on` this plugin can live with.',
+				'%1$s boots on `%2$s`, which has not fired yet. Ask for it from `%2$s` or later, or list'
+					. ' it under a heading this plugin can live with.',
 				$module,
 				$hook
+			)
+		);
+	}
+
+	/**
+	 * A Bootable module whose entry never says when it boots.
+	 *
+	 * Names the two headings that cover almost every module: the plugin's own
+	 * loaded action for anything that only needs the rest of the plugin, and
+	 * `init` for anything WordPress will not accept before then.
+	 *
+	 * @param string      $module      The module class declared without timing.
+	 * @param string      $loaded_hook The plugin's own loaded action.
+	 * @param string|null $file        The bootstrap file, when there is one.
+	 * @return self
+	 *
+	 * @internal
+	 */
+	public static function boot_timing_undeclared( string $module, string $loaded_hook, ?string $file = null ): self {
+		return new self(
+			\sprintf(
+				'%1$s acts when it is built, so it has to be listed under the hook it acts on. In %2$s move'
+					. ' it into a group: `\'%3$s\' => array( %1$s::class )` boots it once the whole plugin'
+					. ' is up, and `\'init\' => array( %1$s::class )` waits for WordPress. The top level is'
+					. ' for modules that do nothing until something asks.',
+				$module,
+				null === $file ? 'the entry declaring it' : $file,
+				$loaded_hook
 			)
 		);
 	}

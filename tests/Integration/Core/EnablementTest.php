@@ -322,8 +322,8 @@ final class EnablementTest extends TestCase {
 		// And on, from a second plugin over the same file -- otherwise the
 		// assertion above would pass just as well if the switch were stuck off, or
 		// if the file had failed to load at all.
-		$second = ( new \Zestry\WPToolkit\Kernel\Plugin( $this->entry_file, 'zestry-second' ) )->declare_modules( $this->get_toolkit_modules() );
-		$second->declare_modules( $this->get_toolkit_modules() );
+		$second = ( new \Zestry\WPToolkit\Kernel\Plugin( $this->entry_file, 'zestry-second' ) )->declare_multiple( $this->get_toolkit_modules() );
+		$second->declare_multiple( $this->get_toolkit_modules() );
 		$second->get( \Zestry\WPToolkit\Modules\Globals::class )->set( 'feature_on', true );
 		$second->get( PostTypes::class );
 		do_action( 'init' );

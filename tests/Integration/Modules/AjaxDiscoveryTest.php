@@ -198,8 +198,8 @@ final class AjaxDiscoveryTest extends TestCase {
 			// The module names its hook in the bootstrap entry -- what `wp zt add`
 			// writes from its `@setup-hook init` -- so `run()` holds it back
 			// rather than the module deferring part of its own boot.
-			$this->plugin->declare_modules(
-				array( Ajax::class => array( 'boots_on' => 'init' ) )
+			$this->plugin->declare_multiple(
+				array( 'init' => array( Ajax::class ) )
 			)->run();
 
 			$slug = $this->plugin->get_namespaced_name( 'ping' );

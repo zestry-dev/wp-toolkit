@@ -16,6 +16,7 @@ use Zestry\WPToolkit\DevTools\Formatter;
 use Zestry\WPToolkit\DevTools\StubRenderer;
 use Zestry\WPToolkit\DevTools\Tooling;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\DevTools\ConsumerPlugin;
 use Zestry\WPToolkit\DevTools\DeclarationResult;
 use Zestry\WPToolkit\DevTools\Manifest;
@@ -236,7 +237,7 @@ abstract class AddCommand extends Command {
 
 			$classes[ $class_name ] = \array_merge(
 				array( 'config' => $this->get_bootstrap_config( $source_path ) ),
-				$this->get_boot_timing( $source_path )
+				$this->get_boot_timing( $source_path, $source, $plugin_root )
 			);
 		}
 
@@ -287,34 +288,48 @@ abstract class AddCommand extends Command {
 	/**
 	 * When a module says it has to boot, read from its own docblock.
 	 *
-	 * `@setup-hook` names the hook and `@setup-hook-priority` the priority, and a
-	 * module saying neither boots as the plugin loads. Read from the source
-	 * rather than from a runtime constant, for the reason `bootstrap.php` keeps
-	 * the timing in the first place: a default on the class would make a bare
-	 * entry boot on a hook the file never mentions.
+	 * `@setup-hook` names the hook and `@setup-hook-priority` the priority. A
+	 * module that names neither and acts on its own gets the plugin's own
+	 * `{slug}-loaded` action, which is the answer that suits almost all of them:
+	 * it fires at the end of `run()`, so the module boots after every other one
+	 * the plugin has. The tag is for the few that need something else.
+	 *
+	 * A module that is not {@see Bootable} gets no hook at all -- it does
+	 * nothing when built, so there is nothing to time, and a bare entry says
+	 * that plainly.
+	 *
+	 * Written into `bootstrap.php` either way rather than defaulted at runtime:
+	 * the kernel refuses a `Bootable` module whose entry is silent about
+	 * timing, so what this writes is what makes the entry complete.
 	 *
 	 * @param string $source_path Absolute path to the module's own source.
+	 * @param string $class_name  The module class, for whether it is Bootable.
+	 * @param string $plugin_root Absolute path to the consuming plugin's root.
 	 * @return array{hook: string|null, priority: int}
 	 */
-	protected function get_boot_timing( string $source_path ): array {
+	protected function get_boot_timing( string $source_path, string $class_name, string $plugin_root ): array {
 		$file = \is_dir( $source_path )
 			? $source_path . '/' . \basename( $source_path ) . '.php'
 			: $source_path;
 
-		if ( ! \is_file( $file ) ) {
-			return array(
-				'hook'     => null,
-				'priority' => 10,
-			);
+		$declared = null;
+		$priority = array();
+
+		if ( \is_file( $file ) ) {
+			$source = (string) \file_get_contents( $file );
+
+			\preg_match( '/^\s*\*\s*@setup-hook\s+(\S+)/m', $source, $hook );
+			\preg_match( '/^\s*\*\s*@setup-hook-priority\s+(\d+)/m', $source, $priority );
+
+			$declared = $hook[1] ?? null;
 		}
 
-		$source = (string) \file_get_contents( $file );
-
-		\preg_match( '/^\s*\*\s*@setup-hook\s+(\S+)/m', $source, $hook );
-		\preg_match( '/^\s*\*\s*@setup-hook-priority\s+(\d+)/m', $source, $priority );
+		if ( null === $declared && \is_a( $class_name, Bootable::class, true ) ) {
+			$declared = $this->with( RuntimePlugin::class )->get_loaded_hook( $plugin_root );
+		}
 
 		return array(
-			'hook'     => $hook[1] ?? null,
+			'hook'     => $declared,
 			'priority' => isset( $priority[1] ) ? (int) $priority[1] : 10,
 		);
 	}
@@ -713,7 +728,7 @@ abstract class AddCommand extends Command {
 	 * Build the commented lead-in written above one module's entry.
 	 *
 	 * The entry itself is bare, since being listed is all a module needs. A
-	 * module that takes configuration gets its initializer written above it,
+	 * module that takes configuration gets its configurator written above it,
 	 * commented out and listing the setters it accepts. Configuration is
 	 * optional for every module, so an active callback would be a change nobody
 	 * asked for -- but leaving no trace means the options are only discoverable
@@ -740,16 +755,14 @@ abstract class AddCommand extends Command {
 		 * line -- and until they do, the module still works.
 		 */
 		$lines = array(
-			"\t// " . $class . '::class => array(',
-			"\t//     'configure' => static function ( " . $class . ' $' . $variable . ' ): void {',
+			"\t// " . $class . '::class => static function ( ' . $class . ' $' . $variable . ' ): void {',
 		);
 
 		foreach ( $setters as $setter ) {
-			$lines[] = "\t//         $" . $variable . '->' . $setter . "( '' );";
+			$lines[] = "\t//     $" . $variable . '->' . $setter . "( '' );";
 		}
 
-		$lines[] = "\t//     },";
-		$lines[] = "\t// ),";
+		$lines[] = "\t// },";
 
 		return \implode( "\n", $lines ) . "\n";
 	}

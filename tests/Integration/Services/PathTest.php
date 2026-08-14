@@ -179,7 +179,7 @@ final class PathTest extends TestCase {
 		// plugin dir, then delete that dir so realpath(base) returns false.
 		$dir = $this->make_temp_dir( 'zestry-gone-' );
 		file_put_contents( $dir . '/plugin.php', "<?php\n" );
-		$plugin = ( new \Zestry\WPToolkit\Kernel\Plugin( $dir . '/plugin.php', 'zestry-gone' ) )->declare_modules( $this->get_toolkit_modules() );
+		$plugin = ( new \Zestry\WPToolkit\Kernel\Plugin( $dir . '/plugin.php', 'zestry-gone' ) )->declare_multiple( $this->get_toolkit_modules() );
 		$path   = $plugin->get( \Zestry\WPToolkit\Modules\Path::class );
 
 		$this->remove_dir( $dir );

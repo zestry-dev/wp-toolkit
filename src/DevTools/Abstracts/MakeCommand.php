@@ -19,6 +19,7 @@ use Zestry\WPToolkit\DevTools\Copier;
 use Zestry\WPToolkit\DevTools\DeclarationResult;
 use Zestry\WPToolkit\DevTools\Formatter;
 use Zestry\WPToolkit\DevTools\ParentClass;
+use Zestry\WPToolkit\DevTools\RuntimePlugin;
 use Zestry\WPToolkit\DevTools\ZestryConfig;
 use Zestry\WPToolkit\DevTools\StubRenderer;
 use Zestry\WPToolkit\Modules\CLI\Command;
@@ -266,7 +267,7 @@ abstract class MakeCommand extends Command {
 	 * @param string $plugin_root Absolute path to the consuming plugin's root.
 	 * @return void
 	 */
-	protected function declare_generated_module( string $name, string $plugin_root ): void {
+	protected function declare_generated_module( string $name, string $plugin_root, ?string $hook = null ): void {
 		$segments   = $this->get_name_segments( $name );
 		$class_name = (string) \array_pop( $segments );
 
@@ -293,21 +294,38 @@ abstract class MakeCommand extends Command {
 		}
 
 		/*
-		 * Written bare, with the other shape shown above it. A module you wrote
-		 * boots as the plugin loads unless you say otherwise, and there is no way
-		 * for this command to know whether yours needs a hook -- but the long form
-		 * is where that would go, and nothing else would tell you it exists.
+		 * A module given no hook is written bare, with the other shape shown
+		 * above it: it boots as the plugin loads unless the entry says
+		 * otherwise, and nothing else would tell you that line exists. One that
+		 * names a hook is written in full, since that is the only place the
+		 * timing lives.
 		 */
-		$hint = "\t// " . $class_name . "::class => array( 'boots_on' => 'init' ),\n";
+		/*
+		 * A module with no heading is written bare, with the other shape shown
+		 * above it: nothing else would tell you that a heading is where timing
+		 * goes. One that names a heading is written under it, since that is the
+		 * only place the timing lives.
+		 */
+		$hint = null === $hook
+			? "\t// '" . $this->with( RuntimePlugin::class )->get_loaded_hook( $plugin_root ) . "' => array( " . $class_name . "::class ),\n"
+			: null;
 
-		if ( DeclarationResult::Declared === $this->with( BootstrapFile::class )->declare_module( $plugin_root, $class, $hint ) ) {
-			// An edited file is worth formatting for the same reason a generated
-			// one is: the appended entry lands in someone else's file, and should
-			// not be the line that makes their lint fail.
-			$this->with( Formatter::class )->format( $plugin_root, array( \rtrim( $plugin_root, '/\\' ) . '/bootstrap.php' ) );
+		$result = $this->with( BootstrapFile::class )->declare_module( $plugin_root, $class, $hint, $hook );
 
-			$this->log( 'Declared in bootstrap.php, so the plugin builds it and on_boot() runs.' );
+		if ( DeclarationResult::Declared !== $result ) {
+			return;
 		}
+
+		// An edited file is worth formatting for the same reason a generated
+		// one is: the appended entry lands in someone else's file, and should
+		// not be the line that makes their lint fail.
+		$this->with( Formatter::class )->format( $plugin_root, array( \rtrim( $plugin_root, '/\\' ) . '/bootstrap.php' ) );
+
+		$this->log(
+			null === $hook
+				? 'Declared in bootstrap.php, so the plugin builds it.'
+				: \sprintf( 'Declared in bootstrap.php under `%s`.', $hook )
+		);
 	}
 
 	/**

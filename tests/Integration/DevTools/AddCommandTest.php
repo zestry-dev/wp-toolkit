@@ -222,14 +222,22 @@ final class AddCommandTest extends TestCase {
 
 		$bootstrap = (string) file_get_contents( $this->target_plugin_dir . '/bootstrap.php' );
 
-		// RestApi is a Module, so being listed is what builds it -- the entry
-		// itself is bare, since its value would be an initializer and `add` has
-		// none to supply.
-		$this->assertStringContainsString( 'RestApi::class,', $bootstrap );
+		// RestApi acts on its own, so the kernel refuses an entry that does not
+		// say when it boots -- `add` writes the plugin's own loaded action,
+		// which is what makes the entry complete without a hand-edit.
+		$this->assertStringContainsString(
+			sprintf( "'%s_loaded' => array(", str_replace( '-', '_', basename( $this->target_plugin_dir ) ) ),
+			$bootstrap,
+			'The heading says when it boots.'
+		);
+		$this->assertStringContainsString( "\t\tRestApi::class,", $bootstrap, 'And the module sits under it.' );
 
-		// Nothing is written above it any more: with the directories fixed, a
-		// module has no configuration to suggest, and an empty commented block
-		// would be a heading over nothing.
+		// Path only works when called, so it has nothing to time and stays bare.
+		$this->assertStringContainsString( 'Path::class,', $bootstrap );
+
+		// Nothing is written above either: with the directories fixed, a module
+		// has no configuration to suggest, and an empty commented block would be
+		// a heading over nothing.
 		$this->assertStringNotContainsString( '//', $bootstrap );
 	}
 
@@ -272,11 +280,11 @@ final class AddCommandTest extends TestCase {
 
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/bootstrap.php' );
 
-		// Printed with the configuration it would have been written with, since
-		// a line pasted without its autoload key declares something different
-		// from what `add` intended.
+		// Printed under the heading it would have been written under, since a
+		// line pasted without it declares something different from what `add`
+		// intended -- a module that acts, listed as one that does not.
 		$this->assertStringContainsString(
-			"\t\\Acme\\Plugin\\Core\\Modules\\Cron\\Cron::class => array(",
+			"\t'init' => array(\n\t\t\\Acme\\Plugin\\Core\\Modules\\Cron\\Cron::class,\n\t),",
 			implode( "\n", $this->logged_messages() )
 		);
 		$this->assertNull(
@@ -305,7 +313,8 @@ final class AddCommandTest extends TestCase {
 
 		$bootstrap = (string) file_get_contents( $this->target_plugin_dir . '/bootstrap.php' );
 
-		$this->assertStringContainsString( 'Cron::class => array(', $bootstrap );
+		$this->assertStringContainsString( "'init' => array(", $bootstrap );
+		$this->assertStringContainsString( "\t\tCron::class,", $bootstrap );
 		$this->assertStringContainsString( 'use Acme\\Plugin\\Core\\Modules\\Cron\\Cron;', $bootstrap );
 		// path came along as a dependency, and a dependency is a module like any
 		// other -- so it is declared too, and named alongside cron.
@@ -316,9 +325,10 @@ final class AddCommandTest extends TestCase {
 		$declared = require $this->target_plugin_dir . '/bootstrap.php';
 
 		$this->assertIsArray( $declared );
-		// cron names a boot hook, so its entry is the configured form: a key,
-		// whose value carries the `boots_on` the module declared.
-		$this->assertArrayHasKey( 'Acme\\Plugin\\Core\\Modules\\Cron\\Cron', $declared );
+		// cron names a boot hook, so it lands under that heading rather than at
+		// the top level.
+		$this->assertArrayHasKey( 'init', $declared );
+		$this->assertContains( 'Acme\\Plugin\\Core\\Modules\\Cron\\Cron', $declared['init'] );
 		// path does not, so it is written bare -- a value rather than a key.
 		$this->assertContains( 'Acme\\Plugin\\Core\\Modules\\Path', $declared );
 	}
@@ -337,7 +347,7 @@ final class AddCommandTest extends TestCase {
 
 		$this->assertNotNull( \WP_CLI::last( 'warning' ) );
 		$this->assertStringContainsString(
-			"\t\\Acme\\Plugin\\Core\\Modules\\Cron\\Cron::class => array(",
+			"\t'init' => array(\n\t\t\\Acme\\Plugin\\Core\\Modules\\Cron\\Cron::class,\n\t),",
 			implode( "\n", $this->logged_messages() )
 		);
 	}
@@ -507,7 +517,7 @@ final class AddCommandTest extends TestCase {
 	private function run_add( array $modules ): void {
 		\WP_CLI::reset();
 
-		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-add-test' ) )->declare_modules( $this->get_toolkit_modules() );
+		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-add-test' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
 		$command = require dirname( __DIR__, 3 ) . '/commands/add.php';

@@ -434,7 +434,7 @@ final class DoctorCommandTest extends TestCase {
 	private function run_doctor( array $assoc_args = array() ): Command {
 		\WP_CLI::reset();
 
-		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-doctor-test' ) )->declare_modules( $this->get_toolkit_modules() );
+		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-doctor-test' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
 		$command = require dirname( __DIR__, 3 ) . '/commands/doctor.php';

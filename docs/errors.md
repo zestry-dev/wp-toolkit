@@ -57,22 +57,22 @@ Catch the subclasses individually only when you genuinely handle them differentl
 
 [Reference](kernel/module-exception.md)
 
-The base class, and thrown directly for three things: a `bootstrap.php` the plugin cannot read, a module nothing declared, and a module asked for before its hook.
+The base class, and thrown directly for four things: a `bootstrap.php` the plugin cannot read, a module that acts on its own left at the top level, a module nothing declared, and a module asked for before its hook.
 
 ### A `bootstrap.php` the plugin cannot read
 
 ```
 Bootstrap file must return an array: /…/acme-plugin/bootstrap.php
 Bootstrap entries must name a class.
-The `bootstrap.php` entry for Acme\Plugin\Core\Modules\Cron\Cron is Closure.
-Configuration is an array: `Acme\…\Cron::class => array( 'configure' => $callback )`,
-which is also where `boots_on` and `priority` go. A module needing none is written bare.
-The `configure` for Acme\Plugin\Core\Modules\Cron\Cron must be a callable, or left out.
+The `bootstrap.php` entry for Acme\Plugin\Core\Modules\Cron\Cron is array. A class
+entry's value is the callback that configures it: `Cron::class => static function
+( $module ) { ... }`. A module needing no configuration is written bare, and when
+it boots is a group heading above it: `'init' => array( Cron::class )`.
 ```
 
-**What causes it.** A `bootstrap.php` with no `return`, or one returning something other than an array. An entry configured with a bare callback rather than an array — the shape most people reach for first.
+**What causes it.** A `bootstrap.php` with no `return`, or one returning something other than an array. An entry given the old `array( 'boots_on' => … )` shape rather than a configurator.
 
-**What to do.** The file is one flat array. A module needing no configuration is written bare; one that needs some gets an array:
+**What to do.** The top level is for modules that do nothing until asked; a module that acts on its own goes under the hook it acts on, and a class entry's value is the callback that configures it:
 
 ```php
 // bootstrap.php
@@ -80,16 +80,32 @@ use Acme\Plugin\Core\Modules\AdminPages\AdminPages;
 use Acme\Plugin\Core\Modules\Cron\Cron;
 
 return array(
-    Cron::class => array(
-        'configure' => static function ( Cron $cron ): void {
+    Path::class,
+
+    'init' => array(
+        AdminPages::class,
+        Cron::class => static function ( Cron $cron ): void {
             $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
         },
     ),
-    AdminPages::class,
 );
 ```
 
-`configure` configures the module, `boots_on` names a hook to boot on, and `priority` is what that hook binds at. All three are optional and all three live in the same array, so adding one never means rewriting the entry.
+Add `:priority` to order a heading against everything else on that hook — `'init:20'` runs behind the default 10.
+
+### A module that acts on its own, left at the top level
+
+```
+Acme\Plugin\Modules\Shortcodes acts when it is built, so it has to be listed under
+the hook it acts on. In /…/acme-plugin/bootstrap.php move it into a group:
+`'acme_plugin_loaded' => array( Shortcodes::class )` boots it once the whole plugin
+is up, and `'init' => array( Shortcodes::class )` waits for WordPress. The top level
+is for modules that do nothing until something asks.
+```
+
+**What causes it.** The class implements `Bootable`, so it acts the moment it is built — and the top level says nothing about when that is. The two headings the message names cover almost every module.
+
+**What to do.** Move it under a heading. `{slug}_loaded` is your own plugin's action, fired at the end of `run()` once every module exists; `init` is where anything WordPress will not accept earlier belongs.
 
 ### A module nothing declared
 
@@ -107,13 +123,13 @@ and nothing outside it is ever built.
 
 ```
 Acme\Plugin\Core\Modules\Blocks\Blocks boots on `init`, which has not fired yet. Ask
-for it from `init` or later, or give its `bootstrap.php` entry a `boots_on` this
-plugin can live with.
+for it from `init` or later, or list it under a heading this plugin can live
+with.
 ```
 
-**What causes it.** The module's `bootstrap.php` entry names a `boots_on`, and something asked for it earlier than that. Building it now would boot it on the wrong side of whatever it was declared to follow.
+**What causes it.** The module is listed under a heading, and something asked for it before that hook fired. Building it now would boot it on the wrong side of whatever it was declared to follow.
 
-**What to do.** Move the `get()` call to that hook or later, or reconsider the `boots_on`. A hook that has *already* fired is not an error — the module is built immediately, so the declaration reads as "not before" rather than "exactly at".
+**What to do.** Move the `get()` call to that hook or later, or reconsider the heading. A hook that has *already* fired is not an error — the module is built immediately, so the declaration reads as "not before" rather than "exactly at".
 
 ---
 

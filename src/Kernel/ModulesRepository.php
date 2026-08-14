@@ -75,7 +75,7 @@ class ModulesRepository {
 	/**
 	 * Boot hooks the bootstrap entries named, keyed by class.
 	 *
-	 * @var array<class-string, array{hook: string, priority: int|null}>
+	 * @var array<class-string, array{hook: string|null, priority: int|null}>
 	 */
 	private array $boot_hooks = array();
 
@@ -105,11 +105,23 @@ class ModulesRepository {
 	 * has not been through here. Declaring the same class twice is ignored, so
 	 * two setup paths can name it without configuring it twice.
 	 *
-	 * @param class-string $name Module class name.
+	 * `$hook` is when the plugin builds it, and may carry its own priority as
+	 * `init:20`. Left null the module is built as {@see run()} reaches it, which
+	 * is what a module that does nothing on its own wants.
+	 *
+	 * @param class-string $name     Module class name.
+	 * @param string|null  $hook     The hook to build it on, optionally `hook:priority`.
+	 * @param int          $priority The priority, when the hook does not carry one.
 	 * @return $this
 	 */
-	public function declare_module( string $name ): self {
+	public function declare_module( string $name, ?string $hook = null, int $priority = 10 ): self {
 		$this->declared[ $name ] ??= true;
+
+		if ( null !== $hook ) {
+			[ $parsed, $parsed_priority ] = self::parse_hook( $hook, $priority );
+
+			$this->set_boot_hook( $name, $parsed, $parsed_priority );
+		}
 
 		return $this;
 	}
@@ -135,11 +147,11 @@ class ModulesRepository {
 	 * Called by {@see Plugin::bootstrap()} for an entry that declared `boots_on`.
 	 *
 	 * @param class-string $name     Module class name.
-	 * @param string       $hook     The hook to boot on.
+	 * @param string|null  $hook     The hook to boot on, or null to boot as the plugin loads.
 	 * @param int|null     $priority The priority, or null for WordPress's default.
 	 * @return $this
 	 */
-	public function set_boot_hook( string $name, string $hook, ?int $priority = null ): self {
+	public function set_boot_hook( string $name, ?string $hook, ?int $priority = null ): self {
 		$this->boot_hooks[ $name ] = array(
 			'hook'     => $hook,
 			'priority' => $priority,
@@ -236,6 +248,8 @@ class ModulesRepository {
 	 */
 	public function run(): void {
 		foreach ( \array_keys( $this->declared ) as $name ) {
+			$this->assert_boot_timing_declared( $name );
+
 			[ $hook, $priority ] = $this->get_boot_timing( $name );
 
 			if ( null === $hook || \did_action( $hook ) ) {
@@ -263,6 +277,52 @@ class ModulesRepository {
 	}
 
 	/**
+	 * Refuse a {@see Bootable} module whose entry never says when it boots.
+	 *
+	 * A `Bootable` module acts the moment it is built, so *when* it is built is
+	 * the whole of what it does -- and a bare entry leaves that unanswered.
+	 * Answering it by default was the alternative, and it hides the one thing
+	 * worth reading: a plugin registering post types before `init` looks
+	 * identical to one registering them correctly, right up until something
+	 * else needs to filter them.
+	 *
+	 * So the entry says it, and `null` is a real answer:
+	 *
+	 * ```
+	 * Shortcodes::class => array( 'boots_on' => 'acme-plugin-loaded' ),
+	 * Activation::class => array( 'boots_on' => null ),  // as the plugin loads
+	 * ```
+	 *
+	 * A module that is not `Bootable` does nothing when built, so it has nothing
+	 * to declare and a bare entry is the whole of it.
+	 *
+	 * @param class-string $name The declared class name.
+	 * @return void
+	 * @throws ModuleException When a Bootable module's entry omits `boots_on`.
+	 */
+	private function assert_boot_timing_declared( string $name ): void {
+		// Said something, including `null`. Nothing to enforce.
+		if ( \array_key_exists( $name, $this->boot_hooks ) ) {
+			return;
+		}
+
+		// Autoloads, which is why this is here and not in `Plugin::declare_multiple()`:
+		// reading `bootstrap.php` compiles none of the classes it names, and
+		// `run()` is about to build every one of them anyway.
+		$this->validate_module_class( $name );
+
+		if ( ! \is_a( $name, Bootable::class, true ) ) {
+			return;
+		}
+
+		throw ModuleException::boot_timing_undeclared(
+			$name,
+			$this->plugin->get_loaded_hook(),
+			$this->plugin->get_bootstrap_file()
+		);
+	}
+
+	/**
 	 * When a declared module boots, and at what priority.
 	 *
 	 * From the bootstrap entry and nowhere else. A module could hold its own
@@ -274,7 +334,7 @@ class ModulesRepository {
 	 * @return array{0: string|null, 1: int}
 	 */
 	private function get_boot_timing( string $name ): array {
-		if ( ! isset( $this->boot_hooks[ $name ] ) ) {
+		if ( ! \array_key_exists( $name, $this->boot_hooks ) ) {
 			return array( null, 10 );
 		}
 
@@ -380,5 +440,27 @@ class ModulesRepository {
 		}
 
 		return $instance;
+	}
+
+	/**
+	 * Split a hook that carries its own priority.
+	 *
+	 * `init` is the hook at WordPress's own default; `init:20` is the same hook
+	 * ordered behind everything at 10. A colon cannot appear in a hook name, so
+	 * it is free to mean this -- which lets a `bootstrap.php` heading and a
+	 * {@see \Zestry\WPToolkit\Kernel\Plugin::declare()} call spell the timing the same way.
+	 *
+	 * @param string $hook     The hook, `hook` or `hook:priority`.
+	 * @param int    $priority The priority to use when the hook does not carry one.
+	 * @return array{0: string, 1: int}
+	 */
+	public static function parse_hook( string $hook, int $priority = 10 ): array {
+		if ( ! \str_contains( $hook, ':' ) ) {
+			return array( $hook, $priority );
+		}
+
+		[ $name, $carried ] = \explode( ':', $hook, 2 );
+
+		return array( $name, (int) $carried );
 	}
 }

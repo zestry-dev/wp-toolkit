@@ -141,7 +141,7 @@ final class OverwriteCommandTest extends TestCase {
 	private function run_overwrite( array $modules, $confirm_input, string $kind = 'modules' ): void {
 		\WP_CLI::reset();
 
-		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-overwrite-test' ) )->declare_modules( $this->get_toolkit_modules() );
+		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-overwrite-test' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		$command = new class extends AddCommand {
 			/** @var string|false */

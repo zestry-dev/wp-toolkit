@@ -25,7 +25,7 @@ final class OnWpInitTest extends TestCase {
 
 		// Nothing is built without being declared, and this fixture is a
 		// module like any other.
-		$this->plugin->declare_modules( array( RunAtInitProbe::class ) );
+		$this->plugin->declare_multiple( array( RunAtInitProbe::class ) );
 	}
 
 	public function test_it_runs_immediately_when_init_has_fired(): void {

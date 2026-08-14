@@ -12,8 +12,19 @@
 declare( strict_types=1 );
 
 use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
+use Zestry\WPToolkit\DevTools\ConsumerPlugin;
+use Zestry\WPToolkit\DevTools\Copier;
+use Zestry\WPToolkit\DevTools\RuntimePlugin;
+use Zestry\WPToolkit\DevTools\ZestryConfig;
 
 return new class() extends MakeCommand {
+
+	/**
+	 * Whether `--bootable` was given, read by {@see after_write()}.
+	 *
+	 * @var bool
+	 */
+	private bool $bootable = false;
 
 	/**
 	 * Generate a new plain Module subclass.
@@ -65,6 +76,13 @@ return new class() extends MakeCommand {
 	 * The destination is fixed, since PSR-4 ties a namespace to one directory and
 	 * the name decides both.
 	 *
+	 * [--bootable]
+	 * : Give the module an `on_boot()` that runs without being called, and
+	 * declare it in `bootstrap.php` against the plugin's own `{slug}-loaded`
+	 * action -- so it boots after every other module the plugin has, rather
+	 * than in the middle of the list. Leave it off for a module that only
+	 * works when something calls it.
+	 *
 	 * [--yes]
 	 * : Overwrite an existing file without asking, for an unattended run.
 	 *
@@ -78,6 +96,11 @@ return new class() extends MakeCommand {
 	 *     # Grouped: the directory and the namespace come from the same name.
 	 *     $ wp zt make module Services/Mailer
 	 *     Success: Created lib/Modules/Services/Mailer.php
+	 *
+	 *     # One that acts on its own, booting after every other module.
+	 *     $ wp zt make module Shortcodes --bootable
+	 *     Declared in bootstrap.php, booting on `acme-plugin-loaded`.
+	 *     Success: Created lib/Modules/Shortcodes.php
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -96,10 +119,18 @@ return new class() extends MakeCommand {
 	 */
 	protected function get_extra_values( string $name, array $assoc_args ): array {
 		$segments = $this->get_name_segments( $name );
+		$bootable = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'bootable', false );
+
+		// Remembered for after_write(), which decides the bootstrap.php entry
+		// and is handed no flags of its own.
+		$this->bootable = $bootable;
 
 		return array(
 			'class_name'      => (string) array_pop( $segments ),
 			'class_namespace' => $this->get_generated_namespace( $segments ),
+			'bootable_import' => $bootable ? 'use ' . $this->get_copied_namespace() . "\\Kernel\\Contracts\\Bootable;\n" : '',
+			'bootable_clause' => $bootable ? ' implements Bootable' : '',
+			'bootable_body'   => $bootable ? $this->get_boot_method() : '',
 		);
 	}
 
@@ -142,7 +173,55 @@ return new class() extends MakeCommand {
 	 * @return void
 	 */
 	protected function after_write( string $name, string $plugin_root, array $config ): void {
-		$this->declare_generated_module( $name, $plugin_root );
+		// A Bootable module has to say when it boots, and the plugin's own
+		// loaded action is the answer that suits a module you just wrote: it
+		// fires at the end of `run()`, so this boots after everything else the
+		// plugin has. One that only works when called has nothing to time.
+		$hook = $this->bootable
+			? $this->with( RuntimePlugin::class )->get_loaded_hook( $plugin_root )
+			: null;
+
+		$this->declare_generated_module( $name, $plugin_root, $hook );
+	}
+
+	/**
+	 * The `Core\` namespace the copied kernel landed under.
+	 *
+	 * Read here rather than taken from the shared values, since
+	 * {@see get_extra_values()} is handed the name and the flags and nothing
+	 * else -- and {@see Copier} is the one place that knows the segment.
+	 *
+	 * @return string
+	 */
+	private function get_copied_namespace(): string {
+		$config = $this->with( ZestryConfig::class )->read( $this->with( ConsumerPlugin::class )->get_plugin_root() );
+
+		return Copier::get_target_namespace( rtrim( $config['namespace'], '\\' ) );
+	}
+
+	/**
+	 * The `on_boot()` a `--bootable` module is generated with.
+	 *
+	 * @return string
+	 */
+	private function get_boot_method(): string {
+		return implode(
+			"\n",
+			array(
+				"\t/**",
+				"\t * What this module does on its own.",
+				"\t *",
+				"\t * Runs once, when the plugin builds this module -- which its",
+				"\t * bootstrap.php entry decides. Bind hooks, register things, walk a",
+				"\t * directory: anything that has to happen without being called.",
+				"\t *",
+				"\t * @return void",
+				"\t */",
+				"\tpublic function on_boot(): void {",
+				"\t\t// add_shortcode( 'example', array( \$this, 'render' ) );",
+				"\t}",
+			)
+		);
 	}
 
 	protected static function get_type(): string {

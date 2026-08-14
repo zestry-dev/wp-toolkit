@@ -12,9 +12,8 @@ namespace {{class_namespace}};
 \defined( 'ABSPATH' ) || exit;
 
 use {{copied_namespace}}\Kernel\Abstracts\Module;
-use {{copied_namespace}}\Kernel\Contracts\Bootable;
-
-class {{class_name}} extends Module implements Bootable {
+{{bootable_import}}
+class {{class_name}} extends Module{{bootable_clause}} {
 
 	// Reach any other declared module with `$this->with( Path::class )`.
 
@@ -39,22 +38,5 @@ class {{class_name}} extends Module implements Bootable {
 	 * PluginAware, `use WithPlugin`, and pass it through
 	 * `$this->get_plugin()->wire( $object )`.
 	 */
-
-	/**
-	 * What this module does on its own.
-	 *
-	 * Runs once, when the plugin builds this module -- which is what being
-	 * listed in bootstrap.php causes. Bind hooks, register
-	 * things, walk a directory: anything that has to happen without being
-	 * called.
-	 *
-	 * Nothing to do here? Then drop the `implements Bootable` above and this
-	 * method. The class stays a module, listed the same way, and works when
-	 * something calls it.
-	 *
-	 * @return void
-	 */
-	public function on_boot(): void {
-		// add_shortcode( 'example', array( $this, 'render' ) );
-	}
+{{bootable_body}}
 }

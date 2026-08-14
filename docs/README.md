@@ -17,7 +17,7 @@ wp zt add cli
 
 Run these from inside your own plugin's directory. `zt` is short for *zestry toolkit*, and the command is registered by your plugin's autoloader, so the plugin has to be **active** before `init`.
 
-`init` asks for a namespace, a text domain and a destination directory (default `lib`), then copies the kernel into `lib/Core/Kernel/` under your namespace. `add module` copies each feature module you want beside it, and declares it for you.
+`init` asks for a namespace, a text domain and a destination directory (default `lib`), then copies the kernel into `lib/Core/Kernel/` under your namespace. `wp zt add` copies each feature module you want beside it, and declares it for you.
 
 Full walkthrough: **[Getting started](getting-started.md)**.
 
@@ -61,7 +61,9 @@ declare( strict_types=1 );
 use Acme\Plugin\Core\Modules\CLI\CLI;
 
 return array(
-    CLI::class,
+    'init' => array(
+        CLI::class,
+    ),
 );
 ```
 
@@ -121,14 +123,17 @@ Nothing needs adding up front. Reach for one when you hit what it solves — the
 
 ## One kind of thing
 
-Everything a plugin is made of is a **[module](modules/)**, and `bootstrap.php` lists every one of them. Nothing is built that is not listed there — asking for an undeclared module throws — so reading that file tells you what the plugin has.
+Everything a plugin is made of is a **[module](modules/)**, and `bootstrap.php` lists every one of them. Nothing is built that is not listed there — asking for an undeclared module throws — so reading that file tells you what the plugin has, and the key above each one says when it starts.
 
 ```php
 // bootstrap.php
 return array(
-    Path::class,
-    CLI::class,
+    Path::class,      // does nothing until something asks
     Options::class,
+
+    'init' => array(  // acts, and this is when
+        CLI::class,
+    ),
 );
 ```
 

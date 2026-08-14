@@ -55,7 +55,7 @@ if ( ! function_exists( 'zestry_devtool' ) ) {
 
 		if ( null === $plugin ) {
 			$plugin = ( new Plugin( __FILE__, 'zt' ) )
-				->declare_modules(
+				->declare_multiple(
 					array(
 						Path::class,
 						AgentInstructions::class,
@@ -70,10 +70,13 @@ if ( ! function_exists( 'zestry_devtool' ) ) {
 						StubRenderer::class,
 						Tooling::class,
 						ZestryConfig::class,
+
 						// On `init`, like every plugin CLI is added to: this file
 						// is required from an autoloader, long before WP-CLI is
 						// ready to be given commands.
-						CLI::class => array( 'boots_on' => 'init' ),
+						'init' => array(
+							CLI::class,
+						),
 					)
 				)
 				->run();

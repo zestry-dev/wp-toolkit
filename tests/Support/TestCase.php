@@ -5,6 +5,7 @@ declare( strict_types=1 );
 namespace Zestry\WPToolkit\Tests\Support;
 
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Plugin;
 use Yoast\WPTestUtils\WPIntegration\TestCase as WPTestCase;
 
@@ -95,8 +96,7 @@ abstract class TestCase extends WPTestCase {
 		$this->entry_file = $this->plugin_dir . '/plugin.php';
 		file_put_contents( $this->entry_file, "<?php\n/* Plugin Name: Zestry Test */\n" );
 
-		$this->plugin = ( new Plugin( $this->entry_file, 'zestry-test' ) )->declare_modules( $this->get_toolkit_modules() );
-		$this->plugin->declare_modules( $this->get_toolkit_modules() );
+		$this->plugin = ( new Plugin( $this->entry_file, 'zestry-test' ) )->declare_multiple( $this->get_toolkit_modules() );
 	}
 
 	/**
@@ -108,9 +108,14 @@ abstract class TestCase extends WPTestCase {
 	 * added to the toolkit is reachable from a test without a second edit.
 	 *
 	 * Declaring is not building: each is constructed by the first `get()` that
-	 * asks for it, exactly as before, and a test that never asks pays nothing.
+	 * asks for it, and a test that never asks pays nothing.
 	 *
-	 * @return array<class-string>
+	 * A module that acts on its own has to be listed under the hook it acts on,
+	 * so those go under this plugin's own loaded action -- which `run()` fires
+	 * as its last act, meaning a test that calls `run()` gets them booted and
+	 * one that only calls `get()` builds them on the spot, exactly as before.
+	 *
+	 * @return array<array-key, mixed>
 	 */
 	protected function get_toolkit_modules(): array {
 		/** @var array<string, array{source: class-string}> $registry */
@@ -129,7 +134,24 @@ abstract class TestCase extends WPTestCase {
 			}
 		}
 
-		return $modules;
+		$entries = array();
+		$acting  = array();
+
+		foreach ( $modules as $class ) {
+			if ( is_a( $class, Bootable::class, true ) ) {
+				$acting[] = $class;
+
+				continue;
+			}
+
+			$entries[] = $class;
+		}
+
+		if ( array() !== $acting ) {
+			$entries['zestry_test_loaded'] = $acting;
+		}
+
+		return $entries;
 	}
 
 	public function tear_down(): void {

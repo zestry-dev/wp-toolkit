@@ -133,34 +133,44 @@ use Acme\Books\Core\Modules\RestApi\RestApi;
 use Acme\Books\Modules\Activation;
 
 return array(
-    PostTypes::class,
-    RestApi::class,
-    AdminPages::class,
-    Assets::class,
-    Log::class,
     Options::class,
-    Activation::class,
+
+    'acme_books_loaded' => array(
+        Log::class,
+        AdminPages::class,
+        Activation::class,
+    ),
+
+    'init' => array(
+        PostTypes::class,
+        RestApi::class,
+        Assets::class,
+    ),
 );
 ```
 
-Every entry here is bare, because nothing in this plugin needs configuring. A module that does gets an **array** instead, whose `configure` runs when the module is built and before it boots:
+**Everything the plugin is made of is here, and the key says when each part starts.**
+
+- **The top level** is for modules that do nothing until something asks. `Options` is one: it reads its row when you call `get()`, and never before.
+- **`acme_books_loaded`** is this plugin's own action, fired at the end of `run()` once every module exists. `Log` goes here so its hook is bound before anything can log through it, and `Activation` because WordPress fires the activation hook right after the plugin file loads — this is the last moment that is still early enough.
+- **`init`** is WordPress's, and is where anything WordPress will not accept earlier belongs: the `book` post type, the REST routes, the script handles.
+
+A module that acts on its own has to be under a heading — left at the top level it throws, naming these two.
+
+A class entry's value is the callback that configures it, and a heading takes the same shape, so a module needing a hook *and* configuration is one entry:
 
 ```php
-Cron::class => array(
-    'configure' => static function ( Cron $cron ): void {
+'init' => array(
+    Cron::class => static function ( Cron $cron ): void {
         $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
     },
 ),
 ```
 
-That array also takes `boots_on` and `priority`, for a module that cannot do its work as the plugin loads. Configuration is always the array and never a bare callback, so all three read the same way.
-
 `Assets` and `Activation` are the two lines you do not add by hand — `wp zt add assets` appends the first in section 7, and `wp zt make activation` the second in section 8. Both are shown here so the finished file is in one place.
 
 > [!IMPORTANT]
-> **Everything the plugin is made of is here, and listing one is what builds it.** Some of these act on their own — `PostTypes` walks a directory, `RestApi` binds a hook — and some only work when you call them, like `Options`. Both are listed the same way.
->
-> Nothing outside this list is ever built, so reading it tells you what the plugin has.
+> Nothing outside this list is ever built, so reading it tells you what the plugin has — and in what order it comes up.
 
 ## 4. The post type
 
@@ -568,7 +578,7 @@ bootstrap.php  7 classes declared
 Success: No problems found.
 ```
 
-Seven: `PostTypes`, `RestApi`, `AdminPages`, `Assets`, `Log`, `Options`, `Activation`. It exits non-zero when it finds something, so it gates a build on its own. See [`wp zt doctor`](commands/doctor.md) for everything it checks.
+Seven: `Options` at the top level, `Log`, `AdminPages` and `Activation` under `acme_books_loaded`, and `PostTypes`, `RestApi` and `Assets` under `init`. It exits non-zero when it finds something, so it gates a build on its own. See [`wp zt doctor`](commands/doctor.md) for everything it checks.
 
 ## 10. What you have
 

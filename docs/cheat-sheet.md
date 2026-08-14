@@ -14,22 +14,31 @@ Reach any module with `$this->with( X::class )` — the same instance every time
 
 ## `bootstrap.php`
 
-A module needing nothing is written bare; one that needs configuration gets an array, never a bare callback.
+The top level is for modules that do nothing until something asks. A module that acts on its own goes under the hook it acts on.
 
 ```php
 return array(
     Path::class,
-    Blocks::class => array(
-        'boots_on'  => 'init',   // a hook to boot on; omit to build as run() reaches it
-        'priority'  => 10,       // what that hook binds at
-        'configure' => static function ( Blocks $blocks ) use ( $categories ): void {
+    Options::class => static function ( Options $options ): void {   // configurator
+        $options->add_autoloaded_groups( array( 'reports' ) );
+    },
+
+    'acme_plugin_loaded' => array(   // this plugin's own action, fired at the end of run()
+        Log::class,
+    ),
+
+    'init' => array(
+        PostTypes::class,
+        Blocks::class => static function ( Blocks $blocks ) use ( $categories ): void {
             $blocks->add_categories( $categories );
         },
     ),
+
+    'init:20' => array( Dashboard::class ),   // behind everything at the default 10
 );
 ```
 
-All three keys are optional. Asking for a module before its `boots_on` fires throws, naming the hook; a hook that has already fired builds it immediately, so the declaration reads as "not before".
+Leaving a module that acts on its own at the top level throws, naming the headings. Asking for a module before its heading fires throws, naming the hook; a hook that has already fired builds it immediately, so a heading reads as "not before".
 
 ## Namespaces
 
@@ -155,8 +164,9 @@ __construct( string $entry, ?string $slug = null )     // pass __FILE__; slug de
 
 configure( string $name, callable $configurator ): self // callback run when that module is built
 bootstrap( ?string $file = null ): self                // read bootstrap.php; a missing file is not an error
-declare_modules( array $entries = array() ): self      // declare modules from the entry file instead
-run( ?callable $on_boot_callback = null ): self        // build every declared module, synchronously
+declare( string $name, ?string $hook = null, int $priority = 10 ): self  // one module, and when
+declare_multiple( array $entries = array() ): self     // everything a bootstrap.php returns
+run(): self                                            // build every declared module, synchronously
 
 get( string $name ): object                            // resolve once, cached forever
 make( string $name, ?callable $configurator = null ): object  // fresh instance, never cached
@@ -167,7 +177,7 @@ get_version(): ?string                                 // shorthand for get_head
 get_slug(): string                                     // what every registered name is namespaced with
 ```
 
-Also on it: `get_namespaced_name( $name, $glue = '-' )`, `get_entry_file()`, `get_bootstrap_file()`, `set_languages_path( $path, $text_domain = null )`, `is_wp_debug()`, `is_wp_cli()`, `is_plugin_debug()`. Full page: [`Plugin`](plugin.md).
+Also on it: `get_loaded_hook()`, `get_namespaced_name( $name, $glue = '-' )`, `get_entry_file()`, `get_bootstrap_file()`, `set_languages_path( $path, $text_domain = null )`, `is_wp_debug()`, `is_wp_cli()`, `is_plugin_debug()`. Full page: [`Plugin`](plugin.md).
 
 An [`ActivationHandler`](modules/activation-handler.md) subclass only works if `run()` is called as the entry file loads — WordPress fires `activate_{plugin}` right after that, and a `run()` deferred to `plugins_loaded` has already missed it.
 
@@ -175,7 +185,7 @@ An [`ActivationHandler`](modules/activation-handler.md) subclass only works if `
 
 `$this->with( X::class )` — from a module, or from any file a module discovers. The same instance every time.
 
-A module the plugin never declared throws rather than being built on the spot, and one waiting on a `boots_on` throws until that hook fires. A class the plugin did not build gets `with()` by `use WithPlugin;` and `$plugin->wire( $object )`, which is how discovered commands, actions and pages are wired.
+A module the plugin never declared throws rather than being built on the spot, and one listed under a heading throws until that hook fires. A class the plugin did not build gets `with()` by `use WithPlugin;` and `$plugin->wire( $object )`, which is how discovered commands, actions and pages are wired.
 
 See [`WithPlugin`](kernel/with-plugin.md), [`Bootable`](kernel/bootable.md), [`PluginAware`](kernel/plugin-aware.md).
 
@@ -217,7 +227,7 @@ Each type writes one file into the directory its module discovers, so the genera
 | [`block`](commands/make-block.md) | `src/blocks/` | a block. `--dynamic`, `--view=none\|script\|module`, `--js` |
 | [`entry`](commands/make-entry.md) | `src/entries/` | your own script. `--kind=script\|module` |
 | [`shared`](commands/make-shared.md) | `src/shared/` | a package two entries can share. `--kind=script\|module` |
-| [`module`](commands/make-module.md) | `lib/Modules/` | your own module, **declared in `bootstrap.php`** |
+| [`module`](commands/make-module.md) | `lib/Modules/` | your own module, **declared in `bootstrap.php`**. `--bootable` |
 | [`activation`](commands/make-activation.md) | `lib/Modules/` | an activation handler, **declared** too |
 | [`abstract`](commands/make-abstract.md) | `lib/Abstracts/` | a base your own files share. `--for=<type>`, `--extends=` |
 
@@ -233,7 +243,7 @@ The last three land beside the copied `lib/Core/` tree, never inside it — that
 
 | Exception | Raised when |
 |---|---|
-| [`ModuleException`](kernel/module-exception.md) | Base class for every declaration, resolution and boot failure, so one `catch` covers all of them. Thrown directly for a `bootstrap.php` it cannot read, a module nothing declared, and a module asked for before its `boots_on` hook |
+| [`ModuleException`](kernel/module-exception.md) | Base class for every declaration, resolution and boot failure, so one `catch` covers all of them. Thrown directly for a `bootstrap.php` it cannot read, a module nothing declared, and a module asked for before the hook it is listed under |
 | [`DiscoveryException`](kernel/discovery-exception.md) | A discovered file returned something other than the base class that module expects, two files claim one registered name, a filename a destination cannot carry, an SVG icon WordPress would strip, or WordPress refused the registration |
 | [`ModuleNotFoundException`](kernel/module-not-found-exception.md) | `with()`, `get()` or `make()` named a class that does not exist or does not extend `Module` |
 | [`CircularDependencyException`](kernel/circular-dependency-exception.md) | Two modules built with `make()` reached for each other while building. `get()` cannot cycle |

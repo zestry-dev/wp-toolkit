@@ -110,7 +110,7 @@ acme_plugin();
 
 That is the whole file, and it stays this size however many modules you add. The slug defaults to the entry file's directory name — `acme-plugin` — and every hook, option and handle the modules register is namespaced with it. `bootstrap()` reads `bootstrap.php`; `run()` builds and boots what it found, synchronously, so you control the timing.
 
-`wp zt add` already appended to `bootstrap.php` in step 4, so it now reads:
+`wp zt add` already appended to `bootstrap.php` in step 4 — under the heading each module needs — so it now reads:
 
 ```php
 <?php
@@ -124,48 +124,42 @@ use Acme\Plugin\Core\Modules\AdminPages\AdminPages;
 use Acme\Plugin\Core\Modules\CLI\CLI;
 
 return array(
-    CLI::class,
-    AdminPages::class,
-);
-```
-
-**This file is modules only, and listing one is what builds it.** Every name here is something the plugin starts. A module needing no configuration is written bare; one that needs some gets an array:
-
-```php
-return array(
-    Cron::class => array(
-        'configure' => static function ( Cron $cron ): void {
-            $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
-        },
+    'acme_plugin_loaded' => array(
+        AdminPages::class,
     ),
-    AdminPages::class,
+
+    'init' => array(
+        CLI::class,
+    ),
 );
 ```
 
-That array takes three keys, all optional:
+**Everything the plugin is made of is here, and listing one is what builds it.** The key says when.
 
-| Key | What it does |
-|---|---|
-| `configure` | Configures the module. Runs when it is built, immediately before it boots, so `on_boot()` can rely on whatever it set. |
-| `boots_on` | A WordPress hook to boot on, for a module that cannot do its work as the plugin loads. Without it the module boots the moment `run()` reaches it. |
-| `priority` | What `boots_on` binds at. Defaults to 10. |
+- **The top level** is for modules that do nothing until something asks — `Path`, `Views`, `DB`. They are built as `run()` reaches them and then wait.
+- **A heading** is a hook, and every module under it is built when that hook fires. `acme_plugin_loaded` is your own plugin's action, fired at the end of `run()` once every module exists; `init` is WordPress's, and is where anything WordPress will not accept earlier belongs — a post type, a block, a meta key.
 
-Configuration is always the array and never a bare callback, so adding a `boots_on` to an entry that already has an initializer is one more line rather than a rewrite. Anything else as an entry's value throws, naming the shape to write.
+A module that acts on its own has to be under a heading. Left at the top level it throws, naming the two above — because the top level promises it does nothing until asked, and such a module cannot keep that promise.
 
-Everything the plugin is made of is here, including the modules that only work when you call them. A module that takes configuration gets a `configure`:
+A class entry's value is the callback that configures it, run when the module is built and before it boots:
 
 ```php
 use Acme\Plugin\Core\Modules\DB;
 
 return array(
-    DB::class => array(
-        'configure' => static function ( DB $db ): void {
-            $db->set_table_prefix( 'acme' );
+    DB::class => static function ( DB $db ): void {
+        $db->set_table_prefix( 'acme' );
+    },
+
+    'init' => array(
+        Cron::class => static function ( Cron $cron ): void {
+            $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
         },
     ),
-    CLI::class,
 );
 ```
+
+A heading takes the same two shapes, so a module needing a hook *and* configuration is one entry rather than a third shape. Add `:priority` to order a heading against everything else on that hook — `'init:20'` runs behind the default 10.
 
 The one mistake left is leaving a module out: nothing builds it, so a `Bootable` one never runs its `on_boot()` and any other throws the moment something reaches for it. [`wp zt doctor`](commands/doctor.md) catches the first, which is the silent one.
 

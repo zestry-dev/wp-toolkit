@@ -35,8 +35,8 @@ final class ContainerTest extends TestCase {
 
 		// Nothing is built without being declared, and these fixtures are
 		// modules like any other.
-		$this->plugin->declare_modules(
-			array( Path::class, BootCounter::class, SelfWiringBooter::class )
+		$this->plugin->declare_multiple(
+			array( Path::class, 'zestry_test_loaded' => array( BootCounter::class, SelfWiringBooter::class ) )
 		);
 	}
 
@@ -123,7 +123,7 @@ final class ContainerTest extends TestCase {
 
 
 	/**
-	 * The whole point of naming a hook: the entry's `configure` runs on it too,
+	 * The whole point of a heading: the entry's configurator runs on it too,
 	 * immediately before the module boots -- so a `__()` in there is safe, where
 	 * an initializer running at plugin load is not.
 	 */
@@ -172,7 +172,7 @@ final class ContainerTest extends TestCase {
 	}
 
 	/**
-	 * Write a bootstrap file declaring the deferred module in the long form.
+	 * Write a bootstrap file declaring the deferred module under a heading.
 	 *
 	 * @return string Absolute path to the file.
 	 */
@@ -184,9 +184,8 @@ final class ContainerTest extends TestCase {
 		file_put_contents(
 			$file,
 			"<?php\nreturn array(\n"
-				. "\t'" . str_replace( '\\', '\\\\', DeferredBooter::class ) . "' => array(\n"
-				. "\t\t'boots_on' => 'zestry_test_boot_hook',\n"
-				. "\t\t'configure' => static function ( \$module ): void {\n"
+				. "\t'zestry_test_boot_hook' => array(\n"
+				. "\t\t'" . str_replace( '\\', '\\\\', DeferredBooter::class ) . "' => static function ( \$module ): void {\n"
 				. "\t\t\t\$GLOBALS['zestry_boot_order'][] = 'configure';\n"
 				. "\t\t},\n"
 				. "\t),\n);\n"
@@ -206,23 +205,27 @@ final class ContainerTest extends TestCase {
 		$this->assertSame( 1, $module::$boot_count, 'Cached resolution must not re-boot.' );
 	}
 
-	public function test_run_builds_declared_modules_and_runs_the_ready_callback(): void {
-		$ran = false;
+	public function test_run_builds_declared_modules_and_announces_when_they_are_up(): void {
+		$announced = null;
 
 		BootCounter::$boot_count = 0;
 
-		$returned = $this->plugin
-			->declare_modules( array( BootCounter::class ) )
-			->run(
-				function ( $plugin ) use ( &$ran ): void {
-					$ran = true;
-					// The callback runs after every declared module is built, so
-					// a declared module has already booted by now.
-					$this->assertSame( 1, $plugin->get( BootCounter::class )::$boot_count );
-				}
-			);
+		add_action(
+			'zestry_test_loaded',
+			function ( $plugin ) use ( &$announced ): void {
+				$announced = $plugin;
+				// The announcement is what builds everything listed under it, so
+				// by the time a listener runs the module has already booted.
+				$this->assertSame( 1, $plugin->get( BootCounter::class )::$boot_count );
+			},
+			20
+		);
 
-		$this->assertTrue( $ran, 'run() must invoke the ready callback.' );
+		$returned = $this->plugin
+			->declare_multiple( array( 'zestry_test_loaded' => array( BootCounter::class ) ) )
+			->run();
+
+		$this->assertSame( $this->plugin, $announced, 'run() announces itself, passing the plugin.' );
 		$this->assertSame( $this->plugin, $returned, 'run() returns the plugin for chaining.' );
 		$this->assertSame( 1, BootCounter::$boot_count, 'A declared module is booted during run().' );
 	}

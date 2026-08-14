@@ -34,6 +34,9 @@ A generated file that does not yet parse is not declared at all. The command say
 - **`<name>`**  
   The class name, e.g. 'RequestLog'. Becomes both the filename (`{name}.php`) and the class name itself — unlike every other `make` type, this is NOT a kebab-case local name; give it exactly as it should appear after `class`. Group related modules by qualifying the name: `Services/Mailer` writes `Modules/Services/Mailer.php` declaring `{namespace}\Modules\Services`. The destination is fixed, since PSR-4 ties a namespace to one directory and the name decides both.
 
+- **`[--bootable]`**  
+  Give the module an `on_boot()` that runs without being called, and declare it in `bootstrap.php` against the plugin's own `{slug}-loaded` action — so it boots after every other module the plugin has, rather than in the middle of the list. Leave it off for a module that only works when something calls it.
+
 - **`[--yes]`**  
   Overwrite an existing file without asking, for an unattended run.
 
@@ -48,4 +51,9 @@ Success: Created lib/Modules/RequestLog.php
 # Grouped: the directory and the namespace come from the same name.
 $ wp zt make module Services/Mailer
 Success: Created lib/Modules/Services/Mailer.php
+
+# One that acts on its own, booting after every other module.
+$ wp zt make module Shortcodes --bootable
+Declared in bootstrap.php, booting on `acme-plugin-loaded`.
+Success: Created lib/Modules/Shortcodes.php
 ```

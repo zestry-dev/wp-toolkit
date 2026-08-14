@@ -29,7 +29,7 @@ final class DBTest extends TestCase {
 	 * this module's whole output turns on.
 	 */
 	private function db_for_slug( string $slug ): DB {
-		$plugin = ( new Plugin( $this->entry_file, $slug ) )->declare_modules( $this->get_toolkit_modules() );
+		$plugin = ( new Plugin( $this->entry_file, $slug ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		return $plugin->get( DB::class );
 	}
@@ -176,7 +176,7 @@ final class DBTest extends TestCase {
 	public function test_a_configured_prefix_replaces_the_slug(): void {
 		global $wpdb;
 
-		$plugin = ( new Plugin( $this->entry_file, 'my-rather-long-plugin-name' ) )->declare_modules( $this->get_toolkit_modules() );
+		$plugin = ( new Plugin( $this->entry_file, 'my-rather-long-plugin-name' ) )->declare_multiple( $this->get_toolkit_modules() );
 		$plugin->configure(
 			DB::class,
 			static function ( DB $db ): void {

@@ -19,7 +19,7 @@ final class ActivationHandlerTest extends TestCase {
 
 		// Nothing is built without being declared, and this fixture is a
 		// module like any other.
-		$this->plugin->declare_modules( array( SpyActivation::class ) );
+		$this->plugin->declare_multiple( array( SpyActivation::class ) );
 	}
 
 	public function test_registers_activation_and_deactivation_hooks_at_load_time(): void {

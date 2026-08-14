@@ -145,4 +145,27 @@ class RuntimePlugin extends Module {
 	public function get_slug_or_default( string $plugin_root ): string {
 		return $this->get_slug( $plugin_root ) ?? \basename( \rtrim( $plugin_root, '/\\' ) );
 	}
+
+	/**
+	 * The action a plugin fires at the end of its own `run()`.
+	 *
+	 * The heading almost every generated or copied module is declared under, so
+	 * the commands that write `bootstrap.php` need it before the plugin they are
+	 * writing for is necessarily running. Asked of the running plugin when there
+	 * is one, and composed the same way {@see \Zestry\WPToolkit\Kernel\Plugin::get_loaded_hook()}
+	 * composes it otherwise -- one rule, so a command cannot write a heading the
+	 * plugin will not fire.
+	 *
+	 * @param string $plugin_root Absolute path to the consuming plugin's root.
+	 * @return string The action name.
+	 */
+	public function get_loaded_hook( string $plugin_root ): string {
+		$running = $this->get( $plugin_root );
+
+		if ( null !== $running && \method_exists( $running, 'get_loaded_hook' ) ) {
+			return (string) $running->get_loaded_hook();
+		}
+
+		return \str_replace( '-', '_', $this->get_slug_or_default( $plugin_root ) ) . '_loaded';
+	}
 }

@@ -88,7 +88,7 @@ final class LogTest extends TestCase {
 	 * mixed-separator `acme-plugin_log`.
 	 */
 	public function test_a_hyphenated_slug_is_normalised(): void {
-		$plugin = ( new \Zestry\WPToolkit\Kernel\Plugin( $this->entry_file, 'acme-plugin' ) )->declare_modules( $this->get_toolkit_modules() );
+		$plugin = ( new \Zestry\WPToolkit\Kernel\Plugin( $this->entry_file, 'acme-plugin' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		$this->assertSame( 'acme-plugin-log', $plugin->get( Log::class )->get_hook() );
 	}
@@ -102,7 +102,7 @@ final class LogTest extends TestCase {
 	 * through `Plugin::get_namespaced_name()`.
 	 */
 	public function test_the_hook_is_what_the_plugin_composes(): void {
-		$plugin = ( new \Zestry\WPToolkit\Kernel\Plugin( $this->entry_file, 'acme-plugin' ) )->declare_modules( $this->get_toolkit_modules() );
+		$plugin = ( new \Zestry\WPToolkit\Kernel\Plugin( $this->entry_file, 'acme-plugin' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		$this->assertSame(
 			$plugin->get_namespaced_name( Log::HOOK ),

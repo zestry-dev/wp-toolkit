@@ -26,6 +26,7 @@ use Zestry\WPToolkit\DevTools\Copier;
 use Zestry\WPToolkit\DevTools\GitIgnore;
 use Zestry\WPToolkit\DevTools\Manifest;
 use Zestry\WPToolkit\DevTools\ZestryConfig;
+use Zestry\WPToolkit\DevTools\RuntimePlugin;
 use Zestry\WPToolkit\DevTools\StubRenderer;
 use Zestry\WPToolkit\DevTools\Formatter;
 use Zestry\WPToolkit\DevTools\Tooling;
@@ -800,10 +801,18 @@ return new class() extends Command {
 
 		$stub = $this->with( Path::class )->get_plugin_path( 'src/DevTools/stubs/bootstrap.php.stub' );
 
-		// Rendered rather than copied: the file's one sample calls `__()`, and a
-		// domain that is not this plugin's is one the linters `init` is about to
-		// write would flag the moment someone uncommented it.
-		$contents = $this->with( StubRenderer::class )->render( $stub, array( 'text_domain' => $text_domain ) );
+		/*
+		 * Rendered rather than copied: the file explains headings using this
+		 * plugin's own loaded action, and a placeholder there would be the one
+		 * hook name in the file that is not real.
+		 */
+		$contents = $this->with( StubRenderer::class )->render(
+			$stub,
+			array(
+				'text_domain' => $text_domain,
+				'loaded_hook' => $this->with( RuntimePlugin::class )->get_loaded_hook( $plugin_root ),
+			)
+		);
 
 		if ( false === file_put_contents( $destination, $contents ) ) {
 			$this->warning( 'Failed to write bootstrap.php -- create it yourself, returning an empty array.' );

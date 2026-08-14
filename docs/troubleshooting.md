@@ -89,7 +89,7 @@ Error: 1 problem found.
 Two limits on that check, so you know when to look yourself:
 
 - It knows the modules **it** copied in, under `lib/Core/Modules/`. A module *you* wrote under `lib/Modules/` is not in its registry, so an undeclared one is not flagged.
-- It reads `bootstrap.php` as written. A plugin that declares its modules from the entry file with `declare_modules()` instead has nothing there for `doctor` to read.
+- It reads `bootstrap.php` as written. A plugin that declares its modules from the entry file with `declare_multiple()` instead has nothing there for `doctor` to read.
 
 Three other causes worth ruling out once the declaration is there:
 
@@ -146,7 +146,7 @@ return array(
 
 `wp zt add <name>` writes that entry for you. A module added by hand, or one whose declaration was lost in a merge, is the case to check — `wp zt doctor` finds it.
 
-The other shape is a module you *did* declare that names a `boots_on`:
+The other shape is a module you *did* declare, listed under a heading:
 
 ```
 Acme\Plugin\Core\Modules\Blocks\Blocks boots on `init`, which has not fired yet.

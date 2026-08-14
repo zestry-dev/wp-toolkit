@@ -171,7 +171,7 @@ final class CookieTest extends TestCase {
 
 		// A second plugin, same site, same salts, different slug.
 		$other = ( new Plugin( $this->entry_file, 'other-plugin' ) )
-			->declare_modules( $this->get_toolkit_modules() )
+			->declare_multiple( $this->get_toolkit_modules() )
 			->get( Cookie::class );
 
 		// Hand it the first plugin's sealed value under its own name.

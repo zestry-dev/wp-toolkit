@@ -7,6 +7,7 @@
 declare( strict_types=1 );
 
 use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
+use Zestry\WPToolkit\DevTools\RuntimePlugin;
 
 return new class() extends MakeCommand {
 
@@ -46,8 +47,27 @@ return new class() extends MakeCommand {
 		parent::handle( $args, $assoc_args );
 	}
 
+	/**
+	 * Declare the handler, booting as the plugin loads.
+	 *
+	 * The one generated module whose timing is not a preference. WordPress
+	 * fires `activate_{plugin}` immediately after the plugin file loads, so the
+	 * handler has to have registered its callback by then. The plugin's own
+	 * loaded action is the last moment that still is: `run()` fires it as its
+	 * final act, which is inside the entry file and so ahead of anything
+	 * WordPress does with the plugin afterwards. `init` would be too late.
+	 *
+	 * @param string                                                          $name        The class name given on the command line.
+	 * @param string                                                          $plugin_root Absolute path to the consuming plugin's root.
+	 * @param array{namespace: string, root: string, text_domain: string|null} $config      The project's zestry.json.
+	 * @return void
+	 */
 	protected function after_write( string $name, string $plugin_root, array $config ): void {
-		$this->declare_generated_module( $name, $plugin_root );
+		$this->declare_generated_module(
+			$name,
+			$plugin_root,
+			$this->with( RuntimePlugin::class )->get_loaded_hook( $plugin_root )
+		);
 	}
 
 	/**

@@ -1,54 +1,58 @@
 <?php
 
 /**
- * What this plugin uses, and how each is configured.
+ * What this plugin uses, and when each part starts.
  *
  * `wp zt add <name>` appends to this file, so a module works as soon as it is
  * copied. The entry file reads it with `$plugin->bootstrap()`.
  *
- * An entry is a class name on its own, or a class name with a configuration
- * array:
+ * Everything the plugin is made of is here, and listing one is what builds it.
+ * Nothing outside this file is ever built, so reading it tells you what the
+ * plugin has -- and in what order it comes up.
+ *
+ * **The top level is for modules that do nothing until something asks.** A
+ * module listed here is built as the plugin loads and then waits:
  *
  * ```
- * Cron::class,                    // no configuration
- * Cron::class => array(           // configured
- *     'configure' => function ( Cron $cron ): void {
- *         $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
- *     },
+ * Path::class,
+ * Views::class,
+ * Options::class => static function ( Options $options ): void {
+ *     $options->add_autoloaded_groups( array( 'reports' ) );
+ * },
+ * ```
+ *
+ * A class entry's value is the callback that configures it, run when the module
+ * is built and before it boots. A module needing none is written bare.
+ *
+ * **A module that acts on its own goes under the hook it acts on.** The timing
+ * is a heading over the modules that share it, said once:
+ *
+ * ```
+ * '{{loaded_hook}}' => array(
+ *     Log::class,
+ *     AdminPages::class,
+ * ),
+ *
+ * 'init' => array(
+ *     PostTypes::class,
+ *     Assets::class,
  * ),
  * ```
  *
- * The array takes three keys, all optional:
+ * `{{loaded_hook}}` is this plugin's own action, fired at the end of `run()`
+ * once every module is built. It is the earliest heading that still has the
+ * whole plugin behind it, and where a module belongs unless WordPress will not
+ * accept its work that early -- a post type, a block or a meta key wants
+ * `init`.
  *
- * - `configure` -- runs when the module is first built, before it boots. The
- *   place to call whatever setters it offers.
- * - `boots_on` -- a WordPress hook to boot on, for a module that cannot do its
- *   work as the plugin loads. Without it the module boots as `run()` reaches it.
- * - `priority` -- what `boots_on` binds at. Defaults to 10.
+ * A heading takes the same two class shapes, so a module needing a hook *and*
+ * configuration is `'init' => array( Assets::class => $callback )`. Add
+ * `:priority` to order a heading against everything else on that hook --
+ * `'init:20'` runs behind the default 10.
  *
- * Everything works without an array, so add one only to change a default. See a
- * module's own page for what it accepts.
- *
- * Everything this plugin is made of is here, and listing one is what builds it.
- * Some modules act on their own -- they bind a hook, register a post type, walk
- * a directory -- and some only work when you call them; both are listed the
- * same way. Leave one out and nothing builds it: a module that acts on its own
- * never runs its `on_boot()`, with no error to say so, and any other throws the
- * moment something reaches for it. `wp zt doctor` catches the silent one.
- *
- * An entry file that runs the plugin as it loads runs `configure` before
- * `init`, where a `__()` loads the text domain early enough that WordPress
- * reports `_load_textdomain_just_in_time` on every request. Naming a `boots_on`
- * moves the whole module past that point:
- *
- * ```
- * Blocks::class => array(
- *     'boots_on'  => 'init',
- *     'configure' => function ( Blocks $blocks ): void {
- *         $blocks->add_categories( array( 'reports' => __( 'Reports', '{{text_domain}}' ) ) );
- *     },
- * ),
- * ```
+ * Leave a module that acts on its own at the top level and the plugin throws,
+ * naming the headings: the top level promises it does nothing until asked, and
+ * such a module cannot keep that promise.
  */
 
 declare( strict_types=1 );

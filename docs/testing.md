@@ -460,7 +460,7 @@ To give a class under test a fake collaborator, declare it against the module it
 
 ```php
 // A stand-in, declared like any other module.
-$this->plugin->declare_modules( array( FakeViews::class ) );
+$this->plugin->declare_multiple( array( FakeViews::class ) );
 
 // Anything calling $this->with( Views::class ) still gets the real one —
 // so a fake stands in by being the class the code under test names.

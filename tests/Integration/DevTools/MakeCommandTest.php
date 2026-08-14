@@ -519,7 +519,9 @@ final class MakeCommandTest extends TestCase {
 		$source = (string) file_get_contents( $file );
 
 		$this->assertStringContainsString( 'namespace Acme\\Plugin\\Modules\\Services;', $source );
-		$this->assertStringContainsString( 'class Mailer extends Module implements Bootable {', $source );
+		// No --bootable, so it is a module that works when something calls it.
+		$this->assertStringContainsString( 'class Mailer extends Module {', $source );
+		$this->assertStringNotContainsString( 'on_boot', $source );
 
 		$output = array();
 		$status = 0;
@@ -1501,7 +1503,7 @@ final class MakeCommandTest extends TestCase {
 	private function run_make( array $args, array $assoc_args = array(), string $stub = 'action.php.stub' ): MakeCommand {
 		\WP_CLI::reset();
 
-		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-make-test' ) )->declare_modules( $this->get_toolkit_modules() );
+		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-make-test' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		$stub_to_make_file = array(
 			'command.php.stub'   => 'command.php',

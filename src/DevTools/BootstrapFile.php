@@ -32,9 +32,9 @@ class BootstrapFile extends Module {
 	 *
 	 * @param string      $plugin_root Absolute path to the consuming plugin's root.
 	 * @param string      $class_name  Fully qualified module class name, without a leading separator.
-	 * @param string|null $config      The configuration array's contents, or null for `array()`.
-	 * @param string|null $hook        The hook it boots on, or null to boot as the plugin loads.
-	 * @param int         $priority    The priority that hook binds at.
+	 * @param string|null $config      A commented lead-in written above the entry, or null for none.
+	 * @param string|null $hook        The hook heading it goes under, or null for the top level.
+	 * @param int         $priority    The priority that heading binds at.
 	 * @return DeclarationResult What was written, or why nothing was.
 	 */
 	public function declare_module( string $plugin_root, string $class_name, ?string $config = null, ?string $hook = null, int $priority = 10 ): DeclarationResult {
@@ -53,7 +53,12 @@ class BootstrapFile extends Module {
 	/**
 	 * Declare several modules in one pass.
 	 *
-	 * @param string                     $plugin_root Absolute path to the consuming plugin's root.
+	 * Entries are grouped by the heading they go under and written one group at
+	 * a time, since each insertion moves every offset after it -- the file is
+	 * re-read between groups rather than the offsets adjusted, which is the
+	 * version that cannot drift.
+	 *
+	 * @param string $plugin_root Absolute path to the consuming plugin's root.
 	 * @param array<class-string, array{config: string|null, hook: string|null, priority: int}> $classes How to write each entry, keyed by class name.
 	 * @return DeclarationResult What was written, or why nothing was.
 	 */
@@ -67,7 +72,7 @@ class BootstrapFile extends Module {
 		$contents = (string) \file_get_contents( $path );
 		$imports  = $this->get_imports( $contents );
 		$new_uses = array();
-		$addition = '';
+		$groups   = array();
 
 		foreach ( $classes as $class_name => $entry ) {
 			if ( $this->has_module( $contents, $imports, $class_name ) ) {
@@ -75,41 +80,33 @@ class BootstrapFile extends Module {
 			}
 
 			$reference = $this->resolve_reference( $class_name, $imports, $new_uses );
-			$config    = $entry['config'] ?? null;
 			$hook      = $entry['hook'] ?? null;
+			$heading   = null === $hook ? '' : $this->get_heading( $hook, $entry['priority'] ?? 10 );
+			$indent    = '' === $heading ? "\t" : "\t\t";
+			$config    = $entry['config'] ?? null;
 
-			/*
-			 * A module with nothing to say is written bare -- its value would be
-			 * an initializer, and `add` has none to supply. One that names a boot
-			 * hook is written in full, because `bootstrap.php` is the only place
-			 * that timing lives: suggested in a comment, a module that cannot work
-			 * before `init` would be listed as though it could.
-			 */
-			$addition .= ( null === $config || '' === $config ? '' : $config )
-				. $this->get_entry_body( $reference, $hook, $entry['priority'] ?? 10 );
+			$groups[ $heading ] ??= '';
+			$groups[ $heading ]  .= ( null === $config || '' === $config ? '' : $config )
+				. $indent . $reference . "::class,\n";
 		}
 
-		if ( '' === $addition ) {
+		if ( array() === $groups ) {
 			return DeclarationResult::AlreadyDeclared;
 		}
 
-		$insert_at = $this->find_array_end( $contents );
+		foreach ( $groups as $heading => $body ) {
+			$updated = '' === $heading
+				? $this->insert_at( $contents, $this->find_array_end( $contents ), $body )
+				: $this->insert_into_group( $contents, $heading, $body );
 
-		if ( null === $insert_at ) {
-			return DeclarationResult::Unrecognized;
+			if ( null === $updated ) {
+				return DeclarationResult::Unrecognized;
+			}
+
+			$contents = $updated;
 		}
 
-		$before = \substr( $contents, 0, $insert_at );
-		$after  = \substr( $contents, $insert_at );
-
-		// An empty `return array();` puts the closing bracket on the same line as
-		// the opening one, so the first entry needs a line of its own; a file
-		// that already has entries ends the last one with a newline already.
-		if ( ! \str_ends_with( $before, "\n" ) ) {
-			$before .= "\n";
-		}
-
-		$updated = $this->add_imports( $before . $addition . $after, $new_uses );
+		$updated = $this->add_imports( $contents, $new_uses );
 
 		if ( false === \file_put_contents( $path, $updated ) ) {
 			return DeclarationResult::NotWritable;
@@ -141,8 +138,9 @@ class BootstrapFile extends Module {
 	 * time without autoloading, so this needs none of the consumer's classes to
 	 * be loadable.
 	 *
-	 * Reports what is *written*, and nothing more. The file is one flat list, so
-	 * there is nothing here to interpret: what happens to a class is decided by
+	 * Reports what is *written*, and nothing more. A heading is flattened away,
+	 * since a class under one is declared as surely as one above it: what happens
+	 * to a class is decided by
 	 * whether it is a {@see \Zestry\WPToolkit\Kernel\Abstracts\Module}, which the caller asks
 	 * the class rather than the file. Deciding whether a declaration is
 	 * *correct* is the caller's job.
@@ -180,53 +178,42 @@ class BootstrapFile extends Module {
 			throw new \RuntimeException( 'Bootstrap file must return an array: ' . $path );
 		}
 
-		$declarations = array();
-
-		/*
-		 * The same two shapes `bootstrap()` accepts: `Foo::class => array( … )`
-		 * gives a string key, and a bare `Foo::class,` gives an integer key
-		 * whose value is the class name.
-		 */
-		foreach ( $declared as $key => $value ) {
-			$class_name = \is_string( $key ) ? $key : $value;
-
-			if ( ! \is_string( $class_name ) || '' === $class_name ) {
-				continue;
-			}
-
-			$declarations[ \ltrim( $class_name, '\\' ) ] = array(
-				'initialize' => \is_array( $value ) && \is_callable( $value['configure'] ?? null ),
-			);
-		}
-
-		return $declarations;
+		return $this->read_entries( $declared );
 	}
 
 	/**
-	 * The entry line a module would be declared with.
+	 * The lines a module would be declared with.
 	 *
-	 * Used to print what a consumer has to paste when there is no file to
-	 * append to, so the work is one paste rather than a trip to the docs.
+	 * Printed for a consumer to paste when there is no file to append to, so the
+	 * work is one paste rather than a trip to the docs. A module under a heading
+	 * is printed with the heading around it, since the heading is what says when
+	 * it boots and a bare line would declare something else.
 	 *
 	 * Fully qualified rather than imported, unlike what gets written into the
-	 * file itself: this line is printed for a consumer to paste somewhere this
-	 * class cannot see, so a short name would depend on an import that may not
-	 * be there.
-	 *
-	 * A module that names a boot hook is written in the long form, which is the
-	 * only place that timing lives -- so it has to be written rather than
-	 * suggested in a comment, or a module that cannot work before `init` would be
-	 * listed as though it could.
+	 * file itself: this is pasted somewhere this class cannot see, so a short
+	 * name would depend on an import that may not be there.
 	 *
 	 * @param string      $class_name Fully qualified module class name.
-	 * @param string|null $config     The configuration array's contents, or null for `array()`.
-	 * @param string|null $hook       The hook it boots on, or null to boot as the plugin loads.
-	 * @param int         $priority   The priority that hook binds at; 10 is left unwritten.
+	 * @param string|null $config     A commented lead-in written above the entry, or null for none.
+	 * @param string|null $hook       The hook heading it goes under, or null for the top level.
+	 * @param int         $priority   The priority that heading binds at.
 	 * @return string
 	 */
 	public function get_entry_line( string $class_name, ?string $config = null, ?string $hook = null, int $priority = 10 ): string {
-		return ( null === $config || '' === $config ? '' : $config )
-			. \rtrim( $this->get_entry_body( '\\' . $class_name, $hook, $priority ), "\n" );
+		$lead = null === $config || '' === $config ? '' : $config;
+
+		if ( null === $hook ) {
+			return $lead . "\t\\" . $class_name . '::class,';
+		}
+
+		return $lead . \implode(
+			"\n",
+			array(
+				"\t'" . $this->get_heading( $hook, $priority ) . "' => array(",
+				"\t\t\\" . $class_name . '::class,',
+				"\t),",
+			)
+		);
 	}
 
 	/**
@@ -247,29 +234,202 @@ class BootstrapFile extends Module {
 	}
 
 	/**
-	 * One entry, in the shortest shape that says everything true about it.
+	 * Every class one entry list declares, reading through its headings.
 	 *
-	 * @param string      $reference The class reference to write, imported or fully qualified.
-	 * @param string|null $hook      The hook it boots on, or null to boot as the plugin loads.
-	 * @param int         $priority  The priority that hook binds at.
+	 * The same shapes `declare_modules()` takes: a bare class name, a class name
+	 * keyed to its configurator, and a heading keyed to a list of either. A
+	 * heading is flattened away here -- callers ask what the plugin declares,
+	 * and every class under a heading is declared as surely as one above it.
+	 *
+	 * @param array<array-key, mixed> $entries The entries as the file returned them.
+	 * @return array<string, array{initialize: bool}> Keyed by class name, without a leading separator.
+	 */
+	private function read_entries( array $entries ): array {
+		$declarations = array();
+
+		foreach ( $entries as $key => $value ) {
+			// A heading, by the same rule `declare_modules()` reads it: a hook
+			// name never contains a backslash and `Foo::class` always does.
+			if ( \is_string( $key ) && \is_array( $value ) && ! \str_contains( $key, '\\' ) ) {
+				$declarations += $this->read_entries( $value );
+
+				continue;
+			}
+
+			$class_name = \is_string( $key ) ? $key : $value;
+
+			if ( ! \is_string( $class_name ) || '' === $class_name ) {
+				continue;
+			}
+
+			$declarations[ \ltrim( $class_name, '\\' ) ] = array(
+				'initialize' => \is_string( $key ) && \is_callable( $value ),
+			);
+		}
+
+		return $declarations;
+	}
+
+	/**
+	 * The heading a hook and priority are written as.
+	 *
+	 * `init` at WordPress's own default, `init:20` anywhere else -- 10 written
+	 * out would be one more thing to read saying what leaving it out says.
+	 *
+	 * @param string $hook     The hook the group boots on.
+	 * @param int    $priority The priority it binds at.
 	 * @return string
 	 */
-	private function get_entry_body( string $reference, ?string $hook, int $priority ): string {
-		if ( null === $hook ) {
-			return "\t" . $reference . "::class,\n";
+	private function get_heading( string $hook, int $priority ): string {
+		return 10 === $priority ? $hook : $hook . ':' . $priority;
+	}
+
+	/**
+	 * Put a block of entries at a byte offset, opening a line for it if needed.
+	 *
+	 * @param string   $contents The file's contents.
+	 * @param int|null $offset   Where the entries go, or null when there is nowhere.
+	 * @param string   $body     The entry lines to insert.
+	 * @return string|null The updated contents, or null when there was nowhere to put them.
+	 */
+	private function insert_at( string $contents, ?int $offset, string $body ): ?string {
+		if ( null === $offset ) {
+			return null;
 		}
 
-		// 10 is WordPress's own default, so writing it would be one more line
-		// saying what leaving it out already says.
-		$lines = array( "\t" . $reference . '::class => array(', "\t\t'boots_on' => '" . $hook . "'," );
+		$before = \substr( $contents, 0, $offset );
 
-		if ( 10 !== $priority ) {
-			$lines[] = "\t\t'priority' => " . $priority . ',';
+		// An empty `array()` closes on the line it opened on, so the first entry
+		// needs a line of its own; one that already has entries ends the last of
+		// them with a newline already.
+		if ( ! \str_ends_with( $before, "\n" ) ) {
+			$before .= "\n";
 		}
 
-		$lines[] = "\t),";
+		return $before . $body . \substr( $contents, $offset );
+	}
 
-		return \implode( "\n", $lines ) . "\n";
+	/**
+	 * Put entries inside a heading, creating the heading when the file has none.
+	 *
+	 * @param string $contents The file's contents.
+	 * @param string $heading  The heading to write under, `hook` or `hook:priority`.
+	 * @param string $body     The entry lines to insert.
+	 * @return string|null The updated contents, or null when the file has no returned array.
+	 */
+	private function insert_into_group( string $contents, string $heading, string $body ): ?string {
+		$offset = $this->find_group_end( $contents, $heading );
+
+		if ( null !== $offset ) {
+			return $this->insert_at( $contents, $offset, $body );
+		}
+
+		// No such heading yet, so this writes one. Blank line above it, since a
+		// heading is a section rather than another entry.
+		$group = "\n\t'" . $heading . "' => array(\n" . $body . "\t),\n";
+
+		return $this->insert_at( $contents, $this->find_array_end( $contents ), $group );
+	}
+
+	/**
+	 * The byte offset of the closing bracket of one heading's array.
+	 *
+	 * Tokenized rather than matched, for the reason {@see find_array_end()} is:
+	 * a heading's own name may appear in a comment or a string, and its closing
+	 * bracket is only recognisable by counting from where it opened.
+	 *
+	 * @param string $contents The file's contents.
+	 * @param string $heading  The heading to find, `hook` or `hook:priority`.
+	 * @return int|null Null when the file does not already hold that heading.
+	 */
+	private function find_group_end( string $contents, string $heading ): ?int {
+		$tokens = \token_get_all( $contents );
+		$count  = \count( $tokens );
+		$offset = 0;
+
+		$offsets = array();
+
+		foreach ( $tokens as $index => $token ) {
+			$offsets[ $index ] = $offset;
+			$offset           += \strlen( \is_array( $token ) ? $token[1] : $token );
+		}
+
+		foreach ( $tokens as $index => $token ) {
+			if ( ! \is_array( $token ) || T_CONSTANT_ENCAPSED_STRING !== $token[0] ) {
+				continue;
+			}
+
+			// The token carries its quotes; the heading does not.
+			if ( \trim( $token[1], "'\"" ) !== $heading ) {
+				continue;
+			}
+
+			$opened = $this->find_array_open( $tokens, $index, $count );
+
+			if ( null === $opened ) {
+				continue;
+			}
+
+			$depth = 0;
+
+			for ( $position = $opened; $position < $count; $position++ ) {
+				$text = \is_array( $tokens[ $position ] ) ? $tokens[ $position ][1] : $tokens[ $position ];
+
+				if ( '(' === $text || '[' === $text ) {
+					++$depth;
+				} elseif ( ')' === $text || ']' === $text ) {
+					--$depth;
+
+					if ( 0 === $depth ) {
+						return $offsets[ $position ];
+					}
+				}
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * The index of the bracket opening the array a heading points at.
+	 *
+	 * Null when what follows the string is not `=> array(` or `=> [`, which is
+	 * what a string that merely looks like a heading gives -- one inside a
+	 * comparison, or a value rather than a key.
+	 *
+	 * @param array<int, array{0: int, 1: string}|string> $tokens The tokenized file.
+	 * @param int                                         $index  Index of the string token.
+	 * @param int                                         $count  How many tokens there are.
+	 * @return int|null Index of the opening bracket.
+	 */
+	private function find_array_open( array $tokens, int $index, int $count ): ?int {
+		$arrow = false;
+
+		for ( $position = $index + 1; $position < $count; $position++ ) {
+			$token = $tokens[ $position ];
+			$text  = \is_array( $token ) ? $token[1] : $token;
+
+			if ( \is_array( $token ) && T_WHITESPACE === $token[0] ) {
+				continue;
+			}
+
+			if ( ! $arrow ) {
+				if ( \is_array( $token ) && T_DOUBLE_ARROW === $token[0] ) {
+					$arrow = true;
+					continue;
+				}
+
+				return null;
+			}
+
+			if ( \is_array( $token ) && T_ARRAY === $token[0] ) {
+				continue;
+			}
+
+			return '(' === $text || '[' === $text ? $position : null;
+		}
+
+		return null;
 	}
 
 	/**

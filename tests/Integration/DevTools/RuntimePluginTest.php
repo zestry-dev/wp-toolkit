@@ -57,8 +57,12 @@ final class RuntimePluginTest extends TestCase {
 	 * autoload, before the plugin runs, exactly as it is in a real `wp` run.
 	 */
 	public function test_a_plugin_publishes_itself_when_the_constant_is_defined(): void {
+		// `run()` announces the plugin on its own action as its last act, and
+		// this subprocess has no WordPress to announce it with -- so it gets the
+		// one function that reaches, which is also all this test is watching.
 		$script = sprintf(
 			'define( "ABSPATH", "/" ); define( "ZESTRY_DEVTOOL", true );'
+				. ' function do_action( $hook, ...$args ) {}'
 				. ' require %1$s; $p = new \Zestry\WPToolkit\Kernel\Plugin( %2$s, "acme" ); $p->run();'
 				. ' echo isset( $GLOBALS["zestry_runtime_plugins"][ dirname( %2$s ) ] )'
 				. ' && $GLOBALS["zestry_runtime_plugins"][ dirname( %2$s ) ] === $p ? "published" : "missing";',
@@ -183,7 +187,7 @@ final class RuntimePluginTest extends TestCase {
 	 * @return Plugin
 	 */
 	private function publish( string $entry, string $slug ): Plugin {
-		$running = ( new Plugin( $entry, $slug ) )->declare_modules( $this->get_toolkit_modules() );
+		$running = ( new Plugin( $entry, $slug ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		$GLOBALS[ RuntimePlugin::REGISTRY ][ dirname( $entry ) ] = $running;
 

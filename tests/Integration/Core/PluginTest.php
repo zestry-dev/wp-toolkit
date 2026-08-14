@@ -60,7 +60,7 @@ final class PluginTest extends TestCase {
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( $slug );
 
-		( new Plugin( $this->plugin_dir . '/plugin.php', $slug ) )->declare_modules( $this->get_toolkit_modules() );
+		( new Plugin( $this->plugin_dir . '/plugin.php', $slug ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		$this->fail( 'Expected refusal: ' . $reason );
 	}
@@ -134,8 +134,10 @@ final class PluginTest extends TestCase {
 		$this->write_plugin_file(
 			'bootstrap.php',
 			"<?php\nreturn array(\n"
-				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\OrderProbeTwo::class,\n"
-				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\OrderProbeOne::class,\n);\n"
+				. "\t'zestry_test_loaded' => array(\n"
+				. "\t\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\OrderProbeTwo::class,\n"
+				. "\t\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\OrderProbeOne::class,\n"
+				. "\t),\n);\n"
 		);
 
 		$GLOBALS['zestry_boot_order'] = array();
@@ -165,7 +167,7 @@ final class PluginTest extends TestCase {
 		$this->write_plugin_file(
 			'bootstrap.php',
 			"<?php\nreturn array(\n"
-				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\ForeignThrowingProbe::class,\n);\n"
+				. "\t'zestry_test_loaded' => array( \\Zestry\\WPToolkit\\Tests\\Integration\\Core\\ForeignThrowingProbe::class ),\n);\n"
 		);
 
 		$this->plugin->bootstrap( $this->plugin_dir . '/bootstrap.php' );
@@ -195,8 +197,10 @@ final class PluginTest extends TestCase {
 		$this->write_plugin_file(
 			'bootstrap.php',
 			"<?php\nreturn array(\n"
-				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\ThrowingProbe::class,\n"
-				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\OrderProbeOne::class,\n);\n"
+				. "\t'zestry_test_loaded' => array(\n"
+				. "\t\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\ThrowingProbe::class,\n"
+				. "\t\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\OrderProbeOne::class,\n"
+				. "\t),\n);\n"
 		);
 
 		$GLOBALS['zestry_boot_order'] = array();
@@ -228,8 +232,8 @@ final class PluginTest extends TestCase {
 		$this->write_plugin_file(
 			'bootstrap.php',
 			"<?php\nreturn array(\n"
-				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class => array(\n"
-				. "\t\t'configure' => static function ( \\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe \$probe ): void {\n"
+				. "\t'zestry_test_loaded' => array(\n"
+				. "\t\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class => static function ( \\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe \$probe ): void {\n"
 				. "\t\t\t\$GLOBALS['zestry_bootstrap_ran'] = true;\n"
 				. "\t\t},\n"
 				. "\t),\n);\n"
@@ -267,7 +271,7 @@ final class PluginTest extends TestCase {
 
 		$this->assertFalse( $GLOBALS['zestry_bootstrap_ran'], 'Configuring does not declare it.' );
 
-		$this->plugin->declare_modules( array( BootstrapProbe::class ) )->run();
+		$this->plugin->declare_multiple( array( 'zestry_test_loaded' => array( BootstrapProbe::class ) ) )->run();
 
 		$this->assertTrue( $GLOBALS['zestry_bootstrap_ran'], 'Declaring it is what runs the callback.' );
 		unset( $GLOBALS['zestry_bootstrap_ran'] );
@@ -281,7 +285,7 @@ final class PluginTest extends TestCase {
 		$this->write_plugin_file(
 			'bootstrap.php',
 			"<?php\nreturn array(\n"
-				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class,\n"
+				. "\t'zestry_test_loaded' => array( \\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class ),\n"
 				. ");\n"
 		);
 
@@ -305,7 +309,7 @@ final class PluginTest extends TestCase {
 		$this->write_plugin_file(
 			'bootstrap.php',
 			"<?php\nreturn array(\n"
-				. "\t'Zestry\\WPToolkit\\\\Tests\\\\Integration\\\\Core\\\\NotLoadedProbe' => array( 'configure' => static function ( \$m ): void {} ),\n"
+				. "\t'Zestry\\WPToolkit\\\\Tests\\\\Integration\\\\Core\\\\NotLoadedProbe' => static function ( \$m ): void {},\n"
 				. ");\n"
 		);
 
@@ -332,7 +336,7 @@ final class PluginTest extends TestCase {
 		$this->write_plugin_file(
 			'bootstrap.php',
 			"<?php\nreturn array(\n"
-				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class,\n"
+				. "\t'zestry_test_loaded' => array( \\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class ),\n"
 				. ");\n"
 		);
 
@@ -355,63 +359,73 @@ final class PluginTest extends TestCase {
 	}
 
 	/**
-	 * Configuration is an array and never a bare callback, so `configure`,
-	 * `boots_on` and `priority` are all written the same way -- and adding the
-	 * second to an entry that has the first is one more line, not a rewrite.
+	 * A class entry's value is the callback that configures it, so anything else
+	 * is refused rather than quietly ignored -- and the message names both the
+	 * shape to write and where timing goes, since the old array shape is the
+	 * thing someone is most likely to reach for.
 	 */
-	public function test_bootstrap_rejects_configuration_that_is_not_an_array(): void {
+	public function test_bootstrap_rejects_a_class_entry_that_is_not_a_configurator(): void {
 		$this->write_plugin_file(
 			'bootstrap.php',
 			"<?php\nreturn array(\n"
-				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class => static function ( \$probe ): void {},\n"
+				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class => array( 'boots_on' => 'init' ),\n"
 				. ");\n"
 		);
 
 		try {
 			$this->plugin->bootstrap( $this->plugin_dir . '/bootstrap.php' );
-			$this->fail( 'A callable value must be refused.' );
+			$this->fail( 'An array value must be refused.' );
 		} catch ( ModuleException $exception ) {
 			$this->assertStringContainsString(
-				'is Closure',
+				'is array',
 				$exception->getMessage(),
 				'The message names what the entry is instead.'
 			);
 			$this->assertStringContainsString(
-				"'configure' => \$callback",
+				'static function',
 				$exception->getMessage(),
 				'The message names the shape to write.'
+			);
+			$this->assertStringContainsString(
+				"'init' => array(",
+				$exception->getMessage(),
+				'And where timing goes now.'
 			);
 		}
 	}
 
 	/**
-	 * A `configure` that is not callable is the one thing the array shape can
-	 * still get wrong, and it is worth saying which key is at fault.
+	 * A callable value is the configured shape, and is what the file takes.
 	 */
-	public function test_bootstrap_rejects_a_before_boot_that_is_not_callable(): void {
+	public function test_bootstrap_accepts_a_bare_callable_as_configuration(): void {
 		$this->write_plugin_file(
 			'bootstrap.php',
 			"<?php\nreturn array(\n"
-				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class => array( 'configure' => 'nope' ),\n"
-				. ");\n"
+				. "\t'zestry_test_loaded' => array(\n"
+				. "\t\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class => static function ( \$probe ): void {\n"
+				. "\t\t\t\$GLOBALS['zestry_configured'] = true;\n"
+				. "\t\t},\n"
+				. "\t),\n);\n"
 		);
 
-		$this->expectException( ModuleException::class );
-		$this->expectExceptionMessage( '`configure`' );
+		$GLOBALS['zestry_configured'] = false;
 
-		$this->plugin->bootstrap( $this->plugin_dir . '/bootstrap.php' );
+		$this->plugin->bootstrap( $this->plugin_dir . '/bootstrap.php' )->run();
+
+		$this->assertTrue( $GLOBALS['zestry_configured'], 'The value is the configurator.' );
+		unset( $GLOBALS['zestry_configured'] );
 	}
 
 	/**
-	 * `boots_on` holds a module back until its hook, and every other shape in
-	 * the array keeps working alongside it.
+	 * A heading holds every module under it back until its hook, and the rest of
+	 * the file keeps working alongside it.
 	 */
-	public function test_bootstrap_defers_a_module_that_names_a_boot_hook(): void {
+	public function test_bootstrap_defers_a_module_listed_under_a_heading(): void {
 		$this->write_plugin_file(
 			'bootstrap.php',
 			"<?php\nreturn array(\n"
-				. "\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class => array(\n"
-				. "\t\t'boots_on' => 'zestry_test_boot_hook',\n"
+				. "\t'zestry_test_boot_hook' => array(\n"
+				. "\t\t\\Zestry\\WPToolkit\\Tests\\Integration\\Core\\BootstrapProbe::class,\n"
 				. "\t),\n);\n"
 		);
 
@@ -518,7 +532,7 @@ final class PluginTest extends TestCase {
 			define( $constant, true );
 		}
 
-		$plugin = ( new Plugin( $this->entry_file, 'zestry-plugintest-true' ) )->declare_modules( $this->get_toolkit_modules() );
+		$plugin = ( new Plugin( $this->entry_file, 'zestry-plugintest-true' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		$this->assertSame( 'zestry-plugintest-true', $plugin->get_slug() );
 		$this->assertTrue( $plugin->is_plugin_debug() );
@@ -532,7 +546,7 @@ final class PluginTest extends TestCase {
 			define( $constant, false );
 		}
 
-		$plugin = ( new Plugin( $this->entry_file, 'zestry-plugintest-false' ) )->declare_modules( $this->get_toolkit_modules() );
+		$plugin = ( new Plugin( $this->entry_file, 'zestry-plugintest-false' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		$this->assertTrue( defined( $constant ) );
 		$this->assertFalse( $plugin->is_plugin_debug() );
@@ -549,7 +563,7 @@ final class PluginTest extends TestCase {
 		);
 		$this->assertSame(
 			$this->plugin,
-			$this->plugin->declare_modules( array() ),
+			$this->plugin->declare_multiple( array() ),
 			'autoload() returns the plugin for chaining.'
 		);
 
@@ -588,7 +602,7 @@ final class PluginTest extends TestCase {
 			}
 		);
 
-		$returned = $this->plugin->declare_modules( array( Path::class ) );
+		$returned = $this->plugin->declare_multiple( array( Path::class ) );
 
 		$this->assertSame( $this->plugin, $returned, 'autoload() returns the plugin for chaining.' );
 		$this->assertFalse( $initialized, 'autoload() queues without resolving.' );
@@ -603,19 +617,21 @@ final class PluginTest extends TestCase {
 		$this->assertSame( $this->plugin, $this->plugin->run() );
 	}
 
-	public function test_run_invokes_the_callback_with_the_plugin_and_returns_it(): void {
-		// Covers run()'s truthy-callback branch: the guard passes and the callback is
-		// invoked with $this as its argument. Kept minimal (no autoload) so this file
-		// owns the callback-guard branch without duplicating ContainerTest's autoload run.
+	public function test_run_announces_the_plugin_on_its_own_action(): void {
+		// The replacement for a ready callback: anything that wants to act once
+		// the plugin is up listens for this, and so can another plugin.
 		$received = null;
 
-		$returned = $this->plugin->run(
-			function ( Plugin $plugin ) use ( &$received ): void {
+		add_action(
+			'zestry_test_loaded',
+			static function ( $plugin ) use ( &$received ): void {
 				$received = $plugin;
 			}
 		);
 
-		$this->assertSame( $this->plugin, $received, 'run() passes this plugin to the callback.' );
+		$returned = $this->plugin->run();
+
+		$this->assertSame( $this->plugin, $received, 'run() passes this plugin to its listeners.' );
 		$this->assertSame( $this->plugin, $returned, 'run() returns the plugin for chaining.' );
 	}
 }

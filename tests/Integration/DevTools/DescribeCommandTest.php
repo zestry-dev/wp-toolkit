@@ -144,7 +144,7 @@ final class DescribeCommandTest extends TestCase {
 		file_put_contents(
 			$this->target_plugin_dir . '/bootstrap.php',
 			"<?php\nuse Acme\\Plugin\\Core\\Modules\\Cron\\Cron;\n"
-				. "return array( Cron::class => array( 'configure' => static function ( Cron \$cron ): void { \$cron->add_custom_interval( 'quarter_hourly', 900, 'Quarter hourly' ); } ) );\n"
+				. "return array( 'init' => array( Cron::class => static function ( Cron \$cron ): void { \$cron->add_custom_interval( 'quarter_hourly', 900, 'Quarter hourly' ); } ) );\n"
 		);
 
 		$rows = $this->describe_rows();
@@ -313,7 +313,7 @@ final class DescribeCommandTest extends TestCase {
 	private function run_describe( array $assoc_args = array() ): void {
 		\WP_CLI::reset();
 
-		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-describe-test' ) )->declare_modules( $this->get_toolkit_modules() );
+		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-describe-test' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
 		$command = require dirname( __DIR__, 3 ) . '/commands/describe.php';
