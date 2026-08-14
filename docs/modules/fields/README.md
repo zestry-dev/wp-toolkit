@@ -5,11 +5,11 @@
 
 # Fields
 
-Discovers `fields/` &nbsp;·&nbsp; Each file returns [`Field`](field.md) &nbsp;·&nbsp; Dependencies [`path`](../path/)
+Discovers `resources/fields/` &nbsp;·&nbsp; Each file returns [`Field`](field.md) &nbsp;·&nbsp; Dependencies [`path`](../path/)
 
 Registers post meta from files, with types, sanitisers and permissions.
 
-A file in `fields/` returns a `Field` naming the post types it attaches to — so a field on your own post type and a field on core's `post` are written the same way, in the same place.
+A file in `resources/fields/` returns a `Field` naming the post types it attaches to — so a field on your own post type and a field on core's `post` are written the same way, in the same place.
 
 Registering meta is what turns a bare `update_post_meta()` key into something typed, sanitised, permission-checked and visible to the block editor, which reads and writes meta over REST.
 
@@ -50,7 +50,7 @@ return array(
 ## A field
 
 ```php
-// fields/acme_rating.php -- the filename is the meta key
+// resources/fields/acme_rating.php -- the filename is the meta key
 return new class extends Field {
 
     public function subtypes(): array {
@@ -69,7 +69,7 @@ return new class extends Field {
 
 ## Writing a Field
 
-A file in `fields/` returns a [`Field`](field.md) instance, which `wp zt make field <name>` generates.
+A file in `resources/fields/` returns a [`Field`](field.md) instance, which `wp zt make field <name>` generates.
 
 ## Related classes
 
@@ -82,7 +82,7 @@ Shipped with this module, and written against directly:
 ### `FIELDS_ROOT`
 
 ```php
-const FIELDS_ROOT = 'fields';
+const FIELDS_ROOT = 'resources/fields';
 ```
 
 Where fields are discovered, relative to the plugin root.
@@ -339,7 +339,7 @@ A module that names a `boots_on` also throws when asked for before that hook has
 
 ## See also
 
-- [`Field`](field.md) — what a file in `fields/` returns
+- [`Field`](field.md) — what a file in `resources/fields/` returns
 - [`path`](../path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
 - [`wp zt add fields`](../../commands/add.md) — the command that copies it

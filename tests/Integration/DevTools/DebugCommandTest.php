@@ -95,7 +95,7 @@ final class DebugCommandTest extends TestCase {
 		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-debug-test' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
-		$command = require dirname( __DIR__, 3 ) . '/commands/debug.php';
+		$command = require dirname( __DIR__, 3 ) . '/resources/commands/debug.php';
 
 		$package_plugin->wire( $command );
 

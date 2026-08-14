@@ -30,7 +30,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *
  * > [!NOTE]
  * > **The taxonomy's name comes from its filename, not from this class.**
- * > `taxonomies/genre.php` registers as `genre`. Like post type names, it is
+ * > `resources/taxonomies/genre.php` registers as `genre`. Like post type names, it is
  * > *not* namespaced to the plugin slug: WordPress caps a taxonomy name at 32
  * > characters, and the convention is a short, plain, globally unique name.
  *
@@ -39,8 +39,8 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * this same plugin discovers, in either directory, regardless of file
  * ordering.
  *
- * A file at `taxonomies/genre.php` attaches to a `book` post type discovered
- * from `post-types/book.php`. `wp zt make taxonomy <name>` generates a
+ * A file at `resources/taxonomies/genre.php` attaches to a `book` post type discovered
+ * from `resources/post-types/book.php`. `wp zt make taxonomy <name>` generates a
  * starting point.
  *
  * @stub taxonomy.php.stub
@@ -50,7 +50,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * > every plugin on the site can see it — because they can.** WordPress caps a taxonomy name at 32 characters, which is why the slug is not added for you.
  * >
  * > Two plugins registering `genre` are the same taxonomy, and whichever registers
- * > second loses. Put your own prefix in the filename: `taxonomies/acme-genre.php`.
+ * > second loses. Put your own prefix in the filename: `resources/taxonomies/acme-genre.php`.
  *
  */
 abstract class Taxonomy implements PluginAware {
@@ -83,7 +83,7 @@ abstract class Taxonomy implements PluginAware {
 	 * The post type name(s) this taxonomy attaches to.
 	 *
 	 * Each entry may be a post type discovered from this same plugin's
-	 * `post-types/` directory (see {@see PostType}) or the name of any other
+	 * `resources/post-types/` directory (see {@see PostType}) or the name of any other
 	 * already-registered post type, including WordPress's own built-in `post`.
 	 *
 	 * @return string[]

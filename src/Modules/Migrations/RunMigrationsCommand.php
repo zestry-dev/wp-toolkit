@@ -18,7 +18,7 @@ use Zestry\WPToolkit\Modules\CLI\Command;
  *
  * Registered directly by {@see Migrations::on_boot()} via
  * {@see \Zestry\WPToolkit\Modules\CLI\CLI::register_command_for()} -- not discovered from a
- * file in the consumer's own `commands/` directory, since this command
+ * file in the consumer's own `resources/commands/` directory, since this command
  * exists the moment the Migrations module is added to a project, with
  * nothing for the consumer to generate or maintain.
  */

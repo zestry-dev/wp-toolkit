@@ -21,7 +21,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
 /**
  * Publishes what your plugin can do, for the REST API and for AI agents.
  *
- * A file in `abilities/` returns an {@see Ability}, and its filename is the name
+ * A file in `resources/abilities/` returns an {@see Ability}, and its filename is the name
  * it registers under: `create-order.php` becomes `{plugin-slug}/create-order`.
  * Each one carries a description and JSON Schemas for its input and output —
  * enough for something that has never seen your code to call it correctly.
@@ -71,7 +71,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * required — one with no default has to be supplied.
  *
  * ```
- * // abilities/publish-post.php
+ * // resources/abilities/publish-post.php
  * return new class extends Ability {
  *
  *     public function label(): string {
@@ -143,7 +143,7 @@ class Abilities extends Module implements Bootable {
 	/**
 	 * Where abilities are discovered, relative to the plugin root.
 	 */
-	const ABILITIES_ROOT = 'abilities';
+	const ABILITIES_ROOT = 'resources/abilities';
 
 	/**
 	 * Discovered abilities by local name, once the directory has been walked.
@@ -190,7 +190,7 @@ class Abilities extends Module implements Bootable {
 	 *     }
 	 * );
 	 *
-	 * // abilities/refund-order.php
+	 * // resources/abilities/refund-order.php
 	 * public function category(): string {
 	 *     return 'acme-billing';
 	 * }

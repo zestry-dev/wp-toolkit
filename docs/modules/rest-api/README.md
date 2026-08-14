@@ -5,7 +5,7 @@
 
 # RestApi
 
-Discovers `routes/` &nbsp;·&nbsp; Each file returns [`Route`](route.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`request`](../request/)
+Discovers `resources/routes/` &nbsp;·&nbsp; Each file returns [`Route`](route.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`request`](../request/)
 
 Discovers plugin REST API routes and registers them with WordPress.
 
@@ -33,7 +33,7 @@ return array(
 
 ## A minimal route file
 
-// routes/widgets/get-one.php use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument; use Acme\Plugin\Core\Modules\RestApi\Route; use Acme\Plugin\Core\Modules\RestApi\RestRoute;
+// resources/routes/widgets/get-one.php use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument; use Acme\Plugin\Core\Modules\RestApi\Route; use Acme\Plugin\Core\Modules\RestApi\RestRoute;
 
 return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
 
@@ -93,7 +93,7 @@ A check spanning two fields belongs in `handle()` rather than here: a callback s
 
 ## Writing a Route
 
-A file in `routes/` returns a [`Route`](route.md) instance, which `wp zt make route <name>` generates.
+A file in `resources/routes/` returns a [`Route`](route.md) instance, which `wp zt make route <name>` generates.
 
 ## Related classes
 
@@ -106,7 +106,7 @@ Shipped with this module, and written against directly:
 ### `ROUTES_ROOT`
 
 ```php
-const ROUTES_ROOT = 'routes';
+const ROUTES_ROOT = 'resources/routes';
 ```
 
 Default plugin-relative directory of route files.
@@ -233,7 +233,7 @@ A module that names a `boots_on` also throws when asked for before that hook has
 
 ## See also
 
-- [`Route`](route.md) — what a file in `routes/` returns
+- [`Route`](route.md) — what a file in `resources/routes/` returns
 - [`path`](../path/) — copied in alongside this one
 - [`request`](../request/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits

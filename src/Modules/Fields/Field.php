@@ -18,7 +18,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
 /**
  * One piece of post meta, registered with a type and a schema.
  *
- * A file in `fields/` returns one of these. It names what it attaches to, so it
+ * A file in `resources/fields/` returns one of these. It names what it attaches to, so it
  * works the same for a post type you registered and for one you did not — and
  * the same again for term, user and comment meta.
  *
@@ -36,7 +36,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *
  * @example A field
  * ```
- * // fields/acme_rating.php
+ * // resources/fields/acme_rating.php
  * namespace Acme\Plugin\Fields;
  *
  * use Acme\Plugin\Core\Modules\Fields\Field;
@@ -62,7 +62,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * > every plugin on the site can see it — because they can.** A meta key is part of your REST responses, so adding a prefix for you would change your own API.
  * >
  * > Two plugins registering `rating` are the same meta key on the same post, and whichever registers
- * > second loses. Put your own prefix in the filename: `fields/acme_rating.php`.
+ * > second loses. Put your own prefix in the filename: `resources/fields/acme_rating.php`.
  *
  */
 abstract class Field implements PluginAware {
@@ -90,12 +90,12 @@ abstract class Field implements PluginAware {
 	/**
 	 * The meta key this field is stored under.
 	 *
-	 * Your filename, verbatim: `fields/acme_rating.php` stores under
+	 * Your filename, verbatim: `resources/fields/acme_rating.php` stores under
 	 * `acme_rating`. Post meta keys are shared across every plugin on a post, so
 	 * name the file with a prefix when the field attaches to a post type you do
 	 * not own.
 	 *
-	 * A leading underscore works, so `fields/_acme_secret.php` stores under
+	 * A leading underscore works, so `resources/fields/_acme_secret.php` stores under
 	 * `_acme_secret` — WordPress's mark for protected meta. The filename is the
 	 * key, exactly as written, because the key is what stored rows are found by.
 	 * {@see is_protected()} is the other way to say the same thing, for a key

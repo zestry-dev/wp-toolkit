@@ -14,7 +14,7 @@
  * configuration is needed).
  *
  * This file's own directory is this package's root — the same directory
- * containing `src/`, `commands/`, and `composer.json` — so a Path module
+ * containing `src/`, `resources/`, and `composer.json` — so a Path module
  * resolved against it (via Plugin's entry-file convention) naturally
  * resolves paths relative to the package itself, not the consuming project.
  *

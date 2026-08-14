@@ -13,7 +13,7 @@ Base class for WP-CLI commands, providing helper methods for common output and i
 
 A command file returns an instance of a Command subclass. When that file is discovered by `CLI`, the plugin is assigned before WP-CLI invokes `handle()` — so `$this->with( Path::class )` reaches any declared module, without the command touching global state.
 
-A file at `commands/greet.php` registers as `wp {plugin-slug} greet <name>` (see `CLI` for how subdirectories become nested command namespaces). `wp zt make command <name>` generates a starting point.
+A file at `resources/commands/greet.php` registers as `wp {plugin-slug} greet <name>` (see `CLI` for how subdirectories become nested command namespaces). `wp zt make command <name>` generates a starting point.
 
 Give `handle()` its own docblock: WP-CLI parses the `## OPTIONS` and `## EXAMPLES` sections for `wp {plugin-slug} greet --help`, so it is not just a comment.
 

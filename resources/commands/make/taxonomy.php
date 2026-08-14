@@ -17,7 +17,7 @@ return new class() extends MakeCommand {
 	/**
 	 * Generate a new custom taxonomy.
 	 *
-	 * The PostTypes module discovers it. On `init` it walks your `taxonomies/`
+	 * The PostTypes module discovers it. On `init` it walks your `resources/taxonomies/`
 	 * directory, requires every file in it, and hands the `Taxonomy` each one
 	 * returns to `register_taxonomy()`, attached to the post types the file
 	 * names. Writing the file is the whole registration; nothing has to be
@@ -30,7 +30,7 @@ return new class() extends MakeCommand {
 	 *
 	 * <name>
 	 * : The local name, e.g. 'genre'. Becomes both the filename
-	 * (`{name}.php`) under `taxonomies/` and the registered taxonomy itself
+	 * (`{name}.php`) under `resources/taxonomies/` and the registered taxonomy itself
 	 * -- unlike every other `make` type, this name is NOT namespaced to the
 	 * plugin slug (WordPress caps a taxonomy name at 32 characters), so pick
 	 * something short and globally unique.
@@ -63,11 +63,11 @@ return new class() extends MakeCommand {
 	 *     $ wp zt make taxonomy genre
 	 *     Plural name: (default: Genres)
 	 *     Post type this taxonomy attaches to: (default: post)
-	 *     Success: Created taxonomies/genre.php
+	 *     Success: Created resources/taxonomies/genre.php
 	 *
 	 *     # Generate one with every value given explicitly.
 	 *     $ wp zt make taxonomy genre --singular=Genre --plural=Genres --object-type=book
-	 *     Success: Created taxonomies/genre.php
+	 *     Success: Created resources/taxonomies/genre.php
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -111,7 +111,7 @@ return new class() extends MakeCommand {
 	}
 
 	protected function get_default_dir( array $config ): string {
-		return 'taxonomies';
+		return 'resources/taxonomies';
 	}
 
 	protected static function get_type(): string {

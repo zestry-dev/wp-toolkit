@@ -29,7 +29,7 @@ use Zestry\WPToolkit\Modules\Path;
  * MakeCommand class.
  *
  * Shared flow behind every `wp zt make <type> <name>` subcommand (see the
- * concrete classes under `commands/make/`): read the project's zestry.json for
+ * concrete classes under `resources/commands/make/`): read the project's zestry.json for
  * its namespace, render the type's stub with the name/title plus whatever
  * {@see get_extra_values()} contributes, and write it into the type's
  * conventional directory, refusing to overwrite an
@@ -450,7 +450,7 @@ abstract class MakeCommand extends Command {
 	 *
 	 * @param string $dir  The type's own destination directory.
 	 * @param string $name The local name given on the command line.
-	 * @return string The plugin-relative path, e.g. `schedules/cleanup.php`.
+	 * @return string The plugin-relative path, e.g. `resources/schedules/cleanup.php`.
 	 */
 	protected function get_destination_path( string $dir, string $name ): string {
 		return \trim( $dir, '/\\' ) . '/' . $name . '.php';
@@ -492,7 +492,7 @@ abstract class MakeCommand extends Command {
 	 *
 	 * Runs after the destination is resolved and before the stub is rendered, so
 	 * an override can prompt via `$this->ask()` only when the matching flag was
-	 * not given. Contributes nothing by default; see `commands/make/route.php`.
+	 * not given. Contributes nothing by default; see `resources/commands/make/route.php`.
 	 *
 	 * @param string $name       The local name given on the command line.
 	 * @param array  $assoc_args WP-CLI's named arguments.
@@ -523,7 +523,7 @@ abstract class MakeCommand extends Command {
 	 *
 	 * A subcommand whose destination directory has its own naming rules beyond
 	 * plain filesystem conflicts overrides this to check for those too before
-	 * calling the parent implementation (see commands/make/command.php, which
+	 * calling the parent implementation (see resources/commands/make/command.php, which
 	 * adds the leaf/namespace rule {@see \Zestry\WPToolkit\Modules\CLI\CLI} enforces for
 	 * command names).
 	 *
@@ -687,7 +687,7 @@ abstract class MakeCommand extends Command {
 	 * @return void
 	 */
 	private function add_module( string $module ): void {
-		$command = require $this->with( Path::class )->get_plugin_path( 'commands/add.php' );
+		$command = require $this->with( Path::class )->get_plugin_path( 'resources/commands/add.php' );
 
 		$this->get_plugin()->wire( $command );
 
@@ -822,7 +822,7 @@ abstract class MakeCommand extends Command {
 	 * The `wp zt make <type>` word this subcommand registers under.
 	 *
 	 * Used only to compose the usage message when no name is given; the word
-	 * itself comes from the subcommand's own filename under `commands/make/`
+	 * itself comes from the subcommand's own filename under `resources/commands/make/`
 	 * (see {@see \Zestry\WPToolkit\Modules\CLI\CLI}), not from this method.
 	 *
 	 * @return string

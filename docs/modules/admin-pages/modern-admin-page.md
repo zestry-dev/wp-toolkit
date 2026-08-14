@@ -9,7 +9,7 @@
 
 An AdminPage that gives a custom UI the whole admin canvas.
 
-Extend this instead of `AdminPage` when a page renders its own full-width application shell — a JS-driven interface, a custom dashboard — rather than the usual WordPress `.wrap` layout. Everything `AdminPage` offers is unchanged: title, capability, menu placement, nonce-verified POST handling, wiring, and discovery from the same `admin-pages/` directory. Adopting it is a one-word edit to an existing page's `extends` clause.
+Extend this instead of `AdminPage` when a page renders its own full-width application shell — a JS-driven interface, a custom dashboard — rather than the usual WordPress `.wrap` layout. Everything `AdminPage` offers is unchanged: title, capability, menu placement, nonce-verified POST handling, wiring, and discovery from the same `resources/admin-pages/` directory. Adopting it is a one-word edit to an existing page's `extends` clause.
 
 The difference is a CSS reset, inlined before first paint so the page never renders in the default layout and then jumps. It applies only while one of this plugin's own pages is displayed, and no other screen in wp-admin is touched. What it changes:
 
@@ -269,7 +269,7 @@ public function view( string $view, array $data = array() ): void
 | **Return** | — |
 | **Throws** | `InvalidArgumentException` — When the views root or the view is missing |
 
-The markup belongs in `views/`, not in a PHP string. An admin page is mostly a form — tables, fields, notices, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing. `wp zt make page` writes the template alongside the class, so there is one to render from the start.
+The markup belongs in `resources/views/`, not in a PHP string. An admin page is mostly a form — tables, fields, notices, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing. `wp zt make page` writes the template alongside the class, so there is one to render from the start.
 
 ```php
 public function render(): void {

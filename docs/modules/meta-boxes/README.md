@@ -5,11 +5,11 @@
 
 # MetaBoxes
 
-Discovers `meta-boxes/` &nbsp;·&nbsp; Each file returns [`MetaBox`](meta-box.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`fields`](../fields/)
+Discovers `resources/meta-boxes/` &nbsp;·&nbsp; Each file returns [`MetaBox`](meta-box.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`fields`](../fields/)
 
 Puts panels on the post and comment edit screens, and owns the part that is easy to get wrong.
 
-A file in `meta-boxes/` returns a `MetaBox`. Its filename is the box's identifier, prefixed with your plugin slug: `meta-boxes/details.php` becomes `{plugin-slug}-details`.
+A file in `resources/meta-boxes/` returns a `MetaBox`. Its filename is the box's identifier, prefixed with your plugin slug: `resources/meta-boxes/details.php` becomes `{plugin-slug}-details`.
 
 ## What this exists for
 
@@ -55,7 +55,7 @@ return array(
 ## A box
 
 ```php
-// meta-boxes/details.php
+// resources/meta-boxes/details.php
 return new class extends MetaBox {
 
     public function title(): string {
@@ -82,7 +82,7 @@ return new class extends MetaBox {
 
 ## Writing a MetaBox
 
-A file in `meta-boxes/` returns a [`MetaBox`](meta-box.md) instance, which `wp zt make meta-box <name>` generates.
+A file in `resources/meta-boxes/` returns a [`MetaBox`](meta-box.md) instance, which `wp zt make meta-box <name>` generates.
 
 ## Related classes
 
@@ -97,7 +97,7 @@ Shipped with this module, and written against directly:
 ### `BOXES_ROOT`
 
 ```php
-const BOXES_ROOT = 'meta-boxes';
+const BOXES_ROOT = 'resources/meta-boxes';
 ```
 
 Where boxes are discovered, relative to the plugin root.
@@ -250,7 +250,7 @@ A module that names a `boots_on` also throws when asked for before that hook has
 
 ## See also
 
-- [`MetaBox`](meta-box.md) — what a file in `meta-boxes/` returns
+- [`MetaBox`](meta-box.md) — what a file in `resources/meta-boxes/` returns
 - [`path`](../path/) — copied in alongside this one
 - [`fields`](../fields/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits

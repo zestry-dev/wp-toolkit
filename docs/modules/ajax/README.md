@@ -5,11 +5,11 @@
 
 # Ajax
 
-Discovers `actions/` &nbsp;·&nbsp; Each file returns [`AjaxAction`](ajax-action.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`request`](../request/)
+Discovers `resources/actions/` &nbsp;·&nbsp; Each file returns [`AjaxAction`](ajax-action.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`request`](../request/)
 
 Discovers plugin AJAX actions and registers their WordPress hooks.
 
-An action directory contains PHP files named after the action, such as `actions/save-profile.php`. Each file returns an AjaxAction instance. During an AJAX request the module maps that file to `wp_ajax_{plugin}-{action}` and conditionally maps the equivalent `wp_ajax_nopriv_` hook.
+An action directory contains PHP files named after the action, such as `resources/actions/save-profile.php`. Each file returns an AjaxAction instance. During an AJAX request the module maps that file to `wp_ajax_{plugin}-{action}` and conditionally maps the equivalent `wp_ajax_nopriv_` hook.
 
 ## Reach for a REST route first
 
@@ -48,7 +48,7 @@ return array(
 
 ## Writing an AjaxAction
 
-A file in `actions/` returns an [`AjaxAction`](ajax-action.md) instance, which `wp zt make action <name>` generates.
+A file in `resources/actions/` returns an [`AjaxAction`](ajax-action.md) instance, which `wp zt make action <name>` generates.
 
 ## Constants
 
@@ -63,7 +63,7 @@ WP_Error code used for every rejected AJAX request — a failed capability check
 ### `ACTIONS_ROOT`
 
 ```php
-const ACTIONS_ROOT = 'actions';
+const ACTIONS_ROOT = 'resources/actions';
 ```
 
 Default plugin-relative directory of action files.
@@ -274,7 +274,7 @@ A module that names a `boots_on` also throws when asked for before that hook has
 
 ## See also
 
-- [`AjaxAction`](ajax-action.md) — what a file in `actions/` returns
+- [`AjaxAction`](ajax-action.md) — what a file in `resources/actions/` returns
 - [`path`](../path/) — copied in alongside this one
 - [`request`](../request/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits

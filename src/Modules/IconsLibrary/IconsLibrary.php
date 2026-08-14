@@ -21,7 +21,7 @@ use Zestry\WPToolkit\Modules\Path;
 /**
  * Publishes your plugin's SVG icons, for the Icon block and for your own markup.
  *
- * An icon is a file in `svg-icons/`. `arrow-right.php` registers as
+ * An icon is a file in `resources/svg-icons/`. `arrow-right.php` registers as
  * `{plugin-slug}/arrow-right` -- offered in the editor's icon picker under a
  * collection named after your plugin, served on the REST API at `wp/v2/icons`,
  * and rendered in PHP as `$icons->get( 'arrow-right' )`. Requires
@@ -45,7 +45,7 @@ use Zestry\WPToolkit\Modules\Path;
  * in step with the first.
  *
  * ```
- * <!-- svg-icons/arrow-right.php -->
+ * <!-- resources/svg-icons/arrow-right.php -->
  * <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
  *     <path d="M5 12h14" />
  * </svg>
@@ -69,7 +69,7 @@ use Zestry\WPToolkit\Modules\Path;
  * icon is actually rendered.
  *
  * ```
- * svg-icons/
+ * resources/svg-icons/
  *   arrow-right.php    a template: translated label, run on every request
  *   logo.svg           a file: label built from the filename, read on demand
  * ```
@@ -96,7 +96,7 @@ use Zestry\WPToolkit\Modules\Path;
  * name a filename could not carry:
  *
  * ```
- * <!-- svg-icons/logo-2024.php -->
+ * <!-- resources/svg-icons/logo-2024.php -->
  * <svg …>…</svg>
  * <?php
  * return array(
@@ -149,7 +149,7 @@ class IconsLibrary extends Module implements Bootable {
 	/**
 	 * Where icons are discovered, relative to the plugin root.
 	 */
-	const SVG_ICONS_ROOT = 'svg-icons';
+	const SVG_ICONS_ROOT = 'resources/svg-icons';
 
 	/**
 	 * Discovered icons as local name => absolute path, once the directory has been walked.
@@ -206,7 +206,7 @@ class IconsLibrary extends Module implements Bootable {
 	 *     }
 	 * );
 	 *
-	 * // svg-icons/logo.php
+	 * // resources/svg-icons/logo.php
 	 * return array(
 	 *     'collection' => 'acme-brand',
 	 *     'label'      => __( 'Acme logo', 'acme-plugin' ),

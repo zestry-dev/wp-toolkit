@@ -19,7 +19,7 @@ final class AjaxNonceTest extends TestCase {
 		// Ensure the default actions directory exists: another test may have defined
 		// the DOING_AJAX constant (process-wide, un-undefinable), which makes the
 		// module attempt action discovery on boot.
-		mkdir( $this->plugin_dir . '/actions', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/actions', 0777, true );
 	}
 
 	private function ajax(): Ajax {

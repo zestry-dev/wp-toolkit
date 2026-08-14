@@ -28,7 +28,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * `handle()` -- so `$this->with( Path::class )` reaches any declared module,
  * without the command touching global state.
  *
- * A file at `commands/greet.php` registers as `wp {plugin-slug} greet <name>`
+ * A file at `resources/commands/greet.php` registers as `wp {plugin-slug} greet <name>`
  * (see {@see CLI} for how subdirectories become nested command namespaces).
  * `wp zt make command <name>` generates a starting point.
  *

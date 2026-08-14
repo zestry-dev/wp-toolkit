@@ -23,8 +23,8 @@ use Zestry\WPToolkit\Modules\Path;
  * Puts panels on the post and comment edit screens, and owns the part that is
  * easy to get wrong.
  *
- * A file in `meta-boxes/` returns a {@see MetaBox}. Its filename is the box's
- * identifier, prefixed with your plugin slug: `meta-boxes/details.php` becomes
+ * A file in `resources/meta-boxes/` returns a {@see MetaBox}. Its filename is the box's
+ * identifier, prefixed with your plugin slug: `resources/meta-boxes/details.php` becomes
  * `{plugin-slug}-details`.
  *
  * ## What this exists for
@@ -66,7 +66,7 @@ use Zestry\WPToolkit\Modules\Path;
  *
  * @example A box
  * ```
- * // meta-boxes/details.php
+ * // resources/meta-boxes/details.php
  * return new class extends MetaBox {
  *
  *     public function title(): string {
@@ -95,7 +95,7 @@ class MetaBoxes extends Module implements Bootable {
 	/**
 	 * Where boxes are discovered, relative to the plugin root.
 	 */
-	const BOXES_ROOT = 'meta-boxes';
+	const BOXES_ROOT = 'resources/meta-boxes';
 
 	/**
 	 * Discovered boxes by screen type, then identifier.

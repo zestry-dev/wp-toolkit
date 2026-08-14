@@ -61,14 +61,14 @@ final class DescribeCommandTest extends TestCase {
 	public function test_reports_each_module_default_directory_and_base_class(): void {
 		$rows = $this->describe_rows();
 
-		$this->assertSame( 'actions/', $rows['ajax']['reads'] );
+		$this->assertSame( 'resources/actions/', $rows['ajax']['reads'] );
 		$this->assertSame( 'AjaxAction', $rows['ajax']['returns'] );
 
-		$this->assertSame( 'commands/', $rows['cli']['reads'] );
+		$this->assertSame( 'resources/commands/', $rows['cli']['reads'] );
 		$this->assertSame( 'Command', $rows['cli']['returns'] );
 
 		// Two roots, one module, no special case.
-		$this->assertSame( 'post-types/, taxonomies/', $rows['post-types']['reads'] );
+		$this->assertSame( 'resources/post-types/, resources/taxonomies/', $rows['post-types']['reads'] );
 		$this->assertSame( 'PostType, Taxonomy', $rows['post-types']['returns'] );
 	}
 
@@ -150,7 +150,7 @@ final class DescribeCommandTest extends TestCase {
 		$rows = $this->describe_rows();
 
 		$this->assertTrue( $rows['cron']['configured'] );
-		$this->assertSame( 'schedules/', $rows['cron']['reads'], 'The directory it reads, which the closure cannot change.' );
+		$this->assertSame( 'resources/schedules/', $rows['cron']['reads'], 'The directory it reads, which the closure cannot change.' );
 	}
 
 	public function test_installed_flag_limits_the_report_to_what_is_there(): void {
@@ -189,12 +189,12 @@ final class DescribeCommandTest extends TestCase {
 	 * @return void
 	 */
 	public function test_names_the_intermediate_every_file_in_a_directory_extends(): void {
-		$this->write_discovered( 'fields/acme_rating.php', 'EntityField', 'Acme\\Plugin\\Abstracts\\EntityField' );
-		$this->write_discovered( 'fields/acme_note.php', 'EntityField', 'Acme\\Plugin\\Abstracts\\EntityField' );
+		$this->write_discovered( 'resources/fields/acme_rating.php', 'EntityField', 'Acme\\Plugin\\Abstracts\\EntityField' );
+		$this->write_discovered( 'resources/fields/acme_note.php', 'EntityField', 'Acme\\Plugin\\Abstracts\\EntityField' );
 
 		$rows = $this->describe_rows();
 
-		$this->assertSame( 'fields/ 2 files via Acme\\Plugin\\Abstracts\\EntityField', $rows['fields']['via'] );
+		$this->assertSame( 'resources/fields/ 2 files via Acme\\Plugin\\Abstracts\\EntityField', $rows['fields']['via'] );
 	}
 
 	/**
@@ -204,14 +204,14 @@ final class DescribeCommandTest extends TestCase {
 	 * @return void
 	 */
 	public function test_each_root_of_a_two_root_module_answers_for_itself(): void {
-		$this->write_discovered( 'post-types/acme_book.php', 'EntityPostType', 'Acme\\Plugin\\Abstracts\\EntityPostType' );
-		$this->write_discovered( 'taxonomies/acme_genre.php', 'Taxonomy', 'Acme\\Plugin\\Core\\Modules\\PostTypes\\Taxonomy' );
+		$this->write_discovered( 'resources/post-types/acme_book.php', 'EntityPostType', 'Acme\\Plugin\\Abstracts\\EntityPostType' );
+		$this->write_discovered( 'resources/taxonomies/acme_genre.php', 'Taxonomy', 'Acme\\Plugin\\Core\\Modules\\PostTypes\\Taxonomy' );
 
 		$rows = $this->describe_rows();
 
-		$this->assertStringContainsString( 'post-types/ 1 file via Acme\\Plugin\\Abstracts\\EntityPostType', $rows['post-types']['via'] );
+		$this->assertStringContainsString( 'resources/post-types/ 1 file via Acme\\Plugin\\Abstracts\\EntityPostType', $rows['post-types']['via'] );
 		$this->assertStringNotContainsString(
-			'taxonomies/',
+			'resources/taxonomies/',
 			$rows['post-types']['via'],
 			'Extending the toolkit base is not going via anything.'
 		);
@@ -225,8 +225,8 @@ final class DescribeCommandTest extends TestCase {
 	 * @return void
 	 */
 	public function test_a_mixed_directory_names_no_intermediate(): void {
-		$this->write_discovered( 'fields/acme_rating.php', 'EntityField', 'Acme\\Plugin\\Abstracts\\EntityField' );
-		$this->write_discovered( 'fields/acme_note.php', 'Field', 'Acme\\Plugin\\Core\\Modules\\Fields\\Field' );
+		$this->write_discovered( 'resources/fields/acme_rating.php', 'EntityField', 'Acme\\Plugin\\Abstracts\\EntityField' );
+		$this->write_discovered( 'resources/fields/acme_note.php', 'Field', 'Acme\\Plugin\\Core\\Modules\\Fields\\Field' );
 
 		$rows = $this->describe_rows();
 
@@ -240,7 +240,7 @@ final class DescribeCommandTest extends TestCase {
 	 * @return void
 	 */
 	public function test_the_intermediate_is_read_rather_than_loaded(): void {
-		$this->write_discovered( 'fields/acme_rating.php', 'NeverDefined', 'Acme\\Plugin\\Abstracts\\NeverDefined' );
+		$this->write_discovered( 'resources/fields/acme_rating.php', 'NeverDefined', 'Acme\\Plugin\\Abstracts\\NeverDefined' );
 
 		$rows = $this->describe_rows();
 
@@ -316,7 +316,7 @@ final class DescribeCommandTest extends TestCase {
 		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-describe-test' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
-		$command = require dirname( __DIR__, 3 ) . '/commands/describe.php';
+		$command = require dirname( __DIR__, 3 ) . '/resources/commands/describe.php';
 		$package_plugin->wire( $command );
 
 		$previous_cwd = (string) getcwd();

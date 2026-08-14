@@ -1,5 +1,5 @@
 <!--
-    Generated from commands/overwrite.php.
+    Generated from resources/commands/overwrite.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 

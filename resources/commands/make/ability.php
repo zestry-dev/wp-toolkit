@@ -14,7 +14,7 @@ return new class() extends MakeCommand {
 	/**
 	 * Generate an ability.
 	 *
-	 * Writes a file into the plugin's `abilities/` directory, where the Abilities
+	 * Writes a file into the plugin's `resources/abilities/` directory, where the Abilities
 	 * module discovers it. The filename becomes the ability's name, so
 	 * `create-order` registers as `{plugin-slug}/create-order` — reachable over
 	 * the REST API and offered to any MCP adapter on the site.
@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 * WordPress matches both halves of that name against `^[a-z0-9-]+$` and
 	 * refuses anything else, so a name outside it is written as the one it accepts
 	 * and the command says what it wrote: `create_order` lands as
-	 * `abilities/create-order.php`.
+	 * `resources/abilities/create-order.php`.
 	 *
 	 * **Two of the generated methods are placeholders, not defaults to keep.**
 	 * `effect()` returns `Effect::Read` and `is_public()` returns `false`, because
@@ -49,9 +49,9 @@ return new class() extends MakeCommand {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # Generate abilities/create-order.php.
+	 *     # Generate resources/abilities/create-order.php.
 	 *     $ wp zt make ability create-order
-	 *     Success: Created abilities/create-order.php
+	 *     Success: Created resources/abilities/create-order.php
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -87,7 +87,7 @@ return new class() extends MakeCommand {
 	}
 
 	protected function get_default_dir( array $config ): string {
-		return 'abilities';
+		return 'resources/abilities';
 	}
 
 	protected static function get_type(): string {

@@ -40,7 +40,7 @@ final class VerbatimNamesTest extends TestCase {
 	 */
 	public function test_a_post_type_keeps_the_name_its_file_was_given(): void {
 		$this->write_plugin_file(
-			'post-types/mc_form.php',
+			'resources/post-types/mc_form.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\PostType;\nreturn new class extends PostType {\n"
 				. "public function singular_name(): string { return 'Form'; }\n"
 				. "public function plural_name(): string { return 'Forms'; }\n};\n"
@@ -85,7 +85,7 @@ final class VerbatimNamesTest extends TestCase {
 	 */
 	public function test_a_hook_name_is_built_while_the_file_is_not_touched(): void {
 		$this->write_plugin_file(
-			'actions/send_welcome.php',
+			'resources/actions/send_welcome.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\Ajax\\AjaxAction;\nreturn new class extends AjaxAction {\n"
 				. "public function capability_check(): bool { return true; }
 " . "public function handle(): void {}\n};\n"
@@ -105,7 +105,7 @@ final class VerbatimNamesTest extends TestCase {
 	 */
 	private function write_field( string $file_name ): void {
 		$this->write_plugin_file(
-			'fields/' . $file_name . '.php',
+			'resources/fields/' . $file_name . '.php',
 			"<?php\nreturn new class extends \\Zestry\\WPToolkit\\Modules\\Fields\\Field {\n"
 				. "public function subtypes(): array { return array( 'post' ); }\n};\n"
 		);

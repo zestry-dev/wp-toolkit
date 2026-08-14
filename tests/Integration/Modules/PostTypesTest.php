@@ -303,7 +303,7 @@ final class PostTypesTest extends TestCase {
 	 */
 	public function test_an_absent_default_taxonomies_directory_is_not_an_error(): void {
 		$this->write_plugin_file(
-			'post-types/book.php',
+			'resources/post-types/book.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\PostType;\n"
 				. "return new class extends PostType {\n"
 				. "public function singular_name(): string { return 'Book'; }\n"
@@ -350,8 +350,8 @@ final class PostTypesTest extends TestCase {
 	}
 
 	public function test_a_post_type_file_returning_the_wrong_type_throws(): void {
-		mkdir( $this->plugin_dir . '/taxonomies', 0777, true );
-		$this->write_plugin_file( 'post-types/bad-type.php', "<?php\nreturn 42;\n" );
+		mkdir( $this->plugin_dir . '/resources/taxonomies', 0777, true );
+		$this->write_plugin_file( 'resources/post-types/bad-type.php', "<?php\nreturn 42;\n" );
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'must return an instance of' );
@@ -360,8 +360,8 @@ final class PostTypesTest extends TestCase {
 	}
 
 	public function test_a_taxonomy_file_returning_the_wrong_type_throws(): void {
-		mkdir( $this->plugin_dir . '/post-types', 0777, true );
-		$this->write_plugin_file( 'taxonomies/bad-taxonomy.php', "<?php\nreturn 42;\n" );
+		mkdir( $this->plugin_dir . '/resources/post-types', 0777, true );
+		$this->write_plugin_file( 'resources/taxonomies/bad-taxonomy.php', "<?php\nreturn 42;\n" );
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'must return an instance of' );
@@ -403,14 +403,14 @@ final class PostTypesTest extends TestCase {
 
 	private function write_post_type( string $name, string $body ): void {
 		$this->write_plugin_file(
-			'post-types/' . $name . '.php',
+			'resources/post-types/' . $name . '.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\PostType;\nreturn new class extends PostType {\n{$body}\n};\n"
 		);
 	}
 
 	private function write_taxonomy( string $name, string $body ): void {
 		$this->write_plugin_file(
-			'taxonomies/' . $name . '.php',
+			'resources/taxonomies/' . $name . '.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\Taxonomy;\nreturn new class extends Taxonomy {\n{$body}\n};\n"
 		);
 	}
@@ -440,7 +440,7 @@ final class PostTypesTest extends TestCase {
 	 */
 	public function test_a_name_too_long_for_wordpress_throws_rather_than_registering_nothing(): void {
 		$this->write_plugin_file(
-			'post-types/customer-testimonials.php',
+			'resources/post-types/customer-testimonials.php',
 			"<?php\nreturn new class extends \\Zestry\\WPToolkit\\Modules\\PostTypes\\PostType {\n"
 				. "public function singular_name(): string { return 'Testimonial'; }\n"
 				. "public function plural_name(): string { return 'Testimonials'; }\n"

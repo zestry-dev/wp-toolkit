@@ -71,7 +71,7 @@ class Cron extends Module implements Bootable {
 	/**
 	 * Default plugin-relative directory of schedule files.
 	 */
-	const SCHEDULES_ROOT = 'schedules';
+	const SCHEDULES_ROOT = 'resources/schedules';
 
 	private const BUILTIN_INTERVALS = array( 'hourly', 'twicedaily', 'daily' );
 
@@ -192,7 +192,7 @@ class Cron extends Module implements Bootable {
 	/**
 	 * Every event this plugin has scheduled that no schedule file registers.
 	 *
-	 * A schedule's hook is its filename -- `schedules/sync.php` is
+	 * A schedule's hook is its filename -- `resources/schedules/sync.php` is
 	 * `{slug}-sync` -- so renaming the file schedules a new event and abandons
 	 * the old one. Nothing cleans it up: booting only schedules what discovery
 	 * finds, and {@see unschedule_all()} clears the same set, so an event whose

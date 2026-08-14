@@ -33,7 +33,7 @@ final class AjaxDispatchTest extends TestCase {
 		// so a test writing to it has to say so too.
 		$_SERVER['REQUEST_METHOD'] = 'POST';
 
-		mkdir( $this->plugin_dir . '/actions', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/actions', 0777, true );
 	}
 
 	public function tear_down(): void {
@@ -63,7 +63,7 @@ final class AjaxDispatchTest extends TestCase {
 	 */
 	private function register_action( string $name, string $class_body ): string {
 		$this->write_plugin_file(
-			"actions/{$name}.php",
+			"resources/actions/{$name}.php",
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\Ajax\\AjaxAction;\nreturn new class extends AjaxAction {\n{$class_body}\n};\n"
 		);
 

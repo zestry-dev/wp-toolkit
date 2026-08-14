@@ -86,7 +86,7 @@ final class MigrationsTest extends TestCase {
 	}
 
 	public function test_a_migration_file_returning_the_wrong_type_throws(): void {
-		$this->write_plugin_file( 'migrations/20260101000000-bad.php', "<?php\nreturn 42;\n" );
+		$this->write_plugin_file( 'resources/migrations/20260101000000-bad.php', "<?php\nreturn 42;\n" );
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'must return an instance of' );
@@ -221,7 +221,7 @@ final class MigrationsTest extends TestCase {
 		$this->write_migration( '20260101000000-first', '' );
 
 		// No commands/ directory is written at all.
-		$this->assertDirectoryDoesNotExist( $this->plugin_dir . '/commands' );
+		$this->assertDirectoryDoesNotExist( $this->plugin_dir . '/resources/commands' );
 
 		$this->plugin->get( Migrations::class );
 
@@ -332,7 +332,7 @@ final class MigrationsTest extends TestCase {
 	}
 
 	public function test_list_migrations_command_reports_when_none_are_found(): void {
-		mkdir( $this->plugin_dir . '/migrations', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/migrations', 0777, true );
 
 		$this->plugin->get( Migrations::class );
 
@@ -447,7 +447,7 @@ final class MigrationsTest extends TestCase {
 		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
-		unlink( $this->plugin_dir . '/migrations/20260101000000-first.php' );
+		unlink( $this->plugin_dir . '/resources/migrations/20260101000000-first.php' );
 
 
 		$command = new ListMigrationsCommand();
@@ -479,7 +479,7 @@ final class MigrationsTest extends TestCase {
 		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
-		unlink( $this->plugin_dir . '/migrations/20260101000000-earliest.php' );
+		unlink( $this->plugin_dir . '/resources/migrations/20260101000000-earliest.php' );
 		$this->write_migration( '20260909000000-later', '' );
 
 
@@ -519,7 +519,7 @@ final class MigrationsTest extends TestCase {
 		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
-		unlink( $this->plugin_dir . '/migrations/20260101000000-first.php' );
+		unlink( $this->plugin_dir . '/resources/migrations/20260101000000-first.php' );
 
 
 		$command = new ListMigrationsCommand();
@@ -620,7 +620,7 @@ final class MigrationsTest extends TestCase {
 		$migrations = $this->plugin->get( Migrations::class );
 		$migrations->run_pending();
 
-		unlink( $this->plugin_dir . '/migrations/20260101000000-first.php' );
+		unlink( $this->plugin_dir . '/resources/migrations/20260101000000-first.php' );
 		$this->write_migration( '20260202000000-second', '' );
 
 		$migrations->run_pending();
@@ -738,7 +738,7 @@ final class MigrationsTest extends TestCase {
 	 */
 	private function write_migration( string $name, string $body ): void {
 		$this->write_plugin_file(
-			'migrations/' . $name . '.php',
+			'resources/migrations/' . $name . '.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\Migrations\\Migration;\nreturn new class extends Migration {\n    public function up(): void {\n        {$body}\n    }\n};\n"
 		);
 	}
@@ -753,8 +753,8 @@ final class MigrationsTest extends TestCase {
 	 */
 	private function rename_migration( string $from, string $to ): void {
 		rename(
-			$this->plugin_dir . '/migrations/' . $from . '.php',
-			$this->plugin_dir . '/migrations/' . $to . '.php'
+			$this->plugin_dir . '/resources/migrations/' . $from . '.php',
+			$this->plugin_dir . '/resources/migrations/' . $to . '.php'
 		);
 	}
 

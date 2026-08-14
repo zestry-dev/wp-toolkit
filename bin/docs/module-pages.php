@@ -256,7 +256,7 @@ function zestry_pair_roots_to_bases( array $names, array $roots, array $bases ):
  * @return string|null The plugin-relative directory, or null when it is computed.
  */
 function zestry_make_destination( string $root, string $type ): ?string {
-	$file = $root . '/commands/make/' . $type . '.php';
+	$file = $root . '/resources/commands/make/' . $type . '.php';
 
 	if ( ! is_file( $file ) ) {
 		return null;
@@ -778,7 +778,7 @@ function zestry_stub_values( string $root, string $type ): array {
  * of `block` wants the metadata and the PHP side by side. The caption titles
  * each one; without it the filename does.
  *
- * This used to be inferred instead -- scan every `commands/make/*.php` for a
+ * This used to be inferred instead -- scan every `resources/commands/make/*.php` for a
  * quoted `*.php.stub`, then match the stub's `extends` against the class name.
  * Both halves guessed wrong. `make block` names a stub *directory*, so no
  * quoted filename matched and Block got no example at all; and `route.php.stub`
@@ -1326,7 +1326,7 @@ function zestry_generate_module_pages( string $root ): int {
 		$index[] = '';
 		$index[] = '## What your files are named';
 		$index[] = '';
-		$index[] = 'A discovered file\'s name is the thing it registers as: `commands/greet.php`'
+		$index[] = 'A discovered file\'s name is the thing it registers as: `resources/commands/greet.php`'
 			. ' is `wp your-plugin greet`, `post-types/book.php` is the `book` post type,'
 			. ' `fields/acme_rating.php` is the `acme_rating` meta key. You never repeat that'
 			. ' name inside the file.';

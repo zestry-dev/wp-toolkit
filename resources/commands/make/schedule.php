@@ -16,7 +16,7 @@ return new class() extends MakeCommand {
 	/**
 	 * Generate a new cron schedule.
 	 *
-	 * The Cron module discovers it. At boot it walks your `schedules/`
+	 * The Cron module discovers it. At boot it walks your `resources/schedules/`
 	 * directory, requires every file in it, binds the `Schedule` each one
 	 * returns to its own hook, and calls `wp_schedule_event()` for it when the
 	 * event is not already on the calendar. Writing the file is the whole
@@ -29,7 +29,7 @@ return new class() extends MakeCommand {
 	 *
 	 * <name>
 	 * : The local name, e.g. 'cleanup'. Becomes the filename (`{name}.php`)
-	 * under `schedules/`.
+	 * under `resources/schedules/`.
 	 *
 	 *
 	 * [--recurrence=<recurrence>]
@@ -45,13 +45,13 @@ return new class() extends MakeCommand {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # Generate a daily cron schedule at schedules/cleanup.php.
+	 *     # Generate a daily cron schedule at resources/schedules/cleanup.php.
 	 *     $ wp zt make schedule cleanup
-	 *     Success: Created schedules/cleanup.php
+	 *     Success: Created resources/schedules/cleanup.php
 	 *
 	 *     # Generate a schedule with an explicit recurrence.
 	 *     $ wp zt make schedule cleanup --recurrence=hourly
-	 *     Success: Created schedules/cleanup.php
+	 *     Success: Created resources/schedules/cleanup.php
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -76,7 +76,7 @@ return new class() extends MakeCommand {
 	}
 
 	protected function get_default_dir( array $config ): string {
-		return 'schedules';
+		return 'resources/schedules';
 	}
 
 	protected static function get_type(): string {

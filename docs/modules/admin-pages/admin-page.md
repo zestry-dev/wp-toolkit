@@ -9,11 +9,11 @@
 
 Base class for a file-based WordPress admin page.
 
-A page file returns an AdminPage subclass instance; the AdminPages module wires it (assigning the plugin, so `with()` reaches every module), registers it in the admin menu using the typed accessors below, and dispatches to render() when the page is viewed. The page's slug is derived from its path within the pages directory, so `admin-pages/settings.php` becomes `{plugin-slug}-settings` and `admin-pages/reports/index.php` becomes `{plugin-slug}-reports`. The root `admin-pages/index.php`, if present, becomes the bare `{plugin-slug}` itself.
+A page file returns an AdminPage subclass instance; the AdminPages module wires it (assigning the plugin, so `with()` reaches every module), registers it in the admin menu using the typed accessors below, and dispatches to render() when the page is viewed. The page's slug is derived from its path within the pages directory, so `resources/admin-pages/settings.php` becomes `{plugin-slug}-settings` and `resources/admin-pages/reports/index.php` becomes `{plugin-slug}-reports`. The root `resources/admin-pages/index.php`, if present, becomes the bare `{plugin-slug}` itself.
 
 Authorization is enforced by the module before render(): the current user must satisfy capability(), and a nonce is verified on POST. A page therefore only has to describe itself (title, capability, placement) and render its markup.
 
-A file at `admin-pages/settings.php` registers as a top-level menu page with the slug `{plugin}-settings` (see `get_page_slug()`). Return a ParentMenu case from `parent()` to nest it under a core WordPress menu instead, such as `ParentMenu::Settings`. Reach any declared module with `$this->with( Path::class )`; a page also has `views()`, `cookies()` and `admin_pages()` as typed accessors. `wp zt make page <name>` generates a starting point.
+A file at `resources/admin-pages/settings.php` registers as a top-level menu page with the slug `{plugin}-settings` (see `get_page_slug()`). Return a ParentMenu case from `parent()` to nest it under a core WordPress menu instead, such as `ParentMenu::Settings`. Reach any declared module with `$this->with( Path::class )`; a page also has `views()`, `cookies()` and `admin_pages()` as typed accessors. `wp zt make page <name>` generates a starting point.
 
 A page rendering its own full-width application shell rather than the usual WordPress "wrap" layout should extend `ModernAdminPage` instead, which is this class plus a critical-CSS reset of wp-admin's default chrome. It satisfies the same discovery guard, so it is a drop-in swap for the `extends AdminPage` a generated file starts with.
 
@@ -348,7 +348,7 @@ public function view( string $view, array $data = array() ): void
 | **Return** | — |
 | **Throws** | `InvalidArgumentException` — When the views root or the view is missing |
 
-The markup belongs in `views/`, not in a PHP string. An admin page is mostly a form — tables, fields, notices, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing. `wp zt make page` writes the template alongside the class, so there is one to render from the start.
+The markup belongs in `resources/views/`, not in a PHP string. An admin page is mostly a form — tables, fields, notices, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing. `wp zt make page` writes the template alongside the class, so there is one to render from the start.
 
 ```php
 public function render(): void {

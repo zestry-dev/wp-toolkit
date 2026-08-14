@@ -369,7 +369,7 @@ final class UpdateCommandTest extends TestCase {
 		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-update-test' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
-		$command = require dirname( __DIR__, 3 ) . '/commands/' . $file;
+		$command = require dirname( __DIR__, 3 ) . '/resources/commands/' . $file;
 		$package_plugin->wire( $command );
 		$command->set_arguments( $args, $assoc_args );
 

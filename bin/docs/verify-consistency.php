@@ -195,8 +195,8 @@ function zestry_check_cheat_sheet_flags( string $root, array $pages ): array {
 
 		$relative = substr( $file, strlen( $root ) + 1 );
 
-		// `commands/add/module.php` documents `docs/commands/add-module.md`.
-		$page = str_replace( '/', '-', substr( $relative, strlen( 'commands/' ), -strlen( '.php' ) ) ) . '.md';
+		// `resources/commands/add/module.php` documents `docs/commands/add-module.md`.
+		$page = str_replace( '/', '-', substr( $relative, strlen( 'resources/commands/' ), -strlen( '.php' ) ) ) . '.md';
 
 		/*
 		 * A command with no row at all is the failure this guard exists to
@@ -260,10 +260,10 @@ function zestry_check_cheat_sheet_flags( string $root, array $pages ): array {
  */
 function zestry_command_files( string $root ): array {
 	return array_merge(
-		glob( $root . '/commands/*.php' ) ?: array(),
-		glob( $root . '/commands/make/*.php' ) ?: array(),
-		glob( $root . '/commands/add/*.php' ) ?: array(),
-		glob( $root . '/commands/overwrite/*.php' ) ?: array()
+		glob( $root . '/resources/commands/*.php' ) ?: array(),
+		glob( $root . '/resources/commands/make/*.php' ) ?: array(),
+		glob( $root . '/resources/commands/add/*.php' ) ?: array(),
+		glob( $root . '/resources/commands/overwrite/*.php' ) ?: array()
 	);
 }
 
@@ -277,7 +277,7 @@ function zestry_command_files( string $root ): array {
  * description: `Arr::wrap()` shipped that way, and two test files each lost the
  * paragraph explaining what they were pinning.
  *
- * Nothing else catches it. `phpcs` reads `src/`, `bin/` and `commands/` only, so
+ * Nothing else catches it. `phpcs` reads `src/`, `bin/` and `resources/` only, so
  * `tests/` is unguarded entirely, and no sniff in the ruleset objects to a
  * docblock in a place a docblock may legally go.
  *
@@ -287,7 +287,7 @@ function zestry_command_files( string $root ): array {
 function zestry_check_stranded_docblocks( string $root ): array {
 	$problems = array();
 
-	foreach ( array( 'bin', 'commands', 'src', 'tests' ) as $dir ) {
+	foreach ( array( 'bin', 'resources', 'src', 'tests' ) as $dir ) {
 		$files = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root . '/' . $dir ) );
 
 		foreach ( $files as $file ) {
@@ -438,7 +438,7 @@ function zestry_check_block_php_field( array $pages ): array {
 function zestry_check_make_types( string $root, array $pages ): array {
 	$types = array();
 
-	foreach ( glob( $root . '/commands/make/*.php' ) ?: array() as $file ) {
+	foreach ( glob( $root . '/resources/commands/make/*.php' ) ?: array() as $file ) {
 		$types[] = basename( $file, '.php' );
 	}
 
@@ -653,7 +653,7 @@ function zestry_scaffolded_config_names( string $text ): array {
 }
 
 /**
- * Every line of `src/DevTools/` and `commands/`, for a name-recognition scan.
+ * Every line of `src/DevTools/` and `resources/commands/`, for a name-recognition scan.
  *
  * @param string $root Absolute path to the repository root.
  * @return string The concatenated source.
@@ -664,7 +664,7 @@ function zestry_devtools_source( string $root ): string {
 		glob( $root . '/src/DevTools/*.php' ) ?: array(),
 		glob( $root . '/src/DevTools/Abstracts/*.php' ) ?: array(),
 		glob( $root . '/src/DevTools/stubs/*.stub' ) ?: array(),
-		glob( $root . '/commands/*.php' ) ?: array()
+		glob( $root . '/resources/commands/*.php' ) ?: array()
 	);
 
 	foreach ( $files as $file ) {
@@ -692,7 +692,7 @@ function zestry_scaffolded_write_sites( string $root ): array {
 	$files  = array_merge(
 		glob( $root . '/src/DevTools/*.php' ) ?: array(),
 		glob( $root . '/src/DevTools/Abstracts/*.php' ) ?: array(),
-		glob( $root . '/commands/*.php' ) ?: array()
+		glob( $root . '/resources/commands/*.php' ) ?: array()
 	);
 
 	foreach ( $files as $file ) {

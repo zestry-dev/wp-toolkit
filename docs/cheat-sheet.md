@@ -61,26 +61,26 @@ Add any of them with `wp zt add <name>`; dependencies come along.
 
 | Module | Directory | A file returns | Generate one |
 |---|---|---|---|
-| [`ajax`](modules/ajax/) | `actions/` | [`AjaxAction`](modules/ajax/ajax-action.md) | [`make action`](commands/make-action.md) |
-| [`admin-pages`](modules/admin-pages/) | `admin-pages/` | [`AdminPage`](modules/admin-pages/admin-page.md) | [`make page`](commands/make-page.md) |
-| [`cli`](modules/cli/) | `commands/` | [`Command`](modules/cli/command.md) | [`make command`](commands/make-command.md) |
-| [`cron`](modules/cron/) | `schedules/` | [`Schedule`](modules/cron/schedule.md) | [`make schedule`](commands/make-schedule.md) |
-| [`rest-api`](modules/rest-api/) | `routes/` | [`Route`](modules/rest-api/route.md) | [`make route`](commands/make-route.md) |
-| [`post-types`](modules/post-types/) | `post-types/` | [`PostType`](modules/post-types/post-type.md) | [`make post-type`](commands/make-post-type.md) |
-| [`post-types`](modules/post-types/) | `taxonomies/` | [`Taxonomy`](modules/post-types/taxonomy.md) | [`make taxonomy`](commands/make-taxonomy.md) |
-| [`fields`](modules/fields/) | `fields/` | [`Field`](modules/fields/field.md) | [`make field`](commands/make-field.md) |
-| [`meta-boxes`](modules/meta-boxes/) | `meta-boxes/` | [`MetaBox`](modules/meta-boxes/meta-box.md) | [`make meta-box`](commands/make-meta-box.md) |
-| [`abilities`](modules/abilities/) | `abilities/` | [`Ability`](modules/abilities/ability.md) | [`make ability`](commands/make-ability.md) |
-| [`icons-library`](modules/icons-library/) **(WP 7.1+)** | `svg-icons/` | — (a `.php` echoing the SVG and returning `array( 'label' => … )`, or a plain `.svg`) | — |
-| [`site-health`](modules/site-health/) | `health-checks/` | [`HealthCheck`](modules/site-health/health-check.md) | [`make health-check`](commands/make-health-check.md) |
-| [`site-health`](modules/site-health/) | `debug-sections/` | [`DebugSection`](modules/site-health/debug-section.md) | [`make debug-section`](commands/make-debug-section.md) |
+| [`ajax`](modules/ajax/) | `resources/actions/` | [`AjaxAction`](modules/ajax/ajax-action.md) | [`make action`](commands/make-action.md) |
+| [`admin-pages`](modules/admin-pages/) | `resources/admin-pages/` | [`AdminPage`](modules/admin-pages/admin-page.md) | [`make page`](commands/make-page.md) |
+| [`cli`](modules/cli/) | `resources/commands/` | [`Command`](modules/cli/command.md) | [`make command`](commands/make-command.md) |
+| [`cron`](modules/cron/) | `resources/schedules/` | [`Schedule`](modules/cron/schedule.md) | [`make schedule`](commands/make-schedule.md) |
+| [`rest-api`](modules/rest-api/) | `resources/routes/` | [`Route`](modules/rest-api/route.md) | [`make route`](commands/make-route.md) |
+| [`post-types`](modules/post-types/) | `resources/post-types/` | [`PostType`](modules/post-types/post-type.md) | [`make post-type`](commands/make-post-type.md) |
+| [`post-types`](modules/post-types/) | `resources/taxonomies/` | [`Taxonomy`](modules/post-types/taxonomy.md) | [`make taxonomy`](commands/make-taxonomy.md) |
+| [`fields`](modules/fields/) | `resources/fields/` | [`Field`](modules/fields/field.md) | [`make field`](commands/make-field.md) |
+| [`meta-boxes`](modules/meta-boxes/) | `resources/meta-boxes/` | [`MetaBox`](modules/meta-boxes/meta-box.md) | [`make meta-box`](commands/make-meta-box.md) |
+| [`abilities`](modules/abilities/) | `resources/abilities/` | [`Ability`](modules/abilities/ability.md) | [`make ability`](commands/make-ability.md) |
+| [`icons-library`](modules/icons-library/) **(WP 7.1+)** | `resources/svg-icons/` | — (a `.php` echoing the SVG and returning `array( 'label' => … )`, or a plain `.svg`) | — |
+| [`site-health`](modules/site-health/) | `resources/health-checks/` | [`HealthCheck`](modules/site-health/health-check.md) | [`make health-check`](commands/make-health-check.md) |
+| [`site-health`](modules/site-health/) | `resources/debug-sections/` | [`DebugSection`](modules/site-health/debug-section.md) | [`make debug-section`](commands/make-debug-section.md) |
 | [`blocks`](modules/blocks/) | `build/blocks/` | [`Block`](modules/blocks/block.md) | [`make block`](commands/make-block.md) |
-| [`migrations`](modules/migrations/) | `migrations/` | [`Migration`](modules/migrations/migration.md) | [`make migration`](commands/make-migration.md) |
+| [`migrations`](modules/migrations/) | `resources/migrations/` | [`Migration`](modules/migrations/migration.md) | [`make migration`](commands/make-migration.md) |
 | [`assets`](modules/assets/) | `assets/`, `build/` (via its manifest) | — | [`make entry`](commands/make-entry.md), [`make shared`](commands/make-shared.md) |
 | [`options`](modules/options/) | — | — | — |
 | [`log`](modules/log/) | — | — | — |
 | [`path`](modules/path/) | — | — | — |
-| [`views`](modules/views/) | `views/` | — | [`make view`](commands/make-view.md) |
+| [`views`](modules/views/) | `resources/views/` | — | [`make view`](commands/make-view.md) |
 | [`db`](modules/db/) | — | — | — |
 | [`globals`](modules/globals/) | — | — | — |
 | [`transients`](modules/transients/) | — | — | — |
@@ -90,8 +90,8 @@ Add any of them with `wp zt add <name>`; dependencies come along.
 - **A route, an ability, an AJAX action and an admin page declare their inputs the same way**, with [`#[RequestArgument]`](modules/request/request-argument.md) on a typed property — the type and the presence of a default state what the schema says, and the value is bound before your handler runs. That page is the full guide: every type you can declare, and every one you cannot.
 - **Prefer [`rest-api`](modules/rest-api/) to [`ajax`](modules/ajax/) for anything new.** Both declare their input the same way, but a route also publishes a schema and is callable by anything, where an action answers only WordPress-shaped callers. Reach for `ajax` when something already speaks it — an admin screen's existing JavaScript, another plugin's action, the heartbeat.
 - **`abilities` is the AI-agent surface.** WordPress 6.9+ gives each one a REST endpoint, and an MCP adapter on the site turns it into a tool an agent can call — with no protocol code from you. Call your own with `$abilities->run( 'name', $input )`.
-- **`site-health` has two directories, one per tab.** A `health-checks/` file reports a verdict on **Status**; a `debug-sections/` file lists values on **Info**, which is what the "Copy site info" button copies.
-- **`taxonomies/` is its own directory.** One module, two roots — a `Taxonomy` file under `post-types/` is discovered as a `PostType` and throws.
+- **`site-health` has two directories, one per tab.** A `resources/health-checks/` file reports a verdict on **Status**; a `resources/debug-sections/` file lists values on **Info**, which is what the "Copy site info" button copies.
+- **`resources/taxonomies/` is its own directory.** One module, two roots — a `Taxonomy` file under `resources/post-types/` is discovered as a `PostType` and throws.
 - **`blocks` reads the built directory.** `wp zt make block` writes source into `src/blocks/`; `npm run build` compiles it to `build/blocks/`, which is what the module walks. A block that has never been built registers nothing.
 
 ### Where JavaScript goes
@@ -109,7 +109,7 @@ Add any of them with `wp zt add <name>`; dependencies come along.
 
 - **`assets` is a module because of one thing it does unasked.** Called, it composes asset URLs and registers scripts and styles. Unasked, on `init`, it registers every shared package `npm run build` compiled from `src/shared/` into `build/shared/`, so an entry that imports one can declare it as a dependency instead of bundling a copy.
 - **An admin page's markup goes in a template**, and [`make page`](commands/make-page.md) writes both files. The template gets exactly what the `render()` call names and nothing of the page itself. Echoing markup from `render()` works for something tiny and stops working sooner than it looks.
-- **[`make view`](commands/make-view.md) writes a standalone template**, and a name with a slash nests: `wp zt make view emails/receipt` is `views/emails/receipt.php`, rendered as `emails/receipt`.
+- **[`make view`](commands/make-view.md) writes a standalone template**, and a name with a slash nests: `wp zt make view emails/receipt` is `resources/views/emails/receipt.php`, rendered as `emails/receipt`.
 - **`$this` inside any template is the [`views`](modules/views/) module**, so a subview is `$this->render( 'admin-pages/-fields', array( … ) )` — the same call every other caller makes, costing no variable name. Declare `@var` at the top of a template and your editor completes all of it.
 - **`admin-pages`** also accepts a [`ModernAdminPage`](modules/admin-pages/modern-admin-page.md). A page whose `menu()` returns [`AdminMenu::Network`](modules/admin-pages/admin-menu.md) goes to the network administrator's menu on multisite instead of every site's — pick `capability()` to match, and remember the two menus offer different `ParentMenu` sections.
 - **`meta-boxes` reaches two screens.** Posts and comments are the only ones WordPress renders boxes on; terms and users take custom fields through action hooks instead. Register their meta with `fields` and render it on those forms yourself.
@@ -119,7 +119,7 @@ Add any of them with `wp zt add <name>`; dependencies come along.
 - **The directory each module reads is fixed**, and one that does not exist discovers nothing and says nothing — so adding a module before writing its first file is fine.
 - **Name a discovered file with hyphens** — `book-details.php`. It is a convention, not a rewrite: your filename registers exactly as written. Two destinations hold their filename to their own charset and **throw** rather than respell it — an admin page whose name a URL would have to encode, and an ability outside WordPress's `[a-z0-9-]`.
 - **A name the toolkit builds carries your slug; a name it takes is yours.** A hook, a handle, a meta box id, an ability and a command are built — your slug is prefixed on with the separator that destination takes, and an accessor hands you the result. A post type, a taxonomy and a meta key are taken: those are columns in the database and appear in your REST responses, so they are left exactly as you named the file.
-- **A file or directory starting with `.` or `-` is skipped.** Use `-partials/` for something inside a discovered directory that is not itself a discoverable unit. A leading `_` is *not* skipped — WordPress uses it for protected meta, so `fields/_acme_secret.php` has to be a valid name.
+- **A file or directory starting with `.` or `-` is skipped.** Use `-partials/` for something inside a discovered directory that is not itself a discoverable unit. A leading `_` is *not* skipped — WordPress uses it for protected meta, so `resources/fields/_acme_secret.php` has to be a valid name.
 
 ### Which names get your plugin slug
 
@@ -127,19 +127,19 @@ The filename is what a file registers as. Whether your slug is prefixed onto it 
 
 | Prefixed for you | Not prefixed — name it yourself |
 |---|---|
-| `actions/` → `{slug}-send` | `post-types/` → `book` |
-| `admin-pages/` → `{slug}-settings` | `taxonomies/` → `genre` |
-| `schedules/` → `{slug}-sync` | `fields/` → `rating` |
-| `health-checks/` → `{slug}-api-key` | `build/blocks/` → from `block.json` |
-| `abilities/` → `{slug}/create-order` | |
-| `debug-sections/` → `{slug}-status` | |
-| `commands/` → `wp {slug} greet` | |
-| `routes/` → `/{slug}/v1/...` | |
+| `resources/actions/` → `{slug}-send` | `resources/post-types/` → `book` |
+| `resources/admin-pages/` → `{slug}-settings` | `resources/taxonomies/` → `genre` |
+| `resources/schedules/` → `{slug}-sync` | `resources/fields/` → `rating` |
+| `resources/health-checks/` → `{slug}-api-key` | `build/blocks/` → from `block.json` |
+| `resources/abilities/` → `{slug}/create-order` | |
+| `resources/debug-sections/` → `{slug}-status` | |
+| `resources/commands/` → `wp {slug} greet` | |
+| `resources/routes/` → `/{slug}/v1/...` | |
 
 > [!IMPORTANT]
 > **The right-hand column is shared with every other plugin on the site.** Two plugins registering a `book` post type, a `genre` taxonomy or a `rating` meta key are registering the same thing, and one of them loses.
 >
-> Those four are not prefixed for a reason — WordPress caps post type names at 20 characters and taxonomies at 32, a meta key is part of your own REST responses, and a block's namespace already lives in its `block.json`. So put your prefix in the filename: `post-types/acme-book.php`, `fields/acme_rating.php`.
+> Those four are not prefixed for a reason — WordPress caps post type names at 20 characters and taxonomies at 32, a meta key is part of your own REST responses, and a block's namespace already lives in its `block.json`. So put your prefix in the filename: `resources/post-types/acme-book.php`, `resources/fields/acme_rating.php`.
 
 The last seven do nothing on their own — no `Bootable`, no `on_boot()`. They are listed in `bootstrap.php` like the rest, and reached the same way:
 
@@ -147,7 +147,7 @@ The last seven do nothing on their own — no `Bootable`, no `on_boot()`. They a
 |---|---|---|
 | [`path`](modules/path/) | Plugin-relative paths and URLs | `$this->with( Path::class )->get_plugin_url( 'logo.png' )` |
 | [`request`](modules/request/) | Declared arguments become schemas and bound properties | `#[RequestArgument( 'Which one.' )] public int $id;` |
-| [`views`](modules/views/) | Renders `views/*.php` templates | `$this->with( Views::class )->render( 'emails/receipt', $data )` |
+| [`views`](modules/views/) | Renders `resources/views/*.php` templates | `$this->with( Views::class )->render( 'emails/receipt', $data )` |
 | [`db`](modules/db/) | Names your tables and WordPress's | `$this->with( DB::class )->get_table( 'events' )` |
 | [`globals`](modules/globals/) | Request-scoped key/value store | `$this->with( Globals::class )->set( 'run_id', $id )` |
 | [`transients`](modules/transients/) | Key/value that outlives the request, with a TTL | `$this->with( Transients::class )->set( 'rates', $r, HOUR_IN_SECONDS )` |
@@ -210,20 +210,20 @@ Each type writes one file into the directory its module discovers, so the genera
 
 | Type | Writes to | |
 |---|---|---|
-| [`action`](commands/make-action.md) | `actions/` | an `admin-ajax.php` action |
-| [`page`](commands/make-page.md) | `admin-pages/` | an admin screen, **and its template**. `--no-view`, `--views-dir=` |
-| [`view`](commands/make-view.md) | `views/` | a standalone template; a slash nests |
-| [`command`](commands/make-command.md) | `commands/` | a `wp` subcommand |
-| [`schedule`](commands/make-schedule.md) | `schedules/` | a cron event. `--recurrence=` |
-| [`route`](commands/make-route.md) | `routes/` | a REST endpoint. `--method=`, `--pattern=`, `--version=` |
-| [`ability`](commands/make-ability.md) | `abilities/` | an ability (WP 6.9+) |
-| [`post-type`](commands/make-post-type.md) | `post-types/` | a custom post type. `--singular=`, `--plural=` |
-| [`taxonomy`](commands/make-taxonomy.md) | `taxonomies/` | a taxonomy. `--singular=`, `--plural=`, `--object-type=` |
-| [`field`](commands/make-field.md) | `fields/` | a meta field |
-| [`meta-box`](commands/make-meta-box.md) | `meta-boxes/` | an editor meta box |
-| [`health-check`](commands/make-health-check.md) | `health-checks/` | a Site Health **Status** test |
-| [`debug-section`](commands/make-debug-section.md) | `debug-sections/` | a Site Health **Info** panel |
-| [`migration`](commands/make-migration.md) | `migrations/` | a schema change, timestamp-prefixed |
+| [`action`](commands/make-action.md) | `resources/actions/` | an `admin-ajax.php` action |
+| [`page`](commands/make-page.md) | `resources/admin-pages/` | an admin screen, **and its template**. `--no-view`, `--views-dir=` |
+| [`view`](commands/make-view.md) | `resources/views/` | a standalone template; a slash nests |
+| [`command`](commands/make-command.md) | `resources/commands/` | a `wp` subcommand |
+| [`schedule`](commands/make-schedule.md) | `resources/schedules/` | a cron event. `--recurrence=` |
+| [`route`](commands/make-route.md) | `resources/routes/` | a REST endpoint. `--method=`, `--pattern=`, `--version=` |
+| [`ability`](commands/make-ability.md) | `resources/abilities/` | an ability (WP 6.9+) |
+| [`post-type`](commands/make-post-type.md) | `resources/post-types/` | a custom post type. `--singular=`, `--plural=` |
+| [`taxonomy`](commands/make-taxonomy.md) | `resources/taxonomies/` | a taxonomy. `--singular=`, `--plural=`, `--object-type=` |
+| [`field`](commands/make-field.md) | `resources/fields/` | a meta field |
+| [`meta-box`](commands/make-meta-box.md) | `resources/meta-boxes/` | an editor meta box |
+| [`health-check`](commands/make-health-check.md) | `resources/health-checks/` | a Site Health **Status** test |
+| [`debug-section`](commands/make-debug-section.md) | `resources/debug-sections/` | a Site Health **Info** panel |
+| [`migration`](commands/make-migration.md) | `resources/migrations/` | a schema change, timestamp-prefixed |
 | [`block`](commands/make-block.md) | `src/blocks/` | a block. `--dynamic`, `--view=none\|script\|module`, `--js` |
 | [`entry`](commands/make-entry.md) | `src/entries/` | your own script. `--kind=script\|module` |
 | [`shared`](commands/make-shared.md) | `src/shared/` | a package two entries can share. `--kind=script\|module` |
@@ -231,7 +231,7 @@ Each type writes one file into the directory its module discovers, so the genera
 | [`activation`](commands/make-activation.md) | `lib/Modules/` | an activation handler, **declared** too |
 | [`abstract`](commands/make-abstract.md) | `lib/Abstracts/` | a base your own files share. `--for=<type>`, `--extends=` |
 
-The last three land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. Every type writes to one directory, fixed by the module that reads it; a name with a slash nests inside it, so `make command reports/daily` writes `commands/reports/daily.php`.
+The last three land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. Every type writes to one directory, fixed by the module that reads it; a name with a slash nests inside it, so `make command reports/daily` writes `resources/commands/reports/daily.php`.
 
 <!-- zestry:include generator="prompting-generators" -->
 **5 of the 20 generators ask for what you leave out** — [`block`](commands/make-block.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 15 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.

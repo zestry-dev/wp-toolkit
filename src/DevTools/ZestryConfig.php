@@ -38,6 +38,18 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
 class ZestryConfig extends Module {
 
 	/**
+	 * The directory a plugin's PHP classes live in.
+	 *
+	 * A fixed convention rather than a question `wp zt init` asks: `lib/` holds
+	 * classes, reached by namespace, and `resources/` holds the files that *are*
+	 * features, reached by being there. One answer means the PSR-4 entry, the
+	 * copy destination and every generated `use` line cannot disagree.
+	 *
+	 * @var string
+	 */
+	public const ROOT = 'lib';
+
+	/**
 	 * Check whether a project has already been initialized.
 	 *
 	 * @param string $plugin_root Absolute path to the consuming plugin's root.
@@ -64,17 +76,18 @@ class ZestryConfig extends Module {
 		$content = \file_get_contents( $path );
 		$config  = false === $content ? null : \json_decode( $content, true );
 
-		if ( ! \is_array( $config ) || ! isset( $config['namespace'], $config['root'] )
-			|| ! \is_string( $config['namespace'] ) || ! \is_string( $config['root'] )
-		) {
+		if ( ! \is_array( $config ) || ! isset( $config['namespace'] ) || ! \is_string( $config['namespace'] ) ) {
 			throw new \RuntimeException( 'zestry.json is malformed: ' . $path );
 		}
 
 		$text_domain = $config['text_domain'] ?? null;
+		$root        = $config['root'] ?? null;
 
 		return array(
 			'namespace'   => $config['namespace'],
-			'root'        => $config['root'],
+			// `init` always writes {@see ROOT}. Read back rather than assumed, so
+			// a plugin that moved its classes by hand is still read correctly.
+			'root'        => \is_string( $root ) && '' !== $root ? $root : self::ROOT,
 			'text_domain' => \is_string( $text_domain ) ? $text_domain : null,
 		);
 	}

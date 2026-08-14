@@ -29,7 +29,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * request was intended (anti-CSRF); it does not prove the user is permitted, so
  * the two checks are separate and both run before `handle()`.
  *
- * A file at `actions/save-profile.php` registers as
+ * A file at `resources/actions/save-profile.php` registers as
  * `wp_ajax_{plugin}-save-profile` (see {@see Ajax::get_action_slug()}).
  * `wp zt make action <name>` generates a starting point.
  * The page that triggers this action gets its URL (with a nonce attached) from
@@ -149,7 +149,7 @@ abstract class AjaxAction implements PluginAware {
 	 * The action name this is dispatched under.
 	 *
 	 * Your filename with the plugin slug prefixed, since `wp_ajax_*` is one
-	 * namespace shared by every plugin: `actions/save-draft.php` answers to
+	 * namespace shared by every plugin: `resources/actions/save-draft.php` answers to
 	 * `{plugin-slug}-save-draft`. This is the value JavaScript sends as its
 	 * `action` parameter.
 	 *

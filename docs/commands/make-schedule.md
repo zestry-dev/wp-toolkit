@@ -1,5 +1,5 @@
 <!--
-    Generated from commands/make/schedule.php.
+    Generated from resources/commands/make/schedule.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
@@ -7,14 +7,14 @@
 
 Generate a new cron schedule.
 
-The Cron module discovers it. At boot it walks your `schedules/` directory, requires every file in it, binds the `Schedule` each one returns to its own hook, and calls `wp_schedule_event()` for it when the event is not already on the calendar. Writing the file is the whole registration; nothing has to be declared anywhere.
+The Cron module discovers it. At boot it walks your `resources/schedules/` directory, requires every file in it, binds the `Schedule` each one returns to its own hook, and calls `wp_schedule_event()` for it when the event is not already on the calendar. Writing the file is the whole registration; nothing has to be declared anywhere.
 
 Needs the `cron` module, so run `wp zt add cron` first if you have not already.
 
 ## Options
 
 - **`<name>`**  
-  The local name, e.g. 'cleanup'. Becomes the filename (`{name}.php`) under `schedules/`.
+  The local name, e.g. 'cleanup'. Becomes the filename (`{name}.php`) under `resources/schedules/`.
 
 - **`[--recurrence=<recurrence>]`**  
   The WP-Cron recurrence, e.g. 'daily'.  
@@ -29,11 +29,11 @@ Needs the `cron` module, so run `wp zt add cron` first if you have not already.
 ## Examples
 
 ```bash
-# Generate a daily cron schedule at schedules/cleanup.php.
+# Generate a daily cron schedule at resources/schedules/cleanup.php.
 $ wp zt make schedule cleanup
-Success: Created schedules/cleanup.php
+Success: Created resources/schedules/cleanup.php
 
 # Generate a schedule with an explicit recurrence.
 $ wp zt make schedule cleanup --recurrence=hourly
-Success: Created schedules/cleanup.php
+Success: Created resources/schedules/cleanup.php
 ```

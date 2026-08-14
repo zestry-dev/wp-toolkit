@@ -108,7 +108,7 @@ class Migrations extends Module implements Bootable {
 	/**
 	 * Default plugin-relative directory of migration files.
 	 */
-	const MIGRATIONS_ROOT = 'migrations';
+	const MIGRATIONS_ROOT = 'resources/migrations';
 
 	/**
 	 * Options key for the array of migration identifiers already run.

@@ -44,7 +44,7 @@ final class AdminPageTest extends TestCase {
 	 */
 	public function test_view_renders_a_template_with_the_named_data(): void {
 		$this->write_plugin_file(
-			'views/admin-pages/settings.php',
+			'resources/views/admin-pages/settings.php',
 			'<?php echo esc_html( $title ) . "|" . $heading;'
 		);
 
@@ -66,7 +66,7 @@ final class AdminPageTest extends TestCase {
 	 */
 	public function test_view_does_not_put_the_page_in_scope(): void {
 		$this->write_plugin_file(
-			'views/admin-pages/settings.php',
+			'resources/views/admin-pages/settings.php',
 			'<?php echo isset( $page ) ? "leaked" : "clean";'
 		);
 
@@ -81,9 +81,9 @@ final class AdminPageTest extends TestCase {
 	 * `$this`, which is the shape reached for when nothing provided it.
 	 */
 	public function test_a_page_template_can_render_a_partial(): void {
-		$this->write_plugin_file( 'views/admin-pages/-notice.php', '<?php echo "[" . $message . "]";' );
+		$this->write_plugin_file( 'resources/views/admin-pages/-notice.php', '<?php echo "[" . $message . "]";' );
 		$this->write_plugin_file(
-			'views/admin-pages/settings.php',
+			'resources/views/admin-pages/settings.php',
 			'<?php $this->render( "admin-pages/-notice", array( "message" => "saved" ) );'
 		);
 

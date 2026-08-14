@@ -138,7 +138,7 @@ class DiscoveryException extends ModuleException {
 	 * The message raised for an ability whose name WordPress would not accept.
 	 *
 	 * The abilities registry matches `^[a-z0-9-]+/[a-z0-9-]+$` and refuses
-	 * anything else, so `abilities/create_order.php` asks to register a name that
+	 * anything else, so `resources/abilities/create_order.php` asks to register a name that
 	 * cannot exist. The refusal is `_doing_it_wrong()` inside WordPress, arriving
 	 * long after boot and naming no file.
 	 *
@@ -198,7 +198,7 @@ class DiscoveryException extends ModuleException {
 	 * The message raised for an icon whose name WordPress would not accept.
 	 *
 	 * Both icon registries match `^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$`, so
-	 * `svg-icons/Arrow Right.svg` asks to register a name that cannot exist. The
+	 * `resources/svg-icons/Arrow Right.svg` asks to register a name that cannot exist. The
 	 * refusal is `_doing_it_wrong()` inside WordPress, arriving on `init` and
 	 * naming no file.
 	 *

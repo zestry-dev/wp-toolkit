@@ -19,27 +19,27 @@ final class ViewsTest extends TestCase {
 	}
 
 	public function test_renders_a_nested_view_with_data(): void {
-		$this->write_plugin_file( 'views/emails/receipt.php', 'Total: <?php echo (int) $total; ?>' );
+		$this->write_plugin_file( 'resources/views/emails/receipt.php', 'Total: <?php echo (int) $total; ?>' );
 
 		$this->assertSame( 'Total: 42', $this->views()->get( 'emails/receipt', array( 'total' => 42 ) ) );
 	}
 
 	public function test_php_extension_is_optional(): void {
-		$this->write_plugin_file( 'views/card.php', 'CARD' );
+		$this->write_plugin_file( 'resources/views/card.php', 'CARD' );
 
 		$this->assertSame( 'CARD', $this->views()->get( 'card' ) );
 		$this->assertSame( 'CARD', $this->views()->get( 'card.php' ) );
 	}
 
 	public function test_render_echoes_to_the_output_buffer(): void {
-		$this->write_plugin_file( 'views/hi.php', 'HELLO' );
+		$this->write_plugin_file( 'resources/views/hi.php', 'HELLO' );
 
 		$this->expectOutputString( 'HELLO' );
 		$this->views()->render( 'hi' );
 	}
 
 	public function test_data_keys_become_local_variables(): void {
-		$this->write_plugin_file( 'views/greet.php', 'Hi <?php echo esc_html( $name ); ?>' );
+		$this->write_plugin_file( 'resources/views/greet.php', 'Hi <?php echo esc_html( $name ); ?>' );
 
 		$this->assertSame( 'Hi Ada', $this->views()->get( 'greet', array( 'name' => 'Ada' ) ) );
 	}
@@ -73,8 +73,8 @@ final class ViewsTest extends TestCase {
 		// the plugin means Path's containment passes and Views' own root check is what
 		// rejects it.
 		$this->write_plugin_file( 'private/secret.php', 'SECRET' );
-		mkdir( $this->plugin_dir . '/views', 0777, true );
-		symlink( $this->plugin_dir . '/private/secret.php', $this->plugin_dir . '/views/escape.php' );
+		mkdir( $this->plugin_dir . '/resources/views', 0777, true );
+		symlink( $this->plugin_dir . '/private/secret.php', $this->plugin_dir . '/resources/views/escape.php' );
 
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( 'Invalid view name.' );
@@ -93,7 +93,7 @@ final class ViewsTest extends TestCase {
 	 */
 	public function test_a_data_key_named_like_an_internal_local_reaches_the_view( string $key ): void {
 		$this->write_plugin_file(
-			'views/collision.php',
+			'resources/views/collision.php',
 			'<?php echo esc_html( $' . $key . ' ); ?>'
 		);
 
@@ -120,9 +120,9 @@ final class ViewsTest extends TestCase {
 	 * `render()` every other caller makes.
 	 */
 	public function test_a_template_can_render_a_subview(): void {
-		$this->write_plugin_file( 'views/parts/-line.php', '<?php echo "[" . $label . "]";' );
+		$this->write_plugin_file( 'resources/views/parts/-line.php', '<?php echo "[" . $label . "]";' );
 		$this->write_plugin_file(
-			'views/receipt.php',
+			'resources/views/receipt.php',
 			'<?php $this->render( "parts/-line", array( "label" => "one" ) ); echo $this->get( "parts/-line", array( "label" => "two" ) );'
 		);
 
@@ -134,7 +134,7 @@ final class ViewsTest extends TestCase {
 	 * capability costs the template's scope nothing.
 	 */
 	public function test_a_data_key_cannot_replace_the_render_scope(): void {
-		$this->write_plugin_file( 'views/scope.php', '<?php echo is_object( $this ) ? "intact" : "hijacked";' );
+		$this->write_plugin_file( 'resources/views/scope.php', '<?php echo is_object( $this ) ? "intact" : "hijacked";' );
 
 		$this->assertSame( 'intact', $this->views()->get( 'scope', array( 'this' => 'hijacked' ) ) );
 	}

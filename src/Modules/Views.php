@@ -16,7 +16,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
 /**
  * Resolves and renders PHP view templates from the plugin directory.
  *
- * A view is an ordinary PHP file under `views/`. Each key in the data array
+ * A view is an ordinary PHP file under `resources/views/`. Each key in the data array
  * becomes a local variable inside the template. Only names beginning
  * `__include_` are reserved -- the render scope holds two of them and nothing
  * else -- so every ordinary key reaches the template, `view` and `data`
@@ -32,7 +32,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * ```
  * $views = $plugin->get( Views::class );
  *
- * // Echoes views/emails/receipt.php, with $order and $total in scope:
+ * // Echoes resources/views/emails/receipt.php, with $order and $total in scope:
  * $views->render( 'emails/receipt', array(
  *     'order' => $order,
  *     'total' => $total,
@@ -48,7 +48,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * `render()` everything else uses -- and it costs no variable name to do it.
  *
  * ```
- * <!-- views/emails/receipt.php -->
+ * <!-- resources/views/emails/receipt.php -->
  * <h1><?php echo esc_html( $order->title ); ?></h1>
  * <?php $this->render( 'emails/-lines', array( 'lines' => $order->lines ) ); ?>
  * ```
@@ -70,7 +70,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * itself, so its inputs are readable without opening it.
  *
  * ```
- * // admin-pages/settings.php
+ * // resources/admin-pages/settings.php
  * public function render(): void {
  *     $this->view( 'admin-pages/settings', array( 'items' => $this->items ) );
  * }
@@ -82,7 +82,7 @@ class Views extends Module {
 	/**
 	 * Default plugin-relative directory of view files.
 	 */
-	const VIEWS_ROOT = 'views';
+	const VIEWS_ROOT = 'resources/views';
 
 	/**
 	 * Cached real (symlink-resolved) absolute path of the views root.
@@ -108,7 +108,7 @@ class Views extends Module {
 	 *
 	 * Each key in `$data` becomes a template variable. For example,
 	 * `get( 'card', array( 'title' => 'Hello' ) )` makes `$title` available to
-	 * `views/card.php`. Escape the data in the template according to context.
+	 * `resources/views/card.php`. Escape the data in the template according to context.
 	 *
 	 * The including is {@see \Zestry\WPToolkit\Modules\Path::include_file()}, which is
 	 * also what reserves the names: only keys beginning `__include_` are, and

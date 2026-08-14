@@ -30,7 +30,7 @@ use Zestry\WPToolkit\Modules\DB;
  * later migration or is left alone. Write a new migration to undo a mistake,
  * rather than reversing an old one in place.
  *
- * A file at `migrations/20260115120000-create-books-table.php` runs once, in
+ * A file at `resources/migrations/20260115120000-create-books-table.php` runs once, in
  * filename order. `wp zt make migration <name>` generates a starting point,
  * timestamp prefix included.
  * A migration doing something `dbDelta()` cannot express (a data backfill, an

@@ -34,13 +34,12 @@ require_once __DIR__ . '/vendor/autoload.php';
 wp plugin activate acme-books
 ```
 
-Now initialize. Answer `Acme\Books` for the namespace and take the defaults for the rest. (Scripting it instead? Add the `"Acme\\Books\\": "lib/"` PSR-4 entry to `composer.json` yourself first, then `wp zt init --yes` — unattended, it infers the namespace from that entry rather than guessing.)
+Now initialize. Answer `Acme\Books` for the namespace and take the default text domain. (Scripting it instead? Add the `"Acme\\Books\\": "lib/"` PSR-4 entry to `composer.json` yourself first, then `wp zt init --yes` — unattended, it infers the namespace from that entry rather than guessing.)
 
 ```bash
 $ wp zt init
 Namespace (e.g. Vendor\MyPlugin): Acme\Books
 Text domain: (default: acme-books) acme-books
-Source directory: (default: lib) lib
 Copy the kernel into lib/Core/Kernel/ under Acme\Books? [Y/n] y
 Created bootstrap.php. Read it with `$plugin->bootstrap()` in your entry file.
 ...
@@ -176,7 +175,7 @@ A class entry's value is the callback that configures it, and a heading takes th
 
 ```bash
 $ wp zt make post-type book --plural=Books
-Success: Created post-types/book.php
+Success: Created resources/post-types/book.php
 ```
 
 The generated file carries every overridable method with a comment explaining it. Keep the two that are abstract, keep the two you are changing, and delete the rest — anything you do not override takes its default:
@@ -214,7 +213,7 @@ return new class extends PostType {
 };
 ```
 
-That is the whole registration. `PostTypes` walks `post-types/` on `init`, requires each file, and passes what it returns to `register_post_type()`. The registered name comes from the **filename** — `post-types/book.php` registers `book` — so there is no name to spell twice.
+That is the whole registration. `PostTypes` walks `resources/post-types/` on `init`, requires each file, and passes what it returns to `register_post_type()`. The registered name comes from the **filename** — `resources/post-types/book.php` registers `book` — so there is no name to spell twice.
 
 `singular_name()` and `plural_name()` are the only abstract methods. From those two you get the full label set: *Add New Book*, *Edit Book*, *No Books found in Trash*, and the rest.
 
@@ -225,7 +224,7 @@ That is the whole registration. `PostTypes` walks `post-types/` on `init`, requi
 
 ```bash
 $ wp zt make route books --method=get --version=v1 --pattern=/books
-Success: Created routes/books.php
+Success: Created resources/routes/books.php
 ```
 
 A route file returns a `Route` — the HTTP method, the namespace version, the URL pattern, and the handler — rather than a bare handler, so the file is the single source of truth for its own URL. Fill it in:
@@ -330,8 +329,8 @@ The same attribute declares an [ability](modules/abilities/)'s input, because a 
 
 ```bash
 $ wp zt make page settings
-Success: Created admin-pages/settings.php
-Created views/admin-pages/settings.php
+Success: Created resources/admin-pages/settings.php
+Created resources/views/admin-pages/settings.php
 ```
 
 Two files. The class decides *what* the page is — its title, who may see it, what a submission does — and the template decides what it looks like.
@@ -445,7 +444,7 @@ The template gets exactly what that `render()` call named, and nothing of the pa
 
 Inside any template `$this` is the [`views`](modules/views/) module, so a subview is the same call everything else makes: `$this->render( 'admin-pages/-fields', array( 'per_page' => $per_page ) )`. A template is included rather than called, so the `@var` block at the top describes the whole scope and gives your editor completion.
 
-`admin-pages/settings.php` registers the page slug `acme-books-settings`. Returning `'edit.php?post_type=book'` from `parent()` nests it under the Books menu the post type created; return a `ParentMenu` case such as `ParentMenu::Settings` to nest under a core menu instead, or `null` to get a top-level menu of its own.
+`resources/admin-pages/settings.php` registers the page slug `acme-books-settings`. Returning `'edit.php?post_type=book'` from `parent()` nests it under the Books menu the post type created; return a `ParentMenu` case such as `ParentMenu::Settings` to nest under a core menu instead, or `null` to get a top-level menu of its own.
 
 The module enforces `capability()` before anything on the page runs, verifies the nonce on every POST, and only then calls `handle_submit()`. `nonce_field()` emits the matching field. There is no `add_menu_page()`, no `admin_menu` hook, and no `check_admin_referer()` to write.
 
@@ -590,14 +589,14 @@ acme-books/
 ├── zestry.lock.json            ← a hash per copied file; commit it
 ├── composer.json
 ├── phpcs.xml
-├── admin-pages/
+├── resources/admin-pages/
 │   └── settings.php            ← an admin page
-├── views/
-│   └── admin-pages/
+├── resources/views/
+│   └── resources/admin-pages/
 │       └── settings.php        ← its markup
-├── post-types/
+├── resources/post-types/
 │   └── book.php                ← a post type
-├── routes/
+├── resources/routes/
 │   └── books.php               ← a REST route
 ├── src/
 │   └── entries/settings/       ← index.ts + style.scss; built to build/entries/
@@ -622,7 +621,7 @@ acme-books/
 └── vendor/                     ← dev only, not shipped
 ```
 
-A directory is a feature set, a file returns an object, and `with()` reaches every module — the same three conventions everywhere. Adding the next feature is one more file. Adding the next module is `wp zt add cron` and a file in `schedules/`.
+A directory is a feature set, a file returns an object, and `with()` reaches every module — the same three conventions everywhere. Adding the next feature is one more file. Adding the next module is `wp zt add cron` and a file in `resources/schedules/`.
 
 ## Next
 

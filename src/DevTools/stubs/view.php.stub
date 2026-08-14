@@ -5,7 +5,7 @@
  * Rendered with `$views->render( '{{name}}', array( ... ) )`, or from an admin
  * page with `$this->view( '{{name}}', array( ... ) )`.
  *
- * That name is this file's path under `views/`, so renaming the file breaks
+ * That name is this file's path under `resources/views/`, so renaming the file breaks
  * every call naming the old one -- and a view is resolved by string, which no
  * editor checks for you.
  *

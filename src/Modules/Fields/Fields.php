@@ -20,7 +20,7 @@ use Zestry\WPToolkit\Modules\Path;
 /**
  * Registers post meta from files, with types, sanitisers and permissions.
  *
- * A file in `fields/` returns a {@see Field} naming the post types it attaches
+ * A file in `resources/fields/` returns a {@see Field} naming the post types it attaches
  * to — so a field on your own post type and a field on core's `post` are written
  * the same way, in the same place.
  *
@@ -69,7 +69,7 @@ use Zestry\WPToolkit\Modules\Path;
  *
  * @example A field
  * ```
- * // fields/acme_rating.php -- the filename is the meta key
+ * // resources/fields/acme_rating.php -- the filename is the meta key
  * return new class extends Field {
  *
  *     public function subtypes(): array {
@@ -92,7 +92,7 @@ class Fields extends Module implements Bootable {
 	/**
 	 * Where fields are discovered, relative to the plugin root.
 	 */
-	const FIELDS_ROOT = 'fields';
+	const FIELDS_ROOT = 'resources/fields';
 
 	/**
 	 * Discovered fields keyed by filename, once the directory has been walked.

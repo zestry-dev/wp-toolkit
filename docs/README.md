@@ -1,6 +1,6 @@
 # Zestry WP Toolkit
 
-A toolkit for building WordPress plugins where a file in a directory *is* a feature — drop one in `commands/` and it is a WP-CLI command, one in `admin-pages/` and it is a menu page — copied into your plugin under your own namespace, so it becomes your code rather than a dependency.
+A toolkit for building WordPress plugins where a file in a directory *is* a feature — drop one in `resources/commands/` and it is a WP-CLI command, one in `resources/admin-pages/` and it is a menu page — copied into your plugin under your own namespace, so it becomes your code rather than a dependency.
 
 ## Quickstart
 
@@ -69,7 +69,7 @@ return array(
 
 ```php
 <?php
-// commands/greet.php
+// resources/commands/greet.php
 
 declare( strict_types=1 );
 
@@ -90,7 +90,7 @@ $ wp acme-plugin greet Alice
 Success: Hello, Alice.
 ```
 
-No `WP_CLI::add_command()`, no hook names. The module walks `commands/`, wires each returned object, and registers it under your plugin slug.
+No `WP_CLI::add_command()`, no hook names. The module walks `resources/commands/`, wires each returned object, and registers it under your plugin slug.
 
 ## What do you want to do?
 

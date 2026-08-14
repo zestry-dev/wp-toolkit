@@ -21,7 +21,7 @@ final class FieldsTest extends TestCase {
 
 	public function set_up(): void {
 		parent::set_up();
-		mkdir( $this->plugin_dir . '/fields', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/fields', 0777, true );
 	}
 
 	public function tear_down(): void {
@@ -583,13 +583,13 @@ final class FieldsTest extends TestCase {
 	}
 
 	public function test_a_missing_default_directory_is_not_an_error(): void {
-		$this->remove_dir( $this->plugin_dir . '/fields' );
+		$this->remove_dir( $this->plugin_dir . '/resources/fields' );
 
 		$this->assertSame( array(), $this->boot()->get_discovered_fields() );
 	}
 
 	public function test_a_file_returning_the_wrong_type_throws(): void {
-		file_put_contents( $this->plugin_dir . '/fields/bad.php', "<?php\nreturn 'nope';\n" );
+		file_put_contents( $this->plugin_dir . '/resources/fields/bad.php', "<?php\nreturn 'nope';\n" );
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'must return an instance of' );
@@ -632,7 +632,7 @@ final class FieldsTest extends TestCase {
 		$types = implode( ', ', array_map( static fn( $t ) => "'" . $t . "'", $post_types ) );
 
 		file_put_contents(
-			$this->plugin_dir . '/fields/' . $file_name . '.php',
+			$this->plugin_dir . '/resources/fields/' . $file_name . '.php',
 			"<?php\n"
 				. "use Zestry\\WPToolkit\\Modules\\Fields\\MetaType;\n"
 				. "return new class extends \\Zestry\\WPToolkit\\Modules\\Fields\\Field {\n"

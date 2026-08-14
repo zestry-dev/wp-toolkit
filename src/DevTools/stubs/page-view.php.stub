@@ -2,7 +2,7 @@
 /**
  * Markup for the {{title}} admin page.
  *
- * Rendered by admin-pages/{{name}}.php. Every variable here is one that file
+ * Rendered by resources/admin-pages/{{name}}.php. Every variable here is one that file
  * passed -- nothing else of the page is in scope, so this template's inputs are
  * exactly what its render() call names.
  *

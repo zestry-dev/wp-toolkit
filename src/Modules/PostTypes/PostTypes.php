@@ -23,7 +23,7 @@ use Zestry\WPToolkit\Modules\Path;
  *
  * A post types directory contains PHP files, one per post type; each file
  * returns a {@see PostType} instance and registers under the file's own name
- * (`post-types/book.php` registers as `book`). A taxonomies directory works
+ * (`resources/post-types/book.php` registers as `book`). A taxonomies directory works
  * the same way with {@see Taxonomy} instances. Neither name is auto-namespaced
  * to the plugin slug, the way a meta key and a block name are not either --
  * see {@see PostType} for why, and prefix them yourself in the filename.
@@ -40,11 +40,8 @@ use Zestry\WPToolkit\Modules\Path;
  * about.
  *
  * Both roots behave the same way, which is what lets a plugin with post types
- * but no taxonomies skip the `taxonomies/` directory entirely. Name one with
- * `post-types/` or `taxonomies/` and it must
- * exist -- asking for a directory by name and getting nothing is a typo worth
- * hearing about. Leave one at its default and let it be absent, and your
- * plugin simply has none of those files yet.
+ * but no taxonomies skip `resources/taxonomies/` entirely. A directory that is
+ * not there is not an error: your plugin simply has none of those files yet.
  *
  *
  * @setup-hook init
@@ -56,12 +53,12 @@ class PostTypes extends Module implements Bootable {
 	/**
 	 * Default plugin-relative directory of post type files.
 	 */
-	const POST_TYPES_ROOT = 'post-types';
+	const POST_TYPES_ROOT = 'resources/post-types';
 
 	/**
 	 * Default plugin-relative directory of taxonomy files.
 	 */
-	const TAXONOMIES_ROOT = 'taxonomies';
+	const TAXONOMIES_ROOT = 'resources/taxonomies';
 
 	/**
 	 * Discovered post type instances, indexed by their registered name.

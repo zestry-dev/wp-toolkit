@@ -26,7 +26,7 @@ final class AbilitiesTest extends TestCase {
 			$this->markTestSkipped( 'Requires the Abilities API, added in WordPress 6.9.' );
 		}
 
-		mkdir( $this->plugin_dir . '/abilities', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/abilities', 0777, true );
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
 		$this->reset_registries();
@@ -416,7 +416,7 @@ final class AbilitiesTest extends TestCase {
 	}
 
 	public function test_a_file_returning_the_wrong_type_throws(): void {
-		file_put_contents( $this->plugin_dir . '/abilities/bad.php', "<?php\nreturn 'not an ability';\n" );
+		file_put_contents( $this->plugin_dir . '/resources/abilities/bad.php', "<?php\nreturn 'not an ability';\n" );
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'must return an instance of' );
@@ -856,7 +856,7 @@ final class AbilitiesTest extends TestCase {
 		}
 
 		file_put_contents(
-			$this->plugin_dir . '/abilities/' . $name . '.php',
+			$this->plugin_dir . '/resources/abilities/' . $name . '.php',
 			"<?php\n"
 				. "use Zestry\\WPToolkit\\Modules\\Abilities\\Effect;\n"
 				. "return new class extends \\Zestry\\WPToolkit\\Modules\\Abilities\\Ability {\n"

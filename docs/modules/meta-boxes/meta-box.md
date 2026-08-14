@@ -9,7 +9,7 @@
 
 One panel on the post edit screen.
 
-A file in `meta-boxes/` returns one of these. You write the markup and decide what to store; everything between the two is handled — the nonce, and the guards that decide whether a `save_post` is even a save worth acting on.
+A file in `resources/meta-boxes/` returns one of these. You write the markup and decide what to store; everything between the two is handled — the nonce, and the guards that decide whether a `save_post` is even a save worth acting on.
 
 ## A box
 
@@ -107,7 +107,7 @@ return new class() extends MetaBox {
 		);
 	}
 
-	// Meta keys this form submits, named after your fields/ files. Each one
+	// Meta keys this form submits, named after your resources/fields/ files. Each one
 	// present in the request is read, unslashed and written through the Fields
 	// module, so its validate() and sanitize() apply.
 	//
@@ -238,7 +238,7 @@ public function fields(): array
 |  | Details |
 |---|---|
 | **Parameters** | — |
-| **Return** | Meta keys declared by your `fields/` files |
+| **Return** | Meta keys declared by your `resources/fields/` files |
 | **Throws** | — |
 
 Name them and the module does the reading: for each key present in the request it unslashes the value and writes it through `Fields::set()`, so the field's `validate()` and `sanitize()` both apply. A key the form did not submit is left alone rather than written empty.
@@ -317,7 +317,7 @@ final public function get_id(): string
 | **Return** | `string` |
 | **Throws** | — |
 
-Your filename with the plugin slug prefixed, since a box's id is an element id on a screen every plugin can add to. `meta-boxes/details.php` gives `{plugin-slug}-details`.
+Your filename with the plugin slug prefixed, since a box's id is an element id on a screen every plugin can add to. `resources/meta-boxes/details.php` gives `{plugin-slug}-details`.
 
 <br>
 

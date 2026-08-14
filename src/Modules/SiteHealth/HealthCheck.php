@@ -18,7 +18,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
 /**
  * One check on the Site Health screen.
  *
- * A file in `health-checks/` returns one of these. Its filename is the check's
+ * A file in `resources/health-checks/` returns one of these. Its filename is the check's
  * identifier, so `api-key.php` becomes `{plugin-slug}-api-key` on the screen.
  *
  * Site Health is the supported way to see a site you cannot log into: a user

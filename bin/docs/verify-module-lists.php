@@ -26,7 +26,7 @@ function zestry_verify_module_lists( string $root ): array {
 	foreach ( array( 'add', 'overwrite' ) as $command ) {
 		{
 			$names    = $expected;
-			$relative = 'commands/' . $command . '.php';
+			$relative = 'resources/commands/' . $command . '.php';
 			$source   = (string) file_get_contents( $root . '/' . $relative );
 			$label    = 'Available modules';
 

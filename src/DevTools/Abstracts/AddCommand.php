@@ -32,7 +32,7 @@ use Zestry\WPToolkit\DevTools\RuntimePlugin;
  * AddCommand class.
  *
  * Shared flow behind `wp zt add <module>...` and `wp zt overwrite
- * <module>...` (see `commands/add/`/`commands/overwrite/`): read the
+ * <module>...` (see `resources/commands/add/`/`resources/commands/overwrite/`): read the
  * project's zestry.json for its namespace, text domain, and destination root,
  * resolve the requested modules' transitive dependencies against the
  * registry, then copy whichever of them {@see filter_existing_modules()}
@@ -126,7 +126,7 @@ abstract class AddCommand extends Command {
 
 		if ( $cancelled ) {
 			// The subcommand is expected to have already logged why (see
-			// commands/overwrite/*.php's declined-confirmation "Cancelled." log).
+			// resources/commands/overwrite/*.php's declined-confirmation "Cancelled." log).
 			return;
 		}
 
@@ -438,9 +438,9 @@ abstract class AddCommand extends Command {
 	 * ask a single yes/no, rather than nagging once per file. Mutate `$to_copy`
 	 * (by reference, initially the full resolved list) to control what
 	 * actually gets copied: remove an entry to skip it and leave the rest to
-	 * proceed to `$this->success( 'Done.' )` as usual (see `commands/add/`),
+	 * proceed to `$this->success( 'Done.' )` as usual (see `resources/commands/add/`),
 	 * or return true to cancel the whole command before that success message,
-	 * having logged why first (see `commands/overwrite/`'s declined
+	 * having logged why first (see `resources/commands/overwrite/`'s declined
 	 * confirmation).
 	 *
 	 * @param string[]              $existing_names Resolved module names whose destination already exists.

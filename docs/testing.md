@@ -186,7 +186,7 @@ To exercise the files you actually ship instead, point the `Plugin` at your real
 
 ```php
 $plugin = new Plugin( dirname( __DIR__ ) . '/acme-plugin.php', 'acme-test' );
-$plugin->get( CLI::class );   // discovers your real commands/ directory
+$plugin->get( CLI::class );   // discovers your real resources/commands/ directory
 ```
 
 That is a second, test-owned instance. It shares nothing with the one your entry file builds in production.

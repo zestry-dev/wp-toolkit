@@ -131,7 +131,7 @@ wp zt doctor                                     # wiring that fails silently
 Plus the things no command can check for you:
 
 - **Bump `Version:`** in the entry file header. `$plugin->get_version()` reads it straight from there, so anything of yours keyed to a version follows automatically.
-- **Migrations do not run themselves.** Adding one to `migrations/` ships a pending migration and nothing more — decide how the release triggers `run_pending()`, and see [Migrations](modules/migrations/) for why a hook is not it.
+- **Migrations do not run themselves.** Adding one to `resources/migrations/` ships a pending migration and nothing more — decide how the release triggers `run_pending()`, and see [Migrations](modules/migrations/) for why a hook is not it.
 
 `wp zt doctor` comes last because it is the only check for a module that is on disk, correct, and never listed in `bootstrap.php` — which produces no error, just a missing feature — and because the `--no-dev` install in the next step takes it away.
 

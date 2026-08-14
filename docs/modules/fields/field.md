@@ -9,7 +9,7 @@
 
 One piece of post meta, registered with a type and a schema.
 
-A file in `fields/` returns one of these. It names what it attaches to, so it works the same for a post type you registered and for one you did not — and the same again for term, user and comment meta.
+A file in `resources/fields/` returns one of these. It names what it attaches to, so it works the same for a post type you registered and for one you did not — and the same again for term, user and comment meta.
 
 Registering meta rather than just calling `update_post_meta()` is what gives it a type, a sanitiser, a permission check and a place in the REST API. The block editor reads and writes meta over REST, so a registered field is one your editor JavaScript can bind to; an unregistered one is invisible to it.
 
@@ -18,7 +18,7 @@ Registering meta rather than just calling `update_post_meta()` is what gives it 
 ## A field
 
 ```php
-// fields/acme_rating.php
+// resources/fields/acme_rating.php
 namespace Acme\Plugin\Fields;
 
 use Acme\Plugin\Core\Modules\Fields\Field;
@@ -42,7 +42,7 @@ return new class extends Field {
 > [!IMPORTANT]
 > **This name is not prefixed with your plugin slug, so choose it as though every plugin on the site can see it — because they can.** A meta key is part of your REST responses, so adding a prefix for you would change your own API.
 >
-> Two plugins registering `rating` are the same meta key on the same post, and whichever registers second loses. Put your own prefix in the filename: `fields/acme_rating.php`.
+> Two plugins registering `rating` are the same meta key on the same post, and whichever registers second loses. Put your own prefix in the filename: `resources/fields/acme_rating.php`.
 
 ## Generated starting point
 
@@ -145,9 +145,9 @@ public function key(): string
 | **Return** | `string` |
 | **Throws** | — |
 
-Your filename, verbatim: `fields/acme_rating.php` stores under `acme_rating`. Post meta keys are shared across every plugin on a post, so name the file with a prefix when the field attaches to a post type you do not own.
+Your filename, verbatim: `resources/fields/acme_rating.php` stores under `acme_rating`. Post meta keys are shared across every plugin on a post, so name the file with a prefix when the field attaches to a post type you do not own.
 
-A leading underscore works, so `fields/_acme_secret.php` stores under `_acme_secret` — WordPress's mark for protected meta. The filename is the key, exactly as written, because the key is what stored rows are found by. `is_protected()` is the other way to say the same thing, for a key whose spelling you would rather choose freely. Override this only for a key a filename genuinely cannot hold.
+A leading underscore works, so `resources/fields/_acme_secret.php` stores under `_acme_secret` — WordPress's mark for protected meta. The filename is the key, exactly as written, because the key is what stored rows are found by. `is_protected()` is the other way to say the same thing, for a key whose spelling you would rather choose freely. Override this only for a key a filename genuinely cannot hold.
 
 <br>
 

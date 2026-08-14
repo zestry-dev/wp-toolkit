@@ -5,11 +5,11 @@
 
 # AdminPages
 
-Discovers `admin-pages/` &nbsp;·&nbsp; Each file returns [`AdminPage`](admin-page.md) &nbsp;·&nbsp; Dependencies [`cookie`](../cookie/), [`path`](../path/), [`request`](../request/), [`views`](../views/)
+Discovers `resources/admin-pages/` &nbsp;·&nbsp; Each file returns [`AdminPage`](admin-page.md) &nbsp;·&nbsp; Dependencies [`cookie`](../cookie/), [`path`](../path/), [`request`](../request/), [`views`](../views/)
 
 Discovers plugin admin pages and registers them in the WordPress admin menu.
 
-A pages directory contains PHP files named after the page, such as `admin-pages/settings.php`, each returning an AdminPage instance. On an admin request the module wires each page, registers it via the appropriate WordPress menu function (top-level, a core submenu chosen by its ParentMenu, or a custom parent), and dispatches to the page's render() when it is viewed — enforcing the page capability first. A POST is handled a step earlier, on `load-{$hook}`, so a page can still redirect after saving.
+A pages directory contains PHP files named after the page, such as `resources/admin-pages/settings.php`, each returning an AdminPage instance. On an admin request the module wires each page, registers it via the appropriate WordPress menu function (top-level, a core submenu chosen by its ParentMenu, or a custom parent), and dispatches to the page's render() when it is viewed — enforcing the page capability first. A POST is handled a step earlier, on `load-{$hook}`, so a page can still redirect after saving.
 
 [Adding it](#adding-it) &nbsp;·&nbsp; [A minimal page file](#a-minimal-page-file) &nbsp;·&nbsp; [Where the markup goes](#where-the-markup-goes) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing an AdminPage](#writing-an-adminpage) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
@@ -31,7 +31,7 @@ return array(
 
 ## A minimal page file
 
-The actual authoring surface for most developers is not this class but the page files it discovers. A page such as `admin-pages/settings.php` need only return an AdminPage subclass instance — the module assigns the plugin, so `with()` reaches every module, derives the slug from the file path, and wires up the menu entry.
+The actual authoring surface for most developers is not this class but the page files it discovers. A page such as `resources/admin-pages/settings.php` need only return an AdminPage subclass instance — the module assigns the plugin, so `with()` reaches every module, derives the slug from the file path, and wires up the menu entry.
 
 ```php
 <?php
@@ -55,7 +55,7 @@ A page's markup belongs in a template, and `wp zt make page` writes one alongsid
 `AdminPage::view()` renders through the `Views` module, and the template gets what that call passes and nothing else — it cannot reach the page for anything the call left out. So the call is the list of the template's inputs, readable without opening the template.
 
 ```php
-<?php // views/admin-pages/settings.php
+<?php // resources/views/admin-pages/settings.php
 ?>
 <div class="wrap">
     <h1><?php echo esc_html( $title ); ?></h1>
@@ -75,7 +75,7 @@ A page's markup belongs in a template, and `wp zt make page` writes one alongsid
 
 ## Writing an AdminPage
 
-A file in `admin-pages/` returns an [`AdminPage`](admin-page.md) instance, which `wp zt make page <name>` generates.
+A file in `resources/admin-pages/` returns an [`AdminPage`](admin-page.md) instance, which `wp zt make page <name>` generates.
 
 The toolkit also ships a specialised base to extend in place of `AdminPage`, satisfying the same guard:
 
@@ -94,7 +94,7 @@ Shipped with this module, and written against directly:
 ### `PAGES_ROOT`
 
 ```php
-const PAGES_ROOT = 'admin-pages';
+const PAGES_ROOT = 'resources/admin-pages';
 ```
 
 Default plugin-relative directory of page files.
@@ -301,7 +301,7 @@ A module that names a `boots_on` also throws when asked for before that hook has
 
 ## See also
 
-- [`AdminPage`](admin-page.md) — what a file in `admin-pages/` returns
+- [`AdminPage`](admin-page.md) — what a file in `resources/admin-pages/` returns
 - [`cookie`](../cookie/) — copied in alongside this one
 - [`path`](../path/) — copied in alongside this one
 - [`request`](../request/) — copied in alongside this one

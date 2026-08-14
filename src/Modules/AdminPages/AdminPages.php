@@ -23,7 +23,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * Discovers plugin admin pages and registers them in the WordPress admin menu.
  *
  * A pages directory contains PHP files named after the page, such as
- * `admin-pages/settings.php`, each returning an AdminPage instance. On an
+ * `resources/admin-pages/settings.php`, each returning an AdminPage instance. On an
  * admin request the module wires each page, registers it via the appropriate
  * WordPress menu function (top-level, a core submenu chosen by its ParentMenu,
  * or a custom parent), and dispatches to the page's render() when it is viewed
@@ -32,7 +32,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  *
  * @example A minimal page file
  * The actual authoring surface for most developers is not this class but the
- * page files it discovers. A page such as `admin-pages/settings.php` need
+ * page files it discovers. A page such as `resources/admin-pages/settings.php` need
  * only return an AdminPage subclass instance — the module assigns the
  * plugin, so `with()` reaches every module, derives the slug from the
  * file path, and wires up the menu entry.
@@ -64,7 +64,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * of the template's inputs, readable without opening the template.
  *
  * ```
- * <?php // views/admin-pages/settings.php
+ * <?php // resources/views/admin-pages/settings.php
  * ?>
  * <div class="wrap">
  *     <h1><?php echo esc_html( $title ); ?></h1>
@@ -86,7 +86,7 @@ class AdminPages extends Module implements Bootable {
 	/**
 	 * Default plugin-relative directory of page files.
 	 */
-	const PAGES_ROOT = 'admin-pages';
+	const PAGES_ROOT = 'resources/admin-pages';
 
 	/**
 	 * Discovered pages, indexed by full plugin page slug.

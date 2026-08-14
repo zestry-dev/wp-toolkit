@@ -27,7 +27,7 @@ return new class() extends Taxonomy {
 	}
 
 	// Post type name(s) this taxonomy attaches to -- a name discovered from
-	// this same plugin's post-types/ directory, or any other already
+	// this same plugin's resources/post-types/ directory, or any other already
 	// registered post type (including WordPress's own built-in 'post').
 	public function object_types(): array {
 		return array( '{{object_type}}' );

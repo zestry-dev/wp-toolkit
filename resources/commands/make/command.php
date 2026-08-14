@@ -16,9 +16,9 @@ return new class() extends MakeCommand {
 	/**
 	 * Generate a new WP-CLI command.
 	 *
-	 * The CLI module discovers it. At boot it walks your `commands/` directory
+	 * The CLI module discovers it. At boot it walks your `resources/commands/` directory
 	 * at any depth, requires every file in it, and registers the `Command` each
-	 * one returns under your plugin's slug -- so `commands/greet.php` becomes
+	 * one returns under your plugin's slug -- so `resources/commands/greet.php` becomes
 	 * `wp {slug} greet`, and nested directories become nested command
 	 * namespaces. Writing the file is the whole registration.
 	 *
@@ -29,10 +29,10 @@ return new class() extends MakeCommand {
 	 *
 	 * <name>
 	 * : The local name, e.g. 'greet'. Becomes the filename (`{name}.php`)
-	 * under `commands/`. May include `/` to nest it under a command
+	 * under `resources/commands/`. May include `/` to nest it under a command
 	 * namespace, e.g. 'cache/clear' -- but one name can be a leaf command or a
 	 * command namespace, never both, because WP-CLI cannot attach subcommands
-	 * to a command. `commands/cache.php` and `commands/cache/` therefore
+	 * to a command. `resources/commands/cache.php` and `resources/commands/cache/` therefore
 	 * exclude each other, and this command refuses to write the second.
 	 *
 	 *
@@ -46,9 +46,9 @@ return new class() extends MakeCommand {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # Generate a WP-CLI command at commands/greet.php.
+	 *     # Generate a WP-CLI command at resources/commands/greet.php.
 	 *     $ wp zt make command greet
-	 *     Success: Created commands/greet.php
+	 *     Success: Created resources/commands/greet.php
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -67,7 +67,7 @@ return new class() extends MakeCommand {
 	}
 
 	protected function get_default_dir( array $config ): string {
-		return 'commands';
+		return 'resources/commands';
 	}
 
 	/**
@@ -78,7 +78,7 @@ return new class() extends MakeCommand {
 	 * never have subcommands attached (see {@see \Zestry\WPToolkit\Modules\CLI\CLI}'s own
 	 * collision guard, which enforces this the same way at discovery time).
 	 * Unlike the generic checks in the parent, this collision is NOT a
-	 * filesystem conflict: `commands/test-1.php` and `commands/test-1/` can
+	 * filesystem conflict: `resources/commands/test-1.php` and `resources/commands/test-1/` can
 	 * coexist fine on disk, so it has to be checked for explicitly here rather
 	 * than falling out of `is_dir()`/`is_file()`.
 	 *

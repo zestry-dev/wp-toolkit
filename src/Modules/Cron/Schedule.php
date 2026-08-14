@@ -23,7 +23,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * ensures its recurrence is scheduled with WordPress, and binds `run()` to
  * fire when WP-Cron's pseudo-cron eventually dispatches the hook.
  *
- * A file at `schedules/cleanup-logs.php` registers under the hook
+ * A file at `resources/schedules/cleanup-logs.php` registers under the hook
  * `{plugin-slug}-cleanup-logs` (see {@see Cron::get_schedule_slug()}).
  * `wp zt make schedule <name>` generates a starting point.
  *
@@ -117,7 +117,7 @@ abstract class Schedule implements PluginAware {
 	 * The hook this event is scheduled under.
 	 *
 	 * Your filename with the plugin slug prefixed, since WP-Cron's event list is
-	 * shared by every plugin on the site: `schedules/cleanup.php` runs as
+	 * shared by every plugin on the site: `resources/schedules/cleanup.php` runs as
 	 * `{plugin-slug}-cleanup`. This is the name `wp cron event list` shows, and
 	 * what `wp_next_scheduled()` and `wp_clear_scheduled_hook()` take.
 	 *

@@ -4,7 +4,7 @@
  * Check every stub is what a consumer's own tooling would leave behind.
  *
  * A `.stub` is not a `.php` or a `.ts`, so nothing sees these: `composer lint`
- * scopes phpcs to `src/`, `bin/` and `commands/`, and neither ESLint nor
+ * scopes phpcs to `src/`, `bin/` and `resources/`, and neither ESLint nor
  * Prettier is pointed at them either. They are the only source in the
  * repository nothing checked, and they are the source a consumer reads first.
  *

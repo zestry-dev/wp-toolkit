@@ -21,8 +21,8 @@ final class SiteHealthTest extends TestCase {
 
 	public function set_up(): void {
 		parent::set_up();
-		mkdir( $this->plugin_dir . '/health-checks', 0777, true );
-		mkdir( $this->plugin_dir . '/debug-sections', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/health-checks', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/debug-sections', 0777, true );
 	}
 
 	public function test_a_discovered_check_is_added_to_the_site_status_tests(): void {
@@ -99,13 +99,13 @@ final class SiteHealthTest extends TestCase {
 	 * default directory being absent is not a misconfiguration.
 	 */
 	public function test_a_missing_default_directory_is_not_an_error(): void {
-		$this->remove_dir( $this->plugin_dir . '/health-checks' );
+		$this->remove_dir( $this->plugin_dir . '/resources/health-checks' );
 
 		$this->assertSame( array(), $this->boot()->filter_site_status_tests( array() ) );
 	}
 
 	public function test_a_file_returning_the_wrong_type_throws(): void {
-		file_put_contents( $this->plugin_dir . '/health-checks/bad.php', "<?php\nreturn 'nope';\n" );
+		file_put_contents( $this->plugin_dir . '/resources/health-checks/bad.php', "<?php\nreturn 'nope';\n" );
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'must return an instance of' );
@@ -235,7 +235,7 @@ final class SiteHealthTest extends TestCase {
 	 * fail the same way in either.
 	 */
 	public function test_a_section_file_returning_the_wrong_type_throws(): void {
-		file_put_contents( $this->plugin_dir . '/debug-sections/status.php', "<?php\nreturn 'not a section';\n" );
+		file_put_contents( $this->plugin_dir . '/resources/debug-sections/status.php', "<?php\nreturn 'not a section';\n" );
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'must return an instance of' );
@@ -261,7 +261,7 @@ final class SiteHealthTest extends TestCase {
 	 */
 	private function write_section( string $name, string $fields_body, string $extra = '' ): void {
 		file_put_contents(
-			$this->plugin_dir . '/debug-sections/' . $name . '.php',
+			$this->plugin_dir . '/resources/debug-sections/' . $name . '.php',
 			"<?php\n"
 				. "return new class extends \\Zestry\\WPToolkit\\Modules\\SiteHealth\\DebugSection {\n"
 				. $extra
@@ -281,7 +281,7 @@ final class SiteHealthTest extends TestCase {
 	 */
 	private function write_check( string $name, string $run_body, string $properties = '' ): void {
 		file_put_contents(
-			$this->plugin_dir . '/health-checks/' . $name . '.php',
+			$this->plugin_dir . '/resources/health-checks/' . $name . '.php',
 			"<?php\n"
 				. "use Zestry\\WPToolkit\\Modules\\SiteHealth\\BadgeColor;\n"
 				. "return new class extends \\Zestry\\WPToolkit\\Modules\\SiteHealth\\HealthCheck {\n"

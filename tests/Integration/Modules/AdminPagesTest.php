@@ -22,7 +22,7 @@ final class AdminPagesTest extends TestCase {
 		// Look like an admin request so the module registers on admin_menu.
 		set_current_screen( 'dashboard' );
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
-		mkdir( $this->plugin_dir . '/admin-pages', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/admin-pages', 0777, true );
 	}
 
 	public function tear_down(): void {
@@ -99,7 +99,7 @@ final class AdminPagesTest extends TestCase {
 	 */
 	private function write_page( string $name, string $class_body, string $base = 'AdminPage' ): void {
 		$this->write_plugin_file(
-			"admin-pages/{$name}.php",
+			"resources/admin-pages/{$name}.php",
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\AdminPages\\AdminMenu;\n"
 				. "use Zestry\\WPToolkit\\Modules\\AdminPages\\AdminPage;\nuse Zestry\\WPToolkit\\Modules\\AdminPages\\ParentMenu;\n"
 				. "return new class extends {$base} {\n{$class_body}\n};\n"
@@ -386,7 +386,7 @@ final class AdminPagesTest extends TestCase {
 	}
 
 	public function test_a_page_file_returning_the_wrong_type_throws(): void {
-		$this->write_plugin_file( 'admin-pages/bad.php', "<?php\nreturn 42;\n" );
+		$this->write_plugin_file( 'resources/admin-pages/bad.php', "<?php\nreturn 42;\n" );
 
 		$this->admin_pages();
 

@@ -21,7 +21,7 @@ final class MetaBoxesTest extends TestCase {
 
 	public function set_up(): void {
 		parent::set_up();
-		mkdir( $this->plugin_dir . '/meta-boxes', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/meta-boxes', 0777, true );
 
 		$GLOBALS['zestry_saved'] = 0;
 	}
@@ -182,9 +182,9 @@ final class MetaBoxesTest extends TestCase {
 	 * written through Fields, so its validate() and sanitize() both apply.
 	 */
 	public function test_a_declared_field_is_stored_from_the_request(): void {
-		mkdir( $this->plugin_dir . '/fields', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/fields', 0777, true );
 		file_put_contents(
-			$this->plugin_dir . '/fields/acme-note.php',
+			$this->plugin_dir . '/resources/fields/acme-note.php',
 			"<?php\nreturn new class extends \\Zestry\\WPToolkit\\Modules\\Fields\\Field {\n"
 				. "public function subtypes(): array { return array( 'post' ); }\n"
 				. "public function sanitize( mixed \$value ): mixed { return strtoupper( (string) \$value ); }\n"
@@ -207,9 +207,9 @@ final class MetaBoxesTest extends TestCase {
 	 * user never opened -- writing those as empty would erase what was there.
 	 */
 	public function test_a_declared_field_absent_from_the_request_is_left_alone(): void {
-		mkdir( $this->plugin_dir . '/fields', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/fields', 0777, true );
 		file_put_contents(
-			$this->plugin_dir . '/fields/acme-note.php',
+			$this->plugin_dir . '/resources/fields/acme-note.php',
 			"<?php\nreturn new class extends \\Zestry\\WPToolkit\\Modules\\Fields\\Field {\n"
 				. "public function post_types(): array { return array( 'post' ); }\n};\n"
 		);
@@ -272,13 +272,13 @@ final class MetaBoxesTest extends TestCase {
 	}
 
 	public function test_a_missing_default_directory_is_not_an_error(): void {
-		$this->remove_dir( $this->plugin_dir . '/meta-boxes' );
+		$this->remove_dir( $this->plugin_dir . '/resources/meta-boxes' );
 
 		$this->assertSame( array(), $this->boot()->get_discovered_boxes() );
 	}
 
 	public function test_a_file_returning_the_wrong_type_throws(): void {
-		file_put_contents( $this->plugin_dir . '/meta-boxes/bad.php', "<?php\nreturn 'nope';\n" );
+		file_put_contents( $this->plugin_dir . '/resources/meta-boxes/bad.php', "<?php\nreturn 'nope';\n" );
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'must return an instance of' );
@@ -323,7 +323,7 @@ final class MetaBoxesTest extends TestCase {
 				. " ); }\n";
 
 		file_put_contents(
-			$this->plugin_dir . '/meta-boxes/' . $name . '.php',
+			$this->plugin_dir . '/resources/meta-boxes/' . $name . '.php',
 			"<?php\n"
 				. "use Zestry\\WPToolkit\\Modules\\MetaBoxes\\MetaBoxType;\n"
 				. "return new class extends \\Zestry\\WPToolkit\\Modules\\MetaBoxes\\MetaBox {\n"

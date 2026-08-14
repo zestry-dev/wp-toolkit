@@ -199,7 +199,7 @@ Acme\Plugin\Core\Modules\Ajax\AjaxAction. Got: integer
 `Got: integer` is the missing `return` — a `require` of a file that returns nothing yields `1`. Every discovered file is `require`d and must *return* an instance:
 
 ```php
-// actions/save.php
+// resources/actions/save.php
 use Acme\Plugin\Core\Modules\Ajax\AjaxAction;
 
 return new class extends AjaxAction {

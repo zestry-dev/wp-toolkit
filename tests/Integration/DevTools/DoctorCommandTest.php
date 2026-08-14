@@ -437,7 +437,7 @@ final class DoctorCommandTest extends TestCase {
 		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-doctor-test' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
-		$command = require dirname( __DIR__, 3 ) . '/commands/doctor.php';
+		$command = require dirname( __DIR__, 3 ) . '/resources/commands/doctor.php';
 
 		$package_plugin->wire( $command );
 

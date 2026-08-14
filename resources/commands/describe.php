@@ -72,18 +72,18 @@ return new class() extends Command {
 	 *     Acme\Plugin -> lib/   text domain: acme-plugin
 	 *
 	 *     MODULES
-	 *       ajax           actions/         AjaxAction    wp zt make action
-	 *       cli            commands/        Command       wp zt make command
-	 *       cron           schedules/       Schedule      wp zt make schedule   NOT DECLARED
-	 *       fields         fields/          Field         wp zt make field
-	 *           fields/ 40 files via Acme\Plugin\Abstracts\EntityField
+	 *       ajax           resources/actions/         AjaxAction    wp zt make action
+	 *       cli            resources/commands/        Command       wp zt make command
+	 *       cron           resources/schedules/       Schedule      wp zt make schedule   NOT DECLARED
+	 *       fields         resources/fields/          Field         wp zt make field
+	 *           resources/fields/ 40 files via Acme\Plugin\Abstracts\EntityField
 	 *       path           —
-	 *       views          views/
+	 *       views          resources/views/
 	 *
 	 *     # For a script, or an agent.
 	 *     $ wp zt describe --format=json --installed
 	 *     [{"name":"ajax","installed":true,"declared":true,
-	 *       "configured":false,"reads":"actions/","returns":"AjaxAction",
+	 *       "configured":false,"reads":"resources/actions/","returns":"AjaxAction",
 	 *       "via":"","make":"action","file":"lib/Core/Modules/Ajax/Ajax.php"}]
 	 *
 	 * @param array $args
@@ -287,7 +287,7 @@ return new class() extends Command {
 	 * Each `wp zt make` type, keyed by the directory it writes into.
 	 *
 	 * Read off the generator itself rather than listed here: every type is one
-	 * file in `commands/make/`, and each knows its own word and its own
+	 * file in `resources/commands/make/`, and each knows its own word and its own
 	 * destination. A list would be a second place to update when a generator is
 	 * added, and the drift would be silent.
 	 *
@@ -301,7 +301,7 @@ return new class() extends Command {
 	 * @return array<string, string> Directory => the `make` word writing into it.
 	 */
 	private function get_make_types( array $config ): array {
-		$files = glob( $this->with( Path::class )->get_plugin_path( 'commands/make' ) . '/*.php' );
+		$files = glob( $this->with( Path::class )->get_plugin_path( 'resources/commands/make' ) . '/*.php' );
 		$types = array();
 
 		foreach ( false === $files ? array() : $files as $file ) {

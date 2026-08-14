@@ -1,5 +1,5 @@
 <!--
-    Generated from commands/make/module.php.
+    Generated from resources/commands/make/module.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 

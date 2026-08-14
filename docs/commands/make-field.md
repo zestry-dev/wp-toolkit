@@ -1,5 +1,5 @@
 <!--
-    Generated from commands/make/field.php.
+    Generated from resources/commands/make/field.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
@@ -7,7 +7,7 @@
 
 Generate a post meta field.
 
-Writes a file into the plugin's `fields/` directory, where the Fields module discovers it. The name becomes the meta key, which you should prefix if the field attaches to a post type you do not own.
+Writes a file into the plugin's `resources/fields/` directory, where the Fields module discovers it. The name becomes the meta key, which you should prefix if the field attaches to a post type you do not own.
 
 ## Options
 
@@ -23,7 +23,7 @@ Writes a file into the plugin's `fields/` directory, where the Fields module dis
 ## Examples
 
 ```bash
-# Generate fields/acme-rating.php.
+# Generate resources/fields/acme-rating.php.
 $ wp zt make field acme-rating
-Success: Created fields/acme-rating.php
+Success: Created resources/fields/acme-rating.php
 ```

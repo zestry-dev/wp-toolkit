@@ -39,7 +39,7 @@ final class IconsLibraryTest extends TestCase {
 			define( 'ZESTRY_TEST_DEBUG', true );
 		}
 
-		mkdir( $this->plugin_dir . '/svg-icons', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/svg-icons', 0777, true );
 
 		$this->reset_registries();
 	}
@@ -188,7 +188,7 @@ final class IconsLibraryTest extends TestCase {
 	 */
 	public function test_a_template_that_renders_nothing_throws(): void {
 		file_put_contents(
-			$this->plugin_dir . '/svg-icons/blank.php',
+			$this->plugin_dir . '/resources/svg-icons/blank.php',
 			"<?php\nreturn 'Blank';\n"
 		);
 
@@ -203,7 +203,7 @@ final class IconsLibraryTest extends TestCase {
 	 * directory asked for by name is missing in the sense worth throwing over.
 	 */
 	public function test_an_absent_default_root_discovers_nothing_and_says_nothing(): void {
-		$this->remove_dir( $this->plugin_dir . '/svg-icons' );
+		$this->remove_dir( $this->plugin_dir . '/resources/svg-icons' );
 
 		$this->assertSame( array(), $this->plugin->get( IconsLibrary::class )->get_discovered_icons() );
 	}
@@ -280,7 +280,7 @@ final class IconsLibraryTest extends TestCase {
 	 */
 	private function write_icon( string $name, string $content = self::VALID_ICON, string $returns = '' ): void {
 		file_put_contents(
-			$this->plugin_dir . '/svg-icons/' . $name . '.php',
+			$this->plugin_dir . '/resources/svg-icons/' . $name . '.php',
 			"<?php ?>" . $content . ( '' === $returns ? '' : "\n<?php\nreturn " . $returns . ';' )
 		);
 	}
@@ -319,7 +319,7 @@ final class IconsLibraryTest extends TestCase {
 	 * is built from the filename, which is the whole of what it gives up.
 	 */
 	public function test_a_plain_svg_is_registered_too(): void {
-		file_put_contents( $this->plugin_dir . '/svg-icons/logo.svg', self::VALID_ICON );
+		file_put_contents( $this->plugin_dir . '/resources/svg-icons/logo.svg', self::VALID_ICON );
 
 		$this->boot();
 
@@ -335,7 +335,7 @@ final class IconsLibraryTest extends TestCase {
 	 * the icon is actually rendered.
 	 */
 	public function test_a_plain_svg_is_registered_by_path(): void {
-		file_put_contents( $this->plugin_dir . '/svg-icons/logo.svg', self::VALID_ICON );
+		file_put_contents( $this->plugin_dir . '/resources/svg-icons/logo.svg', self::VALID_ICON );
 
 		$this->boot();
 
@@ -351,7 +351,7 @@ final class IconsLibraryTest extends TestCase {
 	 */
 	public function test_the_same_name_as_both_php_and_svg_throws(): void {
 		$this->write_icon( 'arrow' );
-		file_put_contents( $this->plugin_dir . '/svg-icons/arrow.svg', self::VALID_ICON );
+		file_put_contents( $this->plugin_dir . '/resources/svg-icons/arrow.svg', self::VALID_ICON );
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'resolve to the name "arrow"' );
@@ -365,7 +365,7 @@ final class IconsLibraryTest extends TestCase {
 	 */
 	public function test_a_plain_svg_is_checked_against_the_sanitizer_too(): void {
 		file_put_contents(
-			$this->plugin_dir . '/svg-icons/badge.svg',
+			$this->plugin_dir . '/resources/svg-icons/badge.svg',
 			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
 				. '<path d="M5 12h14" /><circle cx="12" cy="12" r="10" /></svg>'
 		);
@@ -491,7 +491,7 @@ final class IconsLibraryTest extends TestCase {
 	public function test_one_name_in_two_collections_is_not_a_collision(): void {
 		$this->write_icon( 'arrow' );
 		file_put_contents(
-			$this->plugin_dir . '/svg-icons/arrow-brand.php',
+			$this->plugin_dir . '/resources/svg-icons/arrow-brand.php',
 			"<?php ?>" . self::VALID_ICON . "\n<?php\nreturn array( 'name' => 'arrow', 'collection' => 'acme-brand' );"
 		);
 

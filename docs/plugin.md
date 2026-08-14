@@ -42,7 +42,7 @@ acme_plugin();
 
 Declares every module the plugin uses, with the configuration each requires. `wp zt init` creates the file and `wp zt add` appends to it, so a module is active as soon as it is copied.
 
-With this in place, a file returned from `actions/save-profile.php` becomes an AJAX action (see `AjaxAction`), a file returned from `commands/greet.php` becomes the WP-CLI command `wp acme-plugin greet` (see `Command`), and a file returned from `admin-pages/settings.php` becomes an admin menu page (see `AdminPage`) — none of them need registering by hand.
+With this in place, a file returned from `resources/actions/save-profile.php` becomes an AJAX action (see `AjaxAction`), a file returned from `resources/commands/greet.php` becomes the WP-CLI command `wp acme-plugin greet` (see `Command`), and a file returned from `resources/admin-pages/settings.php` becomes an admin menu page (see `AdminPage`) — none of them need registering by hand.
 
 Every entry is a module, and listing one is what makes it exist. The top level is for modules that do nothing until something asks; one that acts on its own goes under the hook it acts on, and a class entry's value is the callback that configures it.
 

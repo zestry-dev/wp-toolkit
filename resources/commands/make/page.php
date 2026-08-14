@@ -28,12 +28,12 @@ return new class() extends MakeCommand {
 	 *
 	 * @var string
 	 */
-	private string $views_dir = 'views';
+	private string $views_dir = 'resources/views';
 
 	/**
 	 * Generate a new admin page.
 	 *
-	 * The AdminPages module discovers it. At boot it walks your `admin-pages/`
+	 * The AdminPages module discovers it. At boot it walks your `resources/admin-pages/`
 	 * directory at any depth, requires every file in it, and registers the
 	 * `AdminPage` each one returns through `add_menu_page()` or
 	 * `add_submenu_page()` -- nested directories become nested menus. Writing
@@ -58,7 +58,7 @@ return new class() extends MakeCommand {
 	 *
 	 * <name>
 	 * : The local name, e.g. 'settings'. Becomes the filename (`{name}.php`)
-	 * under `admin-pages/`.
+	 * under `resources/admin-pages/`.
 	 *
 	 *
 	 * [--no-view]
@@ -67,8 +67,8 @@ return new class() extends MakeCommand {
 	 *
 	 * [--views-dir=<dir>]
 	 * : Write the template under this plugin-relative directory instead of
-	 * `views` -- pass it when you have pointed the `views` module's root
-	 * somewhere other than its default.
+	 * `resources/views` -- pass it when you have pointed the `views` module's
+	 * root somewhere other than its default.
 	 *
 	 * [--yes]
 	 * : Overwrite an existing file without asking, for an unattended run.
@@ -82,12 +82,12 @@ return new class() extends MakeCommand {
 	 *
 	 *     # Generate an admin page and the template it renders.
 	 *     $ wp zt make page settings
-	 *     Success: Created admin-pages/settings.php
-	 *     Created views/admin-pages/settings.php
+	 *     Success: Created resources/admin-pages/settings.php
+	 *     Created resources/views/admin-pages/settings.php
 	 *
 	 *     # Just the class, for a page that renders almost nothing.
 	 *     $ wp zt make page ping --no-view
-	 *     Success: Created admin-pages/ping.php
+	 *     Success: Created resources/admin-pages/ping.php
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -106,7 +106,7 @@ return new class() extends MakeCommand {
 	 *
 	 * Here rather than through the stub-directory mechanism `make block` uses,
 	 * because the two files do not land in one tree: the class goes under
-	 * `admin-pages/` and the template under the views root, and a stub directory
+	 * `resources/admin-pages/` and the template under the views root, and a stub directory
 	 * writes everything into a single destination.
 	 *
 	 * Skipped silently when the file is already there. Regenerating a page
@@ -175,7 +175,7 @@ return new class() extends MakeCommand {
 	protected function get_extra_values( string $name, array $assoc_args ): array {
 		// WP-CLI negates a declared `[--view]` flag to exactly false.
 		$this->write_view = false !== ( $assoc_args['view'] ?? null );
-		$this->views_dir  = trim( (string) $this->get_flag( $assoc_args, 'views-dir', 'views' ), '/\\' );
+		$this->views_dir  = trim( (string) $this->get_flag( $assoc_args, 'views-dir', 'resources/views' ), '/\\' );
 
 		return array(
 			'render_note' => $this->get_render_note( $name ),
@@ -205,7 +205,7 @@ return new class() extends MakeCommand {
 	}
 
 	protected function get_default_dir( array $config ): string {
-		return 'admin-pages';
+		return 'resources/admin-pages';
 	}
 
 	/**
@@ -230,7 +230,7 @@ return new class() extends MakeCommand {
 		return implode(
 			"\n",
 			array(
-				"\t// The markup lives in views/admin-pages/" . $name . '.php, generated alongside',
+				"\t// The markup lives in resources/views/admin-pages/" . $name . '.php, generated alongside',
 				"\t// this file. The template gets exactly what is named here and nothing else",
 				"\t// of this page, so its inputs are readable without opening it. Add your own",
 				"\t// alongside these.",

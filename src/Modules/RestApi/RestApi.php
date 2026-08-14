@@ -32,7 +32,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * name or location.
  *
  * @example A minimal route file
- * // routes/widgets/get-one.php
+ * // resources/routes/widgets/get-one.php
  * use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
  * use Acme\Plugin\Core\Modules\RestApi\Route;
  * use Acme\Plugin\Core\Modules\RestApi\RestRoute;
@@ -94,7 +94,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * bound and an error can name the combination that was wrong.
  *
  * @example One route per HTTP method
- * A sibling `routes/widgets/delete-one.php` can declare that same
+ * A sibling `resources/routes/widgets/delete-one.php` can declare that same
  * `/widgets/{id}` pattern under `Route::delete()`, with a stricter
  * `permission_check()` of its own. One file per HTTP method (see
  * {@see RestRoute} for why), grouped into folders however suits the plugin.
@@ -134,7 +134,7 @@ class RestApi extends Module implements Bootable {
 	/**
 	 * Default plugin-relative directory of route files.
 	 */
-	const ROUTES_ROOT = 'routes';
+	const ROUTES_ROOT = 'resources/routes';
 
 	/**
 	 * Discover route files, wire them, and register each with WordPress.

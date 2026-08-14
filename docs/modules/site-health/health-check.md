@@ -9,7 +9,7 @@
 
 One check on the Site Health screen.
 
-A file in `health-checks/` returns one of these. Its filename is the check's identifier, so `api-key.php` becomes `{plugin-slug}-api-key` on the screen.
+A file in `resources/health-checks/` returns one of these. Its filename is the check's identifier, so `api-key.php` becomes `{plugin-slug}-api-key` on the screen.
 
 Site Health is the supported way to see a site you cannot log into: a user copies the report into a support ticket. A check that says "the API key is missing" saves the round trip that starts with "what does your settings page show?".
 

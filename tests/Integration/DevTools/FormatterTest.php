@@ -30,7 +30,7 @@ final class FormatterTest extends TestCase {
 	public function test_hands_php_files_to_phpcbf(): void {
 		$this->fake_binary( 'vendor/bin/phpcbf' );
 		$this->write_plugin_file( 'phpcs.xml', '<?xml version="1.0"?><ruleset name="acme"/>' );
-		$file = $this->write_plugin_file( 'actions/send.php', '<?php' );
+		$file = $this->write_plugin_file( 'resources/actions/send.php', '<?php' );
 
 		$formatted = $this->formatter->format( $this->plugin_dir, array( $file ) );
 
@@ -130,7 +130,7 @@ final class FormatterTest extends TestCase {
 	 * yet, gets its file written and left alone rather than an error.
 	 */
 	public function test_does_nothing_when_no_formatter_is_installed(): void {
-		$file = $this->write_plugin_file( 'actions/send.php', '<?php' );
+		$file = $this->write_plugin_file( 'resources/actions/send.php', '<?php' );
 
 		$this->assertSame( array(), $this->formatter->format( $this->plugin_dir, array( $file ) ) );
 	}
@@ -141,7 +141,7 @@ final class FormatterTest extends TestCase {
 	 */
 	public function test_does_not_run_phpcbf_without_a_ruleset(): void {
 		$this->fake_binary( 'vendor/bin/phpcbf' );
-		$file = $this->write_plugin_file( 'actions/send.php', '<?php' );
+		$file = $this->write_plugin_file( 'resources/actions/send.php', '<?php' );
 
 		$this->assertSame( array(), $this->formatter->format( $this->plugin_dir, array( $file ) ) );
 		$this->assertFileDoesNotExist( $this->plugin_dir . '/phpcbf.recorded' );

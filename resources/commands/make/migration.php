@@ -17,7 +17,7 @@ return new class() extends MakeCommand {
 	 * Generate a new database migration.
 	 *
 	 * The Migrations module discovers it, but unlike every other discovery type
-	 * this one does not run itself. The module reads your `migrations/`
+	 * this one does not run itself. The module reads your `resources/migrations/`
 	 * directory in filename order and runs each `Migration` at most once per
 	 * site, when something asks it to: `wp {slug} migrations run`, or a
 	 * `run_pending()` call from whatever trigger fits your release process.
@@ -29,7 +29,7 @@ return new class() extends MakeCommand {
 	 *
 	 * <name>
 	 * : The local description, e.g. 'create-books-table'. The file is written
-	 * to `migrations/{timestamp}-{name}.php`, and that timestamp prefix is
+	 * to `resources/migrations/{timestamp}-{name}.php`, and that timestamp prefix is
 	 * what makes migrations run in the order they were created. Never rename
 	 * a migration that may already have run somewhere -- the whole filename is
 	 * its identity, so a renamed one reads as never having run. `migrations
@@ -47,7 +47,7 @@ return new class() extends MakeCommand {
 	 * ## EXAMPLES
 	 *
 	 *     $ wp zt make migration create-books-table
-	 *     Success: Created migrations/20260115120000-create-books-table.php
+	 *     Success: Created resources/migrations/20260115120000-create-books-table.php
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -72,7 +72,7 @@ return new class() extends MakeCommand {
 	 *
 	 * @param string $dir  The resolved destination directory.
 	 * @param string $name The local description given on the command line.
-	 * @return string The plugin-relative path, e.g. `migrations/20260115120000-create-books-table.php`.
+	 * @return string The plugin-relative path, e.g. `resources/migrations/20260115120000-create-books-table.php`.
 	 */
 	protected function get_destination_path( string $dir, string $name ): string {
 		return trim( $dir, '/\\' ) . '/' . gmdate( 'YmdHis' ) . '-' . $name . '.php';
@@ -83,7 +83,7 @@ return new class() extends MakeCommand {
 	}
 
 	protected function get_default_dir( array $config ): string {
-		return 'migrations';
+		return 'resources/migrations';
 	}
 
 	protected static function get_type(): string {

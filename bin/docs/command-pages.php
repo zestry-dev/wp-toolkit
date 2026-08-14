@@ -22,7 +22,7 @@ function zestry_parse_command_sections( string $body ): array {
 	 * only its first paragraph -- the summary -- used to reach the page. The
 	 * paragraphs after it are where a command says what it requires before it
 	 * may be run and what it writes besides the file it reports, so generating
-	 * them away left that discoverable only by reading commands/.
+	 * them away left that discoverable only by reading resources/commands/.
 	 */
 	$lead = preg_split( '/\n## /', $body, 2 );
 
@@ -158,7 +158,7 @@ function zestry_render_options( string $options ): string {
  * @return int The number of command pages written.
  */
 function zestry_generate_command_pages( string $root ): int {
-	$commands_dir = $root . '/commands';
+	$commands_dir = $root . '/resources/commands';
 	$output_dir   = $root . '/docs/commands';
 
 	if ( ! is_dir( $commands_dir ) ) {
@@ -202,7 +202,7 @@ function zestry_generate_command_pages( string $root ): int {
 		$sections = zestry_parse_command_sections( $docblock );
 		$slug     = str_replace( '/', '-', substr( $relative, 0, -4 ) );
 
-		$page = zestry_generated_banner( 'commands/' . $relative );
+		$page = zestry_generated_banner( 'resources/commands/' . $relative );
 
 		$page[] = '# ' . $command;
 		$page[] = '';
@@ -247,7 +247,7 @@ function zestry_generate_command_pages( string $root ): int {
 		$index[ $relative ] = sprintf( '- [`%s`](%s.md) — %s', $command, $slug, $sections['summary'] );
 	}
 
-	$page = zestry_generated_banner( 'the docblocks in commands/' );
+	$page = zestry_generated_banner( 'the docblocks in resources/commands/' );
 
 	$page[] = '# Command reference';
 	$page[] = '';
@@ -283,7 +283,7 @@ function zestry_generate_command_pages( string $root ): int {
  * the list: `init` once, `add` per module, `make` per feature, then `update`
  * and `doctor` as needed. A heading per stage says it without a paragraph.
  *
- * Keyed by each command's own path under `commands/`, so a new file lands in
+ * Keyed by each command's own path under `resources/commands/`, so a new file lands in
  * the right group by name rather than needing a list edited here. Anything
  * unrecognised falls into the last group rather than being dropped.
  *
@@ -358,7 +358,7 @@ function zestry_group_command_index( array $index ): array {
  * A generator that never asks gets no note: a reassurance repeated on twenty
  * pages is noise on the fifteen it does not apply to.
  *
- * @param string $relative The command file's path, relative to `commands/`.
+ * @param string $relative The command file's path, relative to `resources/commands/`.
  * @param string $source   The command file's full source.
  * @return string[] Lines to append, empty when the command never asks.
  */

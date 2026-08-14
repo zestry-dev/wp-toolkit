@@ -186,8 +186,8 @@ final class PathTest extends TestCase {
 
 		// A plain relative path still builds (no exception): is_resolved_escaping_root()
 		// returns false early because the base dir no longer resolves.
-		$built = $path->get_plugin_path( 'views/x.php' );
-		$this->assertStringEndsWith( '/views/x.php', $built );
+		$built = $path->get_plugin_path( 'resources/views/x.php' );
+		$this->assertStringEndsWith( '/resources/views/x.php', $built );
 
 		// The lexical traversal guard is unaffected.
 		$this->expectException( \InvalidArgumentException::class );

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zt make health-check <name>`.
+ * Devtool command: `wp zt make meta-box <name>`.
  */
 
 declare( strict_types=1 );
@@ -11,16 +11,16 @@ use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
 return new class() extends MakeCommand {
 
 	/**
-	 * Generate a Site Health check.
+	 * Generate a post edit screen meta box.
 	 *
-	 * Writes a file into the plugin's `health-checks/` directory, where the
-	 * SiteHealth module discovers it. The filename becomes the check's
-	 * identifier, so `api-key` registers as `{plugin-slug}-api-key`.
+	 * Writes a file into the plugin's `resources/meta-boxes/` directory, where the
+	 * MetaBoxes module discovers it. The filename becomes the box's identifier,
+	 * prefixed with your plugin slug.
 	 *
 	 * ## OPTIONS
 	 *
 	 * <name>
-	 * : The check's local name, in kebab-case, e.g. `api-key`.
+	 * : The box's local name, in kebab-case, e.g. `book-details`.
 	 *
 	 *
 	 * [--extends=<class>]
@@ -30,13 +30,13 @@ return new class() extends MakeCommand {
 	 *
 	 * [--yes]
 	 * : Answer both prompts without reading input: overwrite an existing file,
-	 * and add the `site-health` module when this plugin has none.
+	 * and add the `meta-boxes` module when this plugin has none.
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # Generate health-checks/api-key.php.
-	 *     $ wp zt make health-check api-key
-	 *     Success: Created health-checks/api-key.php
+	 *     # Generate resources/meta-boxes/book-details.php.
+	 *     $ wp zt make meta-box book-details
+	 *     Success: Created resources/meta-boxes/book-details.php
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -47,18 +47,18 @@ return new class() extends MakeCommand {
 	}
 
 	public function get_base_class(): ?string {
-		return 'Modules\SiteHealth\HealthCheck';
+		return 'Modules\MetaBoxes\MetaBox';
 	}
 
 	protected function get_stub(): string {
-		return 'health-check.php.stub';
+		return 'meta-box.php.stub';
 	}
 
 	protected function get_default_dir( array $config ): string {
-		return 'health-checks';
+		return 'resources/meta-boxes';
 	}
 
 	protected static function get_type(): string {
-		return 'health-check';
+		return 'meta-box';
 	}
 };

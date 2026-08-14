@@ -78,8 +78,8 @@ final class MakeCommandTest extends TestCase {
 	public function test_a_constrained_type_writes_the_name_its_destination_accepts(): void {
 		$this->run_make( array( 'create_order' ), array(), 'ability' );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/abilities/create-order.php' );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/abilities/create_order.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/abilities/create-order.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/resources/abilities/create_order.php' );
 
 		$warnings = $this->warnings();
 
@@ -97,7 +97,7 @@ final class MakeCommandTest extends TestCase {
 	public function test_a_page_name_a_url_could_not_carry_is_canonicalised(): void {
 		$this->run_make( array( 'Monthly Report' ), array(), 'page' );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/admin-pages/monthly-report.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/admin-pages/monthly-report.php' );
 		$this->assertNotNull( \WP_CLI::last( 'warning' ) );
 	}
 
@@ -142,9 +142,9 @@ final class MakeCommandTest extends TestCase {
 	 */
 	public function data_shaped_names(): array {
 		return array(
-			'a meta key'   => array( 'field', 'field', 'acme_rating', 'fields' ),
-			'a post type'  => array( 'post-type', 'post-type.php.stub', 'acme_book', 'post-types' ),
-			'a taxonomy'   => array( 'taxonomy', 'taxonomy.php.stub', 'acme_genre', 'taxonomies' ),
+			'a meta key'   => array( 'field', 'field', 'acme_rating', 'resources/fields' ),
+			'a post type'  => array( 'post-type', 'post-type.php.stub', 'acme_book', 'resources/post-types' ),
+			'a taxonomy'   => array( 'taxonomy', 'taxonomy.php.stub', 'acme_genre', 'resources/taxonomies' ),
 		);
 	}
 
@@ -240,22 +240,22 @@ final class MakeCommandTest extends TestCase {
 	public function test_creates_a_file_from_the_stub(): void {
 		$this->run_make( array( 'send-welcome-email' ) );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/actions/send-welcome-email.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/actions/send-welcome-email.php' );
 		$this->assertStringContainsString(
 			'use Acme\\Plugin\\Core\\Modules\\Ajax\\AjaxAction;',
-			(string) file_get_contents( $this->target_plugin_dir . '/actions/send-welcome-email.php' )
+			(string) file_get_contents( $this->target_plugin_dir . '/resources/actions/send-welcome-email.php' )
 		);
 	}
 
 	public function test_strips_a_trailing_php_extension_from_the_name(): void {
 		$this->run_make( array( 'send-welcome-email.php' ) );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/actions/send-welcome-email.php' );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/actions/send-welcome-email.php.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/actions/send-welcome-email.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/resources/actions/send-welcome-email.php.php' );
 	}
 
 	public function test_refuses_to_write_when_the_destination_is_already_a_directory(): void {
-		mkdir( $this->target_plugin_dir . '/actions/send-welcome-email.php', 0777, true );
+		mkdir( $this->target_plugin_dir . '/resources/actions/send-welcome-email.php', 0777, true );
 
 		$this->run_make( array( 'send-welcome-email' ) );
 
@@ -265,51 +265,51 @@ final class MakeCommandTest extends TestCase {
 
 	public function test_refuses_to_write_when_a_parent_path_segment_is_already_a_file(): void {
 		// A real filesystem conflict shared by every type: wp_mkdir_p() cannot
-		// create "actions/leaf" as a directory when "actions/leaf" already
+		// create "resources/actions/leaf" as a directory when "resources/actions/leaf" already
 		// exists as a plain file.
-		mkdir( $this->target_plugin_dir . '/actions', 0777, true );
-		file_put_contents( $this->target_plugin_dir . '/actions/leaf', '<?php' );
+		mkdir( $this->target_plugin_dir . '/resources/actions', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/resources/actions/leaf', '<?php' );
 
 		$this->run_make( array( 'leaf/send-welcome-email' ) );
 
 		$this->assertNotNull( \WP_CLI::last( 'error' ) );
 		$this->assertStringContainsString( 'already exists as a file', $this->last_error() );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/actions/leaf/send-welcome-email.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/resources/actions/leaf/send-welcome-email.php' );
 	}
 
 	public function test_command_type_refuses_a_name_already_claimed_as_a_leaf_command(): void {
 		// commands/test-1.php already registers a leaf command; "test-1/test-2"
 		// would ask CLI to also treat "test-1" as a namespace, which WP-CLI's
 		// own Subcommand::can_have_subcommands() refuses (see CliTest).
-		mkdir( $this->target_plugin_dir . '/commands', 0777, true );
-		file_put_contents( $this->target_plugin_dir . '/commands/test-1.php', '<?php' );
+		mkdir( $this->target_plugin_dir . '/resources/commands', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/resources/commands/test-1.php', '<?php' );
 
 		$this->run_make( array( 'test-1/test-2' ), array(), 'command.php.stub' );
 
 		$this->assertNotNull( \WP_CLI::last( 'error' ) );
 		$this->assertStringContainsString( 'already registered as a command', $this->last_error() );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/commands/test-1/test-2.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/resources/commands/test-1/test-2.php' );
 	}
 
 	public function test_command_type_refuses_a_name_already_claimed_as_a_namespace(): void {
 		// commands/test-1/ already holds command files under that namespace;
 		// "test-1" alone would ask CLI to also register it as a leaf command.
-		mkdir( $this->target_plugin_dir . '/commands/test-1', 0777, true );
-		file_put_contents( $this->target_plugin_dir . '/commands/test-1/test-2.php', '<?php' );
+		mkdir( $this->target_plugin_dir . '/resources/commands/test-1', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/resources/commands/test-1/test-2.php', '<?php' );
 
 		$this->run_make( array( 'test-1' ), array(), 'command.php.stub' );
 
 		$this->assertNotNull( \WP_CLI::last( 'error' ) );
 		$this->assertStringContainsString( 'already exists as a command namespace', $this->last_error() );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/commands/test-1.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/resources/commands/test-1.php' );
 	}
 
 	public function test_post_type_type_writes_a_post_type_file_with_singular_and_plural_names(): void {
 		$this->run_make( array( 'book' ), array( 'singular' => 'Book', 'plural' => 'Books' ), 'post-type.php.stub' );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/post-types/book.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/post-types/book.php' );
 
-		$contents = (string) file_get_contents( $this->target_plugin_dir . '/post-types/book.php' );
+		$contents = (string) file_get_contents( $this->target_plugin_dir . '/resources/post-types/book.php' );
 		$this->assertStringContainsString( "return 'Book';", $contents );
 		$this->assertStringContainsString( "return 'Books';", $contents );
 		$this->assertStringContainsString( 'use Acme\\Plugin\\Core\\Modules\\PostTypes\\PostType;', $contents );
@@ -318,7 +318,7 @@ final class MakeCommandTest extends TestCase {
 	public function test_post_type_type_defaults_singular_to_the_title_cased_name(): void {
 		$this->run_make( array( 'book' ), array( 'plural' => 'Books' ), 'post-type.php.stub' );
 
-		$contents = (string) file_get_contents( $this->target_plugin_dir . '/post-types/book.php' );
+		$contents = (string) file_get_contents( $this->target_plugin_dir . '/resources/post-types/book.php' );
 		$this->assertStringContainsString( "return 'Book';", $contents );
 	}
 
@@ -329,9 +329,9 @@ final class MakeCommandTest extends TestCase {
 			'taxonomy.php.stub'
 		);
 
-		$this->assertFileExists( $this->target_plugin_dir . '/taxonomies/genre.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/taxonomies/genre.php' );
 
-		$contents = (string) file_get_contents( $this->target_plugin_dir . '/taxonomies/genre.php' );
+		$contents = (string) file_get_contents( $this->target_plugin_dir . '/resources/taxonomies/genre.php' );
 		$this->assertStringContainsString( "return 'Genre';", $contents );
 		$this->assertStringContainsString( "return 'Genres';", $contents );
 		$this->assertStringContainsString( "array( 'book' )", $contents );
@@ -666,7 +666,7 @@ final class MakeCommandTest extends TestCase {
 	public function test_view_type_writes_a_template(): void {
 		$this->run_make( array( 'receipt' ), array(), 'view' );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/views/receipt.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/views/receipt.php' );
 	}
 
 	/**
@@ -676,13 +676,13 @@ final class MakeCommandTest extends TestCase {
 	public function test_view_type_nests_a_name_with_a_slash(): void {
 		$this->run_make( array( 'emails/receipt' ), array(), 'view' );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/views/emails/receipt.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/views/emails/receipt.php' );
 	}
 
 	public function test_view_type_documents_the_scope_it_renders_in(): void {
 		$this->run_make( array( 'receipt' ), array(), 'view' );
 
-		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/receipt.php' );
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/resources/views/receipt.php' );
 
 		$this->assertStringContainsString( '@var \Acme\Plugin\Core\Modules\Views $this', $view );
 	}
@@ -695,14 +695,14 @@ final class MakeCommandTest extends TestCase {
 	public function test_page_type_writes_the_template_it_renders(): void {
 		$this->run_make( array( 'settings' ), array(), 'page' );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/admin-pages/settings.php' );
-		$this->assertFileExists( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/admin-pages/settings.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/views/admin-pages/settings.php' );
 	}
 
 	public function test_page_type_renders_through_the_generated_template(): void {
 		$this->run_make( array( 'settings' ), array(), 'page' );
 
-		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/resources/admin-pages/settings.php' );
 
 		$this->assertStringContainsString( "\$this->view(\n\t\t\t'admin-pages/settings',", $page );
 		$this->assertStringNotContainsString( "echo '<div class=\"wrap\">", $page );
@@ -715,8 +715,8 @@ final class MakeCommandTest extends TestCase {
 	public function test_page_type_template_can_render_a_form(): void {
 		$this->run_make( array( 'settings' ), array(), 'page' );
 
-		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
-		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/resources/views/admin-pages/settings.php' );
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/resources/admin-pages/settings.php' );
 
 		$this->assertStringContainsString( 'wp_nonce_field( $nonce )', $view );
 		$this->assertStringContainsString( 'esc_url( $action )', $view );
@@ -740,7 +740,7 @@ final class MakeCommandTest extends TestCase {
 	public function test_page_type_redirects_after_a_save(): void {
 		$this->run_make( array( 'settings' ), array(), 'page' );
 
-		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/resources/admin-pages/settings.php' );
 
 		$this->assertStringContainsString( 'wp_safe_redirect(', $page );
 		$this->assertStringContainsString( 'exit;', $page );
@@ -769,8 +769,8 @@ final class MakeCommandTest extends TestCase {
 	public function test_page_type_template_shows_the_saved_notice(): void {
 		$this->run_make( array( 'settings' ), array(), 'page' );
 
-		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
-		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/resources/views/admin-pages/settings.php' );
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/resources/admin-pages/settings.php' );
 
 		$this->assertMatchesRegularExpression( "/'notice'\s+=> \\\$this->get_flash\( '' \)/", $page );
 		$this->assertStringContainsString( "if ( '' !== \$notice )", $view );
@@ -789,7 +789,7 @@ final class MakeCommandTest extends TestCase {
 	public function test_page_type_template_documents_its_scope(): void {
 		$this->run_make( array( 'settings' ), array(), 'page' );
 
-		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/resources/views/admin-pages/settings.php' );
 
 		$this->assertStringContainsString( '@var \Acme\Plugin\Core\Modules\Views $this', $view );
 		$this->assertStringContainsString( '@var string $title', $view );
@@ -798,8 +798,8 @@ final class MakeCommandTest extends TestCase {
 	public function test_page_type_no_view_writes_only_the_class(): void {
 		$this->run_make( array( 'ping' ), array( 'view' => false ), 'page' );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/admin-pages/ping.php' );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/views/admin-pages/ping.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/admin-pages/ping.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/resources/views/admin-pages/ping.php' );
 	}
 
 	/**
@@ -812,7 +812,7 @@ final class MakeCommandTest extends TestCase {
 	public function test_page_type_no_view_renders_without_a_template(): void {
 		$this->run_make( array( 'ping' ), array( 'view' => false ), 'page' );
 
-		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/ping.php' );
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/resources/admin-pages/ping.php' );
 
 		// The indent is what distinguishes the call from the commented mention
 		// of it, which the generated file carries deliberately: it is how you
@@ -828,8 +828,8 @@ final class MakeCommandTest extends TestCase {
 	public function test_page_type_template_uses_the_projects_text_domain(): void {
 		$this->run_make( array( 'settings' ), array(), 'page' );
 
-		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
-		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/resources/views/admin-pages/settings.php' );
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/resources/admin-pages/settings.php' );
 
 		$this->assertStringContainsString( "esc_html_e( 'Example', 'acme-plugin' )", $view );
 		$this->assertStringContainsString( "__( 'Saved.', 'acme-plugin' )", $page );
@@ -855,7 +855,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->run_make( array( 'settings' ), array(), 'page' );
 
-		$view = (string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' );
+		$view = (string) file_get_contents( $this->target_plugin_dir . '/resources/views/admin-pages/settings.php' );
 
 		$this->assertStringContainsString( basename( $this->target_plugin_dir ), $view );
 		$this->assertStringNotContainsString( "'settings' )", $view );
@@ -867,7 +867,7 @@ final class MakeCommandTest extends TestCase {
 	public function test_page_type_renders_the_template_it_writes(): void {
 		$this->run_make( array( 'settings' ), array(), 'page' );
 
-		$page = (string) file_get_contents( $this->target_plugin_dir . '/admin-pages/settings.php' );
+		$page = (string) file_get_contents( $this->target_plugin_dir . '/resources/admin-pages/settings.php' );
 
 		$this->assertStringContainsString( "\n\t\t\$this->view(", $page );
 		$this->assertStringContainsString( "'admin-pages/settings'", $page );
@@ -883,14 +883,14 @@ final class MakeCommandTest extends TestCase {
 	 * Regenerating a page must not discard markup someone has written.
 	 */
 	public function test_page_type_leaves_an_existing_template_alone(): void {
-		mkdir( $this->target_plugin_dir . '/views/admin-pages', 0777, true );
-		file_put_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php', '<?php // mine' );
+		mkdir( $this->target_plugin_dir . '/resources/views/admin-pages', 0777, true );
+		file_put_contents( $this->target_plugin_dir . '/resources/views/admin-pages/settings.php', '<?php // mine' );
 
 		$this->run_make( array( 'settings' ), array( 'yes' => true ), 'page' );
 
 		$this->assertSame(
 			'<?php // mine',
-			(string) file_get_contents( $this->target_plugin_dir . '/views/admin-pages/settings.php' )
+			(string) file_get_contents( $this->target_plugin_dir . '/resources/views/admin-pages/settings.php' )
 		);
 	}
 
@@ -1113,7 +1113,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'EntityField' ), 'field' );
 
-		$written = (string) file_get_contents( $this->target_plugin_dir . '/fields/acme-rating.php' );
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
 
 		$this->assertStringContainsString( 'use ' . self::FIXTURE_NAMESPACE . '\\Abstracts\\EntityField;', $written );
 		$this->assertStringContainsString( 'extends EntityField', $written );
@@ -1143,7 +1143,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'EntityField' ), 'field' );
 
-		$written = (string) file_get_contents( $this->target_plugin_dir . '/fields/acme-rating.php' );
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
 
 		// Throws a ParseError if what was written is not PHP.
 		token_get_all( $written, TOKEN_PARSE );
@@ -1171,7 +1171,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'EntityField' ), 'field' );
 
-		$written = (string) file_get_contents( $this->target_plugin_dir . '/fields/acme-rating.php' );
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
 
 		$this->assertStringContainsString(
 			"\t/**\n\t * Render the stored value for display.\n"
@@ -1198,7 +1198,7 @@ final class MakeCommandTest extends TestCase {
 			'field'
 		);
 
-		$this->assertFileExists( $this->target_plugin_dir . '/fields/acme-rating.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
 	}
 
 	/**
@@ -1214,7 +1214,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->assertStringContainsString( 'does not extend', $this->last_error() );
 		$this->assertFileDoesNotExist(
-			$this->target_plugin_dir . '/fields/acme-rating.php',
+			$this->target_plugin_dir . '/resources/fields/acme-rating.php',
 			'Refused before anything was written.'
 		);
 	}
@@ -1228,7 +1228,7 @@ final class MakeCommandTest extends TestCase {
 		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'SealedField' ), 'field' );
 
 		$this->assertStringContainsString( 'is final', $this->last_error() );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/fields/acme-rating.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
 	}
 
 	/**
@@ -1246,7 +1246,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->assertStringContainsString( 'could be loaded', $error );
 		$this->assertStringContainsString( 'Abstracts\\NoSuchField', $error, 'It says where it looked.' );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/fields/acme-rating.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
 	}
 
 	/**
@@ -1267,7 +1267,7 @@ final class MakeCommandTest extends TestCase {
 		$this->assertStringContainsString( 'Acme\\Plugin\\Core\\Modules\\AdminPages\\AdminPage', $warnings );
 		$this->assertStringContainsString( 'wp zt add admin-pages', $warnings, 'And what to run.' );
 		$this->assertFileExists(
-			$this->target_plugin_dir . '/admin-pages/reports.php',
+			$this->target_plugin_dir . '/resources/admin-pages/reports.php',
 			'Declining writes the file anyway -- the warning is the point, not a refusal.'
 		);
 	}
@@ -1289,7 +1289,7 @@ final class MakeCommandTest extends TestCase {
 			$this->target_plugin_dir . '/lib/Core/Modules/Request/Request.php',
 			'Along with the dependencies the registry resolves for it.'
 		);
-		$this->assertFileExists( $this->target_plugin_dir . '/admin-pages/reports.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/admin-pages/reports.php' );
 	}
 
 	/**
@@ -1343,7 +1343,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->run_make( array( 'acme-rating' ), array(), 'field' );
 
-		$written = (string) file_get_contents( $this->target_plugin_dir . '/fields/acme-rating.php' );
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
 
 		$this->assertStringContainsString( 'extends Field', $written );
 		$this->assertStringContainsString( 'public function subtypes(): array {', $written );
@@ -1521,7 +1521,7 @@ final class MakeCommandTest extends TestCase {
 		);
 
 		$command = isset( $stub_to_make_file[ $stub ] )
-			? require dirname( __DIR__, 3 ) . '/commands/make/' . $stub_to_make_file[ $stub ]
+			? require dirname( __DIR__, 3 ) . '/resources/commands/make/' . $stub_to_make_file[ $stub ]
 			: new class extends MakeCommand {
 				public function handle( array $args, array $assoc_args ): void {
 					parent::handle( $args, $assoc_args );
@@ -1532,7 +1532,7 @@ final class MakeCommandTest extends TestCase {
 				}
 
 				protected function get_default_dir( array $config ): string { // phpcs:ignore VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable
-					return 'actions';
+					return 'resources/actions';
 				}
 
 				protected static function get_type(): string {

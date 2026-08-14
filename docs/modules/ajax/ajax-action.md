@@ -13,7 +13,7 @@ Action files return a subclass instance. The Ajax module assigns the shared plug
 
 Authorization is deliberately not optional: `capability_check()` is abstract, so every action must make an explicit allow/deny decision. A nonce proves the request was intended (anti-CSRF); it does not prove the user is permitted, so the two checks are separate and both run before `handle()`.
 
-A file at `actions/save-profile.php` registers as `wp_ajax_{plugin}-save-profile` (see `Ajax::get_action_slug()`). `wp zt make action <name>` generates a starting point. The page that triggers this action gets its URL (with a nonce attached) from the Ajax module: `$ajax->get_action_url( 'save-profile' )`. The request is rejected before `handle()` runs if `capability_check()` returns false, or (since `is_nonce_required()` defaults to true) if the request's nonce does not verify.
+A file at `resources/actions/save-profile.php` registers as `wp_ajax_{plugin}-save-profile` (see `Ajax::get_action_slug()`). `wp zt make action <name>` generates a starting point. The page that triggers this action gets its URL (with a nonce attached) from the Ajax module: `$ajax->get_action_url( 'save-profile' )`. The request is rejected before `handle()` runs if `capability_check()` returns false, or (since `is_nonce_required()` defaults to true) if the request's nonce does not verify.
 
 ## What it takes
 
@@ -212,7 +212,7 @@ final public function get_slug(): string
 | **Return** | `string` |
 | **Throws** | — |
 
-Your filename with the plugin slug prefixed, since `wp_ajax_*` is one namespace shared by every plugin: `actions/save-draft.php` answers to `{plugin-slug}-save-draft`. This is the value JavaScript sends as its `action` parameter.
+Your filename with the plugin slug prefixed, since `wp_ajax_*` is one namespace shared by every plugin: `resources/actions/save-draft.php` answers to `{plugin-slug}-save-draft`. This is the value JavaScript sends as its `action` parameter.
 
 <br>
 

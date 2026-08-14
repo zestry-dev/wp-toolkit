@@ -288,7 +288,7 @@ function zestry_verify_imports( string $root ): array {
 function zestry_import_sources( string $root ): array {
 	$sources = array();
 
-	foreach ( array( 'src', 'commands' ) as $directory ) {
+	foreach ( array( 'src', 'resources' ) as $directory ) {
 		$files = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root . '/' . $directory ) );
 
 		foreach ( $files as $file ) {
@@ -369,7 +369,7 @@ function zestry_inherited_methods( array $classes, string $class, array $seen = 
 function zestry_verify_see_tags( string $root ): array {
 	$problems = array();
 
-	foreach ( array( '/src', '/commands' ) as $directory ) {
+	foreach ( array( '/src', '/resources' ) as $directory ) {
 		$files = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root . $directory ) );
 
 		foreach ( $files as $file ) {

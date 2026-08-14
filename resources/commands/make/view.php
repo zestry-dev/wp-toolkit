@@ -13,9 +13,9 @@ return new class() extends MakeCommand {
 	/**
 	 * Generate a view template.
 	 *
-	 * Writes `views/<name>.php`, which the `views` module renders by that name.
+	 * Writes `resources/views/<name>.php`, which the `views` module renders by that name.
 	 * A name may contain slashes, so `wp zt make view admin-pages/settings`
-	 * writes `views/admin-pages/settings.php` and creates the directory.
+	 * writes `resources/views/admin-pages/settings.php` and creates the directory.
 	 *
 	 * A template receives exactly what its caller passes, plus `$this` -- the
 	 * `views` module -- so it renders a subview with the same `render()` call
@@ -38,7 +38,7 @@ return new class() extends MakeCommand {
 	 *
 	 *     # Rendered with $views->render( 'emails/receipt', array( ... ) ).
 	 *     $ wp zt make view emails/receipt
-	 *     Success: Created views/emails/receipt.php
+	 *     Success: Created resources/views/emails/receipt.php
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -53,7 +53,7 @@ return new class() extends MakeCommand {
 	}
 
 	protected function get_default_dir( array $config ): string {
-		return 'views';
+		return 'resources/views';
 	}
 
 	protected static function get_type(): string {

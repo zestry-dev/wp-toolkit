@@ -5,7 +5,7 @@
 
 # Migrations
 
-Discovers `migrations/` &nbsp;·&nbsp; Each file returns [`Migration`](migration.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`db`](../db/), [`options`](../options/), [`cli`](../cli/)
+Discovers `resources/migrations/` &nbsp;·&nbsp; Each file returns [`Migration`](migration.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`db`](../db/), [`options`](../options/), [`cli`](../cli/)
 
 Discovers plugin database migrations and runs each one, at most once, in filename order.
 
@@ -68,7 +68,7 @@ class MyActivation extends ActivationHandler {
 
 ## Writing a Migration
 
-A file in `migrations/` returns a [`Migration`](migration.md) instance, which `wp zt make migration <name>` generates.
+A file in `resources/migrations/` returns a [`Migration`](migration.md) instance, which `wp zt make migration <name>` generates.
 
 ## Constants
 
@@ -83,7 +83,7 @@ The Options group the list of migrations that have run is stored under.
 ### `MIGRATIONS_ROOT`
 
 ```php
-const MIGRATIONS_ROOT = 'migrations';
+const MIGRATIONS_ROOT = 'resources/migrations';
 ```
 
 Default plugin-relative directory of migration files.
@@ -311,7 +311,7 @@ A module that names a `boots_on` also throws when asked for before that hook has
 
 ## See also
 
-- [`Migration`](migration.md) — what a file in `migrations/` returns
+- [`Migration`](migration.md) — what a file in `resources/migrations/` returns
 - [`path`](../path/) — copied in alongside this one
 - [`db`](../db/) — copied in alongside this one
 - [`options`](../options/) — copied in alongside this one

@@ -1,5 +1,5 @@
 <!--
-    Generated from commands/make/health-check.php.
+    Generated from resources/commands/make/health-check.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
@@ -7,7 +7,7 @@
 
 Generate a Site Health check.
 
-Writes a file into the plugin's `health-checks/` directory, where the SiteHealth module discovers it. The filename becomes the check's identifier, so `api-key` registers as `{plugin-slug}-api-key`.
+Writes a file into the plugin's `resources/health-checks/` directory, where the SiteHealth module discovers it. The filename becomes the check's identifier, so `api-key` registers as `{plugin-slug}-api-key`.
 
 ## Options
 
@@ -23,7 +23,7 @@ Writes a file into the plugin's `health-checks/` directory, where the SiteHealth
 ## Examples
 
 ```bash
-# Generate health-checks/api-key.php.
+# Generate resources/health-checks/api-key.php.
 $ wp zt make health-check api-key
-Success: Created health-checks/api-key.php
+Success: Created resources/health-checks/api-key.php
 ```

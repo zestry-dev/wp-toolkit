@@ -18,7 +18,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
 /**
  * One thing your plugin can do, described well enough for something else to call it.
  *
- * A file in `abilities/` returns one of these, and its filename is the name it
+ * A file in `resources/abilities/` returns one of these, and its filename is the name it
  * registers under: `create-order.php` becomes `{plugin-slug}/create-order`.
  *
  * The audience is not a person reading your code. WordPress puts every ability

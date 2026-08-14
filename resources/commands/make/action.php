@@ -16,7 +16,7 @@ return new class() extends MakeCommand {
 	/**
 	 * Generate a new AJAX action.
 	 *
-	 * The Ajax module discovers it. At boot it walks your `actions/` directory,
+	 * The Ajax module discovers it. At boot it walks your `resources/actions/` directory,
 	 * requires every file in it, and maps the `AjaxAction` each one returns onto
 	 * `wp_ajax_{plugin}-{action}` -- plus the matching `wp_ajax_nopriv_` hook if
 	 * the action opts logged-out visitors in. Writing the file is the whole
@@ -29,7 +29,7 @@ return new class() extends MakeCommand {
 	 *
 	 * <name>
 	 * : The local name, e.g. 'send-welcome-email'. Becomes the filename
-	 * (`{name}.php`) under `actions/`.
+	 * (`{name}.php`) under `resources/actions/`.
 	 *
 	 *
 	 * [--yes]
@@ -42,9 +42,9 @@ return new class() extends MakeCommand {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # Generate an AJAX action at actions/send-welcome-email.php.
+	 *     # Generate an AJAX action at resources/actions/send-welcome-email.php.
 	 *     $ wp zt make action send-welcome-email
-	 *     Success: Created actions/send-welcome-email.php
+	 *     Success: Created resources/actions/send-welcome-email.php
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -63,7 +63,7 @@ return new class() extends MakeCommand {
 	}
 
 	protected function get_default_dir( array $config ): string {
-		return 'actions';
+		return 'resources/actions';
 	}
 
 	protected static function get_type(): string {

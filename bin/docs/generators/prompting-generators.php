@@ -23,7 +23,7 @@ declare( strict_types=1 );
  * @return string
  */
 function zestry_generate_prompting_generators( string $root ): string {
-	$files  = glob( $root . '/commands/make/*.php' );
+	$files  = glob( $root . '/resources/commands/make/*.php' );
 	$asking = array();
 
 	foreach ( false === $files ? array() : $files as $file ) {

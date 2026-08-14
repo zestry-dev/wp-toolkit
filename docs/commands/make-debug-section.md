@@ -1,5 +1,5 @@
 <!--
-    Generated from commands/make/debug-section.php.
+    Generated from resources/commands/make/debug-section.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
@@ -7,7 +7,7 @@
 
 Generate a Site Health debug section.
 
-Writes a file into the plugin's `debug-sections/` directory, where the SiteHealth module discovers it. The filename becomes the section's identifier, so `status` registers as `{plugin-slug}-status`.
+Writes a file into the plugin's `resources/debug-sections/` directory, where the SiteHealth module discovers it. The filename becomes the section's identifier, so `status` registers as `{plugin-slug}-status`.
 
 ## Options
 
@@ -23,7 +23,7 @@ Writes a file into the plugin's `debug-sections/` directory, where the SiteHealt
 ## Examples
 
 ```bash
-# Generate debug-sections/status.php.
+# Generate resources/debug-sections/status.php.
 $ wp zt make debug-section status
-Success: Created debug-sections/status.php
+Success: Created resources/debug-sections/status.php
 ```

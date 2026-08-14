@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Devtool command: `wp zt make debug-section <name>`.
+ * Devtool command: `wp zt make field <name>`.
  */
 
 declare( strict_types=1 );
@@ -11,16 +11,19 @@ use Zestry\WPToolkit\DevTools\Abstracts\MakeCommand;
 return new class() extends MakeCommand {
 
 	/**
-	 * Generate a Site Health debug section.
+	 * Generate a post meta field.
 	 *
-	 * Writes a file into the plugin's `debug-sections/` directory, where the
-	 * SiteHealth module discovers it. The filename becomes the section's
-	 * identifier, so `status` registers as `{plugin-slug}-status`.
+	 * Writes a file into the plugin's `resources/fields/` directory, where the Fields
+	 * module discovers it. The name becomes the meta key, which you should
+	 * prefix if the field attaches to a post type you do not own.
 	 *
 	 * ## OPTIONS
 	 *
 	 * <name>
-	 * : The section's local name, in kebab-case, e.g. `status`.
+	 * : The meta key, e.g. `acme-rating`. Written exactly as given -- a meta key
+	 * is the `meta_key` column and appears in your REST responses, so nothing
+	 * respells it. To mark the field protected whatever it is called, uncomment
+	 * `is_protected()` in the generated file and return true.
 	 *
 	 *
 	 * [--extends=<class>]
@@ -30,13 +33,13 @@ return new class() extends MakeCommand {
 	 *
 	 * [--yes]
 	 * : Answer both prompts without reading input: overwrite an existing file,
-	 * and add the `site-health` module when this plugin has none.
+	 * and add the `fields` module when this plugin has none.
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # Generate debug-sections/status.php.
-	 *     $ wp zt make debug-section status
-	 *     Success: Created debug-sections/status.php
+	 *     # Generate resources/fields/acme-rating.php.
+	 *     $ wp zt make field acme-rating
+	 *     Success: Created resources/fields/acme-rating.php
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -47,18 +50,18 @@ return new class() extends MakeCommand {
 	}
 
 	public function get_base_class(): ?string {
-		return 'Modules\SiteHealth\DebugSection';
+		return 'Modules\Fields\Field';
 	}
 
 	protected function get_stub(): string {
-		return 'debug-section.php.stub';
+		return 'field.php.stub';
 	}
 
 	protected function get_default_dir( array $config ): string {
-		return 'debug-sections';
+		return 'resources/fields';
 	}
 
 	protected static function get_type(): string {
-		return 'debug-section';
+		return 'field';
 	}
 };

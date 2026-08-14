@@ -8,11 +8,11 @@
 	<arg name="extensions" value="php" />
 
 	<!-- The shippable toolkit, the devtool commands, and the tooling that
-	     generates its docs. `commands/` is real shipped code that CLI walks at
+	     generates its docs. `resources/` is real shipped code that CLI walks at
 	     runtime, so it is held to the same standard as `src/`. -->
 	<file>./src</file>
 	<file>./bin</file>
-	<file>./commands</file>
+	<file>./resources</file>
 
 	<exclude-pattern>*/vendor/*</exclude-pattern>
 

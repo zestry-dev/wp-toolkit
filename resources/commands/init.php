@@ -3,9 +3,8 @@
 /**
  * Devtool command: `wp zt init`.
  *
- * One-time setup for a consuming plugin: asks for a target namespace, a text
- * domain, and a destination directory (relative to the plugin's own root),
- * copies the kernel (Plugin, Module, ActivationHandler, the contracts, the exceptions,
+ * One-time setup for a consuming plugin: asks for a target namespace and a
+ * text domain, copies the kernel (Plugin, Module, ActivationHandler, the contracts, the exceptions,
  * the PluginAware contract, the shared traits, attributes and helpers) into
  * `{root}/Core/Kernel/` -- with every
  * `namespace Zestry\WPToolkit\...;`/`use Zestry\WPToolkit\...;` rewritten to the chosen namespace, and
@@ -40,14 +39,13 @@ return new class() extends Command {
 	 *
 	 * One-time, interactive setup for the plugin that required `wp-toolkit` as a
 	 * Composer dependency. Prompts for the namespace the copied source should be
-	 * rewritten to, the text domain its translation calls should be rewritten
-	 * to, and the directory (relative to your plugin's root) to copy it into,
-	 * then copies the kernel -- Plugin, Module, ActivationHandler, the Bootable
+	 * rewritten to and the text domain its translation calls should be rewritten
+	 * to, then copies the kernel -- Plugin, Module, ActivationHandler, the Bootable
 	 * and PluginAware contracts, the exceptions your plugin catches, and the
 	 * shared traits and helpers every class needs -- into
 	 * `{root}/Core/Kernel/`.
 	 *
-	 * Four files are written around that copy: `zestry.json`, recording the three
+	 * Four files are written around that copy: `zestry.json`, recording the two
 	 * choices above; `zestry.lock.json`, recording the hash of every copied file as
 	 * it was written, which is what later lets `wp zt update` tell an edit of
 	 * yours from an upstream change; `bootstrap.php`, the file your modules are
@@ -60,15 +58,17 @@ return new class() extends Command {
 	 * plugin has already been initialized; run `wp zt add <name>`
 	 * instead to copy in additional feature modules.
 	 *
-	 * That directory is where the plugin's *own* classes belong too, beside
-	 * the copied source rather than in a second root of their own. After this
-	 * command there is no "toolkit" half to keep separate from: it is all the
-	 * plugin's code, under one namespace and one PSR-4 entry. A second root
-	 * would need a second PSR-4 prefix, which every class beneath it then
-	 * carries as an extra namespace segment.
+	 * **`lib/` is where your own classes belong too**, beside the copied source
+	 * rather than in a second root of their own. After this command there is no
+	 * "toolkit" half to keep separate from: it is all the plugin's code, under
+	 * one namespace and one PSR-4 entry. A second root would need a second PSR-4
+	 * prefix, which every class beneath it then carries as an extra namespace
+	 * segment.
 	 *
-	 * Do not choose `src`: `@wordpress/scripts` treats it as its source path,
-	 * and `wp zt make block` writes into `src/blocks/`.
+	 * The two directories are fixed: `lib/` holds classes, reached by namespace,
+	 * and `resources/` holds the files that *are* features -- a command, an admin
+	 * page, a view -- reached by being there. `src/` is left to
+	 * `@wordpress/scripts`, which treats it as its own source path.
 	 *
 	 * ## TOOLING
 	 *
@@ -110,10 +110,9 @@ return new class() extends Command {
 	 * : Take the default answer to every prompt, for an unattended run. The
 	 * namespace is inferred from composer.json's PSR-4 entry, the text domain
 	 * from the entry file's own `Text Domain:` header (or the directory name
-	 * when it declares none), and the root is whatever composer.json already
-	 * maps that namespace to, falling back to `lib`. Fails with a message
-	 * naming what to fix when either inferred value is unusable, rather than
-	 * proceeding with a wrong one.
+	 * when it declares none). Fails with a message naming what to fix when
+	 * either inferred value is unusable, rather than proceeding with a wrong
+	 * one.
 	 *
 	 *
 	 * A brand-new plugin has no PSR-4 entry yet -- `init` is what writes one --
@@ -139,7 +138,6 @@ return new class() extends Command {
 	 *     $ wp zt init
 	 *     Namespace (e.g. Vendor\MyPlugin): Vendor\MyPlugin
 	 *     Text domain: (default: my-plugin) my-plugin
-	 *     Source directory: (default: lib) lib
 	 *     Copy the kernel into lib/Core/Kernel/ under Vendor\MyPlugin? [Y/n] y
 	 *     Created bootstrap.php. Read it with `$plugin->bootstrap()` in your entry file.
 	 *     Added to .gitignore: build/, vendor/, node_modules/, .DS_Store, *.log
@@ -176,7 +174,7 @@ return new class() extends Command {
 
 		$namespace   = $this->ask_for_namespace( $composer );
 		$text_domain = $this->ask_for_text_domain( $plugin_root );
-		$root        = $this->ask_for_root( $plugin_root, $composer, $namespace );
+		$root        = ZestryConfig::ROOT;
 
 		/*
 		 * Each prompt returns '' when it gave up, having already said why. Under
@@ -186,7 +184,7 @@ return new class() extends Command {
 		 * with its own error handler -- does not go on to write a plugin
 		 * configured from a rejected answer.
 		 */
-		if ( '' === $namespace || '' === $text_domain || '' === $root ) {
+		if ( '' === $namespace || '' === $text_domain ) {
 			return;
 		}
 
@@ -423,72 +421,6 @@ return new class() extends Command {
 		$split = (string) preg_replace( '/([a-z0-9])([A-Z])/', '$1-$2', $name );
 
 		return trim( (string) preg_replace( '/[^a-z0-9]+/', '-', strtolower( $split ) ), '-' );
-	}
-
-	/**
-	 * Prompt for and validate the destination directory.
-	 *
-	 * Defaults to the directory composer.json already maps the chosen
-	 * namespace to, if that namespace is already declared there, so
-	 * confirming an existing PSR-4 entry needs only pressing enter twice
-	 * rather than retyping a path that must match exactly.
-	 *
-	 * @param string                    $plugin_root      Absolute path to the consuming plugin's root.
-	 * @param array<string, mixed>|null $composer         Decoded composer.json data, or null.
-	 * @param string                    $target_namespace The namespace chosen in ask_for_namespace().
-	 * @return string
-	 */
-	private function ask_for_root( string $plugin_root, ?array $composer, string $target_namespace ): string {
-		$existing_root = $this->get_existing_root( $composer, $target_namespace );
-		$root          = $this->ask( 'Source directory:', $existing_root ?? 'lib' );
-
-		/*
-		 * Under `--yes` nothing is read from STDIN, so re-asking hands back the
-		 * same rejected answer and this recurses until the stack dies. It is
-		 * reachable: a plugin whose composer.json already maps the chosen
-		 * namespace to `src/` gets `src` as its default, which the next guard
-		 * refuses. `ask_for_namespace()` and `ask_for_text_domain()` both stop
-		 * here instead; this did not.
-		 */
-		$unattended = ! empty( $this->get_assoc_args()['yes'] );
-
-		if ( 1 !== preg_match( '#^[a-zA-Z0-9_/-]+$#', $root ) ) {
-			if ( $unattended ) {
-				$this->error( sprintf( 'Cannot use "%s" as a source directory. Run without --yes and give one.', $root ) );
-				return '';
-			}
-
-			$this->warning( 'Invalid path format.' );
-			return $this->ask_for_root( $plugin_root, $composer, $target_namespace );
-		}
-
-		// `src` belongs to `@wordpress/scripts`, which treats it as its source
-		// path, and `wp zt make block` writes into `src/blocks/`. Copying PHP
-		// there would put the two in the same tree for no gain.
-		if ( 'src' === trim( $root, '/' ) ) {
-			if ( $unattended ) {
-				$this->error(
-					sprintf(
-						'composer.json maps %s to src/, which is reserved for the JavaScript build (wp-scripts). Run without --yes and choose another directory, e.g. "lib".',
-						$target_namespace
-					)
-				);
-
-				return '';
-			}
-
-			$this->warning( '"src" is reserved for the JavaScript build (wp-scripts). Choose another directory, e.g. "lib".' );
-			return $this->ask_for_root( $plugin_root, $composer, $target_namespace );
-		}
-
-		$full_path = $plugin_root . '/' . $root;
-
-		// `confirm()` answers yes under --yes, so this branch cannot loop.
-		if ( is_dir( $full_path ) && ! $this->confirm( 'Directory "' . $full_path . '" already exists. Use it anyway?', true ) ) {
-			return $this->ask_for_root( $plugin_root, $composer, $target_namespace );
-		}
-
-		return $root;
 	}
 
 	/**
@@ -846,15 +778,24 @@ return new class() extends Command {
 
 		$existing_root = $this->get_existing_root( $composer, $target_namespace );
 		if ( null !== $existing_root && $existing_root !== rtrim( $root, '/' ) ) {
-			$overwrite = $this->confirm(
-				sprintf(
-					'composer.json already maps "%s\\" to "%s/", not "%s/". Overwrite it?',
-					$target_namespace,
-					$existing_root,
-					rtrim( $root, '/' )
-				),
-				false
-			);
+			/*
+			 * `confirm()` answers yes under `--yes`, which here would repoint a
+			 * PSR-4 entry the plugin's existing classes autoload through --
+			 * silently, and for classes this command never touched. So the
+			 * unattended answer is the safe one rather than the default one: the
+			 * entry is left alone and named, which is the same outcome as
+			 * declining the prompt.
+			 */
+			$overwrite = empty( $this->get_assoc_args()['yes'] )
+				&& $this->confirm(
+					sprintf(
+						'composer.json already maps "%s\\" to "%s/", not "%s/". Overwrite it?',
+						$target_namespace,
+						$existing_root,
+						rtrim( $root, '/' )
+					),
+					false
+				);
 
 			if ( ! $overwrite ) {
 				$this->warning( 'Left composer.json untouched -- add the autoload entry yourself: "' . $target_namespace . '\\\\": "' . $root . '/"' );

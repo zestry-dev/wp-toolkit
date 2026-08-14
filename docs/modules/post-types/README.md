@@ -5,17 +5,17 @@
 
 # PostTypes
 
-Discovers `post-types/`, `taxonomies/` &nbsp;·&nbsp; Each file returns [`PostType`](post-type.md), [`Taxonomy`](taxonomy.md) &nbsp;·&nbsp; Dependencies [`path`](../path/)
+Discovers `resources/post-types/`, `resources/taxonomies/` &nbsp;·&nbsp; Each file returns [`PostType`](post-type.md), [`Taxonomy`](taxonomy.md) &nbsp;·&nbsp; Dependencies [`path`](../path/)
 
 Discovers plugin custom post types and taxonomies and registers them with WordPress.
 
-A post types directory contains PHP files, one per post type; each file returns a `PostType` instance and registers under the file's own name (`post-types/book.php` registers as `book`). A taxonomies directory works the same way with `Taxonomy` instances. Neither name is auto-namespaced to the plugin slug, the way a meta key and a block name are not either — see `PostType` for why, and prefix them yourself in the filename.
+A post types directory contains PHP files, one per post type; each file returns a `PostType` instance and registers under the file's own name (`resources/post-types/book.php` registers as `book`). A taxonomies directory works the same way with `Taxonomy` instances. Neither name is auto-namespaced to the plugin slug, the way a meta key and a block name are not either — see `PostType` for why, and prefix them yourself in the filename.
 
 Taxonomies are always registered after every post type, regardless of file discovery order, so a taxonomy's `Taxonomy::object_types()` can safely name any post type this same plugin discovers.
 
 `get_discovered_post_types()` and `get_discovered_taxonomies()` hand back everything the two directories declare, switched on or off, so a plugin can build a screen over its own post types without keeping a second list of them somewhere. `is_enabled()` is read at registration instead: a file that switches itself off is one you can list and WordPress never hears about.
 
-Both roots behave the same way, which is what lets a plugin with post types but no taxonomies skip the `taxonomies/` directory entirely. Name one with `post-types/` or `taxonomies/` and it must exist — asking for a directory by name and getting nothing is a typo worth hearing about. Leave one at its default and let it be absent, and your plugin simply has none of those files yet.
+Both roots behave the same way, which is what lets a plugin with post types but no taxonomies skip `resources/taxonomies/` entirely. A directory that is not there is not an error: your plugin simply has none of those files yet.
 
 [Adding it](#adding-it) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a PostType](#writing-a-posttype) &nbsp;·&nbsp; [Writing a Taxonomy](#writing-a-taxonomy) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
@@ -41,18 +41,18 @@ return array(
 
 ## Writing a PostType
 
-A file in `post-types/` returns a [`PostType`](post-type.md) instance, which `wp zt make post-type <name>` generates.
+A file in `resources/post-types/` returns a [`PostType`](post-type.md) instance, which `wp zt make post-type <name>` generates.
 
 ## Writing a Taxonomy
 
-A file in `taxonomies/` returns a [`Taxonomy`](taxonomy.md) instance, which `wp zt make taxonomy <name>` generates.
+A file in `resources/taxonomies/` returns a [`Taxonomy`](taxonomy.md) instance, which `wp zt make taxonomy <name>` generates.
 
 ## Constants
 
 ### `POST_TYPES_ROOT`
 
 ```php
-const POST_TYPES_ROOT = 'post-types';
+const POST_TYPES_ROOT = 'resources/post-types';
 ```
 
 Default plugin-relative directory of post type files.
@@ -60,7 +60,7 @@ Default plugin-relative directory of post type files.
 ### `TAXONOMIES_ROOT`
 
 ```php
-const TAXONOMIES_ROOT = 'taxonomies';
+const TAXONOMIES_ROOT = 'resources/taxonomies';
 ```
 
 Default plugin-relative directory of taxonomy files.
@@ -217,8 +217,8 @@ A module that names a `boots_on` also throws when asked for before that hook has
 
 ## See also
 
-- [`PostType`](post-type.md) — what a file in `post-types/` returns
-- [`Taxonomy`](taxonomy.md) — what a file in `taxonomies/` returns
+- [`PostType`](post-type.md) — what a file in `resources/post-types/` returns
+- [`Taxonomy`](taxonomy.md) — what a file in `resources/taxonomies/` returns
 - [`path`](../path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
 - [`wp zt add post-types`](../../commands/add.md) — the command that copies it

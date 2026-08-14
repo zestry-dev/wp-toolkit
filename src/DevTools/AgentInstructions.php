@@ -18,7 +18,7 @@ use Zestry\WPToolkit\Modules\Path;
  * Renders the `AGENTS.md` that `wp zt init` leaves in a consuming plugin.
  *
  * An agent opening a plugin built this way sees a `lib/Core/` it did not write,
- * a `bootstrap.php` whose entries look optional, and a `commands/` directory
+ * a `bootstrap.php` whose entries look optional, and a `resources/commands/` directory
  * that registers nothing visible. Every convention that explains those is in
  * this toolkit's documentation, which is not in that repository -- so the
  * choice is to infer them or to go looking, and inference gets the load-bearing

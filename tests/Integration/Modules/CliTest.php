@@ -28,7 +28,7 @@ final class CliTest extends TestCase {
 	public function test_does_nothing_when_not_running_under_wp_cli(): void {
 		$this->assertFalse( defined( 'WP_CLI' ), 'Precondition: WP_CLI must be undefined for this branch.' );
 
-		$this->write_plugin_file( 'commands/greet.php', $this->command_file() );
+		$this->write_plugin_file( 'resources/commands/greet.php', $this->command_file() );
 
 		$cli = $this->plugin->get( CLI::class );
 
@@ -37,7 +37,7 @@ final class CliTest extends TestCase {
 
 	public function test_registers_a_command_from_the_root_directory(): void {
 		$this->define_wp_cli();
-		$this->write_plugin_file( 'commands/greet.php', $this->command_file() );
+		$this->write_plugin_file( 'resources/commands/greet.php', $this->command_file() );
 
 		$cli = $this->plugin->get( CLI::class );
 
@@ -52,7 +52,7 @@ final class CliTest extends TestCase {
 
 	public function test_nested_directories_become_command_namespaces(): void {
 		$this->define_wp_cli();
-		$this->write_plugin_file( 'commands/cache/clear.php', $this->command_file() );
+		$this->write_plugin_file( 'resources/commands/cache/clear.php', $this->command_file() );
 
 		$cli = $this->plugin->get( CLI::class );
 
@@ -67,7 +67,7 @@ final class CliTest extends TestCase {
 		$this->define_wp_cli();
 		// A discovered command is wired, so it can reach any declared module.
 		$this->write_plugin_file(
-			'commands/needs-path.php',
+			'resources/commands/needs-path.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\CLI\\Command;\nuse Zestry\\WPToolkit\\Modules\\Path;\n"
 				. "return new class extends Command {\n"
 				. "    public function handle( array \$args, array \$assoc_args ): void {}\n"
@@ -110,8 +110,8 @@ final class CliTest extends TestCase {
 		// Subcommand::can_have_subcommands() is hardcoded false, so a sibling
 		// commands/test-1/test-2.php trying to nest beneath it would otherwise
 		// only fail once WP-CLI itself tries to register the second command.
-		$this->write_plugin_file( 'commands/test-1.php', $this->command_file() );
-		$this->write_plugin_file( 'commands/test-1/test-2.php', $this->command_file() );
+		$this->write_plugin_file( 'resources/commands/test-1.php', $this->command_file() );
+		$this->write_plugin_file( 'resources/commands/test-1/test-2.php', $this->command_file() );
 
 		// get() resolves and auto-boots the module against the default
 		// 'commands' directory, same as test_missing_commands_directory_throws().
@@ -123,8 +123,8 @@ final class CliTest extends TestCase {
 	public function test_a_command_name_reused_as_a_subdirectory_registers_nothing(): void {
 		$this->define_wp_cli();
 
-		$this->write_plugin_file( 'commands/test-1.php', $this->command_file() );
-		$this->write_plugin_file( 'commands/test-1/test-2.php', $this->command_file() );
+		$this->write_plugin_file( 'resources/commands/test-1.php', $this->command_file() );
+		$this->write_plugin_file( 'resources/commands/test-1/test-2.php', $this->command_file() );
 
 		try {
 			$this->plugin->get( CLI::class );
@@ -141,7 +141,7 @@ final class CliTest extends TestCase {
 		// An object that is not a Command: it passes register_command()'s own
 		// `object` parameter type, so without the guard in load_command() it
 		// would register unwired and only fail later inside handle().
-		$this->write_plugin_file( 'commands/bad.php', "<?php\nreturn new \\stdClass();\n" );
+		$this->write_plugin_file( 'resources/commands/bad.php', "<?php\nreturn new \\stdClass();\n" );
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'must return an instance of' );
@@ -151,7 +151,7 @@ final class CliTest extends TestCase {
 
 	public function test_register_command_still_accepts_a_non_command_object(): void {
 		$this->define_wp_cli();
-		$this->write_plugin_file( 'commands/greet.php', $this->command_file() );
+		$this->write_plugin_file( 'resources/commands/greet.php', $this->command_file() );
 
 		$cli = $this->plugin->get( CLI::class );
 

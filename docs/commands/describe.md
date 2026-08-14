@@ -1,5 +1,5 @@
 <!--
-    Generated from commands/describe.php.
+    Generated from resources/commands/describe.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
@@ -36,17 +36,17 @@ $ wp zt describe --installed
 Acme\Plugin -> lib/   text domain: acme-plugin
 
 MODULES
-  ajax           actions/         AjaxAction    wp zt make action
-  cli            commands/        Command       wp zt make command
-  cron           schedules/       Schedule      wp zt make schedule   NOT DECLARED
-  fields         fields/          Field         wp zt make field
-      fields/ 40 files via Acme\Plugin\Abstracts\EntityField
+  ajax           resources/actions/         AjaxAction    wp zt make action
+  cli            resources/commands/        Command       wp zt make command
+  cron           resources/schedules/       Schedule      wp zt make schedule   NOT DECLARED
+  fields         resources/fields/          Field         wp zt make field
+      resources/fields/ 40 files via Acme\Plugin\Abstracts\EntityField
   path           —
-  views          views/
+  views          resources/views/
 
 # For a script, or an agent.
 $ wp zt describe --format=json --installed
 [{"name":"ajax","installed":true,"declared":true,
-  "configured":false,"reads":"actions/","returns":"AjaxAction",
+  "configured":false,"reads":"resources/actions/","returns":"AjaxAction",
   "via":"","make":"action","file":"lib/Core/Modules/Ajax/Ajax.php"}]
 ```

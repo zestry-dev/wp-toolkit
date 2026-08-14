@@ -17,7 +17,7 @@ return new class() extends MakeCommand {
 	/**
 	 * Generate a new custom post type.
 	 *
-	 * The PostTypes module discovers it. On `init` it walks your `post-types/`
+	 * The PostTypes module discovers it. On `init` it walks your `resources/post-types/`
 	 * directory, requires every file in it, and hands the `PostType` each one
 	 * returns to `register_post_type()`, with a full `labels` array built from
 	 * the singular and plural names below. Writing the file is the whole
@@ -30,7 +30,7 @@ return new class() extends MakeCommand {
 	 *
 	 * <name>
 	 * : The local name, e.g. 'book'. Becomes both the filename (`{name}.php`)
-	 * under `post-types/` and the registered post type itself -- unlike
+	 * under `resources/post-types/` and the registered post type itself -- unlike
 	 * every other `make` type, this name is NOT namespaced to the plugin
 	 * slug (WordPress caps a post type name at 20 characters), so pick
 	 * something short and globally unique.
@@ -58,11 +58,11 @@ return new class() extends MakeCommand {
 	 *     # Generate a post type, prompting only for the plural name.
 	 *     $ wp zt make post-type book
 	 *     Plural name: (default: Books)
-	 *     Success: Created post-types/book.php
+	 *     Success: Created resources/post-types/book.php
 	 *
 	 *     # Generate one with both names given explicitly.
 	 *     $ wp zt make post-type book --singular=Book --plural=Books
-	 *     Success: Created post-types/book.php
+	 *     Success: Created resources/post-types/book.php
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -101,7 +101,7 @@ return new class() extends MakeCommand {
 	}
 
 	protected function get_default_dir( array $config ): string {
-		return 'post-types';
+		return 'resources/post-types';
 	}
 
 	protected static function get_type(): string {

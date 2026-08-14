@@ -1,6 +1,6 @@
 # Getting started
 
-Build a WordPress plugin whose features are files in a directory: drop a file in `commands/` and it is a WP-CLI command, drop one in `admin-pages/` and it is a menu page. No registration calls, no hook names to spell correctly.
+Build a WordPress plugin whose features are files in a directory: drop a file in `resources/commands/` and it is a WP-CLI command, drop one in `resources/admin-pages/` and it is a menu page. No registration calls, no hook names to spell correctly.
 
 You need PHP 8.1+, WordPress 6.9+, Composer and WP-CLI, and a plugin directory to work in.
 
@@ -42,17 +42,18 @@ wp plugin activate acme-plugin
 wp zt init
 ```
 
-It asks three questions, then confirms:
+It asks two questions, then confirms:
 
 - **Namespace** — e.g. `Acme\Plugin`. Defaults to a PSR-4 namespace your `composer.json` already declares, if it has one.
 - **Text domain** — for the translatable strings in the copied source. Defaults to the `Text Domain:` your entry file declares, since that is the domain WordPress loads your translations under and the copied source has to match it.
-- **Source directory** — relative to the plugin root. Defaults to `lib`. `src` is refused: it belongs to `@wordpress/scripts`, and is where [JavaScript](javascript.md) goes — `src/blocks/`, `src/entries/`, `src/shared/`.
 
-Answer those and it writes, in order:
+It does not ask where anything goes. The layout is fixed: **`lib/`** holds your classes, **`resources/`** holds the files that *are* features, and **`src/`** is left to `@wordpress/scripts` for [JavaScript](javascript.md).
+
+Answer those two and it writes, in order:
 
 - `lib/Core/Kernel/` — the toolkit's kernel copied, with every `Zestry\WPToolkit\` namespace and text-domain literal rewritten to yours;
 - `zestry.lock.json` — a hash per copied file, so a later `wp zt update` can tell your edits from upstream's changes. Commit it;
-- `zestry.json` — the three answers, read by every later `wp zt` command;
+- `zestry.json` — both answers, read by every later `wp zt` command;
 - an `"Acme\\Plugin\\": "lib/"` PSR-4 entry in your `composer.json`, followed by a `composer dump-autoload` so it is live immediately;
 - `bootstrap.php` — where modules get declared;
 - `.gitignore` — covering what is built rather than authored;
@@ -177,7 +178,7 @@ Every module that discovers files has a `make` command:
 wp zt make command greet
 ```
 
-That writes `commands/greet.php` with your namespace already filled in, and it is live immediately:
+That writes `resources/commands/greet.php` with your namespace already filled in, and it is live immediately:
 
 ```bash
 $ wp acme-plugin greet Alice
@@ -186,13 +187,13 @@ Success: Done.
 
 Fill in the `handle()` method it generated, and keep its docblock up to date — WP-CLI reads the `## OPTIONS` and `## EXAMPLES` sections for `wp acme-plugin greet --help`, so it is not just a comment.
 
-There is no `WP_CLI::add_command()` to write: the module walks `commands/`, wires the returned object, and registers it under your plugin slug. The same holds for every other module — see [`wp zt make`](commands/) for each type, and each module's page for what its files look like.
+There is no `WP_CLI::add_command()` to write: the module walks `resources/commands/`, wires the returned object, and registers it under your plugin slug. The same holds for every other module — see [`wp zt make`](commands/) for each type, and each module's page for what its files look like.
 
 ## What just happened
 
 Three conventions do the work, and they are the same in every module:
 
-1. **A directory is a feature set.** `commands/` holds WP-CLI commands, `admin-pages/` holds pages, `routes/` holds REST routes. The [module index](modules/) maps every one.
+1. **A directory is a feature set.** `resources/commands/` holds WP-CLI commands, `resources/admin-pages/` holds pages, `resources/routes/` holds REST routes. The [module index](modules/) maps every one.
 2. **A file returns an object.** The module requires the file and expects an instance of that module's base class. Anything else throws a `DiscoveryException` naming the file and what was expected.
 3. **Dependencies are reached, not built.** `$this->with( Path::class )` hands you the module the plugin already made — the same instance every time, in a discovered file as readily as in a module of your own.
 
@@ -218,17 +219,27 @@ The `webpack.config.js` that came with the module is what lets one build produce
 
 ## What is yours, and what came from the toolkit
 
-`lib/Core/` is the copied source; the rest of `lib/` is code you wrote. That one directory is the whole boundary, and it decides one thing: [`wp zt update`](commands/update.md) and `wp zt overwrite` may replace anything inside it, and can never touch anything outside it.
+Your plugin has two directories of its own, and they hold different kinds of thing. **`lib/` is classes**, reached by namespace. **`resources/` is the files that *are* features**, reached by being there — every module discovers its own directory under it.
 
 ```
-lib/
-├── Core/                  ← copied in; `update` may replace it
-│   ├── Kernel/            ← wp zt init
-│   ├── Modules/Ajax/      ← wp zt add ajax
-│   └── Modules/Path.php   ← wp zt add path
-├── Modules/Shortcode.php  ← wp zt make module Shortcode — yours
-└── Data/LineItem.php      ← no generator, no command — just yours
+acme-plugin/
+├── acme-plugin.php        ← your entry file
+├── bootstrap.php          ← what the plugin is made of
+├── lib/                   ← classes, autoloaded by namespace
+│   ├── Core/              ← copied in; `update` may replace it
+│   │   ├── Kernel/        ← wp zt init
+│   │   ├── Modules/Ajax/  ← wp zt add ajax
+│   │   └── Modules/Path.php
+│   ├── Modules/Shortcode.php  ← wp zt make module Shortcode — yours
+│   └── Data/LineItem.php      ← no generator, no command — just yours
+├── resources/             ← files that are features, discovered by directory
+│   ├── commands/greet.php     ← wp zt make command greet
+│   ├── admin-pages/settings.php
+│   └── views/admin-pages/settings.php
+└── src/                   ← JavaScript, built to build/
 ```
+
+`lib/Core/` is the copied source; the rest of `lib/` is code you wrote. That one directory is the whole boundary, and it decides one thing: [`wp zt update`](commands/update.md) and `wp zt overwrite` may replace anything inside it, and can never touch anything outside it.
 
 It is all your code, under one namespace and one PSR-4 entry — which is why the last line needs no command: that entry maps the whole of `lib/`, so a plain class autoloads from wherever you put it. `Modules/` is where `make module` writes, not a list of what may exist. The `Core` segment appears in the namespace too — `Acme\Plugin\Core\Modules\Ajax\Ajax` against your own `Acme\Plugin\Modules\Shortcode` — so which is which shows in every `use` statement.
 

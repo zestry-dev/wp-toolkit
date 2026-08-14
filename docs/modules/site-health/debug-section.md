@@ -9,7 +9,7 @@
 
 One panel on the Site Health *Info* tab.
 
-A file in `debug-sections/` returns one of these, and its filename is the section's identifier: `status.php` becomes `{plugin-slug}-status`.
+A file in `resources/debug-sections/` returns one of these, and its filename is the section's identifier: `status.php` becomes `{plugin-slug}-status`.
 
 This is the other half of Site Health, and it answers a different question from a `HealthCheck`. A check has a verdict — good, recommended, critical — and belongs to something that can be wrong. A section has no verdict: it lists what your plugin's state actually is, so the values reach you in a support ticket without a round trip. The whole tab is behind one "Copy site info to clipboard" button, which is what a user pastes.
 

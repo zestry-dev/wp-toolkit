@@ -9,13 +9,13 @@
 
 Base class for a file-based custom post type registration.
 
-A post type file returns a subclass instance; the PostTypes module wires it (assigning the shared plugin, so `with()` reaches every module) and calls `get_args()` to build the array passed to WordPress core's own `register_post_type()`. The post type's name is not derived from this class at all — it comes from the file's own name within the post types directory (`post-types/book.php` registers as `book`), matching the `slug()`-from-filename convention every other file-based module in this toolkit uses.
+A post type file returns a subclass instance; the PostTypes module wires it (assigning the shared plugin, so `with()` reaches every module) and calls `get_args()` to build the array passed to WordPress core's own `register_post_type()`. The post type's name is not derived from this class at all — it comes from the file's own name within the post types directory (`resources/post-types/book.php` registers as `book`), matching the `slug()`-from-filename convention every other file-based module in this toolkit uses.
 
 Only `singular_name()`/`plural_name()` are required: WordPress core itself only derives `name`/`singular_name`/`menu_name`/`all_items`/`archives` from those two, and otherwise falls back to generic, literally-worded defaults ('Add Post', 'Search Posts', ...) meant for the built-in Post/Page types — wrong for any custom post type. `get_args()` below builds the commonly-needed label set by interpolating `singular_name()`/`plural_name()` into the label keys most "register custom post type" tutorials hand-write, so a post type gets correctly-worded labels everywhere without repeating that boilerplate. Keys outside that set — `name_admin_bar`, `parent_item_colon`, `items_list`, the `item_*` status strings — keep WordPress's own defaults unless `labels()` supplies them. Override `labels()` to replace or add specific labels beyond that.
 
 A post type name is not auto-namespaced to the plugin slug, for the same reason a taxonomy, a meta key and a block name are not: WordPress caps a post type name at 20 characters (enforced by the `wp_posts.post_type` column and `register_post_type()` itself), which leaves little to no room once a realistic plugin slug prefix is added. Community convention (core itself, WooCommerce's `product`) is to pick a short, plain, globally unique name — the same responsibility you already have when naming a database table or an option key directly.
 
-A file at `post-types/book.php` registers as `book`. `wp zt make post-type <name>` generates a starting point.
+A file at `resources/post-types/book.php` registers as `book`. `wp zt make post-type <name>` generates a starting point.
 
 ## Generated starting point
 
@@ -24,7 +24,7 @@ A file at `post-types/book.php` registers as `book`. `wp zt make post-type <name
 > [!IMPORTANT]
 > **This name is not prefixed with your plugin slug, so choose it as though every plugin on the site can see it — because they can.** WordPress caps a post type name at 20 characters, which is why the slug is not added for you.
 >
-> Two plugins registering `book` are the same post type, and whichever registers second loses. Put your own prefix in the filename: `post-types/acme-book.php`.
+> Two plugins registering `book` are the same post type, and whichever registers second loses. Put your own prefix in the filename: `resources/post-types/acme-book.php`.
 
 ```php
 <?php

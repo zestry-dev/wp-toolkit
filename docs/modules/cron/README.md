@@ -5,7 +5,7 @@
 
 # Cron
 
-Discovers `schedules/` &nbsp;·&nbsp; Each file returns [`Schedule`](schedule.md) &nbsp;·&nbsp; Dependencies [`path`](../path/)
+Discovers `resources/schedules/` &nbsp;·&nbsp; Each file returns [`Schedule`](schedule.md) &nbsp;·&nbsp; Dependencies [`path`](../path/)
 
 Discovers plugin WP-Cron schedules and keeps them registered.
 
@@ -53,14 +53,14 @@ return array(
 
 ## Writing a Schedule
 
-A file in `schedules/` returns a [`Schedule`](schedule.md) instance, which `wp zt make schedule <name>` generates.
+A file in `resources/schedules/` returns a [`Schedule`](schedule.md) instance, which `wp zt make schedule <name>` generates.
 
 ## Constants
 
 ### `SCHEDULES_ROOT`
 
 ```php
-const SCHEDULES_ROOT = 'schedules';
+const SCHEDULES_ROOT = 'resources/schedules';
 ```
 
 Default plugin-relative directory of schedule files.
@@ -187,7 +187,7 @@ public function get_orphaned_events(): array
 | **Return** | Hook name => the timestamp it next fires, earliest first |
 | **Throws** | `DiscoveryException` — When a file returns something other than a Schedule instance |
 
-A schedule's hook is its filename — `schedules/sync.php` is `{slug}-sync` — so renaming the file schedules a new event and abandons the old one. Nothing cleans it up: booting only schedules what discovery finds, and `unschedule_all()` clears the same set, so an event whose file is gone is in neither list. WordPress keeps firing it, on time, forever, with nothing listening.
+A schedule's hook is its filename — `resources/schedules/sync.php` is `{slug}-sync` — so renaming the file schedules a new event and abandons the old one. Nothing cleans it up: booting only schedules what discovery finds, and `unschedule_all()` clears the same set, so an event whose file is gone is in neither list. WordPress keeps firing it, on time, forever, with nothing listening.
 
 Reporting rather than pruning, and never called automatically, for the reason `Migrations` never triggers itself: a `{slug}-` event this module did not create is indistinguishable from one it did. A plugin is free to `wp_schedule_event()` under its own prefix by hand, and deleting that because no file claims it would be this module destroying something it does not own. `unschedule_orphaned()` does the clearing, when a consumer decides.
 
@@ -309,7 +309,7 @@ A module that names a `boots_on` also throws when asked for before that hook has
 
 ## See also
 
-- [`Schedule`](schedule.md) — what a file in `schedules/` returns
+- [`Schedule`](schedule.md) — what a file in `resources/schedules/` returns
 - [`path`](../path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
 - [`wp zt add cron`](../../commands/add.md) — the command that copies it

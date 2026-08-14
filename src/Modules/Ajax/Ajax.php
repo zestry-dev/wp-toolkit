@@ -22,7 +22,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * Discovers plugin AJAX actions and registers their WordPress hooks.
  *
  * An action directory contains PHP files named after the action, such as
- * `actions/save-profile.php`. Each file returns an AjaxAction instance. During
+ * `resources/actions/save-profile.php`. Each file returns an AjaxAction instance. During
  * an AJAX request the module maps that file to `wp_ajax_{plugin}-{action}` and
  * conditionally maps the equivalent `wp_ajax_nopriv_` hook.
  *
@@ -67,7 +67,7 @@ class Ajax extends Module implements Bootable {
 	/**
 	 * Default plugin-relative directory of action files.
 	 */
-	const ACTIONS_ROOT = 'actions';
+	const ACTIONS_ROOT = 'resources/actions';
 
 	/**
 	 * Priority for the generated `wp_ajax_*`/`wp_ajax_nopriv_*` handlers.

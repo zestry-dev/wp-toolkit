@@ -69,8 +69,31 @@ final class ZestryConfigTest extends TestCase {
 		$this->zestry_config()->read( $this->plugin_dir );
 	}
 
-	public function test_read_throws_when_the_file_is_malformed(): void {
+	/**
+	 * `root` is a fixed convention, so a file without it is complete.
+	 *
+	 * `init` stopped asking where the source goes and always writes `lib`, so
+	 * the key records the layout rather than choosing it. A config that omits
+	 * it reads back as `lib` instead of being rejected.
+	 */
+	public function test_read_defaults_the_root_when_it_is_absent(): void {
 		$this->write_plugin_file( 'zestry.json', '{"namespace": "Acme\\\\Core"}' );
+
+		$this->assertSame( 'lib', $this->zestry_config()->read( $this->plugin_dir )['root'] );
+	}
+
+	/**
+	 * A root written by hand is still honoured, so a plugin that moved its own
+	 * classes is read correctly rather than by the convention it opted out of.
+	 */
+	public function test_read_honours_a_root_the_file_does_name(): void {
+		$this->write_plugin_file( 'zestry.json', '{"namespace": "Acme\\\\Core", "root": "app"}' );
+
+		$this->assertSame( 'app', $this->zestry_config()->read( $this->plugin_dir )['root'] );
+	}
+
+	public function test_read_throws_when_the_namespace_is_missing(): void {
+		$this->write_plugin_file( 'zestry.json', '{"root": "lib"}' );
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'malformed' );

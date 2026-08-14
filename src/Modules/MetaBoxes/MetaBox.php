@@ -18,7 +18,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
 /**
  * One panel on the post edit screen.
  *
- * A file in `meta-boxes/` returns one of these. You write the markup and decide
+ * A file in `resources/meta-boxes/` returns one of these. You write the markup and decide
  * what to store; everything between the two is handled — the nonce, and the
  * guards that decide whether a `save_post` is even a save worth acting on.
  *
@@ -168,7 +168,7 @@ abstract class MetaBox implements PluginAware {
 	 * {@see save()} runs afterwards for anything else — a value assembled from
 	 * several inputs, a taxonomy term, something that is not meta at all.
 	 *
-	 * @return string[] Meta keys declared by your `fields/` files.
+	 * @return string[] Meta keys declared by your `resources/fields/` files.
 	 */
 	public function fields(): array {
 		return array();
@@ -210,7 +210,7 @@ abstract class MetaBox implements PluginAware {
 	 * The identifier this box is registered under.
 	 *
 	 * Your filename with the plugin slug prefixed, since a box's id is an
-	 * element id on a screen every plugin can add to. `meta-boxes/details.php`
+	 * element id on a screen every plugin can add to. `resources/meta-boxes/details.php`
 	 * gives `{plugin-slug}-details`.
 	 *
 	 * @return string

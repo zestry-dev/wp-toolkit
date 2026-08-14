@@ -20,8 +20,8 @@ final class PathContainmentTest extends TestCase {
 
 	public function test_builds_a_legitimate_nested_path(): void {
 		$this->assertStringEndsWith(
-			'/views/email.php',
-			$this->path()->get_plugin_path( 'views/email.php' )
+			'/resources/views/email.php',
+			$this->path()->get_plugin_path( 'resources/views/email.php' )
 		);
 	}
 
@@ -54,7 +54,7 @@ final class PathContainmentTest extends TestCase {
 			'leading ..'   => array( '../secret' ),
 			'deep ..'      => array( 'a/../../secret' ),
 			'backslash ..' => array( 'a\\..\\secret' ),
-			'null byte'    => array( "views/x\0.php" ),
+			'null byte'    => array( "resources/views/x\0.php" ),
 		);
 	}
 
@@ -62,12 +62,12 @@ final class PathContainmentTest extends TestCase {
 		// A symlink inside the plugin pointing outside must not resolve through.
 		$outside = $this->make_temp_dir( 'zestry-outside-' );
 		file_put_contents( $outside . '/secret.php', 'SECRET' );
-		mkdir( $this->plugin_dir . '/views' );
-		symlink( $outside . '/secret.php', $this->plugin_dir . '/views/escape.php' );
+		mkdir( $this->plugin_dir . '/resources/views', 0777, true );
+		symlink( $outside . '/secret.php', $this->plugin_dir . '/resources/views/escape.php' );
 
 		try {
 			$this->expectException( \InvalidArgumentException::class );
-			$this->path()->get_plugin_path( 'views/escape.php' );
+			$this->path()->get_plugin_path( 'resources/views/escape.php' );
 		} finally {
 			$this->remove_dir( $outside );
 		}

@@ -1,5 +1,5 @@
 <!--
-    Generated from commands/make/meta-box.php.
+    Generated from resources/commands/make/meta-box.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
@@ -7,7 +7,7 @@
 
 Generate a post edit screen meta box.
 
-Writes a file into the plugin's `meta-boxes/` directory, where the MetaBoxes module discovers it. The filename becomes the box's identifier, prefixed with your plugin slug.
+Writes a file into the plugin's `resources/meta-boxes/` directory, where the MetaBoxes module discovers it. The filename becomes the box's identifier, prefixed with your plugin slug.
 
 ## Options
 
@@ -23,7 +23,7 @@ Writes a file into the plugin's `meta-boxes/` directory, where the MetaBoxes mod
 ## Examples
 
 ```bash
-# Generate meta-boxes/book-details.php.
+# Generate resources/meta-boxes/book-details.php.
 $ wp zt make meta-box book-details
-Success: Created meta-boxes/book-details.php
+Success: Created resources/meta-boxes/book-details.php
 ```

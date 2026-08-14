@@ -47,7 +47,7 @@ return new class() extends MetaBox {
 		);
 	}
 
-	// Meta keys this form submits, named after your fields/ files. Each one
+	// Meta keys this form submits, named after your resources/fields/ files. Each one
 	// present in the request is read, unslashed and written through the Fields
 	// module, so its validate() and sanitize() apply.
 	//

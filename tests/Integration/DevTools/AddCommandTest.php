@@ -520,7 +520,7 @@ final class AddCommandTest extends TestCase {
 		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-add-test' ) )->declare_multiple( $this->get_toolkit_modules() );
 
 		/** @var Command $command */
-		$command = require dirname( __DIR__, 3 ) . '/commands/add.php';
+		$command = require dirname( __DIR__, 3 ) . '/resources/commands/add.php';
 		$package_plugin->wire( $command );
 
 		$previous_cwd = (string) getcwd();

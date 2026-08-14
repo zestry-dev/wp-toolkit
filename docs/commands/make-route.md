@@ -1,5 +1,5 @@
 <!--
-    Generated from commands/make/route.php.
+    Generated from resources/commands/make/route.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
@@ -7,14 +7,14 @@
 
 Generate a new REST route.
 
-The RestApi module discovers it. On `rest_api_init` it walks your `routes/` directory at any depth, requires every file in it, and hands the `Route` each one returns to `register_rest_route()` under `{plugin-slug}/{version}`. Writing the file is the whole registration; nothing has to be declared anywhere, and subdirectories are organization only, not part of the URL.
+The RestApi module discovers it. On `rest_api_init` it walks your `resources/routes/` directory at any depth, requires every file in it, and hands the `Route` each one returns to `register_rest_route()` under `{plugin-slug}/{version}`. Writing the file is the whole registration; nothing has to be declared anywhere, and subdirectories are organization only, not part of the URL.
 
 Needs the `rest-api` module, so run `wp zt add rest-api` first if you have not already.
 
 ## Options
 
 - **`<name>`**  
-  The local name, e.g. 'get-widget'. Becomes the filename (`{name}.php`) under `routes/`.
+  The local name, e.g. 'get-widget'. Becomes the filename (`{name}.php`) under `resources/routes/`.
 
 - **`[--method=<method>]`**  
   The HTTP method: get, post, put, patch, or delete. Prompted for when not given.
@@ -41,5 +41,5 @@ $ wp zt make route get-widget
 HTTP method (get, post, put, patch, delete): (default: get)
 Namespace version: (default: v1)
 URL pattern: (default: /get-widget)
-Success: Created routes/get-widget.php
+Success: Created resources/routes/get-widget.php
 ```

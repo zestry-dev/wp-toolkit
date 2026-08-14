@@ -20,7 +20,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  *
  * This is the shadcn/ui-style mechanism the whole DevTools package exists
  * for: rather than requiring `wp-toolkit` as a locked runtime dependency,
- * `wp zt init`/`wp zt add` (see the `commands/` directory next to devtool.php)
+ * `wp zt init`/`wp zt add` (see the `resources/commands/` directory next to devtool.php)
  * copy the toolkit's own PHP source directly into the consuming project and
  * rewrite every `namespace Zestry\WPToolkit\...;` declaration and `use Zestry\WPToolkit\...;` import to
  * the project's own chosen namespace, and every `'zestry-toolkit'` text-domain

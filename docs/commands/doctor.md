@@ -1,5 +1,5 @@
 <!--
-    Generated from commands/doctor.php.
+    Generated from resources/commands/doctor.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 

@@ -18,7 +18,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
 /**
  * One panel on the Site Health *Info* tab.
  *
- * A file in `debug-sections/` returns one of these, and its filename is the
+ * A file in `resources/debug-sections/` returns one of these, and its filename is the
  * section's identifier: `status.php` becomes `{plugin-slug}-status`.
  *
  * This is the other half of Site Health, and it answers a different question

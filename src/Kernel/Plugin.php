@@ -69,11 +69,11 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  * `wp zt init` creates the file and `wp zt add` appends to it, so a module
  * is active as soon as it is copied.
  *
- * With this in place, a file returned from `actions/save-profile.php` becomes
+ * With this in place, a file returned from `resources/actions/save-profile.php` becomes
  * an AJAX action (see {@see \Zestry\WPToolkit\Modules\Ajax\AjaxAction}), a file returned
- * from `commands/greet.php` becomes the WP-CLI command `wp acme-plugin greet`
+ * from `resources/commands/greet.php` becomes the WP-CLI command `wp acme-plugin greet`
  * (see {@see \Zestry\WPToolkit\Modules\CLI\Command}), and a file returned from
- * `admin-pages/settings.php` becomes an admin menu page (see
+ * `resources/admin-pages/settings.php` becomes an admin menu page (see
  * {@see \Zestry\WPToolkit\Modules\AdminPages\AdminPage}) — none of them need registering
  * by hand.
  *

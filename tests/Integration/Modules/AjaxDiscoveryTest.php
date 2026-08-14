@@ -101,7 +101,7 @@ final class AjaxDiscoveryTest extends TestCase {
 	public function test_discovery_can_be_suppressed_with_remove_action(): void {
 		$this->force_ajax_request();
 		$this->write_plugin_file(
-			'actions/ping.php',
+			'resources/actions/ping.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\Ajax\\AjaxAction;\nreturn new class extends AjaxAction {\n"
 				. "    public function capability_check(): bool { return true; }\n"
 				. "    public function handle(): void {}\n};\n"
@@ -134,7 +134,7 @@ final class AjaxDiscoveryTest extends TestCase {
 		$this->force_ajax_request();
 
 		// A file that returns a plain integer rather than an AjaxAction instance.
-		$this->write_plugin_file( 'actions/bad.php', "<?php\nreturn 42;\n" );
+		$this->write_plugin_file( 'resources/actions/bad.php', "<?php\nreturn 42;\n" );
 
 		try {
 			$this->boot_ajax_with_root( 'actions' );
@@ -159,7 +159,7 @@ final class AjaxDiscoveryTest extends TestCase {
 		$this->force_ajax_request();
 
 		// A file that returns a plain object that is not an AjaxAction.
-		$this->write_plugin_file( 'actions/wrong.php', "<?php\nreturn new \\stdClass();\n" );
+		$this->write_plugin_file( 'resources/actions/wrong.php', "<?php\nreturn new \\stdClass();\n" );
 
 		try {
 			$this->boot_ajax_with_root( 'actions' );
@@ -182,7 +182,7 @@ final class AjaxDiscoveryTest extends TestCase {
 	public function test_registration_is_deferred_to_init_when_init_has_not_fired(): void {
 		$this->force_ajax_request();
 		$this->write_plugin_file(
-			'actions/ping.php',
+			'resources/actions/ping.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\Ajax\\AjaxAction;\nreturn new class extends AjaxAction {\n"
 				. "public function capability_check(): bool { return true; }\n"
 				. "public function handle(): void {}\n};\n"

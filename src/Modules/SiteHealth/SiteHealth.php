@@ -20,9 +20,9 @@ use Zestry\WPToolkit\Modules\Path;
 /**
  * Puts your plugin on WordPress's Site Health screen.
  *
- * Two directories, one per tab. A file in `health-checks/` returns a
+ * Two directories, one per tab. A file in `resources/health-checks/` returns a
  * {@see HealthCheck} and appears on **Status** with a verdict; a file in
- * `debug-sections/` returns a {@see DebugSection} and appears on **Info** as a
+ * `resources/debug-sections/` returns a {@see DebugSection} and appears on **Info** as a
  * panel of values, with no verdict. In both, the filename is the identifier:
  * `api-key.php` becomes `{plugin-slug}-api-key`.
  *
@@ -39,7 +39,7 @@ use Zestry\WPToolkit\Modules\Path;
  *
  * @example A health check
  * ```
- * // health-checks/api-key.php
+ * // resources/health-checks/api-key.php
  * return new class extends HealthCheck {
  *
  *     public function label(): string {
@@ -54,7 +54,7 @@ use Zestry\WPToolkit\Modules\Path;
  *
  * @example A debug section
  * ```
- * // debug-sections/status.php
+ * // resources/debug-sections/status.php
  * return new class extends DebugSection {
  *
  *     public function label(): string {
@@ -81,12 +81,12 @@ class SiteHealth extends Module implements Bootable {
 	/**
 	 * Where checks are discovered, relative to the plugin root.
 	 */
-	const CHECKS_ROOT = 'health-checks';
+	const CHECKS_ROOT = 'resources/health-checks';
 
 	/**
 	 * Where debug sections are discovered, relative to the plugin root.
 	 */
-	const SECTIONS_ROOT = 'debug-sections';
+	const SECTIONS_ROOT = 'resources/debug-sections';
 
 	/**
 	 * Discovered checks by identifier, once the directory has been walked.
@@ -283,7 +283,6 @@ class SiteHealth extends Module implements Bootable {
 	 * where the result is offered to WordPress.
 	 *
 	 * @param string $root     The directory, relative to the plugin root.
-	 * @param bool   $was_set  Whether that root was named rather than defaulted.
 	 * @param string $expected The base class each file must return an instance of.
 	 * @param string $label    What to call the directory when something is wrong.
 	 * @return array<string, HealthCheck|DebugSection> Wired instances keyed by identifier.

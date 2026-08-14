@@ -1,5 +1,5 @@
 <!--
-    Generated from commands/init.php.
+    Generated from resources/commands/init.php.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 
@@ -9,15 +9,15 @@
 
 Set up a plugin to receive wp-toolkit source.
 
-One-time, interactive setup for the plugin that required `wp-toolkit` as a Composer dependency. Prompts for the namespace the copied source should be rewritten to, the text domain its translation calls should be rewritten to, and the directory (relative to your plugin's root) to copy it into, then copies the kernel — Plugin, Module, ActivationHandler, the Bootable and PluginAware contracts, the exceptions your plugin catches, and the shared traits and helpers every class needs — into `{root}/Core/Kernel/`.
+One-time, interactive setup for the plugin that required `wp-toolkit` as a Composer dependency. Prompts for the namespace the copied source should be rewritten to and the text domain its translation calls should be rewritten to, then copies the kernel — Plugin, Module, ActivationHandler, the Bootable and PluginAware contracts, the exceptions your plugin catches, and the shared traits and helpers every class needs — into `{root}/Core/Kernel/`.
 
-Four files are written around that copy: `zestry.json`, recording the three choices above; `zestry.lock.json`, recording the hash of every copied file as it was written, which is what later lets `wp zt update` tell an edit of yours from an upstream change; `bootstrap.php`, the file your modules are declared in; and `.gitignore`, covering the directories that are built rather than authored. It then adds a matching PSR-4 autoload entry to your own composer.json and shells out to `composer dump-autoload`, so the copied classes load without a further step.
+Four files are written around that copy: `zestry.json`, recording the two choices above; `zestry.lock.json`, recording the hash of every copied file as it was written, which is what later lets `wp zt update` tell an edit of yours from an upstream change; `bootstrap.php`, the file your modules are declared in; and `.gitignore`, covering the directories that are built rather than authored. It then adds a matching PSR-4 autoload entry to your own composer.json and shells out to `composer dump-autoload`, so the copied classes load without a further step.
 
 Refuses to run if zestry.json already exists, since that means the plugin has already been initialized; run `wp zt add <name>` instead to copy in additional feature modules.
 
-That directory is where the plugin's *own* classes belong too, beside the copied source rather than in a second root of their own. After this command there is no "toolkit" half to keep separate from: it is all the plugin's code, under one namespace and one PSR-4 entry. A second root would need a second PSR-4 prefix, which every class beneath it then carries as an extra namespace segment.
+**`lib/` is where your own classes belong too**, beside the copied source rather than in a second root of their own. After this command there is no "toolkit" half to keep separate from: it is all the plugin's code, under one namespace and one PSR-4 entry. A second root would need a second PSR-4 prefix, which every class beneath it then carries as an extra namespace segment.
 
-Do not choose `src`: `@wordpress/scripts` treats it as its source path, and `wp zt make block` writes into `src/blocks/`.
+The two directories are fixed: `lib/` holds classes, reached by namespace, and `resources/` holds the files that *are* features — a command, an admin page, a view — reached by being there. `src/` is left to `@wordpress/scripts`, which treats it as its own source path.
 
 ## Tooling
 
@@ -42,7 +42,7 @@ Dependencies are added unversioned. The pin belongs in your lock file, written t
 ## Options
 
 - **`[--yes]`**  
-  Take the default answer to every prompt, for an unattended run. The namespace is inferred from composer.json's PSR-4 entry, the text domain from the entry file's own `Text Domain:` header (or the directory name when it declares none), and the root is whatever composer.json already maps that namespace to, falling back to `lib`. Fails with a message naming what to fix when either inferred value is unusable, rather than proceeding with a wrong one. A brand-new plugin has no PSR-4 entry yet — `init` is what writes one — so there is nothing to infer a namespace from and this stops rather than guessing. For an unattended first run, declare the entry in composer.json yourself before calling this; every run after that has one.
+  Take the default answer to every prompt, for an unattended run. The namespace is inferred from composer.json's PSR-4 entry, the text domain from the entry file's own `Text Domain:` header (or the directory name when it declares none). Fails with a message naming what to fix when either inferred value is unusable, rather than proceeding with a wrong one. A brand-new plugin has no PSR-4 entry yet — `init` is what writes one — so there is nothing to infer a namespace from and this stops rather than guessing. For an unattended first run, declare the entry in composer.json yourself before calling this; every run after that has one.
 
 - **`[--no-phpcs]`**  
   Skip the phpcs.xml and its Composer dev dependencies.
@@ -64,7 +64,6 @@ Dependencies are added unversioned. The pin belongs in your lock file, written t
 $ wp zt init
 Namespace (e.g. Vendor\MyPlugin): Vendor\MyPlugin
 Text domain: (default: my-plugin) my-plugin
-Source directory: (default: lib) lib
 Copy the kernel into lib/Core/Kernel/ under Vendor\MyPlugin? [Y/n] y
 Created bootstrap.php. Read it with `$plugin->bootstrap()` in your entry file.
 Added to .gitignore: build/, vendor/, node_modules/, .DS_Store, *.log

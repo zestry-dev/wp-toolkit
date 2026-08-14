@@ -48,7 +48,7 @@ final class EnablementTest extends TestCase {
 	 */
 	public function test_a_file_that_says_nothing_is_enabled(): void {
 		$this->write_plugin_file(
-			'post-types/thing.php',
+			'resources/post-types/thing.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\PostType;\nreturn new class extends PostType {\n"
 				. "public function singular_name(): string { return 'Thing'; }\n"
 				. "public function plural_name(): string { return 'Things'; }\n};\n"
@@ -65,7 +65,7 @@ final class EnablementTest extends TestCase {
 	 */
 	public function test_a_disabled_post_type_is_never_registered(): void {
 		$this->write_plugin_file(
-			'post-types/switched-off.php',
+			'resources/post-types/switched-off.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\PostType;\nreturn new class extends PostType {\n"
 				. "public function is_enabled(): bool { return false; }\n"
 				. "public function singular_name(): string { return 'Off'; }\n"
@@ -88,7 +88,7 @@ final class EnablementTest extends TestCase {
 	 */
 	public function test_a_disabled_post_type_is_still_discovered(): void {
 		$this->write_plugin_file(
-			'post-types/switched-off.php',
+			'resources/post-types/switched-off.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\PostType;\nreturn new class extends PostType {\n"
 				. "public function is_enabled(): bool { return false; }\n"
 				. "public function singular_name(): string { return 'Off'; }\n"
@@ -110,7 +110,7 @@ final class EnablementTest extends TestCase {
 	 */
 	public function test_a_disabled_taxonomy_is_still_discovered(): void {
 		$this->write_plugin_file(
-			'taxonomies/off-tax.php',
+			'resources/taxonomies/off-tax.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\Taxonomy;\nreturn new class extends Taxonomy {\n"
 				. "public function is_enabled(): bool { return false; }\n"
 				. "public function singular_name(): string { return 'Off Tax'; }\n"
@@ -129,11 +129,11 @@ final class EnablementTest extends TestCase {
 	 * @return void
 	 */
 	public function test_a_disabled_action_binds_no_hook(): void {
-		mkdir( $this->plugin_dir . '/actions', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/actions', 0777, true );
 		add_filter( 'wp_doing_ajax', '__return_true' );
 
 		$this->write_plugin_file(
-			'actions/off.php',
+			'resources/actions/off.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\Ajax\\AjaxAction;\nreturn new class extends AjaxAction {\n"
 				. "public function is_enabled(): bool { return false; }\n"
 				. "public function capability_check(): bool { return true; }\n"
@@ -154,12 +154,12 @@ final class EnablementTest extends TestCase {
 	 * @return void
 	 */
 	public function test_a_disabled_page_reaches_no_menu(): void {
-		mkdir( $this->plugin_dir . '/admin-pages', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/admin-pages', 0777, true );
 		set_current_screen( 'dashboard' );
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
 		$this->write_plugin_file(
-			'admin-pages/off.php',
+			'resources/admin-pages/off.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\AdminPages\\AdminPage;\nreturn new class extends AdminPage {\n"
 				. "public function is_enabled(): bool { return false; }\n"
 				. "public function title(): string { return 'Off'; }\n"
@@ -179,10 +179,10 @@ final class EnablementTest extends TestCase {
 	 * @return void
 	 */
 	public function test_a_disabled_route_is_not_registered(): void {
-		mkdir( $this->plugin_dir . '/routes', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/routes', 0777, true );
 
 		$this->write_plugin_file(
-			'routes/off.php',
+			'resources/routes/off.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\RestApi\\Route;\nuse Zestry\\WPToolkit\\Modules\\RestApi\\RestRoute;\n"
 				. "return Route::get( 'v1', '/off', new class extends RestRoute {\n"
 				. "public function is_enabled(): bool { return false; }\n"
@@ -203,11 +203,11 @@ final class EnablementTest extends TestCase {
 	 * @return void
 	 */
 	public function test_a_disabled_field_registers_no_meta(): void {
-		mkdir( $this->plugin_dir . '/fields', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/fields', 0777, true );
 		register_post_type( 'zestry_conditional', array( 'public' => true ) );
 
 		$this->write_plugin_file(
-			'fields/off_key.php',
+			'resources/fields/off_key.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\Fields\\Field;\nreturn new class extends Field {\n"
 				. "public function is_enabled(): bool { return false; }\n"
 				. "public function object_types(): array { return array( 'zestry_conditional' ); }\n"
@@ -229,7 +229,7 @@ final class EnablementTest extends TestCase {
 		register_post_type( 'zestry_enumerable', array( 'public' => true ) );
 
 		$this->write_plugin_file(
-			'fields/off_key.php',
+			'resources/fields/off_key.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\Fields\\Field;\nreturn new class extends Field {\n"
 				. "public function is_enabled(): bool { return false; }\n"
 				. "public function subtypes(): array { return array( 'zestry_enumerable' ); }\n"
@@ -258,7 +258,7 @@ final class EnablementTest extends TestCase {
 	 */
 	public function test_the_value_accessors_refuse_a_disabled_field(): void {
 		$this->write_plugin_file(
-			'fields/off_key.php',
+			'resources/fields/off_key.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\Fields\\Field;\nreturn new class extends Field {\n"
 				. "public function is_enabled(): bool { return false; }\n"
 				. "public function type(): string { return 'string'; }\n};\n"
@@ -277,10 +277,10 @@ final class EnablementTest extends TestCase {
 	 * @return void
 	 */
 	public function test_a_disabled_schedule_is_not_discovered(): void {
-		mkdir( $this->plugin_dir . '/schedules', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/schedules', 0777, true );
 
 		$this->write_plugin_file(
-			'schedules/off.php',
+			'resources/schedules/off.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\Cron\\Schedule;\nreturn new class extends Schedule {\n"
 				. "public function is_enabled(): bool { return false; }\n"
 				. "public function recurrence(): string { return 'hourly'; }\n"
@@ -305,7 +305,7 @@ final class EnablementTest extends TestCase {
 	 */
 	public function test_the_switch_may_depend_on_an_injected_service(): void {
 		$this->write_plugin_file(
-			'post-types/conditional.php',
+			'resources/post-types/conditional.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\PostType;\nuse Zestry\\WPToolkit\\Modules\\Globals;\n"
 				. "return new class extends PostType {\n"
 				. "public function is_enabled(): bool { return (bool) \$this->with( Globals::class )->get( 'feature_on' ); }\n"

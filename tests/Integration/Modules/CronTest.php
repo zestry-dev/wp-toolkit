@@ -54,7 +54,7 @@ final class CronTest extends TestCase {
 
 	private function write_schedule( string $name, string $body ): void {
 		$this->write_plugin_file(
-			'schedules/' . $name . '.php',
+			'resources/schedules/' . $name . '.php',
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\Cron\\Schedule;\nreturn new class extends Schedule {\n{$body}\n};\n"
 		);
 	}
@@ -202,7 +202,7 @@ final class CronTest extends TestCase {
 				$cron->add_custom_interval( 'every_15_minutes', 15 * MINUTE_IN_SECONDS, 'Every 15 Minutes' );
 			}
 		);
-		mkdir( $this->plugin_dir . '/schedules', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/schedules', 0777, true );
 		$cron = $this->plugin->get( Cron::class );
 
 		$slug      = $cron->get_custom_interval_slug( 'every_15_minutes' );
@@ -258,7 +258,7 @@ final class CronTest extends TestCase {
 			static function ( Cron $cron ): void {
 			}
 		);
-		mkdir( $this->plugin_dir . '/schedules', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/schedules', 0777, true );
 
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( 'No schedule file found' );
@@ -398,7 +398,7 @@ final class CronTest extends TestCase {
 	}
 
 	public function test_a_schedule_file_returning_the_wrong_type_throws(): void {
-		$this->write_plugin_file( 'schedules/bad.php', "<?php\nreturn 42;\n" );
+		$this->write_plugin_file( 'resources/schedules/bad.php', "<?php\nreturn 42;\n" );
 
 		$this->expectException( DiscoveryException::class );
 		$this->expectExceptionMessage( 'must return an instance of' );
@@ -444,7 +444,7 @@ final class CronTest extends TestCase {
 	 */
 	public function test_a_schedule_can_ask_for_its_own_hook(): void {
 		$this->write_plugin_file(
-			'schedules/cleanup.php',
+			'resources/schedules/cleanup.php',
 			"<?php\nreturn new class extends \\Zestry\\WPToolkit\\Modules\\Cron\\Schedule {\n"
 				. "public function recurrence(): string { return 'daily'; }\n"
 				. "public function run(): void { \$GLOBALS['zestry_hook'] = \$this->get_hook(); }\n"
@@ -480,8 +480,8 @@ final class CronTest extends TestCase {
 		$this->assertSame( array(), $cron->get_orphaned_events(), 'Nothing is orphaned while the file is there.' );
 
 		rename(
-			$this->plugin_dir . '/schedules/sync.php',
-			$this->plugin_dir . '/schedules/synchronise.php'
+			$this->plugin_dir . '/resources/schedules/sync.php',
+			$this->plugin_dir . '/resources/schedules/synchronise.php'
 		);
 
 		$orphaned = $this->fresh_cron()->get_orphaned_events();
@@ -497,7 +497,7 @@ final class CronTest extends TestCase {
 		);
 
 		$cron = $this->boot_cron_with_root( 'schedules' );
-		unlink( $this->plugin_dir . '/schedules/sync.php' );
+		unlink( $this->plugin_dir . '/resources/schedules/sync.php' );
 
 		$this->assertSame(
 			array( $cron->get_schedule_slug( 'sync' ) ),
@@ -539,7 +539,7 @@ final class CronTest extends TestCase {
 
 		$cron = $this->boot_cron_with_root( 'schedules' );
 		$hook = $cron->get_schedule_slug( 'sync' );
-		unlink( $this->plugin_dir . '/schedules/sync.php' );
+		unlink( $this->plugin_dir . '/resources/schedules/sync.php' );
 
 		$fresh = $this->fresh_cron();
 		$this->assertNotFalse( wp_next_scheduled( $hook ), 'Still scheduled until something clears it.' );

@@ -11,7 +11,7 @@
 	<!--
 		The whole plugin, rather than a list of directories. phpcs aborts with
 		"The file ... does not exist" on any <file> path that is not there yet,
-		so naming actions/, routes/, admin-pages/ and the rest up front would
+		so naming resources/actions/, resources/routes/, resources/admin-pages/ and the rest up front would
 		break the moment you lint before creating one of them. Scoping to the
 		root instead means a directory is covered the day it appears, and this
 		file never needs editing.

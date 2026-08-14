@@ -22,7 +22,7 @@ final class RestApiTest extends TestCase {
 
 	public function set_up(): void {
 		parent::set_up();
-		mkdir( $this->plugin_dir . '/routes', 0777, true );
+		mkdir( $this->plugin_dir . '/resources/routes', 0777, true );
 
 		// A fresh REST server per test, mirroring how WordPress itself resets it
 		// on the rest_api_init hook for each request.
@@ -638,7 +638,7 @@ final class RestApiTest extends TestCase {
 	}
 
 	public function test_a_route_file_returning_the_wrong_type_throws(): void {
-		$this->write_plugin_file( 'routes/bad.php', "<?php\nreturn 42;\n" );
+		$this->write_plugin_file( 'resources/routes/bad.php', "<?php\nreturn 42;\n" );
 		$this->plugin->get( RestApi::class );
 
 		$this->expectException( DiscoveryException::class );
@@ -683,7 +683,7 @@ final class RestApiTest extends TestCase {
 	 */
 	private function write_route( string $http_method, string $relative_name, string $version, string $pattern, string $class_body ): void {
 		$this->write_plugin_file(
-			"routes/{$relative_name}.php",
+			"resources/routes/{$relative_name}.php",
 			// WP_REST_Request/WP_REST_Response are already global names, so a "use"
 			// for them here would be a no-op PHP warns about; only the toolkit's
 			// own classes need one.

@@ -14,11 +14,11 @@ A taxonomy file returns a subclass instance. The PostTypes module wires it and c
 Only `singular_name()`, `plural_name()` and `object_types()` are required — unlike a `PostType`, a taxonomy also has to say what it attaches to. `get_args()` builds a full label set from the first two, rather than leaving core's own defaults to fall back on generic 'Tags'/'Categories' wording meant for the built-in taxonomies.
 
 > [!NOTE]
-> **The taxonomy's name comes from its filename, not from this class.** `taxonomies/genre.php` registers as `genre`. Like post type names, it is *not* namespaced to the plugin slug: WordPress caps a taxonomy name at 32 characters, and the convention is a short, plain, globally unique name.
+> **The taxonomy's name comes from its filename, not from this class.** `resources/taxonomies/genre.php` registers as `genre`. Like post type names, it is *not* namespaced to the plugin slug: WordPress caps a taxonomy name at 32 characters, and the convention is a short, plain, globally unique name.
 
 Taxonomies are registered after every post type has been (see `PostTypes`), so `object_types()` can safely name any post type this same plugin discovers, in either directory, regardless of file ordering.
 
-A file at `taxonomies/genre.php` attaches to a `book` post type discovered from `post-types/book.php`. `wp zt make taxonomy <name>` generates a starting point.
+A file at `resources/taxonomies/genre.php` attaches to a `book` post type discovered from `resources/post-types/book.php`. `wp zt make taxonomy <name>` generates a starting point.
 
 ## Generated starting point
 
@@ -27,7 +27,7 @@ A file at `taxonomies/genre.php` attaches to a `book` post type discovered from 
 > [!IMPORTANT]
 > **This name is not prefixed with your plugin slug, so choose it as though every plugin on the site can see it — because they can.** WordPress caps a taxonomy name at 32 characters, which is why the slug is not added for you.
 >
-> Two plugins registering `genre` are the same taxonomy, and whichever registers second loses. Put your own prefix in the filename: `taxonomies/acme-genre.php`.
+> Two plugins registering `genre` are the same taxonomy, and whichever registers second loses. Put your own prefix in the filename: `resources/taxonomies/acme-genre.php`.
 
 ```php
 <?php
@@ -59,7 +59,7 @@ return new class() extends Taxonomy {
 	}
 
 	// Post type name(s) this taxonomy attaches to -- a name discovered from
-	// this same plugin's post-types/ directory, or any other already
+	// this same plugin's resources/post-types/ directory, or any other already
 	// registered post type (including WordPress's own built-in 'post').
 	public function object_types(): array {
 		return array( 'book' );
@@ -163,7 +163,7 @@ abstract public function object_types(): array
 | **Return** | `array` |
 | **Throws** | — |
 
-Each entry may be a post type discovered from this same plugin's `post-types/` directory (see `PostType`) or the name of any other already-registered post type, including WordPress's own built-in `post`.
+Each entry may be a post type discovered from this same plugin's `resources/post-types/` directory (see `PostType`) or the name of any other already-registered post type, including WordPress's own built-in `post`.
 
 ## Methods you can use
 

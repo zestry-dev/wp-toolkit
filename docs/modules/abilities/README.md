@@ -5,11 +5,11 @@
 
 # Abilities
 
-Discovers `abilities/` &nbsp;·&nbsp; Each file returns [`Ability`](ability.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`request`](../request/)
+Discovers `resources/abilities/` &nbsp;·&nbsp; Each file returns [`Ability`](ability.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`request`](../request/)
 
 Publishes what your plugin can do, for the REST API and for AI agents.
 
-A file in `abilities/` returns an `Ability`, and its filename is the name it registers under: `create-order.php` becomes `{plugin-slug}/create-order`. Each one carries a description and JSON Schemas for its input and output — enough for something that has never seen your code to call it correctly.
+A file in `resources/abilities/` returns an `Ability`, and its filename is the name it registers under: `create-order.php` becomes `{plugin-slug}/create-order`. Each one carries a description and JSON Schemas for its input and output — enough for something that has never seen your code to call it correctly.
 
 WordPress gives every public ability a REST endpoint at `wp-json/wp-abilities/v1/abilities/{ability}/run` for free. An MCP adapter installed on the site turns the same registration into a tool an AI agent can call, also for free: there is no protocol code to write on your side, which is the point of the API. Requires WordPress 6.9 or newer.
 
@@ -56,7 +56,7 @@ return array(
 A typed property carrying a `RequestArgument` is both the input schema and the value: it is described once, validated by WordPress, and bound before your code runs. The property says the type, and whether it is required — one with no default has to be supplied.
 
 ```php
-// abilities/publish-post.php
+// resources/abilities/publish-post.php
 return new class extends Ability {
 
     public function label(): string {
@@ -124,7 +124,7 @@ Abilities::class => array(
 
 ## Writing an Ability
 
-A file in `abilities/` returns an [`Ability`](ability.md) instance, which `wp zt make ability <name>` generates.
+A file in `resources/abilities/` returns an [`Ability`](ability.md) instance, which `wp zt make ability <name>` generates.
 
 ## Related classes
 
@@ -137,7 +137,7 @@ Shipped with this module, and written against directly:
 ### `ABILITIES_ROOT`
 
 ```php
-const ABILITIES_ROOT = 'abilities';
+const ABILITIES_ROOT = 'resources/abilities';
 ```
 
 Where abilities are discovered, relative to the plugin root.
@@ -178,7 +178,7 @@ $abilities->on_wp_init(
     }
 );
 
-// abilities/refund-order.php
+// resources/abilities/refund-order.php
 public function category(): string {
     return 'acme-billing';
 }
@@ -362,7 +362,7 @@ A module that names a `boots_on` also throws when asked for before that hook has
 
 ## See also
 
-- [`Ability`](ability.md) — what a file in `abilities/` returns
+- [`Ability`](ability.md) — what a file in `resources/abilities/` returns
 - [`path`](../path/) — copied in alongside this one
 - [`request`](../request/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits

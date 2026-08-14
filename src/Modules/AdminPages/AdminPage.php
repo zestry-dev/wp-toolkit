@@ -24,15 +24,15 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * it (assigning the plugin, so `with()` reaches every module), registers it
  * in the admin menu using the typed accessors below, and dispatches to render()
  * when the page is viewed. The page's slug is derived from its path within the
- * pages directory, so `admin-pages/settings.php` becomes `{plugin-slug}-settings`
- * and `admin-pages/reports/index.php` becomes `{plugin-slug}-reports`. The root
- * `admin-pages/index.php`, if present, becomes the bare `{plugin-slug}` itself.
+ * pages directory, so `resources/admin-pages/settings.php` becomes `{plugin-slug}-settings`
+ * and `resources/admin-pages/reports/index.php` becomes `{plugin-slug}-reports`. The root
+ * `resources/admin-pages/index.php`, if present, becomes the bare `{plugin-slug}` itself.
  *
  * Authorization is enforced by the module before render(): the current user must
  * satisfy capability(), and a nonce is verified on POST. A page therefore only
  * has to describe itself (title, capability, placement) and render its markup.
  *
- * A file at `admin-pages/settings.php` registers as a top-level menu page with
+ * A file at `resources/admin-pages/settings.php` registers as a top-level menu page with
  * the slug `{plugin}-settings` (see {@see get_page_slug()}). Return a ParentMenu
  * case from `parent()` to nest it under a core WordPress menu instead, such as
  * `ParentMenu::Settings`. Reach any declared module with
@@ -223,7 +223,7 @@ abstract class AdminPage implements PluginAware {
 	/**
 	 * Render one of this plugin's templates as this page's markup.
 	 *
-	 * The markup belongs in `views/`, not in a PHP string. An admin page is
+	 * The markup belongs in `resources/views/`, not in a PHP string. An admin page is
 	 * mostly a form -- tables, fields, notices, a second form further down --
 	 * and markup assembled by concatenation stops being reviewable long before
 	 * it stops growing. `wp zt make page` writes the template alongside the

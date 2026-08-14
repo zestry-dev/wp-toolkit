@@ -126,15 +126,16 @@ final class InitCommandTest extends TestCase {
 	}
 
 	/**
-	 * `--yes` fails with a message rather than recursing forever.
+	 * An unattended run never repoints an autoload entry it did not write.
 	 *
-	 * `ask_for_root()` defaults to the directory composer.json already maps the
-	 * namespace to, then refuses `src` as reserved for the JavaScript build --
-	 * and re-asked. Under `--yes` nothing is read from STDIN, so `ask()` handed
-	 * back the same rejected default and this recursed until the stack died.
-	 * Its two sibling prompts already stopped here; this one did not.
+	 * The root is `lib` and is not asked for, so a plugin whose composer.json
+	 * maps the chosen namespace somewhere else is a real conflict rather than a
+	 * bad answer. `confirm()` returns true under `--yes`, so left to the prompt
+	 * this would rewrite a PSR-4 entry the plugin's existing classes autoload
+	 * through -- classes this command never copied and cannot move. The
+	 * unattended answer is therefore the safe one: leave it, and say so.
 	 */
-	public function test_yes_reports_a_src_root_instead_of_recursing(): void {
+	public function test_yes_leaves_a_conflicting_autoload_entry_alone(): void {
 		file_put_contents(
 			$this->target_plugin_dir . '/composer.json',
 			(string) json_encode( array( 'autoload' => array( 'psr-4' => array( 'Acme\\Demo\\' => 'src/' ) ) ) )
@@ -144,13 +145,21 @@ final class InitCommandTest extends TestCase {
 
 		$this->run_init();
 
-		$error = \WP_CLI::last( 'error' );
+		$composer = (array) json_decode(
+			(string) file_get_contents( $this->target_plugin_dir . '/composer.json' ),
+			true
+		);
 
-		$this->assertNotNull( $error, 'Running unattended against a src/ mapping must report an error.' );
-		$this->assertStringContainsString( 'src', (string) $error[0] );
-		$this->assertFileDoesNotExist(
-			$this->target_plugin_dir . '/zestry.json',
-			'Nothing should be written once the destination is refused.'
+		$this->assertSame(
+			'src/',
+			$composer['autoload']['psr-4']['Acme\\Demo\\'],
+			'An existing PSR-4 mapping must survive an unattended run untouched.'
+		);
+
+		$this->assertStringContainsString(
+			'add the autoload entry yourself',
+			(string) ( \WP_CLI::last( 'warning' )[0] ?? '' ),
+			'The run has to name the entry it declined to write.'
 		);
 	}
 
@@ -264,7 +273,7 @@ final class InitCommandTest extends TestCase {
 		\WP_CLI::reset();
 
 		$package_plugin = ( new Plugin( dirname( __DIR__, 3 ) . '/plugin.php', 'zestry-init-demo' ) )->declare_multiple( $this->get_toolkit_modules() );
-		$command        = require dirname( __DIR__, 3 ) . '/commands/init.php';
+		$command        = require dirname( __DIR__, 3 ) . '/resources/commands/init.php';
 		$package_plugin->wire( $command );
 
 		$assoc_args = array_merge(

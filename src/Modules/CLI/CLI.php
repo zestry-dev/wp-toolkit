@@ -28,20 +28,20 @@ use Zestry\WPToolkit\Modules\Path;
  * writing another `WP_CLI::add_command()` call.
  *
  * Command files can be organized in subdirectories. A file at
- * `commands/cache/clear.php`, for example, is registered as
+ * `resources/commands/cache/clear.php`, for example, is registered as
  * `plugin-slug cache clear`, where `plugin-slug` is the plugin slug.
  *
  * > [!IMPORTANT]
  * > **A name can be a command or a namespace, never both.** WP-CLI does not
- * > allow a command to have subcommands, so `commands/cache.php` cannot sit
- * > alongside a `commands/cache/` directory. Pick one: either `cache` is a
+ * > allow a command to have subcommands, so `resources/commands/cache.php` cannot sit
+ * > alongside a `resources/commands/cache/` directory. Pick one: either `cache` is a
  * > command, or it is the namespace holding `cache clear`. Discovery checks
  * > this before loading anything and throws `\InvalidArgumentException`
  * > naming both files if they collide, which aborts the `wp` invocation.
  *
  * A discovered file that returns anything other than a {@see Command} throws
  * `DiscoveryException`, as does a commands directory you named yourself with
- * a file beneath `commands/` that returns something other than a Command.
+ * a file beneath `resources/commands/` that returns something other than a Command.
  *
  *
  * @setup-hook init
@@ -53,14 +53,14 @@ class CLI extends Module implements Bootable {
 	/**
 	 * Default plugin-relative directory of command files.
 	 */
-	const COMMANDS_ROOT = 'commands';
+	const COMMANDS_ROOT = 'resources/commands';
 
 	/**
 	 * Wire (if applicable) and register an already-built command instance
 	 * under a WP-CLI command name, namespaced under the plugin slug.
 	 *
 	 * Use this when a module of your own builds its command instances in PHP
-	 * instead of shipping a file in `commands/`. The command is wired and
+	 * instead of shipping a file in `resources/commands/`. The command is wired and
 	 * namespaced exactly as a discovered one is, and needs no file at all.
 	 * `Migrations` works this way: it registers `migrations run` and
 	 * `migrations list` here, so `wp {slug} migrations run` exists the moment
@@ -208,7 +208,7 @@ class CLI extends Module implements Bootable {
 	 * WP-CLI registers each command file as either a leaf `Subcommand` (which can
 	 * never have children, per WP_CLI\Dispatcher\Subcommand::can_have_subcommands())
 	 * or a `CompositeCommand` namespace (which can nest to any depth). A file at
-	 * `commands/test-1.php` alongside `commands/test-1/test-2.php` asks WP-CLI to
+	 * `resources/commands/test-1.php` alongside `resources/commands/test-1/test-2.php` asks WP-CLI to
 	 * use the name `test-1` as both at once, which throws a bare
 	 * "'wp {slug} test-1' can't have subcommands." exception with no indication of
 	 * which two files are responsible. Detecting the collision here up front, across
@@ -293,7 +293,7 @@ class CLI extends Module implements Bootable {
 	 *
 	 * `static`, and taking the plugin as its first argument, so you never have
 	 * to resolve the CLI module to reach it. That matters: resolving a module
-	 * boots it, and CLI's boot walks `commands/` and throws when that directory
+	 * boots it, and CLI's boot walks `resources/commands/` and throws when that directory
 	 * is absent -- so a plugin that added `migrations` but wanted no file-based
 	 * commands would fail on every `wp` invocation.
 	 *

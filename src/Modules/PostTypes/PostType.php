@@ -23,7 +23,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * calls {@see get_args()} to build the array passed to WordPress core's own
  * `register_post_type()`. The post type's name is not derived from this class
  * at all -- it comes from the file's own name within the post types
- * directory (`post-types/book.php` registers as `book`), matching the
+ * directory (`resources/post-types/book.php` registers as `book`), matching the
  * `slug()`-from-filename convention every other file-based module in this
  * toolkit uses.
  *
@@ -49,7 +49,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * name -- the same responsibility you already have when naming a database
  * table or an option key directly.
  *
- * A file at `post-types/book.php` registers as `book`.
+ * A file at `resources/post-types/book.php` registers as `book`.
  * `wp zt make post-type <name>` generates a starting point.
  *
  * @stub post-type.php.stub
@@ -59,7 +59,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * > every plugin on the site can see it — because they can.** WordPress caps a post type name at 20 characters, which is why the slug is not added for you.
  * >
  * > Two plugins registering `book` are the same post type, and whichever registers
- * > second loses. Put your own prefix in the filename: `post-types/acme-book.php`.
+ * > second loses. Put your own prefix in the filename: `resources/post-types/acme-book.php`.
  *
  */
 abstract class PostType implements PluginAware {

@@ -5,11 +5,11 @@
 
 # IconsLibrary
 
-Discovers `svg-icons/` &nbsp;·&nbsp; Dependencies [`path`](../path/)
+Discovers `resources/svg-icons/` &nbsp;·&nbsp; Dependencies [`path`](../path/)
 
 Publishes your plugin's SVG icons, for the Icon block and for your own markup.
 
-An icon is a file in `svg-icons/`. `arrow-right.php` registers as `{plugin-slug}/arrow-right` — offered in the editor's icon picker under a collection named after your plugin, served on the REST API at `wp/v2/icons`, and rendered in PHP as `$icons->get( 'arrow-right' )`. Requires WordPress 7.1 or newer.
+An icon is a file in `resources/svg-icons/`. `arrow-right.php` registers as `{plugin-slug}/arrow-right` — offered in the editor's icon picker under a collection named after your plugin, served on the REST API at `wp/v2/icons`, and rendered in PHP as `$icons->get( 'arrow-right' )`. Requires WordPress 7.1 or newer.
 
 > [!IMPORTANT]
 > **WordPress keeps `<svg>`, `<path>` and `<polygon>` and throws the rest away.** It sanitizes every icon through `wp_kses()`, so a `<circle>`, a `<g>`, a `<rect>` or a `<use>` is removed, as is any attribute outside a short list — `stroke` among them, which silently empties an icon drawn as outlines rather than fills. Export icons as filled paths.
@@ -39,7 +39,7 @@ return array(
 **Write icons as `.php`.** The template echoes the SVG and returns what the icon is called, which is the only shape that lets the label be translated: one derived from a filename cannot be, and one kept in a second file has to be kept in step with the first.
 
 ```php
-<!-- svg-icons/arrow-right.php -->
+<!-- resources/svg-icons/arrow-right.php -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
     <path d="M5 12h14" />
 </svg>
@@ -58,7 +58,7 @@ An array rather than the label alone, so an icon can say a second thing later wi
 A bare `.svg` in the same directory is registered too, straight from the file a designer exported — nothing to write, and WordPress reads it only when the icon is actually rendered.
 
 ```php
-svg-icons/
+resources/svg-icons/
   arrow-right.php    a template: translated label, run on every request
   logo.svg           a file: label built from the filename, read on demand
 ```
@@ -82,7 +82,7 @@ public function render(): string {
 `name` replaces the one taken from the filename, which is how an icon keeps a name a filename could not carry:
 
 ```php
-<!-- svg-icons/logo-2024.php -->
+<!-- resources/svg-icons/logo-2024.php -->
 <svg …>…</svg>
 <?php
 return array(
@@ -124,7 +124,7 @@ An icon may name a collection another plugin registers, and this module refuses 
 ### `SVG_ICONS_ROOT`
 
 ```php
-const SVG_ICONS_ROOT = 'svg-icons';
+const SVG_ICONS_ROOT = 'resources/svg-icons';
 ```
 
 Where icons are discovered, relative to the plugin root.
@@ -164,7 +164,7 @@ $icons->on_wp_init(
     }
 );
 
-// svg-icons/logo.php
+// resources/svg-icons/logo.php
 return array(
     'collection' => 'acme-brand',
     'label'      => __( 'Acme logo', 'acme-plugin' ),

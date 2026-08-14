@@ -5,11 +5,11 @@
 
 # SiteHealth
 
-Discovers `health-checks/`, `debug-sections/` &nbsp;·&nbsp; Each file returns [`HealthCheck`](health-check.md), [`DebugSection`](debug-section.md) &nbsp;·&nbsp; Dependencies [`path`](../path/)
+Discovers `resources/health-checks/`, `resources/debug-sections/` &nbsp;·&nbsp; Each file returns [`HealthCheck`](health-check.md), [`DebugSection`](debug-section.md) &nbsp;·&nbsp; Dependencies [`path`](../path/)
 
 Puts your plugin on WordPress's Site Health screen.
 
-Two directories, one per tab. A file in `health-checks/` returns a `HealthCheck` and appears on **Status** with a verdict; a file in `debug-sections/` returns a `DebugSection` and appears on **Info** as a panel of values, with no verdict. In both, the filename is the identifier: `api-key.php` becomes `{plugin-slug}-api-key`.
+Two directories, one per tab. A file in `resources/health-checks/` returns a `HealthCheck` and appears on **Status** with a verdict; a file in `resources/debug-sections/` returns a `DebugSection` and appears on **Info** as a panel of values, with no verdict. In both, the filename is the identifier: `api-key.php` becomes `{plugin-slug}-api-key`.
 
 This is the supported way to see a site you cannot log into. A user copies the report into a support ticket, so a check that reports "the API key is missing" — or a panel listing which of your settings are set — answers the first question you were going to ask anyway.
 
@@ -36,7 +36,7 @@ return array(
 ## A health check
 
 ```php
-// health-checks/api-key.php
+// resources/health-checks/api-key.php
 return new class extends HealthCheck {
 
     public function label(): string {
@@ -52,7 +52,7 @@ return new class extends HealthCheck {
 ## A debug section
 
 ```php
-// debug-sections/status.php
+// resources/debug-sections/status.php
 return new class extends DebugSection {
 
     public function label(): string {
@@ -77,11 +77,11 @@ return new class extends DebugSection {
 
 ## Writing a HealthCheck
 
-A file in `health-checks/` returns a [`HealthCheck`](health-check.md) instance, which `wp zt make health-check <name>` generates.
+A file in `resources/health-checks/` returns a [`HealthCheck`](health-check.md) instance, which `wp zt make health-check <name>` generates.
 
 ## Writing a DebugSection
 
-A file in `debug-sections/` returns a [`DebugSection`](debug-section.md) instance, which `wp zt make debug-section <name>` generates.
+A file in `resources/debug-sections/` returns a [`DebugSection`](debug-section.md) instance, which `wp zt make debug-section <name>` generates.
 
 ## Related classes
 
@@ -94,7 +94,7 @@ Shipped with this module, and written against directly:
 ### `CHECKS_ROOT`
 
 ```php
-const CHECKS_ROOT = 'health-checks';
+const CHECKS_ROOT = 'resources/health-checks';
 ```
 
 Where checks are discovered, relative to the plugin root.
@@ -102,7 +102,7 @@ Where checks are discovered, relative to the plugin root.
 ### `SECTIONS_ROOT`
 
 ```php
-const SECTIONS_ROOT = 'debug-sections';
+const SECTIONS_ROOT = 'resources/debug-sections';
 ```
 
 Where debug sections are discovered, relative to the plugin root.
@@ -273,8 +273,8 @@ A module that names a `boots_on` also throws when asked for before that hook has
 
 ## See also
 
-- [`HealthCheck`](health-check.md) — what a file in `health-checks/` returns
-- [`DebugSection`](debug-section.md) — what a file in `debug-sections/` returns
+- [`HealthCheck`](health-check.md) — what a file in `resources/health-checks/` returns
+- [`DebugSection`](debug-section.md) — what a file in `resources/debug-sections/` returns
 - [`path`](../path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
 - [`wp zt add site-health`](../../commands/add.md) — the command that copies it

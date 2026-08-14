@@ -211,7 +211,7 @@ return new class() extends MakeCommand {
 	 * @return string|null The class name, or null once the reason has been reported.
 	 */
 	private function get_base_of_type( string $type, string $root ): ?string {
-		$file = $this->with( Path::class )->get_plugin_path( 'commands/make/' . $type . '.php' );
+		$file = $this->with( Path::class )->get_plugin_path( 'resources/commands/make/' . $type . '.php' );
 
 		if ( ! is_file( $file ) ) {
 			$this->error( sprintf( 'There is no `make %s`, so it has no base class to extend.', $type ) );

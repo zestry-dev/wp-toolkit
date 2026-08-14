@@ -207,7 +207,7 @@ Acme\Plugin\Core\Modules\CLI\Command. Got: integer
 `Got: integer` is a missing `return` — `require` yields `1` for a file that returns nothing. `Got: SomeClass` means the returned object does not extend the base class that module expects. Every discovery module requires each file and expects an instance back:
 
 ```php
-// commands/greet.php
+// resources/commands/greet.php
 use Acme\Plugin\Core\Modules\CLI\Command;
 
 return new class extends Command {
@@ -224,8 +224,8 @@ return new class extends Command {
 **Two files claim one name.**
 
 ```
-Two admin pages resolve to the name "acme-plugin-reports": admin-pages/reports.php
-and admin-pages/reports/index.php. Only one of them can be it, so rename the other.
+Two admin pages resolve to the name "acme-plugin-reports": resources/admin-pages/reports.php
+and resources/admin-pages/reports/index.php. Only one of them can be it, so rename the other.
 ```
 
 Your filenames register as written, so this only happens where a name is built from more than the filename — `reports.php` and `reports/index.php` are two paths meaning one admin page. Neither is dropped in favour of the other, because keeping the first leaves the second registered against nothing and keeping the last makes the answer depend on directory order.

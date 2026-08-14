@@ -5,11 +5,11 @@
 
 # Views
 
-Reads from `views/` &nbsp;·&nbsp; Dependencies [`path`](../path/)
+Reads from `resources/views/` &nbsp;·&nbsp; Dependencies [`path`](../path/)
 
 Resolves and renders PHP view templates from the plugin directory.
 
-A view is an ordinary PHP file under `views/`. Each key in the data array becomes a local variable inside the template. Only names beginning `__include_` are reserved — the render scope holds two of them and nothing else — so every ordinary key reaches the template, `view` and `data` included.
+A view is an ordinary PHP file under `resources/views/`. Each key in the data array becomes a local variable inside the template. Only names beginning `__include_` are reserved — the render scope holds two of them and nothing else — so every ordinary key reaches the template, `view` and `data` included.
 
 The `.php` extension is optional, and a name may address a subdirectory, so `'emails/receipt'` and `'emails/receipt.php'` resolve to the same file. A name that escapes the views root is rejected.
 
@@ -38,7 +38,7 @@ return array(
 ```php
 $views = $plugin->get( Views::class );
 
-// Echoes views/emails/receipt.php, with $order and $total in scope:
+// Echoes resources/views/emails/receipt.php, with $order and $total in scope:
 $views->render( 'emails/receipt', array(
     'order' => $order,
     'total' => $total,
@@ -53,7 +53,7 @@ $html = $views->get( 'emails/receipt', array( 'order' => $order ) );
 The template is plain PHP, with the passed data as local variables. Inside one, `$this` is this module, so a template renders a subview with the same `render()` everything else uses — and it costs no variable name to do it.
 
 ```php
-<!-- views/emails/receipt.php -->
+<!-- resources/views/emails/receipt.php -->
 <h1><?php echo esc_html( $order->title ); ?></h1>
 <?php $this->render( 'emails/-lines', array( 'lines' => $order->lines ) ); ?>
 
@@ -70,7 +70,7 @@ is in scope. Say so at the top and you get completion for all of it,
 This is the case most plugins reach for first, and it has a shortcut: an `AdminPage` calls `$this->view()` rather than resolving this module. `wp zt make page` writes both files, and the template gets exactly what the `render()` call names — nothing of the page itself, so its inputs are readable without opening it.
 
 ```php
-// admin-pages/settings.php
+// resources/admin-pages/settings.php
 public function render(): void {
     $this->view( 'admin-pages/settings', array( 'items' => $this->items ) );
 }
@@ -85,7 +85,7 @@ public function render(): void {
 ### `VIEWS_ROOT`
 
 ```php
-const VIEWS_ROOT = 'views';
+const VIEWS_ROOT = 'resources/views';
 ```
 
 Default plugin-relative directory of view files.
@@ -122,7 +122,7 @@ public function get( string $view, array $data = array() ): string
 | **Return** | Rendered template output |
 | **Throws** | `InvalidArgumentException` — When the views root or the view is missing, or the view resolves outside the root |
 
-Each key in `$data` becomes a template variable. For example, `get( 'card', array( 'title' => 'Hello' ) )` makes `$title` available to `views/card.php`. Escape the data in the template according to context.
+Each key in `$data` becomes a template variable. For example, `get( 'card', array( 'title' => 'Hello' ) )` makes `$title` available to `resources/views/card.php`. Escape the data in the template according to context.
 
 The including is `Path::include_file()`, which is also what reserves the names: only keys beginning `__include_` are, and every ordinary name reaches the template, `view` and `data` included. Rendering a subview costs no name at all, since a template reaches this module as `$this`.
 

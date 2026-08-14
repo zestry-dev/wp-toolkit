@@ -1,5 +1,5 @@
 <!--
-    Generated from the docblocks in commands/.
+    Generated from the docblocks in resources/commands/.
     Do not edit by hand: run `composer docs` after changing the source.
 -->
 

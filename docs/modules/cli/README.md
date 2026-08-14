@@ -5,18 +5,18 @@
 
 # CLI
 
-Discovers `commands/` &nbsp;·&nbsp; Each file returns [`Command`](command.md) &nbsp;·&nbsp; Dependencies [`path`](../path/)
+Discovers `resources/commands/` &nbsp;·&nbsp; Each file returns [`Command`](command.md) &nbsp;·&nbsp; Dependencies [`path`](../path/)
 
 Discovers plugin WP-CLI commands and registers them with WP-CLI.
 
 A commands directory contains PHP files, one per command, each returning a `Command` instance. The module registers every one it finds under the plugin slug, so adding a command means dropping a file in place rather than writing another `WP_CLI::add_command()` call.
 
-Command files can be organized in subdirectories. A file at `commands/cache/clear.php`, for example, is registered as `plugin-slug cache clear`, where `plugin-slug` is the plugin slug.
+Command files can be organized in subdirectories. A file at `resources/commands/cache/clear.php`, for example, is registered as `plugin-slug cache clear`, where `plugin-slug` is the plugin slug.
 
 > [!IMPORTANT]
-> **A name can be a command or a namespace, never both.** WP-CLI does not allow a command to have subcommands, so `commands/cache.php` cannot sit alongside a `commands/cache/` directory. Pick one: either `cache` is a command, or it is the namespace holding `cache clear`. Discovery checks this before loading anything and throws `\InvalidArgumentException` naming both files if they collide, which aborts the `wp` invocation.
+> **A name can be a command or a namespace, never both.** WP-CLI does not allow a command to have subcommands, so `resources/commands/cache.php` cannot sit alongside a `resources/commands/cache/` directory. Pick one: either `cache` is a command, or it is the namespace holding `cache clear`. Discovery checks this before loading anything and throws `\InvalidArgumentException` naming both files if they collide, which aborts the `wp` invocation.
 
-A discovered file that returns anything other than a `Command` throws `DiscoveryException`, as does a commands directory you named yourself with a file beneath `commands/` that returns something other than a Command.
+A discovered file that returns anything other than a `Command` throws `DiscoveryException`, as does a commands directory you named yourself with a file beneath `resources/commands/` that returns something other than a Command.
 
 [Adding it](#adding-it) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Command](#writing-a-command) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
@@ -42,14 +42,14 @@ return array(
 
 ## Writing a Command
 
-A file in `commands/` returns a [`Command`](command.md) instance, which `wp zt make command <name>` generates.
+A file in `resources/commands/` returns a [`Command`](command.md) instance, which `wp zt make command <name>` generates.
 
 ## Constants
 
 ### `COMMANDS_ROOT`
 
 ```php
-const COMMANDS_ROOT = 'commands';
+const COMMANDS_ROOT = 'resources/commands';
 ```
 
 Default plugin-relative directory of command files.
@@ -70,7 +70,7 @@ public function register_command( string $name, object $instance ): void
 | **Return** | — |
 | **Throws** | — |
 
-Use this when a module of your own builds its command instances in PHP instead of shipping a file in `commands/`. The command is wired and namespaced exactly as a discovered one is, and needs no file at all. `Migrations` works this way: it registers `migrations run` and `migrations list` here, so `wp {slug} migrations run` exists the moment the module is added, with nothing to generate or maintain.
+Use this when a module of your own builds its command instances in PHP instead of shipping a file in `resources/commands/`. The command is wired and namespaced exactly as a discovered one is, and needs no file at all. `Migrations` works this way: it registers `migrations run` and `migrations list` here, so `wp {slug} migrations run` exists the moment the module is added, with nothing to generate or maintain.
 
 `$name` is plugin-relative, matching `walk_and_load()`'s own behavior of prefixing every discovered command with the slug — pass only the command's own name/namespace, never the slug itself.
 
@@ -94,7 +94,7 @@ public static function register_command_for( Plugin $plugin, string $name, objec
 | **Return** | — |
 | **Throws** | — |
 
-`static`, and taking the plugin as its first argument, so you never have to resolve the CLI module to reach it. That matters: resolving a module boots it, and CLI's boot walks `commands/` and throws when that directory is absent — so a plugin that added `migrations` but wanted no file-based commands would fail on every `wp` invocation.
+`static`, and taking the plugin as its first argument, so you never have to resolve the CLI module to reach it. That matters: resolving a module boots it, and CLI's boot walks `resources/commands/` and throws when that directory is absent — so a plugin that added `migrations` but wanted no file-based commands would fail on every `wp` invocation.
 
 If you already hold a CLI instance, `register_command()` is the same thing without the first argument.
 
@@ -182,7 +182,7 @@ A module that names a `boots_on` also throws when asked for before that hook has
 
 ## See also
 
-- [`Command`](command.md) — what a file in `commands/` returns
+- [`Command`](command.md) — what a file in `resources/commands/` returns
 - [`path`](../path/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
 - [`wp zt add cli`](../../commands/add.md) — the command that copies it
