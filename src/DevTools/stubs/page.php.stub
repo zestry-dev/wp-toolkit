@@ -78,7 +78,7 @@ return new class() extends AdminPage {
 	// the URL would not.
 	public function handle_submit(): void {
 		// Save $this->example, e.g.
-		// $this->get_plugin()->get( Options::class )->set( '{{name}}_example', $this->example );
+		// $this->with( Options::class )->set( '{{name}}_example', $this->example );
 
 		$this->set_flash( \__( 'Saved.', '{{text_domain}}' ) );
 

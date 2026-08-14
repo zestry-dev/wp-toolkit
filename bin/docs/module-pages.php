@@ -129,9 +129,7 @@ function zestry_class_summary( string $root, string $class ): string {
 function zestry_read_module( string $path ): ?array {
 	$source = (string) file_get_contents( $path );
 
-	// Either base: a service and a module are documented the same way, and which
-	// one it is comes from the registry section rather than from this pattern.
-	if ( ! preg_match( '/(?:final )?class (\w+) extends (?:Module|Service)/', $source, $class_match ) ) {
+	if ( ! preg_match( '/(?:final )?class (\w+) extends Module/', $source, $class_match ) ) {
 		return null;
 	}
 
@@ -149,11 +147,23 @@ function zestry_read_module( string $path ): ?array {
 	// the base class discovered from it, for the one module that has two of each.
 	preg_match_all( "/const (\w+)_ROOT\s*=\s*'([^']+)'/", $source, $roots );
 
-	// A module acts on its own and so must be listed in bootstrap.php to be
-	// built; a service is built on demand and needs no entry. `Views` resolves a
-	// file you name under a directory, but only when called, which is what keeps
-	// it a service.
-	$is_module = (bool) preg_match( '/class \w+ extends Module\b/', $source );
+	/*
+	 * Whether the module acts without being called, which decides where its
+	 * entry goes: a Bootable one is listed under the hook it acts on, and the
+	 * top level throws for it. Read from the `implements` clause, which is where
+	 * the class itself says so.
+	 */
+	$is_bootable = (bool) preg_match( '/class \w+ extends Module\b[^{]*\bimplements\b[^{]*\bBootable\b/', $source );
+
+	/*
+	 * The hook such a module is listed under. `@setup-hook` is the same tag
+	 * `AddCommand::get_boot_timing()` reads to write the entry, so the page and
+	 * the command cannot disagree about where a module belongs; one that names
+	 * none gets the plugin's own loaded action, exactly as the command does.
+	 */
+	$setup_hook = preg_match( '/^\s*\*?\s*@setup-hook\s+(\S+)/m', $docblock, $hook_match )
+		? $hook_match[1]
+		: 'acme_plugin_loaded';
 
 	/*
 	 * Only the discovery guard names a base class a *file* must return. Matching
@@ -181,21 +191,22 @@ function zestry_read_module( string $path ): ?array {
 	}
 
 	return array(
-		'class'     => $class,
-		'summary'   => zestry_summary( $docblock ),
-		'prose'     => $split['prose'],
-		'example'   => $split['example'],
-		'blocks'    => $split['blocks'],
-		'setup'     => $tags['setup'],
-		'examples'  => $tags['examples'],
-		'is_module' => $is_module,
+		'class'       => $class,
+		'summary'     => zestry_summary( $docblock ),
+		'prose'       => $split['prose'],
+		'example'     => $split['example'],
+		'blocks'      => $split['blocks'],
+		'setup'       => $tags['setup'],
+		'examples'    => $tags['examples'],
+		'is_bootable' => $is_bootable,
+		'setup_hook'  => $setup_hook,
 		// Walking a directory and resolving a named file under one are different
 		// promises, and the facts line said "Discovers" for both. `Views` takes
 		// the template name you give it; it never enumerates `views/`.
-		'walks'     => str_contains( $source, 'use WithFolderWalker;' ),
-		'roots'     => $roots[2],
-		'root_of'   => zestry_pair_roots_to_bases( $roots[1], $roots[2], array_values( array_unique( $found ) ) ),
-		'returns'   => array_values( array_unique( $found ) ),
+		'walks'       => str_contains( $source, 'use WithFolderWalker;' ),
+		'roots'       => $roots[2],
+		'root_of'     => zestry_pair_roots_to_bases( $roots[1], $roots[2], array_values( array_unique( $found ) ) ),
+		'returns'     => array_values( array_unique( $found ) ),
 	);
 }
 
@@ -408,12 +419,12 @@ function zestry_public_api( string $root, string $class ): array {
 		$declared[ $name ] = true;
 
 		/*
-		 * A constructor is listed only when it takes something. Service's is
-		 * `final` and takes nothing, so this skips it on every service, module
-		 * and base class -- while `Plugin::__construct( $entry, $slug )` is
-		 * documented, which it was not: the slug it defaults from the entry
-		 * file's directory name namespaces every hook, option, handle and
-		 * command the modules go on to register, and no page said so.
+		 * A constructor is listed only when it takes something. `Module`'s is
+		 * `final` and takes nothing, so this skips it on every module and base
+		 * class -- while `Plugin::__construct( $entry, $slug )` is documented,
+		 * which it was not: the slug it defaults from the entry file's directory
+		 * name namespaces every hook, option, handle and command the modules go
+		 * on to register, and no page said so.
 		 */
 		if ( '__construct' === $name && '()' === zestry_parameter_list( $method[4] ) ) {
 			continue;
@@ -892,8 +903,7 @@ function zestry_stub_language( string $name ): string {
  * @return int The number of module pages written.
  */
 function zestry_generate_module_pages( string $root ): int {
-	// One tree, mirroring src/ and bootstrap.php: there is one kind of thing, so
-	// there is one place to document it.
+	// One tree, mirroring src/ and bootstrap.php.
 	$output_dir = $root . '/docs/modules';
 	$registry   = require $root . '/src/DevTools/registry.php';
 
@@ -997,20 +1007,52 @@ function zestry_generate_module_pages( string $root ): int {
 		$page[] = '';
 
 		/*
-		 * Copying a module is half of installing it: it acts on its own, so it
-		 * has to be built for any of that to happen, and being listed in
-		 * `bootstrap.php` is what builds it. `wp zt add` writes that entry, so
-		 * this is reassurance for a reader wondering what else is needed -- and
-		 * the one thing to check when a module appears to do nothing. Said only
-		 * on module pages, since a service is never listed at all.
+		 * Copying a module is half of installing it: being listed in
+		 * `bootstrap.php` is what builds it, and nothing outside that file is
+		 * ever built. `wp zt add` writes the entry, so this is reassurance for a
+		 * reader wondering what else is needed -- and the one thing to check
+		 * when a module appears to do nothing.
+		 *
+		 * Where the entry goes is not the same for every module, so neither is
+		 * this snippet: a Bootable one acts the moment it is built, so it is
+		 * listed under the hook it acts on and the top level throws for it.
+		 * Printing the bare form for all of them handed the reader a snippet
+		 * that killed the plugin for two thirds of these pages.
 		 */
-		if ( $module['is_module'] ) {
-			$page[] = '> [!IMPORTANT]';
+		$page[] = '> [!IMPORTANT]';
+
+		if ( $module['is_bootable'] ) {
+			$page[] = '> **A module is built because `bootstrap.php` lists it, and the heading says when.**'
+				. ' `' . $module['class'] . '` acts the moment it is built, so it goes under the hook it'
+				. ' acts on — which `wp zt add` writes for you. Left at the top level it throws;'
+				. ' left out entirely, nothing is discovered and nothing reports why, which is what'
+				. ' [`wp zt doctor`](../../commands/doctor.md) catches.';
+			$page[] = '';
+			$page[] = '```php';
+			$page[] = '// bootstrap.php';
+			$page[] = 'return array(';
+			$page[] = "    '" . $module['setup_hook'] . "' => array(";
+			$page[] = '        ' . $module['class'] . '::class,';
+			$page[] = '    ),';
+			$page[] = ');';
+			$page[] = '```';
+			$page[] = '';
+
+			// The plugin's own action is composed from the slug, so a reader
+			// whose plugin is not the sample one needs telling which half moves.
+			if ( 'acme_plugin_loaded' === $module['setup_hook'] ) {
+				$page[] = '`acme_plugin_loaded` is your plugin\'s own action, fired at the end of `run()`'
+					. ' once every module is built — `{slug}_loaded`, so a plugin slugged `acme-crm`'
+					. ' spells it `acme_crm_loaded`. It is the earliest heading that still has the whole'
+					. ' plugin behind it.';
+				$page[] = '';
+			}
+		} else {
 			$page[] = '> **A module is built because `bootstrap.php` lists it.**'
-				. ' `' . $module['class'] . '` binds its hooks when the plugin builds it,'
-				. ' so it has to be listed there — which `wp zt add` writes for you.'
-				. ' Left out, nothing is discovered and nothing reports why;'
-				. ' [`wp zt doctor`](../../commands/doctor.md) is what catches it.';
+				. ' `' . $module['class'] . '` does nothing until something asks, so it goes at the top'
+				. ' level — which `wp zt add` writes for you. Left out, the first'
+				. ' `with( ' . $module['class'] . '::class )` throws rather than building it, which'
+				. ' [`wp zt doctor`](../../commands/doctor.md) catches before a request does.';
 			$page[] = '';
 			$page[] = '```php';
 			$page[] = '// bootstrap.php';
@@ -1047,36 +1089,23 @@ function zestry_generate_module_pages( string $root ): int {
 			}
 		}
 
-		/*
-		 * One heading for both kinds. This used to read "Configuring the
-		 * module", which puts the word for optional work in the imperative. It
-		 * is now what it is: the defaults are fine, and this is where to change
-		 * them.
-		 */
+		// The defaults are fine, and this is where to change them -- rather than
+		// "Configuring the module", which puts optional work in the imperative.
 		$page[] = '## Changing the defaults';
 		$page[] = '';
 
 		if ( array() === $module['setup'] ) {
-			$page[] = $module['is_module']
-				? sprintf(
-					'`%s` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( %1$s::class )`, or declare a property of its type and have it injected.',
-					$module['class']
-				)
-				: sprintf(
-					'`%s` takes no configuration, so it needs no `bootstrap.php` entry at all. It is built the first time something asks for it:',
-					$module['class']
-				);
+			/*
+			 * Nothing here offers property injection. There is none: `wire()`
+			 * assigns the plugin and nothing else, so `with()` is the only way
+			 * anything reaches a module, and a page that promised otherwise sent
+			 * a reader to an uninitialised typed property.
+			 */
+			$page[] = sprintf(
+				'`%s` takes no configuration. The entry above is all it needs — reach it with `$this->with( %1$s::class )` from any module or discovered file, or `$plugin->get( %1$s::class )` from your entry file.',
+				$module['class']
+			);
 			$page[] = '';
-
-			if ( ! $module['is_module'] ) {
-				$page[] = '```php';
-				$page[] = sprintf( '$%s = $plugin->get( %s::class );', strtolower( $module['class'] ), $module['class'] );
-				$page[] = '';
-				$page[] = '// Or, from any service, module, command or action:';
-				$page[] = sprintf( 'public %s $%s;   // injected before your code runs', $module['class'], strtolower( $module['class'] ) );
-				$page[] = '```';
-				$page[] = '';
-			}
 		}
 
 		foreach ( $module['setup'] as $setup ) {

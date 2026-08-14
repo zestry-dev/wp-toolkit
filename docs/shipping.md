@@ -58,7 +58,7 @@ They are not the same list, and the difference is what makes `git archive` the w
 
 Both are development records, and both belong in the repository.
 
-- **`zestry.json`** holds the three answers you gave `init` — namespace, text domain, source root. Every later `wp zt` command reads it.
+- **`zestry.json`** holds what `init` settled — the namespace and text domain you gave it, and the `lib` source root. Every later `wp zt` command reads it.
 - **`zestry.lock.json`** holds a hash per copied file, taken as the file was written. That is what lets `wp zt update` tell an edit of yours from a change upstream, rather than reporting one indistinguishable difference. Commit it for the same reason you commit `composer.lock`: a manifest that is not in the repository tells a colleague's checkout nothing.
 
 Neither is loaded by your plugin at runtime. Leaving them in the zip is harmless; excluding them costs nothing either.

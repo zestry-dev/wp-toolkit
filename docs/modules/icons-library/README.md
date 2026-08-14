@@ -25,12 +25,14 @@ wp zt add icons-library
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `IconsLibrary` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it, and the heading says when.** `IconsLibrary` acts the moment it is built, so it goes under the hook it acts on — which `wp zt add` writes for you. Left at the top level it throws; left out entirely, nothing is discovered and nothing reports why, which is what [`wp zt doctor`](../../commands/doctor.md) catches.
 
 ```php
 // bootstrap.php
 return array(
-    IconsLibrary::class,
+    'init' => array(
+        IconsLibrary::class,
+    ),
 );
 ```
 
@@ -71,7 +73,7 @@ A module is asked for where it is needed rather than declared as a property, sin
 
 ```php
 public function render(): string {
-    $icons = $this->get_plugin()->get( IconsLibrary::class );
+    $icons = $this->with( IconsLibrary::class );
 
     return $icons->get( 'arrow-right', array( 'size' => 32 ) );
 }
@@ -100,24 +102,26 @@ The filename stays the default, and stays the thing to reach for. A declared nam
 Group them
 
 ```php
-IconsLibrary::class => array(
-    'boots_on'  => 'init',
-    'configure' => static function ( IconsLibrary $icons ): void {
-        $icons->set_default_collection_details(
-            __( 'Acme icons', 'acme-plugin' ),
-            __( 'Everything Acme draws.', 'acme-plugin' )
-        );
+// bootstrap.php
+return array(
+    'init' => array(
+        IconsLibrary::class => static function ( IconsLibrary $icons ): void {
+            $icons->set_default_collection_details(
+                __( 'Acme icons', 'acme-plugin' ),
+                __( 'Everything Acme draws.', 'acme-plugin' )
+            );
 
-        $icons->add_collections(
-            array( 'acme-brand' => __( 'Acme brand', 'acme-plugin' ) )
-        );
-    },
-),
+            $icons->add_collections(
+                array( 'acme-brand' => __( 'Acme brand', 'acme-plugin' ) )
+            );
+        },
+    ),
+);
 ```
 
-You have one collection already, slugged with your plugin slug and labelled `{slug} icons` until you say otherwise. `configure` runs on the hook, right before the module registers anything — which is what makes the `__()` calls safe, and why this module names a hook at all.
+You have one collection already, slugged with your plugin slug and labelled `{slug} icons` until you say otherwise. The callback runs on that hook, right before the module registers anything — which is what makes the `__()` calls safe, and why this module names a hook at all.
 
-An icon may name a collection another plugin registers, and this module refuses one it cannot find. If yours does, add a `'priority'` above 10 to the entry so that plugin gets its turn first.
+An icon may name a collection another plugin registers, and this module refuses one it cannot find. If yours does, list it under `'init:20'` so that plugin gets its turn first.
 
 ## Constants
 
@@ -150,18 +154,21 @@ Every icon belongs to exactly one collection, and WordPress groups the editor's 
 Keyed by slug, the same shape `bootstrap.php` uses for modules. A plain string is the label, and an array carries a description alongside it:
 
 ```php
-$icons->on_wp_init(
-    static function ( IconsLibrary $icons ): void {
-        $icons->add_collections(
-            array(
-                'acme-brand' => __( 'Acme brand', 'acme-plugin' ),
-                'acme-ui'    => array(
-                    'label'       => __( 'Acme interface', 'acme-plugin' ),
-                    'description' => __( 'Arrows, spinners and toggles.', 'acme-plugin' ),
-                ),
-            )
-        );
-    }
+// bootstrap.php
+return array(
+    'init' => array(
+        IconsLibrary::class => static function ( IconsLibrary $icons ): void {
+            $icons->add_collections(
+                array(
+                    'acme-brand' => __( 'Acme brand', 'acme-plugin' ),
+                    'acme-ui'    => array(
+                        'label'       => __( 'Acme interface', 'acme-plugin' ),
+                        'description' => __( 'Arrows, spinners and toggles.', 'acme-plugin' ),
+                    ),
+                )
+            );
+        },
+    ),
 );
 
 // resources/svg-icons/logo.php
@@ -173,7 +180,7 @@ return array(
 
 A slug is registered exactly as given and is not namespaced to the plugin, matching WordPress's own unprefixed `core` — so choose slugs distinctive enough not to collide. One another plugin already registered is left as it is rather than replaced, and an icon may file itself under it.
 
-**Call it from the entry's `configure`, as the example does.** A label and a description are both user-visible, so they want translating, and `configure` runs on the boot hook rather than at plugin load, where a `__()` reports `_load_textdomain_just_in_time` on every request.
+**Call it from the entry's callback, as the example does.** A label and a description are both user-visible, so they want translating, and that callback runs on the boot hook rather than at plugin load, where a `__()` reports `_load_textdomain_just_in_time` on every request.
 
 <br>
 
@@ -195,7 +202,7 @@ Its slug is your plugin slug and stays that way — this is the label a designer
 
 The description is empty by default and stays out of the registration entirely when it is: an absent description is honest, where a generated sentence occupies the space a real one would go in.
 
-**Call it from the entry's `configure`**, for the reason `add_collections()` gives — both of these are read by a person, so both want translating.
+**Call it from the entry's callback**, for the reason `add_collections()` gives — both of these are read by a person, so both want translating.
 
 <br>
 
@@ -351,7 +358,7 @@ $this->with( Options::class )->get( 'api_key' );
 
 **The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
 
-A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
+A module listed under a heading also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
 
 ## See also
 

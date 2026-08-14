@@ -17,7 +17,7 @@ Reads only. Nothing here edits a file, and no module is ever built.
 
 ## What it cannot tell you
 
-What a module was configured to do. A module whose entry carries a `configure` is marked `configured`, but what that callback does is only found by running it — which this command does not do, for the same reason `wp zt doctor` does not. The report says where to look rather than guessing.
+What a module was configured to do. A module whose entry names a configurator is marked `configured`, but what that callback does is only found by running it — which this command does not do, for the same reason `wp zt doctor` does not. The report says where to look rather than guessing.
 
 ## Options
 

@@ -34,14 +34,18 @@ wp zt add migrations
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `Migrations` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it, and the heading says when.** `Migrations` acts the moment it is built, so it goes under the hook it acts on — which `wp zt add` writes for you. Left at the top level it throws; left out entirely, nothing is discovered and nothing reports why, which is what [`wp zt doctor`](../../commands/doctor.md) catches.
 
 ```php
 // bootstrap.php
 return array(
-    Migrations::class,
+    'acme_plugin_loaded' => array(
+        Migrations::class,
+    ),
 );
 ```
+
+`acme_plugin_loaded` is your plugin's own action, fired at the end of `run()` once every module is built — `{slug}_loaded`, so a plugin slugged `acme-crm` spells it `acme_crm_loaded`. It is the earliest heading that still has the whole plugin behind it.
 
 ## Triggering a run
 
@@ -54,7 +58,7 @@ A PHP timeout can still cut `run_pending()` off partway through a batch (some mi
 ```php
 class MyActivation extends ActivationHandler {
     public function activate( bool $network_wide ): void {
-        $this->get_plugin()->get( Migrations::class )->run_pending();
+        $this->with( Migrations::class )->run_pending();
     }
 
     public function deactivate( bool $network_wide ): void {
@@ -64,7 +68,7 @@ class MyActivation extends ActivationHandler {
 
 ## Changing the defaults
 
-`Migrations` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( Migrations::class )`, or declare a property of its type and have it injected.
+`Migrations` takes no configuration. The entry above is all it needs — reach it with `$this->with( Migrations::class )` from any module or discovered file, or `$plugin->get( Migrations::class )` from your entry file.
 
 ## Writing a Migration
 
@@ -307,7 +311,7 @@ $this->with( Options::class )->get( 'api_key' );
 
 **The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
 
-A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
+A module listed under a heading also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
 
 ## See also
 

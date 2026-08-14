@@ -19,18 +19,16 @@ class {{class_name}} extends Module{{bootable_clause}} {
 
 	/*
 	 * A module is built with no arguments -- the constructor is final -- so
-	 * anything this needs comes in through a `set_*()` called from the
-	 * `configure` in its bootstrap.php entry:
+	 * anything this needs comes in through a `set_*()` called from the callback
+	 * its bootstrap.php entry names:
 	 *
 	 * ```
 	 * public function set_api_key( string $key ): void { ... }
 	 *
 	 * // bootstrap.php
-	 * {{class_name}}::class => array(
-	 *     'configure' => static function ( {{class_name}} $module ): void {
-	 *         $module->set_api_key( 'abc123' );
-	 *     },
-	 * ),
+	 * {{class_name}}::class => static function ( {{class_name}} $module ): void {
+	 *     $module->set_api_key( 'abc123' );
+	 * },
 	 * ```
 	 *
 	 * A class that wants constructor arguments is a value object, not a module.

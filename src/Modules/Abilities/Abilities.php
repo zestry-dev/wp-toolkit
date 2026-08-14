@@ -105,7 +105,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  *
  * @example Calling one from your own code
  * ```
- * $abilities = $this->get_plugin()->get( Abilities::class );
+ * $abilities = $this->with( Abilities::class );
  *
  * $result = $abilities->run( 'publish-post', array( 'id' => 42 ) );
  *
@@ -117,24 +117,26 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * @setup-hook init
  * @setup Group them
  * ```
- * Abilities::class => array(
- *     'boots_on'    => 'init',
- *     'configure' => static function ( Abilities $abilities ): void {
- *         $abilities->add_categories(
- *             array(
- *                 'acme-billing' => array(
- *                     'label'       => __( 'Acme billing', 'acme-plugin' ),
- *                     'description' => __( 'Invoices, refunds and payment methods.', 'acme-plugin' ),
- *                 ),
- *             )
- *         );
- *     },
- * ),
+ * // bootstrap.php
+ * return array(
+ *     'init' => array(
+ *         Abilities::class => static function ( Abilities $abilities ): void {
+ *             $abilities->add_categories(
+ *                 array(
+ *                     'acme-billing' => array(
+ *                         'label'       => __( 'Acme billing', 'acme-plugin' ),
+ *                         'description' => __( 'Invoices, refunds and payment methods.', 'acme-plugin' ),
+ *                     ),
+ *                 )
+ *             );
+ *         },
+ *     ),
+ * );
  * ```
  *
- * `configure` runs on the hook, right before the module registers anything,
- * which is what makes the `__()` calls safe -- an initializer running at plugin
- * load would report `_load_textdomain_just_in_time` on every request.
+ * The callback runs on that hook, right before the module registers anything,
+ * which is what makes the `__()` calls safe -- one running at plugin load would
+ * report `_load_textdomain_just_in_time` on every request.
  */
 class Abilities extends Module implements Bootable {
 
@@ -176,18 +178,20 @@ class Abilities extends Module implements Bootable {
 	 *
 	 * ```
 	 * // bootstrap.php
-	 * $abilities->on_wp_init(
-	 *     static function ( Abilities $abilities ): void {
-	 *         $abilities->add_categories(
-	 *             array(
-	 *                 'acme-billing' => __( 'Acme billing', 'acme-plugin' ),
-	 *                 'acme-reports' => array(
-	 *                     'label'       => __( 'Acme reports', 'acme-plugin' ),
-	 *                     'description' => __( 'Reads sales figures. Changes nothing.', 'acme-plugin' ),
-	 *                 ),
-	 *             )
-	 *         );
-	 *     }
+	 * return array(
+	 *     'init' => array(
+	 *         Abilities::class => static function ( Abilities $abilities ): void {
+	 *             $abilities->add_categories(
+	 *                 array(
+	 *                     'acme-billing' => __( 'Acme billing', 'acme-plugin' ),
+	 *                     'acme-reports' => array(
+	 *                         'label'       => __( 'Acme reports', 'acme-plugin' ),
+	 *                         'description' => __( 'Reads sales figures. Changes nothing.', 'acme-plugin' ),
+	 *                     ),
+	 *                 )
+	 *             );
+	 *         },
+	 *     ),
 	 * );
 	 *
 	 * // resources/abilities/refund-order.php
@@ -206,12 +210,13 @@ class Abilities extends Module implements Bootable {
 	 * distinctive enough not to collide — a category already registered by
 	 * WordPress or another plugin is left as it is rather than replaced.
 	 *
-	 * **Call it from the entry's `configure`, as the example does.** A label and
-	 * a description are both user-visible, so they usually want translating, and
-	 * an initializer running at plugin load would load the text domain before
-	 * WordPress is ready, reporting `_load_textdomain_just_in_time` on every
-	 * request. `configure` runs on the boot hook, where ordinary `__()` is
-	 * correct -- which is why both are plain strings and nothing here is lazy.
+	 * **Call it from the entry's callback, as the example does.** A label and a
+	 * description are both user-visible, so they usually want translating, and
+	 * that callback runs on the boot hook, where ordinary `__()` is correct --
+	 * which is why both are plain strings and nothing here is lazy. Calling it
+	 * from somewhere that runs at plugin load would ask for the text domain
+	 * before WordPress is ready, reporting `_load_textdomain_just_in_time` on
+	 * every request.
 	 *
 	 * @param array<string, string|array{label: string, description?: string}> $categories Labels or configuration, keyed by slug.
 	 * @return void

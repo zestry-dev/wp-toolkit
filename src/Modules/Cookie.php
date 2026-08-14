@@ -71,7 +71,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  *
  * ```
  * public function handle_submit(): void {
- *     $this->get_plugin()->get( Options::class )->set( 'threshold', $this->threshold );
+ *     $this->with( Options::class )->set( 'threshold', $this->threshold );
  *
  *     $this->with( Cookie::class )->set_flash( array( 'saved' => __( 'Settings saved.', 'acme-plugin' ) ) );
  *

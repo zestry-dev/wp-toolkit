@@ -46,7 +46,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *     }
  *
  *     public function render( object $post ): void {
- *         $fields = $this->get_plugin()->get( Fields::class );
+ *         $fields = $this->with( Fields::class );
  *
  *         printf(
  *             '<label for="acme_rating">%s</label>
@@ -225,6 +225,6 @@ abstract class MetaBox implements PluginAware {
 	 * @return MetaBoxes
 	 */
 	final protected function meta_boxes(): MetaBoxes {
-		return $this->get_plugin()->get( MetaBoxes::class );
+		return $this->with( MetaBoxes::class );
 	}
 }

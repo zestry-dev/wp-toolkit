@@ -21,7 +21,7 @@ return new class() extends AddCommand {
 	 * Copy one or more feature modules into an initialized plugin.
 	 *
 	 * Requires `wp zt init` to have already run in this plugin (it reads
-	 * zestry.json for the namespace and destination directory chosen there).
+	 * zestry.json for the namespace chosen there, and the `lib` source root).
 	 * Resolves each requested module's dependencies before copying anything, so
 	 * `rest-api`, for example, also brings in `path` without needing to be asked
 	 * for by name. Every `namespace Zestry\WPToolkit\...;` declaration and `use Zestry\WPToolkit\...;`

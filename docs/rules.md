@@ -6,7 +6,7 @@ Read once, then use this to check yourself. The pages behind the links explain *
 
 ## What a plugin is made of
 
-1. **Everything is a `Module`.** One base class; there is no second kind. — [Modules](modules/)
+1. **Everything is a `Module`.** One base class for everything a plugin is made of. — [Modules](modules/)
 2. **A module that acts on its own implements `Bootable`.** Its `on_boot()` runs once, when the plugin builds it. A module without it works only when you call it. — [`Bootable`](kernel/bootable.md)
 3. **`bootstrap.php` is the whole inventory.** Every module is listed there, and nothing outside it is ever built. — [Getting started](getting-started.md)
 4. **Asking for an undeclared module throws.** That is what keeps the inventory true. — [Errors](errors.md)

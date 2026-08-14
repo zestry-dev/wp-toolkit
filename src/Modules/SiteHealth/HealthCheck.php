@@ -46,7 +46,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *     }
  *
  *     public function run(): array {
- *         $options = $this->get_plugin()->get( Options::class );
+ *         $options = $this->with( Options::class );
  *
  *         if ( '' !== (string) $options->get( 'api_key', '' ) ) {
  *             return $this->good( __( 'Your API key is set.', 'acme-plugin' ) );
@@ -152,7 +152,7 @@ abstract class HealthCheck implements PluginAware {
 	 * @return SiteHealth
 	 */
 	final protected function site_health(): SiteHealth {
-		return $this->get_plugin()->get( SiteHealth::class );
+		return $this->with( SiteHealth::class );
 	}
 
 	/**

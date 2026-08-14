@@ -335,6 +335,6 @@ abstract class Ability implements PluginAware {
 	 * @return Abilities
 	 */
 	final protected function abilities(): Abilities {
-		return $this->get_plugin()->get( Abilities::class );
+		return $this->with( Abilities::class );
 	}
 }

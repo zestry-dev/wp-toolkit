@@ -40,8 +40,8 @@ return new class() extends Command {
 	 *
 	 * ## WHAT IT CANNOT TELL YOU
 	 *
-	 * What a module was configured to do. A module whose entry carries a
-	 * `configure` is marked `configured`, but what that callback does is only
+	 * What a module was configured to do. A module whose entry names a
+	 * configurator is marked `configured`, but what that callback does is only
 	 * found by running it -- which this command does not do, for the same reason
 	 * `wp zt doctor` does not. The report says where to look rather than
 	 * guessing.

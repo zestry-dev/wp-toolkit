@@ -48,14 +48,15 @@ use Zestry\WPToolkit\Modules\Path;
  * nothing moves on a site that already has the event.
  *
  * @setup
- * Register an initializer to declare a custom interval schedules can then ask
- * for by name.
+ * Declare a custom interval schedules can then ask for by name. The entry's
+ * value is the callback that configures the module, and it runs on the boot
+ * hook, before anything is registered.
  *
  * ```
  * // bootstrap.php
  * return array(
- *     Cron::class => array(
- *         'configure' => static function ( Cron $cron ): void {
+ *     'init' => array(
+ *         Cron::class => static function ( Cron $cron ): void {
  *             $cron->add_custom_interval( 'every_15_minutes', 15 * MINUTE_IN_SECONDS, 'Every 15 Minutes' );
  *         },
  *     ),

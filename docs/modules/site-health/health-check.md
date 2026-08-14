@@ -30,7 +30,7 @@ return new class extends HealthCheck {
     }
 
     public function run(): array {
-        $options = $this->get_plugin()->get( Options::class );
+        $options = $this->with( Options::class );
 
         if ( '' !== (string) $options->get( 'api_key', '' ) ) {
             return $this->good( __( 'Your API key is set.', 'acme-plugin' ) );
@@ -327,7 +327,7 @@ $this->with( Options::class )->get( 'api_key' );
 
 **The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
 
-A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
+A module listed under a heading also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
 
 <br>
 

@@ -46,7 +46,7 @@ namespace Zestry\WPToolkit\Kernel\Traits;
  * return new class() extends RestRoute {
  *
  *     public function is_enabled(): bool {
- *         return (bool) $this->get_plugin()->get( Options::class )->get( 'expose_public_api' );
+ *         return (bool) $this->with( Options::class )->get( 'expose_public_api' );
  *     }
  *
  *     // ...

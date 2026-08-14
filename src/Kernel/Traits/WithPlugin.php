@@ -89,8 +89,8 @@ trait WithPlugin {
 	 * because something asked for it, so that file stays the whole inventory of
 	 * what the plugin is made of.
 	 *
-	 * A module that names a `boots_on` also throws when asked for before that
-	 * hook has fired, since building it early would bind it on the wrong side of
+	 * A module listed under a heading also throws when asked for before that hook
+	 * has fired, since building it early would bind it on the wrong side of
 	 * whatever it was declared to follow.
 	 *
 	 * @template T of object

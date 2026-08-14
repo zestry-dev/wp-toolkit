@@ -255,9 +255,9 @@ class Plugin {
 	 * Configure a module before the plugin builds it.
 	 *
 	 * The callback runs when the module is built, after it has the plugin and
-	 * before `on_boot()`, so it can set what boot depends on. The same callback
-	 * a `bootstrap.php` entry's `configure` key takes -- this is for a plugin
-	 * that prefers to keep its configuration in the entry file.
+	 * before `on_boot()`, so it can set what boot depends on. The same callback a
+	 * `bootstrap.php` class entry's value is -- this is for a plugin that prefers
+	 * to keep its configuration in the entry file.
 	 *
 	 * ```
 	 * $plugin->configure( Cron::class, function ( Cron $cron ) {

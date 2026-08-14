@@ -27,14 +27,14 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * The levels are PSR-3's names. The PSR-3 interface is not implemented.
  *
  * @setup
- * Register an initializer only to change what gets through. Everything at
- * `info` and above is logged by default, plus `debug` when `WP_DEBUG` is on.
+ * Add a callback only to change what gets through. Everything at `info` and
+ * above is logged by default, plus `debug` when `WP_DEBUG` is on.
  *
  * ```
  * // bootstrap.php
  * return array(
- *     Log::class => array(
- *         'configure' => static function ( Log $log ): void {
+ *     'acme_plugin_loaded' => array(
+ *         Log::class => static function ( Log $log ): void {
  *             $log->set_min_level( Log::LEVEL_WARNING );
  *         },
  *     ),

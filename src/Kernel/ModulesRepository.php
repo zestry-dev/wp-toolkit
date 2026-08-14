@@ -33,7 +33,8 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
  * A module reached during another's boot is built then rather than waiting for
  * its turn in the list, so declaration order is not something a plugin has to
  * get right. What order *does* decide is when `on_boot()` runs relative to its
- * neighbours', which is what `boots_on` is for when it matters.
+ * neighbours', which is what the hook a module is listed under settles when it
+ * matters.
  */
 class ModulesRepository {
 
@@ -144,7 +145,7 @@ class ModulesRepository {
 	/**
 	 * Name the hook a declared module boots on.
 	 *
-	 * Called by {@see Plugin::bootstrap()} for an entry that declared `boots_on`.
+	 * Called by {@see declare_module()} for an entry listed under a heading.
 	 *
 	 * @param class-string $name     Module class name.
 	 * @param string|null  $hook     The hook to boot on, or null to boot as the plugin loads.
@@ -241,8 +242,8 @@ class ModulesRepository {
 	 * Build every declared module, in the order they were declared.
 	 *
 	 * Called by `Plugin::run()`, synchronously -- the entry file decides when
-	 * that happens rather than this waiting on a hook of its own. A module that
-	 * named a `boots_on` is held back for it instead.
+	 * that happens rather than this waiting on a hook of its own. A module listed
+	 * under a heading is held back for that hook instead.
 	 *
 	 * @return void
 	 */
@@ -280,25 +281,24 @@ class ModulesRepository {
 	 * Refuse a {@see Bootable} module whose entry never says when it boots.
 	 *
 	 * A `Bootable` module acts the moment it is built, so *when* it is built is
-	 * the whole of what it does -- and a bare entry leaves that unanswered.
-	 * Answering it by default was the alternative, and it hides the one thing
-	 * worth reading: a plugin registering post types before `init` looks
-	 * identical to one registering them correctly, right up until something
-	 * else needs to filter them.
+	 * the whole of what it does -- and the top level leaves that unanswered. A
+	 * plugin registering post types before `init` looks identical to one
+	 * registering them correctly, right up until something else needs to filter
+	 * them.
 	 *
-	 * So the entry says it, and `null` is a real answer:
+	 * So the heading says it:
 	 *
 	 * ```
-	 * Shortcodes::class => array( 'boots_on' => 'acme-plugin-loaded' ),
-	 * Activation::class => array( 'boots_on' => null ),  // as the plugin loads
+	 * 'acme_plugin_loaded' => array( Shortcodes::class ),
+	 * 'init'               => array( PostTypes::class ),
 	 * ```
 	 *
 	 * A module that is not `Bootable` does nothing when built, so it has nothing
-	 * to declare and a bare entry is the whole of it.
+	 * to declare and a bare top-level entry is the whole of it.
 	 *
 	 * @param class-string $name The declared class name.
 	 * @return void
-	 * @throws ModuleException When a Bootable module's entry omits `boots_on`.
+	 * @throws ModuleException When a Bootable module is not listed under a heading.
 	 */
 	private function assert_boot_timing_declared( string $name ): void {
 		// Said something, including `null`. Nothing to enforce.

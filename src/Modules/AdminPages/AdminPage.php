@@ -271,7 +271,7 @@ abstract class AdminPage implements PluginAware {
 	 *
 	 * ```
 	 * public function handle_submit(): void {
-	 *     $this->get_plugin()->get( Options::class )->set( 'threshold', $this->threshold );
+	 *     $this->with( Options::class )->set( 'threshold', $this->threshold );
 	 *     $this->set_flash( __( 'Settings saved.', 'acme-plugin' ) );
 	 *
 	 *     wp_safe_redirect( $this->get_page_url() );
@@ -367,7 +367,7 @@ abstract class AdminPage implements PluginAware {
 	 * @return AdminPages
 	 */
 	final protected function admin_pages(): AdminPages {
-		return $this->get_plugin()->get( AdminPages::class );
+		return $this->with( AdminPages::class );
 	}
 
 	/**
@@ -380,7 +380,7 @@ abstract class AdminPage implements PluginAware {
 	 * @return Views
 	 */
 	final protected function views(): Views {
-		return $this->get_plugin()->get( Views::class );
+		return $this->with( Views::class );
 	}
 
 	/**
@@ -389,7 +389,7 @@ abstract class AdminPage implements PluginAware {
 	 * @return Cookie
 	 */
 	final protected function cookies(): Cookie {
-		return $this->get_plugin()->get( Cookie::class );
+		return $this->with( Cookie::class );
 	}
 
 	/**

@@ -27,24 +27,26 @@ wp zt add cron
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `Cron` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it, and the heading says when.** `Cron` acts the moment it is built, so it goes under the hook it acts on — which `wp zt add` writes for you. Left at the top level it throws; left out entirely, nothing is discovered and nothing reports why, which is what [`wp zt doctor`](../../commands/doctor.md) catches.
 
 ```php
 // bootstrap.php
 return array(
-    Cron::class,
+    'init' => array(
+        Cron::class,
+    ),
 );
 ```
 
 ## Changing the defaults
 
-Register an initializer to declare a custom interval schedules can then ask for by name.
+Declare a custom interval schedules can then ask for by name. The entry's value is the callback that configures the module, and it runs on the boot hook, before anything is registered.
 
 ```php
 // bootstrap.php
 return array(
-    Cron::class => array(
-        'configure' => static function ( Cron $cron ): void {
+    'init' => array(
+        Cron::class => static function ( Cron $cron ): void {
             $cron->add_custom_interval( 'every_15_minutes', 15 * MINUTE_IN_SECONDS, 'Every 15 Minutes' );
         },
     ),
@@ -305,7 +307,7 @@ $this->with( Options::class )->get( 'api_key' );
 
 **The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
 
-A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
+A module listed under a heading also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
 
 ## See also
 

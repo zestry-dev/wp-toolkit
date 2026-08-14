@@ -42,12 +42,14 @@ wp zt add abilities
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `Abilities` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it, and the heading says when.** `Abilities` acts the moment it is built, so it goes under the hook it acts on — which `wp zt add` writes for you. Left at the top level it throws; left out entirely, nothing is discovered and nothing reports why, which is what [`wp zt doctor`](../../commands/doctor.md) catches.
 
 ```php
 // bootstrap.php
 return array(
-    Abilities::class,
+    'init' => array(
+        Abilities::class,
+    ),
 );
 ```
 
@@ -91,7 +93,7 @@ return new class extends Ability {
 ## Calling one from your own code
 
 ```php
-$abilities = $this->get_plugin()->get( Abilities::class );
+$abilities = $this->with( Abilities::class );
 
 $result = $abilities->run( 'publish-post', array( 'id' => 42 ) );
 
@@ -105,22 +107,24 @@ if ( is_wp_error( $result ) ) {
 Group them
 
 ```php
-Abilities::class => array(
-    'boots_on'    => 'init',
-    'configure' => static function ( Abilities $abilities ): void {
-        $abilities->add_categories(
-            array(
-                'acme-billing' => array(
-                    'label'       => __( 'Acme billing', 'acme-plugin' ),
-                    'description' => __( 'Invoices, refunds and payment methods.', 'acme-plugin' ),
-                ),
-            )
-        );
-    },
-),
+// bootstrap.php
+return array(
+    'init' => array(
+        Abilities::class => static function ( Abilities $abilities ): void {
+            $abilities->add_categories(
+                array(
+                    'acme-billing' => array(
+                        'label'       => __( 'Acme billing', 'acme-plugin' ),
+                        'description' => __( 'Invoices, refunds and payment methods.', 'acme-plugin' ),
+                    ),
+                )
+            );
+        },
+    ),
+);
 ```
 
-`configure` runs on the hook, right before the module registers anything, which is what makes the `__()` calls safe — an initializer running at plugin load would report `_load_textdomain_just_in_time` on every request.
+The callback runs on that hook, right before the module registers anything, which is what makes the `__()` calls safe — one running at plugin load would report `_load_textdomain_just_in_time` on every request.
 
 ## Writing an Ability
 
@@ -164,18 +168,20 @@ Keyed by slug, the same shape `bootstrap.php` uses for modules. A plain string i
 
 ```php
 // bootstrap.php
-$abilities->on_wp_init(
-    static function ( Abilities $abilities ): void {
-        $abilities->add_categories(
-            array(
-                'acme-billing' => __( 'Acme billing', 'acme-plugin' ),
-                'acme-reports' => array(
-                    'label'       => __( 'Acme reports', 'acme-plugin' ),
-                    'description' => __( 'Reads sales figures. Changes nothing.', 'acme-plugin' ),
-                ),
-            )
-        );
-    }
+return array(
+    'init' => array(
+        Abilities::class => static function ( Abilities $abilities ): void {
+            $abilities->add_categories(
+                array(
+                    'acme-billing' => __( 'Acme billing', 'acme-plugin' ),
+                    'acme-reports' => array(
+                        'label'       => __( 'Acme reports', 'acme-plugin' ),
+                        'description' => __( 'Reads sales figures. Changes nothing.', 'acme-plugin' ),
+                    ),
+                )
+            );
+        },
+    ),
 );
 
 // resources/abilities/refund-order.php
@@ -188,7 +194,7 @@ The description is worth writing. A client listing categories shows it to decide
 
 A slug is registered exactly as given and is not namespaced to the plugin: WordPress's own `site` and `user` are unprefixed, and an ability naming a category has to match it verbatim. So choose slugs distinctive enough not to collide — a category already registered by WordPress or another plugin is left as it is rather than replaced.
 
-**Call it from the entry's `configure`, as the example does.** A label and a description are both user-visible, so they usually want translating, and an initializer running at plugin load would load the text domain before WordPress is ready, reporting `_load_textdomain_just_in_time` on every request. `configure` runs on the boot hook, where ordinary `__()` is correct — which is why both are plain strings and nothing here is lazy.
+**Call it from the entry's callback, as the example does.** A label and a description are both user-visible, so they usually want translating, and that callback runs on the boot hook, where ordinary `__()` is correct — which is why both are plain strings and nothing here is lazy. Calling it from somewhere that runs at plugin load would ask for the text domain before WordPress is ready, reporting `_load_textdomain_just_in_time` on every request.
 
 <br>
 
@@ -358,7 +364,7 @@ $this->with( Options::class )->get( 'api_key' );
 
 **The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
 
-A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
+A module listed under a heading also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
 
 ## See also
 

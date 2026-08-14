@@ -24,14 +24,18 @@ wp zt add site-health
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `SiteHealth` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it, and the heading says when.** `SiteHealth` acts the moment it is built, so it goes under the hook it acts on — which `wp zt add` writes for you. Left at the top level it throws; left out entirely, nothing is discovered and nothing reports why, which is what [`wp zt doctor`](../../commands/doctor.md) catches.
 
 ```php
 // bootstrap.php
 return array(
-    SiteHealth::class,
+    'acme_plugin_loaded' => array(
+        SiteHealth::class,
+    ),
 );
 ```
+
+`acme_plugin_loaded` is your plugin's own action, fired at the end of `run()` once every module is built — `{slug}_loaded`, so a plugin slugged `acme-crm` spells it `acme_crm_loaded`. It is the earliest heading that still has the whole plugin behind it.
 
 ## A health check
 
@@ -73,7 +77,7 @@ return new class extends DebugSection {
 
 ## Changing the defaults
 
-`SiteHealth` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( SiteHealth::class )`, or declare a property of its type and have it injected.
+`SiteHealth` takes no configuration. The entry above is all it needs — reach it with `$this->with( SiteHealth::class )` from any module or discovered file, or `$plugin->get( SiteHealth::class )` from your entry file.
 
 ## Writing a HealthCheck
 
@@ -269,7 +273,7 @@ $this->with( Options::class )->get( 'api_key' );
 
 **The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
 
-A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
+A module listed under a heading also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
 
 ## See also
 

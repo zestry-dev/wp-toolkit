@@ -78,7 +78,7 @@ return new class() extends MakeCommand {
 	 *
 	 * [--bootable]
 	 * : Give the module an `on_boot()` that runs without being called, and
-	 * declare it in `bootstrap.php` against the plugin's own `{slug}-loaded`
+	 * declare it in `bootstrap.php` against the plugin's own `{slug}_loaded`
 	 * action -- so it boots after every other module the plugin has, rather
 	 * than in the middle of the list. Leave it off for a module that only
 	 * works when something calls it.
@@ -99,7 +99,7 @@ return new class() extends MakeCommand {
 	 *
 	 *     # One that acts on its own, booting after every other module.
 	 *     $ wp zt make module Shortcodes --bootable
-	 *     Declared in bootstrap.php, booting on `acme-plugin-loaded`.
+	 *     Declared in bootstrap.php, booting on `acme_plugin_loaded`.
 	 *     Success: Created lib/Modules/Shortcodes.php
 	 *
 	 * @param array $args

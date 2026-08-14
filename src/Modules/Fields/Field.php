@@ -451,6 +451,6 @@ abstract class Field implements PluginAware {
 	 * @return Fields
 	 */
 	final protected function fields(): Fields {
-		return $this->get_plugin()->get( Fields::class );
+		return $this->with( Fields::class );
 	}
 }

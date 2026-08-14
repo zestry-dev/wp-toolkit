@@ -109,7 +109,7 @@ Three details:
 
 ## 3. `bootstrap.php`
 
-`wp zt add` appended an entry per module. Edit it down to this:
+`wp zt add` appended an entry per module, under the heading each one needs. With `Assets` and `Activation` added in sections 7 and 8, it reads:
 
 ```php
 <?php
@@ -125,14 +125,24 @@ declare( strict_types=1 );
 
 use Acme\Books\Core\Modules\AdminPages\AdminPages;
 use Acme\Books\Core\Modules\Assets\Assets;
+use Acme\Books\Core\Modules\Cookie;
 use Acme\Books\Core\Modules\Log;
 use Acme\Books\Core\Modules\Options;
+use Acme\Books\Core\Modules\Path;
 use Acme\Books\Core\Modules\PostTypes\PostTypes;
+use Acme\Books\Core\Modules\Request\Request;
 use Acme\Books\Core\Modules\RestApi\RestApi;
+use Acme\Books\Core\Modules\Transients;
+use Acme\Books\Core\Modules\Views;
 use Acme\Books\Modules\Activation;
 
 return array(
+    Path::class,
     Options::class,
+    Views::class,
+    Request::class,
+    Cookie::class,
+    Transients::class,
 
     'acme_books_loaded' => array(
         Log::class,
@@ -150,7 +160,7 @@ return array(
 
 **Everything the plugin is made of is here, and the key says when each part starts.**
 
-- **The top level** is for modules that do nothing until something asks. `Options` is one: it reads its row when you call `get()`, and never before.
+- **The top level** is for modules that do nothing until something asks. `Options` is one: it reads its row when you call `get()`, and never before. So are `Path`, `Views`, `Request`, `Cookie` and `Transients` — the five `add` brought along in section 1, each reached by one of the modules below it.
 - **`acme_books_loaded`** is this plugin's own action, fired at the end of `run()` once every module exists. `Log` goes here so its hook is bound before anything can log through it, and `Activation` because WordPress fires the activation hook right after the plugin file loads — this is the last moment that is still early enough.
 - **`init`** is WordPress's, and is where anything WordPress will not accept earlier belongs: the `book` post type, the REST routes, the script handles.
 
@@ -166,7 +176,9 @@ A class entry's value is the callback that configures it, and a heading takes th
 ),
 ```
 
-`Assets` and `Activation` are the two lines you do not add by hand — `wp zt add assets` appends the first in section 7, and `wp zt make activation` the second in section 8. Both are shown here so the finished file is in one place.
+`Assets` and `Activation` are the two lines that are not there yet — `wp zt add assets` appends the first in section 7, and `wp zt make activation` the second in section 8. Both are shown here so the finished file is in one place.
+
+Leaving a module out is not a saving. `PostTypes` reaches for `Path` the moment it boots, and `AdminPages` reaches for `Views` to render a page; drop either declaration and the plugin throws `is not declared, so nothing built it` on the first request that needs it.
 
 > [!IMPORTANT]
 > Nothing outside this list is ever built, so reading it tells you what the plugin has — and in what order it comes up.
@@ -464,7 +476,7 @@ $this->with( Options::class )->get( 'per_page', 10 );
 
 The same instance every time: ask for `Options` in ten files and all ten share it. Nothing is built by asking, either — the module was built because `bootstrap.php` lists it, and asking for one that is not listed throws.
 
-This is why nothing here declares a constructor. `Module::__construct()` is `final` and takes no arguments, so configuration arrives from the `configure` in `bootstrap.php` and everything else through `with()`.
+This is why nothing here declares a constructor. `Module::__construct()` is `final` and takes no arguments, so configuration arrives from the callback its `bootstrap.php` entry names, and everything else through `with()`.
 
 ## 7. A script for the settings page
 
@@ -573,11 +585,11 @@ One class of mistake in this system produces no error: a module on disk that `bo
 ```bash
 $ wp zt doctor
 zestry.json    Acme\Books -> lib/
-bootstrap.php  7 classes declared
+bootstrap.php  12 classes declared
 Success: No problems found.
 ```
 
-Seven: `Options` at the top level, `Log`, `AdminPages` and `Activation` under `acme_books_loaded`, and `PostTypes`, `RestApi` and `Assets` under `init`. It exits non-zero when it finds something, so it gates a build on its own. See [`wp zt doctor`](commands/doctor.md) for everything it checks.
+Twelve: `Path`, `Options`, `Views`, `Request`, `Cookie` and `Transients` at the top level, `Log`, `AdminPages` and `Activation` under `acme_books_loaded`, and `PostTypes`, `RestApi` and `Assets` under `init` — every module `add` copied in, which is what "no problems" means. It exits non-zero when it finds something, so it gates a build on its own. See [`wp zt doctor`](commands/doctor.md) for everything it checks.
 
 ## 10. What you have
 
@@ -592,7 +604,7 @@ acme-books/
 ├── resources/admin-pages/
 │   └── settings.php            ← an admin page
 ├── resources/views/
-│   └── resources/admin-pages/
+│   └── admin-pages/
 │       └── settings.php        ← its markup
 ├── resources/post-types/
 │   └── book.php                ← a post type

@@ -273,7 +273,7 @@ abstract class Taxonomy implements PluginAware {
 	 * @return PostTypes
 	 */
 	final protected function post_types(): PostTypes {
-		return $this->get_plugin()->get( PostTypes::class );
+		return $this->with( PostTypes::class );
 	}
 
 	/**

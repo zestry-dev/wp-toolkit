@@ -290,7 +290,7 @@ abstract class AddCommand extends Command {
 	 *
 	 * `@setup-hook` names the hook and `@setup-hook-priority` the priority. A
 	 * module that names neither and acts on its own gets the plugin's own
-	 * `{slug}-loaded` action, which is the answer that suits almost all of them:
+	 * `{slug}_loaded` action, which is the answer that suits almost all of them:
 	 * it fires at the end of `run()`, so the module boots after every other one
 	 * the plugin has. The tag is for the few that need something else.
 	 *

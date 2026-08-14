@@ -52,7 +52,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *     }
  *
  *     public function fields(): array {
- *         $options = $this->get_plugin()->get( Options::class );
+ *         $options = $this->with( Options::class );
  *         $has_key = '' !== (string) $options->get( 'api_key', '' );
  *
  *         return array(
@@ -170,6 +170,6 @@ abstract class DebugSection implements PluginAware {
 	 * @return SiteHealth
 	 */
 	final protected function site_health(): SiteHealth {
-		return $this->get_plugin()->get( SiteHealth::class );
+		return $this->with( SiteHealth::class );
 	}
 }

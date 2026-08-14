@@ -4,11 +4,11 @@ One screen for a plugin you have already built. Every link goes to the page that
 
 For the absolutes alone, with the tables and the caveats stripped out, see [Rules](rules.md).
 
-## One kind of thing
+## What a plugin is made of
 
 Everything is a **[`Module`](modules/module.md)**, and `bootstrap.php` lists every one. Nothing outside that list is ever built — asking for an undeclared module throws.
 
-**Does it do anything without being called?** If yes, it implements [`Bootable`](kernel/bootable.md) and its `on_boot()` runs once when the plugin builds it. If no, it has no `on_boot()` and sits there until something calls it. Nothing else differs: both are listed the same way and reached the same way.
+**Does it do anything without being called?** If yes, it implements [`Bootable`](kernel/bootable.md), its `on_boot()` runs once when the plugin builds it, and its entry goes under the hook it acts on. If no, it has no `on_boot()`, sits there until something calls it, and its entry goes at the top level. Reached the same way either way.
 
 Reach any module with `$this->with( X::class )` — the same instance every time, from a module or from any file a module discovers.
 
@@ -42,7 +42,7 @@ Leaving a module that acts on its own at the top level throws, naming the headin
 
 ## Namespaces
 
-`lib` is the root you chose at `init`; `Acme\Plugin` is the namespace you chose.
+`lib` is fixed; `Acme\Plugin` is the namespace you chose at `init`.
 
 | Written by | On disk | Namespace |
 |---|---|---|

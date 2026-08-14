@@ -114,12 +114,12 @@ return new class() extends Command {
 	 * either inferred value is unusable, rather than proceeding with a wrong
 	 * one.
 	 *
-	 *
 	 * A brand-new plugin has no PSR-4 entry yet -- `init` is what writes one --
 	 * so there is nothing to infer a namespace from and this stops rather than
 	 * guessing. For an unattended first run, declare the entry in composer.json
 	 * yourself before calling this; every run after that has one.
- * [--no-phpcs]
+	 *
+	 * [--no-phpcs]
 	 * : Skip the phpcs.xml and its Composer dev dependencies.
 	 *
 	 * [--no-eslint]

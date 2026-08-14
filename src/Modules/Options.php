@@ -77,11 +77,9 @@ use Zestry\WPToolkit\Kernel\Helpers\Arr;
  * ```
  * // bootstrap.php
  * return array(
- *     Options::class => array(
- *         'configure' => static function ( Options $options ): void {
- *             $options->add_autoloaded_groups( array( 'my_frequently_read_group' ) );
- *         },
- *     ),
+ *     Options::class => static function ( Options $options ): void {
+ *         $options->add_autoloaded_groups( array( 'my_frequently_read_group' ) );
+ *     },
  * );
  * ```
  *

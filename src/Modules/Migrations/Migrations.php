@@ -86,7 +86,7 @@ use Zestry\WPToolkit\Modules\Path;
  * ```
  * class MyActivation extends ActivationHandler {
  *     public function activate( bool $network_wide ): void {
- *         $this->get_plugin()->get( Migrations::class )->run_pending();
+ *         $this->with( Migrations::class )->run_pending();
  *     }
  *
  *     public function deactivate( bool $network_wide ): void {
@@ -479,6 +479,6 @@ class Migrations extends Module implements Bootable {
 	 * @return Options
 	 */
 	private function get_migrations_options(): Options {
-		return $this->get_plugin()->get( Options::class )->group( self::OPTIONS_GROUP_NAME );
+		return $this->with( Options::class )->group( self::OPTIONS_GROUP_NAME );
 	}
 }

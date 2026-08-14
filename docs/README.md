@@ -17,7 +17,7 @@ wp zt add cli
 
 Run these from inside your own plugin's directory. `zt` is short for *zestry toolkit*, and the command is registered by your plugin's autoloader, so the plugin has to be **active** before `init`.
 
-`init` asks for a namespace, a text domain and a destination directory (default `lib`), then copies the kernel into `lib/Core/Kernel/` under your namespace. `wp zt add` copies each feature module you want beside it, and declares it for you.
+`init` asks for a namespace and a text domain, then copies the kernel into `lib/Core/Kernel/` under your namespace. `wp zt add` copies each feature module you want beside it, and declares it for you.
 
 Full walkthrough: **[Getting started](getting-started.md)**.
 
@@ -121,7 +121,7 @@ Three that are not that shape:
 
 Nothing needs adding up front. Reach for one when you hit what it solves — the full list is under [Reference](#documentation) below, and [`wp zt add`](commands/add.md) brings along whatever the thing you asked for depends on.
 
-## One kind of thing
+## What a plugin is made of
 
 Everything a plugin is made of is a **[module](modules/)**, and `bootstrap.php` lists every one of them. Nothing is built that is not listed there — asking for an undeclared module throws — so reading that file tells you what the plugin has, and the key above each one says when it starts.
 
@@ -137,7 +137,7 @@ return array(
 );
 ```
 
-**A module that does something on its own implements [`Bootable`](kernel/bootable.md).** That is the only difference between one module and another, and it is on the line that names the class:
+**A module that does something on its own implements [`Bootable`](kernel/bootable.md)**, on the line that names the class:
 
 ```php
 class Shortcode extends Module implements Bootable {
@@ -148,7 +148,7 @@ class Shortcode extends Module implements Bootable {
 }
 ```
 
-`Path` resolves a path when you ask it and has no `on_boot()`; `Ajax` binds hooks the moment the plugin builds it and does. Both are listed the same way.
+`Path` resolves a path when you ask it and has no `on_boot()`; `Ajax` binds hooks the moment the plugin builds it and does. That is why `Ajax` sits under a heading and `Path` does not — a module that acts on its own has to say when, and the top level throws for one that will not.
 
 **`with()` is how anything reaches anything** — in a module, and in every file a module discovers:
 

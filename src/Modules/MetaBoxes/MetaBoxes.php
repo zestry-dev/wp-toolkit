@@ -429,6 +429,6 @@ class MetaBoxes extends Module implements Bootable {
 	 * @return Fields
 	 */
 	private function fields(): Fields {
-		return $this->get_plugin()->get( Fields::class );
+		return $this->with( Fields::class );
 	}
 }

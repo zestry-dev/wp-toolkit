@@ -309,7 +309,7 @@ final public function set_flash( mixed $value ): bool
 
 ```php
 public function handle_submit(): void {
-    $this->get_plugin()->get( Options::class )->set( 'threshold', $this->threshold );
+    $this->with( Options::class )->set( 'threshold', $this->threshold );
     $this->set_flash( __( 'Settings saved.', 'acme-plugin' ) );
 
     wp_safe_redirect( $this->get_page_url() );
@@ -533,7 +533,7 @@ $this->with( Options::class )->get( 'api_key' );
 
 **The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
 
-A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
+A module listed under a heading also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
 
 <br>
 

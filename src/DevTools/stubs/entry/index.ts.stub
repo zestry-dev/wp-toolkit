@@ -6,7 +6,7 @@
  * so loading it anywhere in PHP is one call, with no registration first:
  *
  * ```php
- * $this->get_plugin()->get( Assets::class )->enqueue_entry( '{{name}}' );
+ * $this->with( Assets::class )->enqueue_entry( '{{name}}' );
  * ```
  *
  * Whatever this file imports comes with it, including the stylesheet beside it.

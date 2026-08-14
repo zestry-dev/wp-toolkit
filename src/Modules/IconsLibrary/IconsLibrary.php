@@ -85,7 +85,7 @@ use Zestry\WPToolkit\Modules\Path;
  *
  * ```
  * public function render(): string {
- *     $icons = $this->get_plugin()->get( IconsLibrary::class );
+ *     $icons = $this->with( IconsLibrary::class );
  *
  *     return $icons->get( 'arrow-right', array( 'size' => 32 ) );
  * }
@@ -118,29 +118,31 @@ use Zestry\WPToolkit\Modules\Path;
  * @setup-hook init
  * @setup Group them
  * ```
- * IconsLibrary::class => array(
- *     'boots_on'  => 'init',
- *     'configure' => static function ( IconsLibrary $icons ): void {
- *         $icons->set_default_collection_details(
- *             __( 'Acme icons', 'acme-plugin' ),
- *             __( 'Everything Acme draws.', 'acme-plugin' )
- *         );
+ * // bootstrap.php
+ * return array(
+ *     'init' => array(
+ *         IconsLibrary::class => static function ( IconsLibrary $icons ): void {
+ *             $icons->set_default_collection_details(
+ *                 __( 'Acme icons', 'acme-plugin' ),
+ *                 __( 'Everything Acme draws.', 'acme-plugin' )
+ *             );
  *
- *         $icons->add_collections(
- *             array( 'acme-brand' => __( 'Acme brand', 'acme-plugin' ) )
- *         );
- *     },
- * ),
+ *             $icons->add_collections(
+ *                 array( 'acme-brand' => __( 'Acme brand', 'acme-plugin' ) )
+ *             );
+ *         },
+ *     ),
+ * );
  * ```
  *
  * You have one collection already, slugged with your plugin slug and labelled
- * `{slug} icons` until you say otherwise. `configure` runs on the hook, right
+ * `{slug} icons` until you say otherwise. The callback runs on that hook, right
  * before the module registers anything -- which is what makes the `__()` calls
  * safe, and why this module names a hook at all.
  *
  * An icon may name a collection another plugin registers, and this module
- * refuses one it cannot find. If yours does, add a `'priority'` above 10 to the
- * entry so that plugin gets its turn first.
+ * refuses one it cannot find. If yours does, list it under `'init:20'` so that
+ * plugin gets its turn first.
  */
 class IconsLibrary extends Module implements Bootable {
 
@@ -192,18 +194,21 @@ class IconsLibrary extends Module implements Bootable {
 	 * string is the label, and an array carries a description alongside it:
 	 *
 	 * ```
-	 * $icons->on_wp_init(
-	 *     static function ( IconsLibrary $icons ): void {
-	 *         $icons->add_collections(
-	 *             array(
-	 *                 'acme-brand' => __( 'Acme brand', 'acme-plugin' ),
-	 *                 'acme-ui'    => array(
-	 *                     'label'       => __( 'Acme interface', 'acme-plugin' ),
-	 *                     'description' => __( 'Arrows, spinners and toggles.', 'acme-plugin' ),
-	 *                 ),
-	 *             )
-	 *         );
-	 *     }
+	 * // bootstrap.php
+	 * return array(
+	 *     'init' => array(
+	 *         IconsLibrary::class => static function ( IconsLibrary $icons ): void {
+	 *             $icons->add_collections(
+	 *                 array(
+	 *                     'acme-brand' => __( 'Acme brand', 'acme-plugin' ),
+	 *                     'acme-ui'    => array(
+	 *                         'label'       => __( 'Acme interface', 'acme-plugin' ),
+	 *                         'description' => __( 'Arrows, spinners and toggles.', 'acme-plugin' ),
+	 *                     ),
+	 *                 )
+	 *             );
+	 *         },
+	 *     ),
 	 * );
 	 *
 	 * // resources/svg-icons/logo.php
@@ -218,10 +223,10 @@ class IconsLibrary extends Module implements Bootable {
 	 * enough not to collide. One another plugin already registered is left as it
 	 * is rather than replaced, and an icon may file itself under it.
 	 *
-	 * **Call it from the entry's `configure`, as the example does.** A label and
-	 * a description are both user-visible, so they want translating, and
-	 * `configure` runs on the boot hook rather than at plugin load, where a
-	 * `__()` reports `_load_textdomain_just_in_time` on every request.
+	 * **Call it from the entry's callback, as the example does.** A label and a
+	 * description are both user-visible, so they want translating, and that
+	 * callback runs on the boot hook rather than at plugin load, where a `__()`
+	 * reports `_load_textdomain_just_in_time` on every request.
 	 *
 	 * @param array<string, string|array{label: string, description?: string}> $collections Labels or configuration, keyed by slug.
 	 * @return void
@@ -255,7 +260,7 @@ class IconsLibrary extends Module implements Bootable {
 	 * entirely when it is: an absent description is honest, where a generated
 	 * sentence occupies the space a real one would go in.
 	 *
-	 * **Call it from the entry's `configure`**, for the reason
+	 * **Call it from the entry's callback**, for the reason
 	 * {@see add_collections()} gives -- both of these are read by a person, so
 	 * both want translating.
 	 *

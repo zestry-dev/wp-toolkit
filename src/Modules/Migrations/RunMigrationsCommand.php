@@ -96,6 +96,6 @@ class RunMigrationsCommand extends Command {
 	 * @return Migrations
 	 */
 	private function migrations(): Migrations {
-		return $this->get_plugin()->get( Migrations::class );
+		return $this->with( Migrations::class );
 	}
 }

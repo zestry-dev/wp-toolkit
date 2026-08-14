@@ -38,7 +38,7 @@ use Zestry\WPToolkit\Kernel\Exceptions\ModuleException;
  *
  * ```
  * try {
- *     $this->get_plugin()->get( Migrations::class )->run_pending();
+ *     $this->with( Migrations::class )->run_pending();
  * } catch ( RenamedMigrationException $exception ) {
  *     // Nothing ran. Show the operator which files to put back.
  *     $this->notice( $exception->getMessage() );

@@ -9,7 +9,7 @@
 
 Base class for everything a plugin is made of.
 
-One kind of thing, listed in `bootstrap.php`. `Path` resolves paths, `Ajax` binds hooks, `Options` does both — all three are modules, built by the plugin and reached the same way.
+`Path` resolves paths, `Options` stores settings, `Ajax` binds hooks: all three extend this, are listed in `bootstrap.php`, are built by the plugin and are reached the same way.
 
 **Listing it in `bootstrap.php` is what makes it exist.** Nothing else builds a module, and asking for one that is not listed throws rather than quietly constructing it — so that file is the whole inventory of what a plugin is made of, and reading it tells you what the plugin has.
 
@@ -19,9 +19,9 @@ $path = $this->with( Path::class );
 
 `WithPlugin::with()` is how a module reaches another, and how a discovered file reaches any of them. There is nothing to construct and nothing to declare in advance.
 
-**Implement `Bootable` to do something without being called.** That is the only difference between one module and another, and it is on the line that names the class: a `Bootable` module binds hooks, registers a post type or walks a directory when the plugin builds it, and one that is not sits there until something calls it.
+**Implement `Bootable` to do something without being called.** It goes on the line that names the class, so what a module does unasked is visible before you read the body: a `Bootable` module binds hooks, registers a post type or walks a directory when the plugin builds it, and one without it sits there until something calls it. It is also what decides where the module's `bootstrap.php` entry goes — under the hook it acts on, rather than at the top level.
 
-**Your class may not declare a constructor.** `__construct()` is `final` here and takes no arguments, so every module is built as `new YourModule()`. Configuration comes from the `configure` in its `bootstrap.php` entry, and dependencies from `with()`. A class that genuinely needs constructor arguments is a value object rather than a module: write it as a plain class, and if it also needs the plugin, have it `use WithPlugin` and pass it through `$plugin->wire( $object )`.
+**Your class may not declare a constructor.** `__construct()` is `final` here and takes no arguments, so every module is built as `new YourModule()`. Configuration comes from the callback its `bootstrap.php` entry names, and dependencies from `with()`. A class that genuinely needs constructor arguments is a value object rather than a module: write it as a plain class, and if it also needs the plugin, have it `use WithPlugin` and pass it through `$plugin->wire( $object )`.
 
 ## One that only works when called
 
@@ -50,7 +50,7 @@ return array(
 
 ## One that acts on its own
 
-`on_boot()` runs once, when the plugin builds the module — which is what being listed causes.
+`on_boot()` runs once, when the plugin builds the module — and a module that acts is listed under the hook it acts on, which is what decides when that is. Left at the top level it throws.
 
 ```php
 use Acme\Plugin\Core\Kernel\Abstracts\Module;
@@ -62,21 +62,28 @@ class Shortcode extends Module implements Bootable {
         add_shortcode( 'acme_form', array( $this, 'render' ) );
     }
 }
+
+// bootstrap.php
+return array(
+    'acme_plugin_loaded' => array(
+        Shortcode::class,
+    ),
+);
 ```
 
 ## One that takes configuration
 
-A configured entry is an array, whose `configure` runs after the module is built and before `on_boot()` — so `on_boot()` can rely on whatever it set. A module needing no configuration stays bare, as `CLI::class` does here.
+A class entry's value is the callback that configures it, run after the module is built and before `on_boot()` — so `on_boot()` can rely on whatever it set. A module needing no configuration stays bare, as `CLI::class` does here.
 
 ```php
 // bootstrap.php
 return array(
-    Cron::class => array(
-        'configure' => static function ( Cron $cron ): void {
+    'init' => array(
+        Cron::class => static function ( Cron $cron ): void {
             $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
         },
+        CLI::class,
     ),
-    CLI::class,
 );
 ```
 
@@ -172,4 +179,4 @@ $this->with( Options::class )->get( 'api_key' );
 
 **The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
 
-A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
+A module listed under a heading also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.

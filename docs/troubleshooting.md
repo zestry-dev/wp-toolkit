@@ -64,12 +64,17 @@ use Acme\Plugin\Core\Modules\Cron\Cron;
 use Acme\Plugin\Modules\Shortcode;
 
 return array(
-    Cron::class,
-    Shortcode::class,
+    'acme_plugin_loaded' => array(
+        Shortcode::class,
+    ),
+
+    'init' => array(
+        Cron::class,
+    ),
 );
 ```
 
-`wp zt add <name>` writes that entry for you, and so does `wp zt make module`. A module added by hand, or one whose declaration was lost in a merge, is the case to check.
+Both act on their own, so both go under a heading — and the heading is what decides when. `wp zt add <name>` writes the entry for you, and so does `wp zt make module`. A module added by hand, or one whose declaration was lost in a merge, is the case to check.
 
 `wp zt doctor` finds it:
 
@@ -119,7 +124,7 @@ use Acme\Plugin\Core\Kernel\Exceptions\ModuleException;
 use Acme\Plugin\Core\Modules\CLI\Command;
 ```
 
-`Acme\Plugin` here is whatever you answered `init`'s namespace prompt with, and `lib` whatever you answered for the root. Both are recorded in `zestry.json`; `wp zt doctor` prints them on its first line.
+`Acme\Plugin` here is whatever you answered `init`'s namespace prompt with; `lib` is fixed. Both are recorded in `zestry.json`; `wp zt doctor` prints them on its first line.
 
 If the namespace is right and the class still is not found:
 
@@ -192,7 +197,7 @@ Two causes, and the message says which.
 **The file returned the wrong thing.**
 
 ```
-The file "/…/acme-plugin/actions/save.php" must return an instance of
+The file "/…/acme-plugin/resources/actions/save.php" must return an instance of
 Acme\Plugin\Core\Modules\Ajax\AjaxAction. Got: integer
 ```
 

@@ -70,7 +70,7 @@ entry's value is the callback that configures it: `Cron::class => static functio
 it boots is a group heading above it: `'init' => array( Cron::class )`.
 ```
 
-**What causes it.** A `bootstrap.php` with no `return`, or one returning something other than an array. An entry given the old `array( 'boots_on' => … )` shape rather than a configurator.
+**What causes it.** A `bootstrap.php` with no `return`, or one returning something other than an array. A class entry whose value is an array rather than the callback that configures it.
 
 **What to do.** The top level is for modules that do nothing until asked; a module that acts on its own goes under the hook it acts on, and a class entry's value is the callback that configures it:
 
@@ -200,7 +200,7 @@ The one you will meet most, because it is the one your own feature files trigger
 **A discovered file returned the wrong thing.**
 
 ```
-The file "/…/acme-plugin/commands/greet.php" must return an instance of
+The file "/…/acme-plugin/resources/commands/greet.php" must return an instance of
 Acme\Plugin\Core\Modules\CLI\Command. Got: integer
 ```
 

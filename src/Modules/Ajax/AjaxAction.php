@@ -156,7 +156,7 @@ abstract class AjaxAction implements PluginAware {
 	 * @return string
 	 */
 	final public function get_slug(): string {
-		return $this->get_plugin()->get( Ajax::class )->get_slug_of( $this );
+		return $this->with( Ajax::class )->get_slug_of( $this );
 	}
 
 	/**

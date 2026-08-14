@@ -124,6 +124,6 @@ abstract class Schedule implements PluginAware {
 	 * @return string
 	 */
 	final public function get_hook(): string {
-		return $this->get_plugin()->get( Cron::class )->get_slug_of( $this );
+		return $this->with( Cron::class )->get_slug_of( $this );
 	}
 }

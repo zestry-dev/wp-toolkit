@@ -210,7 +210,7 @@ npm install && npm run build
 That copies the [`assets`](modules/assets/) module, writes a `webpack.config.js`, and gives you `src/entries/settings/` with a script and a stylesheet. Loading it is one call, with no registration first:
 
 ```php
-$this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
+$this->with( Assets::class )->enqueue_entry( 'settings' );
 ```
 
 Everything JavaScript lives under `src/`, in three directories that differ only in who registers the result: `src/blocks/` (WordPress does, from `block.json`), `src/entries/` (your own scripts), and `src/shared/` (code two of them import by name, built once rather than copied into each).

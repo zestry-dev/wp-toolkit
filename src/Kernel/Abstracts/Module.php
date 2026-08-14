@@ -18,9 +18,9 @@ use Zestry\WPToolkit\Kernel\Traits\WithPlugin;
 /**
  * Base class for everything a plugin is made of.
  *
- * One kind of thing, listed in `bootstrap.php`. `Path` resolves paths, `Ajax`
- * binds hooks, `Options` does both -- all three are modules, built by the plugin
- * and reached the same way.
+ * `Path` resolves paths, `Options` stores settings, `Ajax` binds hooks: all
+ * three extend this, are listed in `bootstrap.php`, are built by the plugin and
+ * are reached the same way.
  *
  * **Listing it in `bootstrap.php` is what makes it exist.** Nothing else builds
  * a module, and asking for one that is not listed throws rather than quietly
@@ -35,15 +35,17 @@ use Zestry\WPToolkit\Kernel\Traits\WithPlugin;
  * and how a discovered file reaches any of them. There is nothing to construct
  * and nothing to declare in advance.
  *
- * **Implement {@see Bootable} to do something without being called.** That is
- * the only difference between one module and another, and it is on the line that
- * names the class: a `Bootable` module binds hooks, registers a post type or
- * walks a directory when the plugin builds it, and one that is not sits there
- * until something calls it.
+ * **Implement {@see Bootable} to do something without being called.** It goes on
+ * the line that names the class, so what a module does unasked is visible before
+ * you read the body: a `Bootable` module binds hooks, registers a post type or
+ * walks a directory when the plugin builds it, and one without it sits there
+ * until something calls it. It is also what decides where the module's
+ * `bootstrap.php` entry goes -- under the hook it acts on, rather than at the
+ * top level.
  *
  * **Your class may not declare a constructor.** `__construct()` is `final` here
  * and takes no arguments, so every module is built as `new YourModule()`.
- * Configuration comes from the `configure` in its `bootstrap.php` entry, and
+ * Configuration comes from the callback its `bootstrap.php` entry names, and
  * dependencies from `with()`. A class that genuinely needs constructor arguments
  * is a value object rather than a module: write it as a plain class, and if it
  * also needs the plugin, have it `use WithPlugin` and pass it through
@@ -76,8 +78,9 @@ use Zestry\WPToolkit\Kernel\Traits\WithPlugin;
  * ```
  *
  * @example One that acts on its own
- * `on_boot()` runs once, when the plugin builds the module -- which is what
- * being listed causes.
+ * `on_boot()` runs once, when the plugin builds the module -- and a module that
+ * acts is listed under the hook it acts on, which is what decides when that is.
+ * Left at the top level it throws.
  *
  * ```
  * use Acme\Plugin\Core\Kernel\Abstracts\Module;
@@ -91,20 +94,29 @@ use Zestry\WPToolkit\Kernel\Traits\WithPlugin;
  * }
  * ```
  *
+ * ```
+ * // bootstrap.php
+ * return array(
+ *     'acme_plugin_loaded' => array(
+ *         Shortcode::class,
+ *     ),
+ * );
+ * ```
+ *
  * @example One that takes configuration
- * A configured entry is an array, whose `configure` runs after the module is
- * built and before `on_boot()` -- so `on_boot()` can rely on whatever it set.
+ * A class entry's value is the callback that configures it, run after the module
+ * is built and before `on_boot()` -- so `on_boot()` can rely on whatever it set.
  * A module needing no configuration stays bare, as `CLI::class` does here.
  *
  * ```
  * // bootstrap.php
  * return array(
- *     Cron::class => array(
- *         'configure' => static function ( Cron $cron ): void {
+ *     'init' => array(
+ *         Cron::class => static function ( Cron $cron ): void {
  *             $cron->add_custom_interval( 'every_15_minutes', 900, 'Every 15 Minutes' );
  *         },
+ *         CLI::class,
  *     ),
- *     CLI::class,
  * );
  * ```
  *
@@ -140,7 +152,7 @@ abstract class Module implements PluginAware {
 	 * afterwards. `final` is what holds that: a subclass declaring its own
 	 * constructor is a fatal error, so none can take constructor arguments or
 	 * run setup before the plugin is there. Anything that needs to run after
-	 * that goes in the `configure` from its `bootstrap.php` entry, or -- if it
+	 * that goes in the callback its `bootstrap.php` entry names, or -- if it
 	 * should run without being asked -- in a {@see Bootable} `on_boot()`.
 	 *
 	 * @return void

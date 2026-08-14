@@ -20,7 +20,7 @@ return new class() extends MakeCommand {
 	 * `build/entries/<name>` and the `assets` module registers on `init`. Using
 	 * it is then one call, from an admin page, a shortcode, anywhere:
 	 *
-	 *     $this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
+	 *     $this->with( Assets::class )->enqueue_entry( 'settings' );
 	 *
 	 * An entry is built by the `webpack.config.js` that `wp zt add assets`
 	 * writes, which is what lets one build produce blocks and entries together.

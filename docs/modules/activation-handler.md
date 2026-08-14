@@ -30,7 +30,7 @@ use Acme\Plugin\Core\Modules\Migrations\Migrations;
 class Activation extends ActivationHandler {
 
     public function activate( bool $network_wide ): void {
-        $this->get_plugin()->get( Migrations::class )->run_pending();
+        $this->with( Migrations::class )->run_pending();
         flush_rewrite_rules();
     }
 
@@ -246,4 +246,4 @@ $this->with( Options::class )->get( 'api_key' );
 
 **The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
 
-A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
+A module listed under a heading also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.

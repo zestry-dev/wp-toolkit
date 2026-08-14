@@ -31,7 +31,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * $path = $plugin->get( Path::class );
  *
  * // Absolute filesystem path to a file inside the plugin:
- * require $path->get_plugin_path( 'views/email.php' );
+ * require $path->get_plugin_path( 'resources/views/email.php' );
  *
  * // Browser URL for the same plugin:
  * wp_enqueue_script( 'app', $path->get_plugin_url( 'assets/app.js' ) );

@@ -7,7 +7,7 @@
 
 Copy one or more feature modules into an initialized plugin.
 
-Requires `wp zt init` to have already run in this plugin (it reads zestry.json for the namespace and destination directory chosen there). Resolves each requested module's dependencies before copying anything, so `rest-api`, for example, also brings in `path` without needing to be asked for by name. Every `namespace Zestry\WPToolkit\...;` declaration and `use Zestry\WPToolkit\...;` import in each copied file is rewritten to the project's own namespace. A module already present at its destination is left untouched and logged as skipped — run `wp zt overwrite <module>` to replace it deliberately.
+Requires `wp zt init` to have already run in this plugin (it reads zestry.json for the namespace chosen there, and the `lib` source root). Resolves each requested module's dependencies before copying anything, so `rest-api`, for example, also brings in `path` without needing to be asked for by name. Every `namespace Zestry\WPToolkit\...;` declaration and `use Zestry\WPToolkit\...;` import in each copied file is rewritten to the project's own namespace. A module already present at its destination is left untouched and logged as skipped — run `wp zt overwrite <module>` to replace it deliberately.
 
 Each copied module is also declared in the plugin's `bootstrap.php`, which is what builds it — so a module works the moment it arrives. With no `bootstrap.php` to append to, the entry line is printed for you to paste wherever the plugin declares its modules instead.
 

@@ -18,7 +18,18 @@ class Shortcode extends Module implements Bootable {
 }
 ```
 
-**The `implements` clause is the declaration**, and it is on the line that names the class — so what a module does without being asked is visible before you read the body. Every module is listed in `bootstrap.php` either way; this decides only whether anything happens when the plugin builds it.
+**The `implements` clause is the declaration**, and it is on the line that names the class — so what a module does without being asked is visible before you read the body.
+
+Every module is listed in `bootstrap.php` either way. What this changes is *where*: a module implementing it goes under the hook it acts on, and the top level throws for one that does — because the top level is for modules that do nothing until something asks, and this one cannot keep that promise.
+
+```php
+// bootstrap.php
+return array(
+    'acme_plugin_loaded' => array(
+        Shortcode::class,
+    ),
+);
+```
 
 `ModulesRepository` calls this once, as it builds the module, and a module that does not implement this has nothing for it to call.
 

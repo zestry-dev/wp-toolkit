@@ -49,7 +49,7 @@ use Zestry\WPToolkit\Kernel\Contracts\Bootable;
  * class Activation extends ActivationHandler {
  *
  *     public function activate( bool $network_wide ): void {
- *         $this->get_plugin()->get( Migrations::class )->run_pending();
+ *         $this->with( Migrations::class )->run_pending();
  *         flush_rewrite_rules();
  *     }
  *

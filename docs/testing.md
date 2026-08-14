@@ -112,6 +112,12 @@ declare( strict_types=1 );
 namespace Acme\Plugin\Tests;
 
 use Acme\Plugin\Core\Kernel\Plugin;
+use Acme\Plugin\Core\Modules\Ajax\Ajax;
+use Acme\Plugin\Core\Modules\CLI\CLI;
+use Acme\Plugin\Core\Modules\Cron\Cron;
+use Acme\Plugin\Core\Modules\Options;
+use Acme\Plugin\Core\Modules\Path;
+use Acme\Plugin\Core\Modules\Views;
 
 abstract class TestCase extends \WP_UnitTestCase {
 
@@ -129,6 +135,23 @@ abstract class TestCase extends \WP_UnitTestCase {
         file_put_contents( $entry, "<?php\n/* Plugin Name: Acme Test */\n" );
 
         $this->plugin = new Plugin( $entry, 'acme-test' );
+
+        // Nothing is built that is not declared, so a test case declares what
+        // its tests reach for. The headings are nominal here: these tests call
+        // get() directly rather than run(), which is what waits on a hook.
+        $this->plugin->declare_multiple(
+            array(
+                Path::class,
+                Options::class,
+                Views::class,
+
+                'init' => array(
+                    CLI::class,
+                    Ajax::class,
+                    Cron::class,
+                ),
+            )
+        );
     }
 
     public function tear_down(): void {
@@ -186,6 +209,7 @@ To exercise the files you actually ship instead, point the `Plugin` at your real
 
 ```php
 $plugin = new Plugin( dirname( __DIR__ ) . '/acme-plugin.php', 'acme-test' );
+$plugin->declare( CLI::class, 'init' );
 $plugin->get( CLI::class );   // discovers your real resources/commands/ directory
 ```
 
@@ -203,7 +227,7 @@ public function test_a_command_is_registered_from_the_commands_directory(): void
     }
 
     $this->write_plugin_file(
-        'commands/greet.php',
+        'resources/commands/greet.php',
         '<?php
         use Acme\Plugin\Core\Modules\CLI\Command;
 
@@ -254,7 +278,7 @@ A `Command`, an `AjaxAction`, a `Route`, a `Schedule` — each is a plain object
 
 ```php
 public function test_greet_says_hello(): void {
-    $command = require dirname( __DIR__ ) . '/commands/greet.php';
+    $command = require dirname( __DIR__ ) . '/resources/commands/greet.php';
 
     $this->plugin->wire( $command );
     $command->set_arguments( array( 'Ada' ), array() );
@@ -314,7 +338,7 @@ Calling `handle()` directly bypasses the capability and nonce checks the module 
 // creates verifiable.
 add_filter( 'wp_doing_ajax', '__return_true' );
 wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
-$this->write_plugin_file( 'actions/report.php', $this->action_fixture() );
+$this->write_plugin_file( 'resources/actions/report.php', $this->action_fixture() );
 
 $ajax = $this->plugin->get( Ajax::class );
 
@@ -428,7 +452,7 @@ Cover every method your commands actually call — `Command::error_box()` reache
 A module is built the same way anything else is:
 
 ```php
-$this->write_plugin_file( 'views/card.php', 'Hi <?php echo esc_html( $name ); ?>' );
+$this->write_plugin_file( 'resources/views/card.php', 'Hi <?php echo esc_html( $name ); ?>' );
 
 $views = $this->plugin->get( Views::class );
 
@@ -456,20 +480,11 @@ Three ways to get an instance, and the difference matters in tests:
 
 - **`wire()`** gives the plugin to an object you built yourself.
 
-To give a class under test a fake collaborator, declare it against the module it reaches for. `with()` hands back whatever the plugin holds, so replacing the declaration replaces it everywhere:
+`with()` resolves by class name, so a fake stands in only by *being* the class the code under test names. Declaring a `FakeViews` alongside `Views` changes nothing — anything calling `$this->with( Views::class )` still gets the real one.
 
-```php
-// A stand-in, declared like any other module.
-$this->plugin->declare_multiple( array( FakeViews::class ) );
+Where you need a seam, give the class under test a setter and call it after `wire()`. A module reaches its dependencies through `with()` rather than through properties you can overwrite, so the seam has to be one the class offers.
 
-// Anything calling $this->with( Views::class ) still gets the real one —
-// so a fake stands in by being the class the code under test names.
-$reports = $this->plugin->get( Reports::class );
-```
-
-Where that is awkward, give the class under test a setter and call it after `wire()`. A module reaches its dependencies through `with()` rather than through properties you can overwrite, so a seam has to be one the class offers.
-
-A module the plugin never declared throws rather than being built. `TestCase` declares the whole toolkit, so a test only has to declare its own fixture classes.
+A module the plugin never declared throws rather than being built. The `TestCase` above declares the modules these examples use; add yours to that list, or call `declare()` in the test itself.
 
 ## 8. Things that bite
 

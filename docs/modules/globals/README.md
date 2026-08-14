@@ -18,7 +18,7 @@ wp zt add globals
 ```
 
 > [!IMPORTANT]
-> **A module is built because `bootstrap.php` lists it.** `Globals` binds its hooks when the plugin builds it, so it has to be listed there — which `wp zt add` writes for you. Left out, nothing is discovered and nothing reports why; [`wp zt doctor`](../../commands/doctor.md) is what catches it.
+> **A module is built because `bootstrap.php` lists it.** `Globals` does nothing until something asks, so it goes at the top level — which `wp zt add` writes for you. Left out, the first `with( Globals::class )` throws rather than building it, which [`wp zt doctor`](../../commands/doctor.md) catches before a request does.
 
 ```php
 // bootstrap.php
@@ -47,7 +47,7 @@ $mode = $globals->get( 'render_mode', 'default' );
 
 ## Changing the defaults
 
-`Globals` takes no configuration. The bare `modules` entry above is all it needs — reach it with `$plugin->get( Globals::class )`, or declare a property of its type and have it injected.
+`Globals` takes no configuration. The entry above is all it needs — reach it with `$this->with( Globals::class )` from any module or discovered file, or `$plugin->get( Globals::class )` from your entry file.
 
 ## Methods
 
@@ -197,7 +197,7 @@ $this->with( Options::class )->get( 'api_key' );
 
 **The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
 
-A module that names a `boots_on` also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
+A module listed under a heading also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
 
 ## See also
 

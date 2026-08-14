@@ -63,9 +63,8 @@ use WP_Block_Type_Registry;
  * ```
  * // bootstrap.php
  * return array(
- *     Blocks::class => array(
- *         'boots_on'    => 'init',
- *         'configure' => static function ( Blocks $blocks ): void {
+ *     'init' => array(
+ *         Blocks::class => static function ( Blocks $blocks ): void {
  *             $blocks->add_categories(
  *                 array(
  *                     'reports' => __( 'Reports', 'acme-plugin' ),
@@ -80,9 +79,9 @@ use WP_Block_Type_Registry;
  * );
  * ```
  *
- * `configure` runs on the hook, right before the module registers anything.
- * That is what makes the `__()` calls safe: an initializer running at plugin
- * load is before `init`, and touching a text domain there reports
+ * The callback runs on that hook, right before the module registers anything.
+ * That is what makes the `__()` calls safe: a callback running at plugin load
+ * is before `init`, and touching a text domain there reports
  * `_load_textdomain_just_in_time` on every request.
  */
 class Blocks extends Module implements Bootable {
@@ -158,18 +157,20 @@ class Blocks extends Module implements Bootable {
 	 *
 	 * ```
 	 * // bootstrap.php
-	 * $blocks->on_wp_init(
-	 *     static function ( Blocks $blocks ): void {
-	 *         $blocks->add_categories(
-	 *             array(
-	 *                 'reports' => __( 'Reports', 'acme-plugin' ),
-	 *                 'charts'  => array(
-	 *                     'title' => __( 'Charts', 'acme-plugin' ),
-	 *                     'icon'  => 'chart-bar',
-	 *                 ),
-	 *             )
-	 *         );
-	 *     }
+	 * return array(
+	 *     'init' => array(
+	 *         Blocks::class => static function ( Blocks $blocks ): void {
+	 *             $blocks->add_categories(
+	 *                 array(
+	 *                     'reports' => __( 'Reports', 'acme-plugin' ),
+	 *                     'charts'  => array(
+	 *                         'title' => __( 'Charts', 'acme-plugin' ),
+	 *                         'icon'  => 'chart-bar',
+	 *                     ),
+	 *                 )
+	 *             );
+	 *         },
+	 *     ),
 	 * );
 	 *
 	 * // src/blocks/sales/block.json
@@ -189,13 +190,13 @@ class Blocks extends Module implements Bootable {
 	 * of WordPress's own (`text`, `media`, `design`, `widgets`, `theme`,
 	 * `embed`) adds a second entry rather than renaming the first.
 	 *
-	 * **Call it from the entry's `configure`, as the example does.** A title
-	 * is user-visible, so it usually wants translating, and an initializer runs
-	 * while the plugin file loads -- early enough that a `__()` there loads the
-	 * text domain before WordPress is ready and reports
-	 * `_load_textdomain_just_in_time` on every request. Inside `on_wp_init()`
-	 * ordinary `__()` is correct, which is why a title is a plain string and
-	 * nothing here is lazy.
+	 * **Call it from the entry's callback, as the example does.** A title is
+	 * user-visible, so it usually wants translating, and that callback runs when
+	 * the module is built -- which, listed under `'init'`, is on `init`, where
+	 * ordinary `__()` is correct. That is why a title is a plain string and
+	 * nothing here is lazy. Calling it from somewhere that runs while the plugin
+	 * file loads asks for a text domain before WordPress is ready, and reports
+	 * `_load_textdomain_just_in_time` on every request.
 	 *
 	 * Order is kept: categories appear in the inserter after WordPress's own, in
 	 * the order declared here, and a later call appends to an earlier one.
