@@ -200,8 +200,9 @@ A route, an ability, an AJAX action and an admin page all declare their input th
 | Your `validate` / `sanitize` | in WordPress's own slots | run before binding | run before binding | run before binding |
 | Bound before the permission check | no | yes | yes | after it |
 | A refusal reads as | `rest_invalid_param`, 400 | `ability_invalid_input` | `rest_invalid_param`, 400 | `wp_die()`, 400 |
+| A refusal points at | the item, `fields[0].name` | the item | the argument, `fields` | the argument |
 
-An action and a page are the two WordPress does nothing for: both are plain hooks handed the superglobals as they arrived, slashed and unchecked, so declaring arguments is how either stops reading them by hand. A page cannot answer a refusal the way the other three do — what is waiting is a browser mid-POST — so it stops with `wp_die()`, and `handle_submit()` never runs.
+An action and a page are the two WordPress does nothing for: both are plain hooks handed the superglobals as they arrived, slashed and unchecked, so declaring arguments is how either stops reading them by hand. That is also what the last row is about — where WordPress validates, it walks into an array and names the item that failed; where this module does, it names the argument and stops, so a rejected `of:` list says `fields` rather than which entry in it. A page cannot answer a refusal the way the other three do — what is waiting is a browser mid-POST — so it stops with `wp_die()`, and `handle_submit()` never runs.
 
 **Where the value comes from** is the same answer on all four: the values are loaded into a `WP_REST_Request` and resolved by `get_param()`, so the JSON body wins, then the form body, then the query string. A cookie is never a parameter.
 

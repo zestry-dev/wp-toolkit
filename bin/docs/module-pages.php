@@ -626,10 +626,12 @@ function zestry_render_signature_table( array $method ): array {
 /**
  * Render one method as a markdown block.
  *
- * An inherited member is printed in full, like any other: a reader looking up
- * what a `Cron` can do should find `on_wp_init()` under `Cron`, not a
- * redirection to read it somewhere else. It carries a line naming where it came
- * from, so the page it is declared on is one click away.
+ * An inherited member keeps its summary, its signature and its table, so a
+ * reader looking up what a `Cron` can do finds `on_wp_init()` under `Cron` and
+ * can call it without leaving the page. What it does not keep is the prose and
+ * the worked examples: three inherited members reprinted in full ran to most of
+ * every module page, which buries the paragraphs that are actually about the
+ * module. Those live once, on the page named in the line above.
  *
  * @param array{name: string, label: string, signature: string, summary: string, description: string, params: array, return: string, throws: array, origin?: string} $method The method to render.
  * @param string                                                                                                $level  The heading level, e.g. `###`.
@@ -668,13 +670,16 @@ function zestry_render_method( array $method, string $level, string $page = '' )
 	 */
 	$body = array_merge( $body, zestry_render_signature_table( $method ) );
 
-	if ( '' !== $method['description'] ) {
+	// The prose and the examples belong to the page that declares the member.
+	$is_inherited = ( $method['inherited'] ?? false ) && null !== $owner && '' !== $page;
+
+	if ( ! $is_inherited && '' !== $method['description'] ) {
 		$body[] = $method['description'];
 		$body[] = '';
 	}
 
 	// A method's own worked examples, after the prose that introduces them.
-	foreach ( $method['examples'] ?? array() as $example ) {
+	foreach ( $is_inherited ? array() : ( $method['examples'] ?? array() ) as $example ) {
 		if ( '' !== $example['caption'] ) {
 			$body[] = '**' . $example['caption'] . '**';
 			$body[] = '';

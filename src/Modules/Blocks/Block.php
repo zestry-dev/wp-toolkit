@@ -211,10 +211,19 @@ abstract class Block implements PluginAware {
 	 * one global for the whole page -- so the second occurrence overwrites the
 	 * first, or reads the first's data. An attribute belongs to the element it
 	 * is on, which is the only place per-occurrence data can correctly live.
-	 * A nonce is the exception: it is tied to a user and a window,
-	 * so a full-page cache serves a stale one whatever carries it. Verify it when
-	 * you have it and fall back to a capability check when you do not, or keep the
-	 * endpoint public and defend it another way.
+	 * A nonce is the exception: it is tied to a user and a window, so a
+	 * full-page cache serves a stale one whatever carries it. Verify it when you
+	 * have it and fall back to a capability check when you do not.
+	 *
+	 * **On a block a logged-out visitor sees, there is no capability to fall back
+	 * to, and the nonce is not stale -- it is shared.** `wp_create_nonce()` hashes
+	 * the tick, the action, the user id and the session token; logged out, the
+	 * last two are `0` and the empty string, so every anonymous visitor is issued
+	 * the identical nonce for the same action within the same 12-hour tick. It
+	 * caches perfectly and proves nothing about who sent the request, which is
+	 * why a public endpoint's real defence is elsewhere: `permission_check()`
+	 * deciding on the request rather than on the caller, and whatever rate or
+	 * plausibility limit the operation warrants.
 	 *
 	 * An attribute also survives full-page caching, where a localized `<script>` written
 	 * at render time does not.

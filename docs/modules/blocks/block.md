@@ -279,7 +279,9 @@ const form = document.querySelector( '[data-endpoint]' );
 fetch( form.dataset.endpoint, { headers: { 'X-WP-Nonce': form.dataset.nonce } } );
 ```
 
-The reason is not style. A block appears any number of times on a page, each occurrence with its own attributes, and a localized script object is one global for the whole page — so the second occurrence overwrites the first, or reads the first's data. An attribute belongs to the element it is on, which is the only place per-occurrence data can correctly live. A nonce is the exception: it is tied to a user and a window, so a full-page cache serves a stale one whatever carries it. Verify it when you have it and fall back to a capability check when you do not, or keep the endpoint public and defend it another way.
+The reason is not style. A block appears any number of times on a page, each occurrence with its own attributes, and a localized script object is one global for the whole page — so the second occurrence overwrites the first, or reads the first's data. An attribute belongs to the element it is on, which is the only place per-occurrence data can correctly live. A nonce is the exception: it is tied to a user and a window, so a full-page cache serves a stale one whatever carries it. Verify it when you have it and fall back to a capability check when you do not.
+
+**On a block a logged-out visitor sees, there is no capability to fall back to, and the nonce is not stale — it is shared.** `wp_create_nonce()` hashes the tick, the action, the user id and the session token; logged out, the last two are `0` and the empty string, so every anonymous visitor is issued the identical nonce for the same action within the same 12-hour tick. It caches perfectly and proves nothing about who sent the request, which is why a public endpoint's real defence is elsewhere: `permission_check()` deciding on the request rather than on the caller, and whatever rate or plausibility limit the operation warrants.
 
 An attribute also survives full-page caching, where a localized `<script>` written at render time does not.
 
@@ -325,8 +327,6 @@ final public function get_plugin(): Plugin
 | **Return** | The plugin instance |
 | **Throws** | — |
 
-For the plugin's own answers — its slug, its entry file, the headers it declares. To reach another module, `with()` is shorter and says what it is doing.
-
 <br>
 
 ### `with( $name )`
@@ -344,13 +344,3 @@ final public function with( string $name ): object
 | **Parameters** | `$name` — The module class to reach |
 | **Return** | The shared instance |
 | **Throws** | `ModuleException` — If it is not declared, or has not booted yet |
-
-The one way anything in a plugin reaches anything else. Returns the same instance every time, so two callers asking for `Options` share its state:
-
-```php
-$this->with( Options::class )->get( 'api_key' );
-```
-
-**The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
-
-A module listed under a heading also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.

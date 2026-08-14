@@ -298,20 +298,6 @@ final public function on_wp_init( callable $callback, int $priority = 10 ): void
 | **Return** | — |
 | **Throws** | — |
 
-Reach for this wherever a plain `add_action( 'init', ... )` would go: that callback never runs once `init` has passed, and a module can be built on either side of it.
-
-The callback receives the module, so a closure declared elsewhere needs no `use` to reach it:
-
-```php
-public function on_boot(): void {
-    $this->on_wp_init( function ( self $module ): void {
-        $module->register_widgets();
-    } );
-}
-```
-
-`$priority` is WordPress's own, for ordering against something else on `init` — another plugin's registration, or a post type a taxonomy of yours attaches to. **It applies only while `init` is still ahead**: a module built after `init` has fired runs its callback immediately, in registration order, whatever priority it asked for. Ordering that has to hold either way belongs inside one callback.
-
 <br>
 
 ### `get_plugin()`
@@ -330,8 +316,6 @@ final public function get_plugin(): Plugin
 | **Return** | The plugin instance |
 | **Throws** | — |
 
-For the plugin's own answers — its slug, its entry file, the headers it declares. To reach another module, `with()` is shorter and says what it is doing.
-
 <br>
 
 ### `with( $name )`
@@ -349,16 +333,6 @@ final public function with( string $name ): object
 | **Parameters** | `$name` — The module class to reach |
 | **Return** | The shared instance |
 | **Throws** | `ModuleException` — If it is not declared, or has not booted yet |
-
-The one way anything in a plugin reaches anything else. Returns the same instance every time, so two callers asking for `Options` share its state:
-
-```php
-$this->with( Options::class )->get( 'api_key' );
-```
-
-**The module has to be listed in `bootstrap.php`.** Asking for one that is not throws, naming the class and the file to add it to — nothing is built because something asked for it, so that file stays the whole inventory of what the plugin is made of.
-
-A module listed under a heading also throws when asked for before that hook has fired, since building it early would bind it on the wrong side of whatever it was declared to follow.
 
 ## See also
 
