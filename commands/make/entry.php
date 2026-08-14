@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 *
 	 *     $this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
 	 *
-	 * An entry is built by the `webpack.config.js` that `wp zt add module assets`
+	 * An entry is built by the `webpack.config.js` that `wp zt add assets`
 	 * writes, which is what lets one build produce blocks and entries together.
 	 * A stock `@wordpress/scripts` setup cannot; the JavaScript guide covers why.
 	 *
@@ -31,7 +31,7 @@ return new class() extends MakeCommand {
 	 * brings it along.
 	 *
 	 * Needs the `assets` module, which brings the build configuration with it:
-	 * `wp zt add module assets`.
+	 * `wp zt add assets`.
 	 *
 	 * ## OPTIONS
 	 *

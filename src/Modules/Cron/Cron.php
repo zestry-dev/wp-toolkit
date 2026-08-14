@@ -373,7 +373,7 @@ class Cron extends Module implements Bootable {
 			$name     = \basename( $file, '.php' );
 			$instance = $this->wire_schedule_file( $root_dir . '/' . $file );
 
-			// Wired first, so is_enabled() can read an injected service. A schedule
+			// Wired first, so is_enabled() can reach a module with `with()`. A schedule
 			// switched off is never registered, so nothing schedules its event.
 			if ( ! $instance->is_enabled() ) {
 				continue;

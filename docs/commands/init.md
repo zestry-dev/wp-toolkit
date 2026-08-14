@@ -9,11 +9,11 @@
 
 Set up a plugin to receive wp-toolkit source.
 
-One-time, interactive setup for the plugin that required `wp-toolkit` as a Composer dependency. Prompts for the namespace the copied source should be rewritten to, the text domain its translation calls should be rewritten to, and the directory (relative to your plugin's root) to copy it into, then copies the kernel — Plugin, Service, Module, ActivationHandler, the exceptions your plugin catches, the PluginAware contract, and the shared traits, attributes and helpers every class needs — into `{root}/Core/Kernel/`.
+One-time, interactive setup for the plugin that required `wp-toolkit` as a Composer dependency. Prompts for the namespace the copied source should be rewritten to, the text domain its translation calls should be rewritten to, and the directory (relative to your plugin's root) to copy it into, then copies the kernel — Plugin, Module, ActivationHandler, the Bootable and PluginAware contracts, the exceptions your plugin catches, and the shared traits and helpers every class needs — into `{root}/Core/Kernel/`.
 
 Four files are written around that copy: `zestry.json`, recording the three choices above; `zestry.lock.json`, recording the hash of every copied file as it was written, which is what later lets `wp zt update` tell an edit of yours from an upstream change; `bootstrap.php`, the file your modules are declared in; and `.gitignore`, covering the directories that are built rather than authored. It then adds a matching PSR-4 autoload entry to your own composer.json and shells out to `composer dump-autoload`, so the copied classes load without a further step.
 
-Refuses to run if zestry.json already exists, since that means the plugin has already been initialized; run `wp zt add module <name>` instead to copy in additional feature modules.
+Refuses to run if zestry.json already exists, since that means the plugin has already been initialized; run `wp zt add <name>` instead to copy in additional feature modules.
 
 That directory is where the plugin's *own* classes belong too, beside the copied source rather than in a second root of their own. After this command there is no "toolkit" half to keep separate from: it is all the plugin's code, under one namespace and one PSR-4 entry. A second root would need a second PSR-4 prefix, which every class beneath it then carries as an extra namespace segment.
 
@@ -74,13 +74,13 @@ Wrote eslint.config.mjs
 Wrote .prettierrc.js
 Wrote .prettierignore
 Added to package.json: eslint, @wordpress/eslint-plugin, prettier, ...
-Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
+Success: Initialized. Run `wp zt add <name>` to copy in feature modules.
 
 # Unattended, taking every inferred default and setting up all four.
 $ wp zt init --yes
-Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
+Success: Initialized. Run `wp zt add <name>` to copy in feature modules.
 
 # Unattended, and without the JS tooling.
 $ wp zt init --yes --no-eslint --no-prettier
-Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
+Success: Initialized. Run `wp zt add <name>` to copy in feature modules.
 ```

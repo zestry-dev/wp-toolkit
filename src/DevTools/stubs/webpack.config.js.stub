@@ -27,7 +27,7 @@
  * `wp zt make shared <name>` writes one. The `assets` module registers what
  * this produces, so nothing has to call `wp_register_script()` by hand.
  *
- * Written by `wp zt add module assets`, and yours to edit — nothing overwrites
+ * Written by `wp zt add assets`, and yours to edit — nothing overwrites
  * it, `wp zt update` included.
  */
 

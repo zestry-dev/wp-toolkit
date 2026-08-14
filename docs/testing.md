@@ -238,7 +238,7 @@ $this->plugin->configure(
 $this->plugin->get( Cron::class );   // configured, then booted, then discovered
 ```
 
-Reaching for `$module->boot()` instead will not work: `boot()` is guarded and idempotent, so once `get()` has booted the module a second call returns without doing anything.
+There is no `boot()` to reach for instead: `get()` constructs the module, runs its configurator, and calls `on_boot()` if the class implements `Bootable` — all in one step, once.
 
 Each module gates itself on the request it serves, and the gate runs before discovery: `CLI` checks the `WP_CLI` constant, `Ajax` checks `wp_doing_ajax()`, `AdminPages` checks `is_admin()`. Satisfy it first or the module does nothing and your assertion reports an empty result rather than a wrong one. `WP_CLI` is a constant, so it is process-global and cannot be undefined — if you also want to assert the "not under WP-CLI" branch, do it in the first test in the file, before anything defines it.
 
@@ -265,7 +265,7 @@ public function test_greet_says_hello(): void {
 }
 ```
 
-`wire()` is the whole trick: it assigns the plugin and injects every typed property, exactly as the module would, on an object the module has never seen. Skip it and the first `$this->path->…` in your handler fatals on an uninitialised property.
+`wire()` is the whole trick: it assigns the plugin, exactly as the module would, on an object the module has never seen. Skip it and the first `$this->with( … )` in your handler fatals on an uninitialised property.
 
 `set_arguments()` is only needed if the command reads `get_args()`/`get_assoc_args()`, or calls `confirm()`/`ask()` — those consult `--yes` from the recorded arguments.
 
@@ -435,10 +435,10 @@ $views = $this->plugin->get( Views::class );
 $this->assertSame( 'Hi Ada', $views->get( 'card', array( 'name' => 'Ada' ) ) );
 ```
 
-A module with no `on_boot()` reads the filesystem when you call it rather than at boot, so ordering is less strict here than in section 4 — but keeping fixtures first costs nothing and never surprises you.
+A module that is not `Bootable` reads the filesystem when you call it rather than at boot, so ordering is less strict here than in section 4 — but keeping fixtures first costs nothing and never surprises you.
 
 > [!IMPORTANT]
-> **Never `new` a module in a test.** The constructor is `final` and takes no arguments, so `new Path()` compiles — and then fatals on the first method call, because nothing assigned the plugin. Injection happens in `get()`, `make()` and `wire()`, and nowhere else.
+> **Never `new` a module in a test.** The constructor is `final` and takes no arguments, so `new Path()` compiles — and then fatals on the first method call, because nothing assigned the plugin. `get()`, `make()` and `wire()` are the only three things that assign it.
 
 Three ways to get an instance, and the difference matters in tests:
 
@@ -454,14 +454,20 @@ Three ways to get an instance, and the difference matters in tests:
   );
   ```
 
-- **`wire()`** injects into an object you built yourself.
+- **`wire()`** gives the plugin to an object you built yourself.
 
-To give a class under test a fake dependency, assign the property after wiring — or mark it `#[NoInject]` and assign it yourself:
+To give a class under test a fake collaborator, declare it against the module it reaches for. `with()` hands back whatever the plugin holds, so replacing the declaration replaces it everywhere:
 
 ```php
+// A stand-in, declared like any other module.
+$this->plugin->declare_modules( array( FakeViews::class ) );
+
+// Anything calling $this->with( Views::class ) still gets the real one —
+// so a fake stands in by being the class the code under test names.
 $reports = $this->plugin->get( Reports::class );
-$reports->views = $fake_views;      // public property, replaced after injection
 ```
+
+Where that is awkward, give the class under test a setter and call it after `wire()`. A module reaches its dependencies through `with()` rather than through properties you can overwrite, so a seam has to be one the class offers.
 
 A module the plugin never declared throws rather than being built. `TestCase` declares the whole toolkit, so a test only has to declare its own fixture classes.
 

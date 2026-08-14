@@ -19,7 +19,7 @@ namespace Zestry\WPToolkit\Modules\Request\Attributes;
  * {@see \Zestry\WPToolkit\Modules\Abilities\Ability} — because they ask the same question.
  * Each is a named operation, described to a caller who cannot read your code,
  * validated before it runs. Declare the argument once and the
- * {@see \Zestry\WPToolkit\Modules\Request\Request} service builds the route's `args` or the
+ * {@see \Zestry\WPToolkit\Modules\Request\Request} module builds the route's `args` or the
  * ability's input schema from it, and binds the value onto the property before
  * your handler runs.
  *
@@ -270,9 +270,9 @@ namespace Zestry\WPToolkit\Modules\Request\Attributes;
  *
  * | | Route | Ability | AJAX action | Admin page |
  * |---|---|---|---|---|
- * | Schema validated | by WordPress | by WordPress | by this service | by this service |
- * | Value unslashed | by WordPress | not slashed | by this service | by this service |
- * | Value cast to its type | by WordPress | by this service | by this service | by this service |
+ * | Schema validated | by WordPress | by WordPress | by this module | by this module |
+ * | Value unslashed | by WordPress | not slashed | by this module | by this module |
+ * | Value cast to its type | by WordPress | by this module | by this module | by this module |
  * | Your `validate` / `sanitize` | in WordPress's own slots | run before binding | run before binding | run before binding |
  * | Bound before the permission check | no | yes | yes | after it |
  * | A refusal reads as | `rest_invalid_param`, 400 | `ability_invalid_input` | `rest_invalid_param`, 400 | `wp_die()`, 400 |

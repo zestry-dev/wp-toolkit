@@ -9,7 +9,7 @@ Generate a new database migration.
 
 The Migrations module discovers it, but unlike every other discovery type this one does not run itself. The module reads your `migrations/` directory in filename order and runs each `Migration` at most once per site, when something asks it to: `wp {slug} migrations run`, or a `run_pending()` call from whatever trigger fits your release process.
 
-Needs the `migrations` module, so run `wp zt add module migrations` first if you have not already.
+Needs the `migrations` module, so run `wp zt add migrations` first if you have not already.
 
 ## Options
 

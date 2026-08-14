@@ -153,21 +153,21 @@ Every method below is called on the instance `Acme\Plugin\Core\Kernel\Plugin` bu
 ```php
 __construct( string $entry, ?string $slug = null )     // pass __FILE__; slug defaults to the directory name
 
-configure( string $name, callable $initializer ): self // callback run when that class is first built
+configure( string $name, callable $configurator ): self // callback run when that module is built
 bootstrap( ?string $file = null ): self                // read bootstrap.php; a missing file is not an error
-autoload( array $modules = array() ): self             // queue classes; builds nothing yet
-run( ?callable $on_boot_callback = null ): self        // build and boot the queue, synchronously
+declare_modules( array $entries = array() ): self      // declare modules from the entry file instead
+run( ?callable $on_boot_callback = null ): self        // build every declared module, synchronously
 
 get( string $name ): object                            // resolve once, cached forever
 make( string $name, ?callable $configurator = null ): object  // fresh instance, never cached
-wire( PluginAware $instance ): PluginAware             // inject into an object you built yourself
+wire( PluginAware $instance ): PluginAware             // give the plugin to an object you built yourself
 
 get_header( string $header ): ?string                  // any header in the entry file's docblock
 get_version(): ?string                                 // shorthand for get_header( 'Version' )
 get_slug(): string                                     // what every registered name is namespaced with
 ```
 
-Also on it: `get_entry_file()`, `set_languages_path( $path, $text_domain = null )`, `is_wp_debug()`, `is_wp_cli()`, `is_plugin_debug()`. Full page: [`Plugin`](plugin.md).
+Also on it: `get_namespaced_name( $name, $glue = '-' )`, `get_entry_file()`, `get_bootstrap_file()`, `set_languages_path( $path, $text_domain = null )`, `is_wp_debug()`, `is_wp_cli()`, `is_plugin_debug()`. Full page: [`Plugin`](plugin.md).
 
 An [`ActivationHandler`](modules/activation-handler.md) subclass only works if `run()` is called as the entry file loads — WordPress fires `activate_{plugin}` right after that, and a `run()` deferred to `plugins_loaded` has already missed it.
 
@@ -221,7 +221,7 @@ Each type writes one file into the directory its module discovers, so the genera
 | [`activation`](commands/make-activation.md) | `lib/Modules/` | an activation handler, **declared** too |
 | [`abstract`](commands/make-abstract.md) | `lib/Abstracts/` | a base your own files share. `--for=<type>`, `--extends=` |
 
-The last four land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. Every type writes to one directory, fixed by the module that reads it; a name with a slash nests inside it, so `make command reports/daily` writes `commands/reports/daily.php`.
+The last three land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. Every type writes to one directory, fixed by the module that reads it; a name with a slash nests inside it, so `make command reports/daily` writes `commands/reports/daily.php`.
 
 <!-- zestry:include generator="prompting-generators" -->
 **5 of the 20 generators ask for what you leave out** — [`block`](commands/make-block.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 15 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.
@@ -233,10 +233,10 @@ The last four land beside the copied `lib/Core/` tree, never inside it — that 
 
 | Exception | Raised when |
 |---|---|
-| [`ModuleException`](kernel/module-exception.md) | Base class for every declaration, resolution and boot failure, so one `catch` covers all four. Thrown directly for a `bootstrap.php` it cannot read, a property typed as a `Module`, and a module asked for before its `boots_on` hook |
+| [`ModuleException`](kernel/module-exception.md) | Base class for every declaration, resolution and boot failure, so one `catch` covers all of them. Thrown directly for a `bootstrap.php` it cannot read, a module nothing declared, and a module asked for before its `boots_on` hook |
 | [`DiscoveryException`](kernel/discovery-exception.md) | A discovered file returned something other than the base class that module expects, two files claim one registered name, a filename a destination cannot carry, an SVG icon WordPress would strip, or WordPress refused the registration |
 | [`ModuleNotFoundException`](kernel/module-not-found-exception.md) | `with()`, `get()` or `make()` named a class that does not exist or does not extend `Module` |
-| [`CircularDependencyException`](kernel/circular-dependency-exception.md) | Two classes are typed as properties of each other, directly or through a chain |
+| [`CircularDependencyException`](kernel/circular-dependency-exception.md) | Two modules built with `make()` reached for each other while building. `get()` cannot cycle |
 | [`RenamedMigrationException`](modules/migrations/) | A pending migration shares a timestamp with one that ran and no longer has a file. Nothing ran when this is thrown |
 
 Bad arguments stay `\InvalidArgumentException`: a `Path` call escaping the plugin root, an unknown `Cron` schedule name, a REST placeholder with nothing bound to it, a CLI command name already taken.

@@ -7,11 +7,11 @@
 
 Generate a view template.
 
-Writes `views/<name>.php`, which the Views service renders by that name. A name may contain slashes, so `wp zt make view admin-pages/settings` writes `views/admin-pages/settings.php` and creates the directory.
+Writes `views/<name>.php`, which the `views` module renders by that name. A name may contain slashes, so `wp zt make view admin-pages/settings` writes `views/admin-pages/settings.php` and creates the directory.
 
-A template receives exactly what its caller passes, plus `$this` — the Views service — so it renders a subview with the same `render()` call everything else uses. Nothing else is in scope, which is what keeps a template's inputs readable without opening it.
+A template receives exactly what its caller passes, plus `$this` — the `views` module — so it renders a subview with the same `render()` call everything else uses. Nothing else is in scope, which is what keeps a template's inputs readable without opening it.
 
-Needs the `views` service: `wp zt add service views`. It arrives on its own with `admin-pages`, which renders its markup this way.
+Needs the `views` module: `wp zt add views`. It arrives on its own with `admin-pages`, which renders its markup this way.
 
 ## Options
 

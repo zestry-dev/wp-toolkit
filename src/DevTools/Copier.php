@@ -40,7 +40,7 @@ class Copier extends Module {
 	 *
 	 * Every file this class writes lands under it -- `lib/Core/Kernel/`,
 	 * `lib/Core/Modules/Ajax/` -- while `wp zt make` writes beside it, in
-	 * `lib/Modules/` and `lib/Services/`. So the answer to "can `wp zt update`
+	 * `lib/Modules/` and `lib/Abstracts/`. So the answer to "can `wp zt update`
 	 * replace this file?" is the path it is in, at every use site rather than
 	 * only when the file is open, since PSR-4 puts the same segment in the
 	 * namespace.
@@ -462,16 +462,15 @@ class Copier extends Module {
 	 *
 	 * One string serves both ends: prefixed with this package's `src/` it is what
 	 * to copy, prefixed with a project's {@see get_target_root()} it is where that
-	 * lands. So a class moving between `Services/` and `Modules/` needs no registry
-	 * edit and no second rule -- the destination mirrors the source because both
-	 * are this same path.
+	 * lands. So moving a class needs no registry edit and no second rule -- the
+	 * destination mirrors the source because both are this same path.
 	 *
 	 * A module with a directory of its own puts the class inside it under the
 	 * same name (`Modules\Ajax\Ajax`), and the whole directory is what gets
-	 * copied. Anything else is the one file (`Services\Path`).
+	 * copied. Anything else is the one file (`Modules\Path`).
 	 *
 	 * @param string $class_name Fully qualified class name from the registry.
-	 * @return string A path relative to a root, e.g. `Modules/Ajax` or `Services/Path.php`.
+	 * @return string A path relative to a root, e.g. `Modules/Ajax` or `Modules/Path.php`.
 	 */
 	public static function get_relative_source( string $class_name ): string {
 		// The whole root namespace, not up to the first backslash: that was the

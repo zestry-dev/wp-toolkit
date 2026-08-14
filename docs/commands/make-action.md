@@ -9,7 +9,7 @@ Generate a new AJAX action.
 
 The Ajax module discovers it. At boot it walks your `actions/` directory, requires every file in it, and maps the `AjaxAction` each one returns onto `wp_ajax_{plugin}-{action}` — plus the matching `wp_ajax_nopriv_` hook if the action opts logged-out visitors in. Writing the file is the whole registration; nothing has to be declared anywhere.
 
-Needs the `ajax` module, so run `wp zt add module ajax` first if you have not already.
+Needs the `ajax` module, so run `wp zt add ajax` first if you have not already.
 
 ## Options
 

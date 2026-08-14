@@ -2,7 +2,7 @@
 
 One plugin, built end to end. **Acme Books** registers a `book` post type, serves it over a REST route, saves a setting from an admin page, writes to a log, and flushes rewrite rules on activation. Every file it contains is on this page in full.
 
-Five files do the work, and the two ideas behind them are the whole toolkit: **a file in the right directory is a feature**, and a typed property is a dependency.
+Eight files do the work, and the two ideas behind them are the whole toolkit: **a file in the right directory is a feature**, and `$this->with( X::class )` reaches any module from anywhere.
 
 If you have not installed the toolkit before, [Getting started](getting-started.md) covers what `wp zt init` asks and why the code ends up in your namespace. This page assumes none of it.
 
@@ -34,7 +34,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 wp plugin activate acme-books
 ```
 
-Now initialize. Answer `Acme\Books` for the namespace and take the defaults for the rest — or, if you are scripting this, add the `"Acme\\Books\\": "lib/"` PSR-4 entry to `composer.json` first and run `wp zt init --yes`, which needs it to infer the namespace from:
+Now initialize. Answer `Acme\Books` for the namespace and take the defaults for the rest. (Scripting it instead? Add the `"Acme\\Books\\": "lib/"` PSR-4 entry to `composer.json` yourself first, then `wp zt init --yes` — unattended, it infers the namespace from that entry rather than guessing.)
 
 ```bash
 $ wp zt init
@@ -64,7 +64,7 @@ Added views
 Added admin-pages
 Added options
 Added log
-Declared in bootstrap.php: post-types, rest-api, admin-pages, options, log
+Declared in bootstrap.php: path, post-types, request, rest-api, transients, cookie, views, admin-pages, options, log
 Success: Done.
 ```
 
@@ -105,7 +105,7 @@ That is the entry file finished. It does not change as the plugin grows: `bootst
 Three details:
 
 - The slug defaults to the entry file's **directory** name, `acme-books`. Every name the modules register carries it — the REST namespace `acme-books/v1`, the admin page slug `acme-books-settings`, the option row, the log prefix.
-- `acme_books()` holds the instance for code outside the module system — a template, a test, a hand-registered callback. The files you are about to write never call it, because their dependencies are injected.
+- `acme_books()` holds the instance for code outside the module system — a template, a test, a hand-registered callback. The files you are about to write rarely need it, because a discovered file is wired and reaches every module with `with()`.
 - `acme_books();` on the last line runs the plugin **as the file loads**. Keep it there. Deferring it to `plugins_loaded` is what breaks activation, and section 8 depends on it.
 
 ## 3. `bootstrap.php`
@@ -147,16 +147,16 @@ return array(
 );
 ```
 
-A configured module gets an **array**, whose `configure` is the callback that configures it before it boots. `Options` gets one here so its row is loaded with the rest of WordPress's autoloaded options, since the REST route reads a setting on every request. The other four need no configuration, so they are written bare.
+A configured module gets an **array**, whose `configure` is the callback that configures it before it boots. `Options` gets one here so its row is loaded with the rest of WordPress's autoloaded options, since the REST route reads a setting on every request. The other six need no configuration, so they are written bare.
 
 That array also takes `boots_on` and `priority`, for a module that cannot do its work as the plugin loads. Configuration is always the array and never a bare callback, so all three read the same way.
 
 `Assets` and `Activation` are the two lines you do not add by hand — `wp zt add assets` appends the first in section 7, and `wp zt make activation` the second in section 8. Both are shown here so the finished file is in one place.
 
 > [!IMPORTANT]
-> **This file is modules only, and listing one is what builds it.** A module acts on its own — it binds a hook, registers a post type, walks a directory — so it has to be built for any of that to happen.
+> **Everything the plugin is made of is here, and listing one is what builds it.** Some of these act on their own — `PostTypes` walks a directory, `RestApi` binds a hook — and some only work when you call them, like `Options`. Both are listed the same way.
 >
-> Every module is here, including the ones that only work when you call them. Nothing outside this list is ever built, so reading it tells you what the plugin has.
+> Nothing outside this list is ever built, so reading it tells you what the plugin has.
 
 ## 4. The post type
 
@@ -231,7 +231,6 @@ use Acme\Books\Core\Modules\Log;
 use Acme\Books\Core\Modules\Options;
 use Acme\Books\Core\Modules\RestApi\RestRoute;
 use Acme\Books\Core\Modules\RestApi\Route;
-use Acme\Books\Core\Modules\RestApi\Route;
 use Acme\Books\Core\Modules\Request\Attributes\RequestArgument;
 
 return Route::get( 'v1', '/books', new class extends RestRoute {
@@ -244,7 +243,7 @@ return Route::get( 'v1', '/books', new class extends RestRoute {
     }
 
     public function handle( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
-        $options = $this->get_plugin()->get( Options::class );
+        $options = $this->with( Options::class );
 
         $books = get_posts(
             array(
@@ -255,7 +254,7 @@ return Route::get( 'v1', '/books', new class extends RestRoute {
             )
         );
 
-        $this->get_plugin()->get( Log::class )->info(
+        $this->with( Log::class )->info(
             'Books requested',
             array(
                 'search' => $this->search,
@@ -358,12 +357,12 @@ return new class extends AdminPage {
     }
 
     public function handle_submit(): void {
-        $options = $this->get_plugin()->get( Options::class );
+        $options = $this->with( Options::class );
 
         $options->set( 'per_page', $this->per_page );
         $options->save();
 
-        $this->get_plugin()->get( Log::class )->info( 'Book settings saved', array( 'per_page' => $this->per_page ) );
+        $this->with( Log::class )->info( 'Book settings saved', array( 'per_page' => $this->per_page ) );
 
         $this->set_flash( __( 'Settings saved.', 'acme-books' ) );
 
@@ -379,7 +378,7 @@ return new class extends AdminPage {
                 'action'   => $this->get_page_url(),
                 'nonce'    => $this->get_nonce_action(),
                 'notice'   => $this->get_flash( '' ),
-                'per_page' => (int) $this->get_plugin()->get( Options::class )->get( 'per_page', 10 ),
+                'per_page' => (int) $this->with( Options::class )->get( 'per_page', 10 ),
             )
         );
     }
@@ -430,7 +429,7 @@ One field does not need a template, but markup assembled by concatenation in `re
 
 The template gets exactly what that `render()` call named, and nothing of the page itself — so its inputs are readable without opening it, and it cannot reach into the page for something the call did not offer.
 
-Inside any template `$this` is the [Views](modules/views/) service, so a subview is the same call everything else makes: `$this->render( 'admin-pages/-fields', array( 'per_page' => $per_page ) )`. A template is included rather than called, so the `@var` block at the top describes the whole scope and gives your editor completion.
+Inside any template `$this` is the [`views`](modules/views/) module, so a subview is the same call everything else makes: `$this->render( 'admin-pages/-fields', array( 'per_page' => $per_page ) )`. A template is included rather than called, so the `@var` block at the top describes the whole scope and gives your editor completion.
 
 `admin-pages/settings.php` registers the page slug `acme-books-settings`. Returning `'edit.php?post_type=book'` from `parent()` nests it under the Books menu the post type created; return a `ParentMenu` case such as `ParentMenu::Settings` to nest under a core menu instead, or `null` to get a top-level menu of its own.
 
@@ -492,7 +491,7 @@ $ npm install && npm run build
 
 ```php
 public function enqueue_assets(): void {
-    $this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
+    $this->with( Assets::class )->enqueue_entry( 'settings' );
 }
 ```
 
@@ -536,7 +535,7 @@ class Activation extends ActivationHandler {
     public function activate( bool $network_wide ): void {
         flush_rewrite_rules();
 
-        $this->get_plugin()->get( Log::class )->info( 'Acme Books activated' );
+        $this->with( Log::class )->info( 'Acme Books activated' );
     }
 
     public function deactivate( bool $network_wide ): void {
@@ -609,12 +608,11 @@ acme-books/
 └── vendor/                     ← dev only, not shipped
 ```
 
-A directory is a feature set, a file returns an object, and a public typed property is filled in before your code runs — the same three conventions in every module. Adding the next feature is one more file. Adding the next module is `wp zt add cron` and a file in `schedules/`.
+A directory is a feature set, a file returns an object, and `with()` reaches every module — the same three conventions everywhere. Adding the next feature is one more file. Adding the next module is `wp zt add cron` and a file in `schedules/`.
 
 ## Next
 
-- [Modules](modules/) — the ones that act on their own, and what each one discovers
-- [Services](modules/) — the ones that work when called
+- [Modules](modules/) — what each one discovers, and what its files return
 - [`Plugin`](plugin.md) — `configure()`, `make()`, `wire()`, and everything else the entry file can do
 - [Command reference](commands/) — every `wp zt` command
 - [`wp zt update`](commands/update.md) — take a later release of the toolkit without losing your edits

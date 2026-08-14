@@ -31,14 +31,10 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * A file at `commands/greet.php` registers as `wp {plugin-slug} greet <name>`
  * (see {@see CLI} for how subdirectories become nested command namespaces).
  * `wp zt make command <name>` generates a starting point.
- * Give handle() its own docblock to document arguments for WP-CLI's `--help`
- * output — WP-CLI parses it, so this is not just a comment:
  *
- * `wp zt make command <name>` generates a starting point.
- * Properties typed as a Service subclass are injected the same way they are
- * anywhere else, so a command needing plugin services (Path, Options, ...)
- * declares them as public or protected typed properties rather than resolving
- * them itself.
+ * Give `handle()` its own docblock: WP-CLI parses the `## OPTIONS` and
+ * `## EXAMPLES` sections for `wp {plugin-slug} greet --help`, so it is not just
+ * a comment.
  *
  * @stub command.php.stub
  */
@@ -66,9 +62,9 @@ abstract class Command extends \WP_CLI_Command implements PluginAware {
 	 *
 	 * Declared `final` and otherwise a plain pass-through to the parent
 	 * constructor so that every command's construction stays consistent with
-	 * the plugin's DI convention: a command is built with no arguments, and
-	 * plugin services are injected afterwards via property injection (see the
-	 * class docblock), not through constructor parameters a subclass might add.
+	 * the plugin's wiring convention: a command is built with no arguments and
+	 * given the plugin afterwards, not handed dependencies through constructor
+	 * parameters a subclass might add.
 	 *
 	 * @return void
 	 */

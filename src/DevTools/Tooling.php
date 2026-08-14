@@ -160,8 +160,8 @@ class Tooling extends Module {
 	/**
 	 * The npm scripts that drive the JavaScript build.
 	 *
-	 * One definition, because two commands write them: `add module assets` when it
-	 * sets the build configuration up, and `add module blocks` when it lays down a
+	 * One definition, because two commands write them: `add assets` when it
+	 * sets the build configuration up, and `add blocks` when it lays down a
 	 * block toolchain. A script already defined is never rewritten, so two different
 	 * strings would mean whichever ran first silently decided the flags -- and
 	 * the flags are each load-bearing:

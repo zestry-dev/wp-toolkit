@@ -184,7 +184,7 @@ public function include_file( string $file, array $data = array(), ?object $scop
 
 |  | Details |
 |---|---|
-| **Parameters** | `$file` — Absolute path to an existing PHP file<br>`$data` — Variables to make available to it<br>`$scope` — What `$this` is inside the file. Defaults to this service |
+| **Parameters** | `$file` — Absolute path to an existing PHP file<br>`$data` — Variables to make available to it<br>`$scope` — What `$this` is inside the file. Defaults to this module |
 | **Return** | What it returned, and what it printed |
 | **Throws** | — |
 
@@ -194,7 +194,7 @@ That pairing is what lets one file be a picture *and* say what it is called: a t
 
 `returned` is exactly what PHP reports, which for a file that returns nothing is the integer `1` — so check the type you expected before reading anything out of it.
 
-Inside the file, `$this` is `$scope`, or this service when none is given. `Views` passes itself, which is what makes a subview `$this->render( … )` from inside a template.
+Inside the file, `$this` is `$scope`, or this module when none is given. `Views` passes itself, which is what makes a subview `$this->render( … )` from inside a template.
 
 Each key in `$data` becomes a local variable. Only names beginning `__include_` are reserved — the scope holds two of them and nothing else — so every ordinary key arrives, `file` and `data` included.
 

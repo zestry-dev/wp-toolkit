@@ -9,7 +9,7 @@ Generate a new REST route.
 
 The RestApi module discovers it. On `rest_api_init` it walks your `routes/` directory at any depth, requires every file in it, and hands the `Route` each one returns to `register_rest_route()` under `{plugin-slug}/{version}`. Writing the file is the whole registration; nothing has to be declared anywhere, and subdirectories are organization only, not part of the URL.
 
-Needs the `rest-api` module, so run `wp zt add module rest-api` first if you have not already.
+Needs the `rest-api` module, so run `wp zt add rest-api` first if you have not already.
 
 ## Options
 

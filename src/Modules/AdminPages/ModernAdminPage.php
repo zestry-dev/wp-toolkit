@@ -20,7 +20,7 @@ use Zestry\WPToolkit\Modules\AdminPages\Contracts\RendersCriticalStyles;
  * full-width application shell -- a JS-driven interface, a custom dashboard --
  * rather than the usual WordPress `.wrap` layout. Everything `AdminPage` offers
  * is unchanged: title, capability, menu placement, nonce-verified POST
- * handling, module injection, and discovery from the same `admin-pages/`
+ * handling, wiring, and discovery from the same `admin-pages/`
  * directory. Adopting it is a one-word edit to an existing page's `extends`
  * clause.
  *

@@ -1319,10 +1319,10 @@ function zestry_generate_module_pages( string $root ): int {
 
 		$index[] = '# Modules';
 		$index[] = '';
-		$index[] = 'A module acts on its own: it binds a hook, registers a post type, walks'
-			. ' a directory. Because it acts without being called, it has to be built for'
-			. ' that to happen -- so every module is listed in'
-			. ' `bootstrap.php`, and the plugin builds it as the plugin loads.';
+		$index[] = 'A module is anything a plugin is made of, and `bootstrap.php` lists every'
+			. ' one. Some act on their own -- binding a hook, registering a post type,'
+			. ' walking a directory -- and some only work when you call them. Listing one is'
+			. ' what builds it, and nothing outside that file is ever built.';
 		$index[] = '';
 		$index[] = '## What your files are named';
 		$index[] = '';
@@ -1347,9 +1347,9 @@ function zestry_generate_module_pages( string $root ): int {
 			. ' which `block.json` already qualifies. Prefix these yourself in the filename'
 			. ' when you need to.';
 		$index[] = '';
-		$index[] = 'All of them extend [`Module`](module.md), whose abstract `on_boot()` is'
-			. ' where the acting-on-its-own goes; a module without it works only'
-			. ' when you call it.';
+		$index[] = 'All of them extend [`Module`](module.md). One that acts on its own also'
+			. ' implements [`Bootable`](../kernel/bootable.md), whose `on_boot()` runs when'
+			. ' the plugin builds it; a module without it works only when you call it.';
 
 	$index[] = '';
 	$index[] = 'Everything here is optional. `wp zt add <name>` copies one into your'
@@ -1457,7 +1457,7 @@ function zestry_generate_module_pages( string $root ): int {
 	$index[] = '**`blocks` and `assets` also write build tooling outside their own'
 		. ' tree** -- npm scripts and devDependencies, a `tsconfig.json`, a'
 		. ' `webpack.config.js`, `.gitignore` entries. Everything either writes is'
-		. ' additive, and [`wp zt add module`](../commands/add.md) lists it.';
+		. ' additive, and [`wp zt add`](../commands/add.md) lists it.';
 	$index[] = '';
 	$index[] = 'One worth calling out: **`ajax` serves `admin-ajax.php`**, not the REST'
 		. ' API. Reach for it when something already speaks that protocol -- an'

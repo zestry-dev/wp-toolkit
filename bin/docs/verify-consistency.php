@@ -25,13 +25,13 @@ const ZESTRY_SCAFFOLDED_TOOLS = 'prettier|eslint|phpcs|phpstan|stylelint|tsconfi
  * Every check here was written from a defect that actually shipped, all eight
  * of them at once, all found by a consumer rather than by a build:
  *
- * - `assets` was called a service on three pages after it became a module, so
- *   `wp zt add service assets` was documented and errors.
+ * - `assets` was named on three pages with a command form that does not exist,
+ *   so a documented invocation errors.
  * - The `make` type list named 11 of the 20 generators, the missing half being
  *   everything added since it was written.
  * - `Zestry\WPToolkit\` appeared in consumer-facing examples -- namespaces that exist in
  *   this repository and in no consumer's plugin.
- * - `init` wrote `.prettierrc.js` while `add module blocks` wrote
+ * - `init` wrote `.prettierrc.js` while `add blocks` wrote
  *   `prettier.config.mjs`, and both were documented; Prettier reads the first
  *   and ignores the second.
  *
@@ -116,7 +116,7 @@ function zestry_check_fenced_table_cells( array $pages ): array {
  *
  * Both directions, for different failures. A row omitting a flag hides one that
  * works; a row claiming one the synopsis does not declare is worse, because
- * WP-CLI treats an undeclared flag as a fatal parameter error -- `add module`
+ * WP-CLI treats an undeclared flag as a fatal parameter error -- `add`
  * and `add service` were listed with `--yes`, which neither declares and neither
  * needs, so the documented unattended invocation exited non-zero.
  *
@@ -542,7 +542,7 @@ function zestry_check_namespace_leaks( array $pages ): array {
  * a page naming a config file the source has never heard of.
  *
  * The first is the check that matters, and it reads the source alone. `init`
- * wrote `.prettierrc.js` while `add module blocks` wrote `prettier.config.mjs`;
+ * wrote `.prettierrc.js` while `add blocks` wrote `prettier.config.mjs`;
  * Prettier resolves the first and ignores the rest, so the second was a file
  * that read as configuration to everyone but Prettier. Both pages documented
  * their own command correctly -- neither was wrong on its own, and the defect

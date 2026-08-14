@@ -24,7 +24,7 @@ return new class() extends MakeCommand {
 	 * declared anywhere.
 	 *
 	 * Needs the `post-types` module -- the same one that registers post types --
-	 * so run `wp zt add module post-types` first if you have not already.
+	 * so run `wp zt add post-types` first if you have not already.
 	 *
 	 * ## OPTIONS
 	 *

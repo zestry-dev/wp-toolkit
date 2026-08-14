@@ -16,7 +16,7 @@ One command sets all of it up:
 wp zt add assets
 ```
 
-which copies the [`assets`](modules/assets/) module and writes the `webpack.config.js`, the npm workspace declaration and the `build`/`start` scripts. `add module blocks` writes those same two scripts from the same definition, so whichever you add first writes them and the second leaves them alone. An existing `webpack.config.js` is never replaced, so the generated one is yours to edit.
+which copies the [`assets`](modules/assets/) module and writes the `webpack.config.js`, the npm workspace declaration and the `build`/`start` scripts. `wp zt add blocks` writes those same two scripts from the same definition, so whichever you add first writes them and the second leaves them alone. An existing `webpack.config.js` is never replaced, so the generated one is yours to edit.
 
 > [!IMPORTANT]
 > **Blocks alone need no config.** `wp-scripts` finds every block by globbing for a `block.json`, so a plugin that only builds blocks can stop reading here.

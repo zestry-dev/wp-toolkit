@@ -519,7 +519,7 @@ final class MakeCommandTest extends TestCase {
 		$source = (string) file_get_contents( $file );
 
 		$this->assertStringContainsString( 'namespace Acme\\Plugin\\Modules\\Services;', $source );
-		$this->assertStringContainsString( 'class Mailer extends Module {', $source );
+		$this->assertStringContainsString( 'class Mailer extends Module implements Bootable {', $source );
 
 		$output = array();
 		$status = 0;
@@ -1250,7 +1250,7 @@ final class MakeCommandTest extends TestCase {
 	/**
 	 * The file a generated one imports has to be here, and nothing checked.
 	 *
-	 * `make page` before `add module admin-pages` wrote a file importing three
+	 * `make page` before `add admin-pages` wrote a file importing three
 	 * classes that do not exist and said nothing: PHP imports are lazy, so it
 	 * parses, lints clean, lands in a directory no module is walking, and does
 	 * nothing at all until someone happens to add the module.
@@ -1263,7 +1263,7 @@ final class MakeCommandTest extends TestCase {
 		$warnings = $this->warnings();
 
 		$this->assertStringContainsString( 'Acme\\Plugin\\Core\\Modules\\AdminPages\\AdminPage', $warnings );
-		$this->assertStringContainsString( 'add module admin-pages', $warnings, 'And what to run.' );
+		$this->assertStringContainsString( 'wp zt add admin-pages', $warnings, 'And what to run.' );
 		$this->assertFileExists(
 			$this->target_plugin_dir . '/admin-pages/reports.php',
 			'Declining writes the file anyway -- the warning is the point, not a refusal.'
@@ -1296,7 +1296,7 @@ final class MakeCommandTest extends TestCase {
 	 * the class it does not extend is one this plugin has never had.
 	 *
 	 * Left at the default `Acme\Plugin` namespace, where no copied source
-	 * exists, which is exactly the state a plugin is in before `add module`.
+	 * exists, which is exactly the state a plugin is in before `add`.
 	 *
 	 * @return void
 	 */
@@ -1311,7 +1311,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->assertStringContainsString( 'This plugin has no', $error );
 		$this->assertStringContainsString( 'Acme\\Plugin\\Core\\Modules\\Fields\\Field', $error );
-		$this->assertStringContainsString( 'add module', $error, 'And what to do about it.' );
+		$this->assertStringContainsString( 'wp zt add <name>', $error, 'And what to do about it.' );
 	}
 
 	/**

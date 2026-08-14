@@ -222,7 +222,7 @@ final class UpdateCommandTest extends TestCase {
 		$this->run_command( 'update.php', array(), array( 'dry-run' => true ) );
 
 		$this->assertStringContainsString( 'removed with the "ajax" module', $this->stdout() );
-		$this->assertStringContainsString( 'wp zt add module ajax', $this->stdout() );
+		$this->assertStringContainsString( 'wp zt add ajax', $this->stdout() );
 		$this->assertStringNotContainsString( 'missing', $this->stdout() );
 	}
 

@@ -44,7 +44,7 @@ return new class() extends MakeCommand {
 	 * `node_modules/`, and until it has, the import resolves to nothing.
 	 *
 	 * Add the `assets` module to register what the build produces:
-	 * `wp zt add module assets`.
+	 * `wp zt add assets`.
 	 *
 	 * ## OPTIONS
 	 *
@@ -159,7 +159,7 @@ return new class() extends MakeCommand {
 	 * The plugin's own slug, which the generated `webpack.config.js` also carries
 	 * -- so the name a package is imported by and the handle the build registers
 	 * it under are composed from one string. `wp zt make block` takes a block
-	 * namespace from the same place, and `add module assets` writes the build
+	 * namespace from the same place, and `add assets` writes the build
 	 * configuration from it, so all three agree without any of them reading the
 	 * others.
 	 *

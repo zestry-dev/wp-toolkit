@@ -44,7 +44,7 @@ use WP_Block_Type_Registry;
  *
  * A block declares its PHP with `"supports": { "{plugin-slug}-php":
  * "file:./block.php" }`, and that file returns a {@see Block} instance -- loaded the first time the block
- * renders, wired, and called, so its PHP has the plugin's own modules injected.
+ * renders, wired, and called, so its PHP reaches the plugin's own modules with `with()`.
  * A file returning anything else raises a DiscoveryException.
  *
  * A block declaring WordPress's own `render` field instead is left alone

@@ -31,7 +31,7 @@ return array(
 
 ## A minimal page file
 
-The actual authoring surface for most developers is not this class but the page files it discovers. A page such as `admin-pages/settings.php` need only return an AdminPage subclass instance — the module assigns the plugin, injects any typed module dependencies, derives the slug from the file path, and wires up the menu entry.
+The actual authoring surface for most developers is not this class but the page files it discovers. A page such as `admin-pages/settings.php` need only return an AdminPage subclass instance — the module assigns the plugin, so `with()` reaches every module, derives the slug from the file path, and wires up the menu entry.
 
 ```php
 <?php
@@ -52,7 +52,7 @@ return new class() extends AdminPage {
 
 A page's markup belongs in a template, and `wp zt make page` writes one alongside the class. An admin page is mostly a form — a table, a notice, a second form further down — and markup assembled by concatenation stops being reviewable long before it stops growing.
 
-`AdminPage::view()` renders through the `Views` service, and the template gets what that call passes and nothing else — it cannot reach the page for anything the call left out. So the call is the list of the template's inputs, readable without opening the template.
+`AdminPage::view()` renders through the `Views` module, and the template gets what that call passes and nothing else — it cannot reach the page for anything the call left out. So the call is the list of the template's inputs, readable without opening the template.
 
 ```php
 <?php // views/admin-pages/settings.php
@@ -67,7 +67,7 @@ A page's markup belongs in a template, and `wp zt make page` writes one alongsid
 </div>
 ```
 
-`$this` inside a template is the Views service — rendering a subview is the same call every other caller makes, and costs no variable name.
+`$this` inside a template is the `views` module — rendering a subview is the same call every other caller makes, and costs no variable name.
 
 ## Changing the defaults
 

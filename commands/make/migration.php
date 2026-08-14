@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 * site, when something asks it to: `wp {slug} migrations run`, or a
 	 * `run_pending()` call from whatever trigger fits your release process.
 	 *
-	 * Needs the `migrations` module, so run `wp zt add module migrations` first
+	 * Needs the `migrations` module, so run `wp zt add migrations` first
 	 * if you have not already.
 	 *
 	 * ## OPTIONS

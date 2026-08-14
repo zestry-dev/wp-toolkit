@@ -79,7 +79,7 @@ public function get_arguments( object|string $target ): array
 | **Return** | `array` |
 | **Throws** | — |
 
-Public and protected only, the same rule module injection uses: reflection cannot reliably reach a private property declared on an ancestor.
+Public and protected only: reflection cannot reliably reach a private property declared on an ancestor.
 
 <br>
 

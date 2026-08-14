@@ -5,7 +5,7 @@
  *
  * One-time setup for a consuming plugin: asks for a target namespace, a text
  * domain, and a destination directory (relative to the plugin's own root),
- * copies the kernel (Plugin, Service, Module, ActivationHandler, the exceptions,
+ * copies the kernel (Plugin, Module, ActivationHandler, the contracts, the exceptions,
  * the PluginAware contract, the shared traits, attributes and helpers) into
  * `{root}/Core/Kernel/` -- with every
  * `namespace Zestry\WPToolkit\...;`/`use Zestry\WPToolkit\...;` rewritten to the chosen namespace, and
@@ -13,7 +13,7 @@
  * domain -- then writes `zestry.json` recording those choices, `zestry.lock.json`
  * recording what was written, a `bootstrap.php`, and a `.gitignore` covering
  * what is built rather than authored, and adds a matching PSR-4 autoload entry
- * to the plugin's own composer.json. Run `wp zt add module <name>` afterward
+ * to the plugin's own composer.json. Run `wp zt add <name>` afterward
  * to copy in individual feature modules.
  */
 
@@ -41,9 +41,9 @@ return new class() extends Command {
 	 * Composer dependency. Prompts for the namespace the copied source should be
 	 * rewritten to, the text domain its translation calls should be rewritten
 	 * to, and the directory (relative to your plugin's root) to copy it into,
-	 * then copies the kernel -- Plugin, Service, Module, ActivationHandler, the
-	 * exceptions your plugin catches, the PluginAware contract, and the shared
-	 * traits, attributes and helpers every class needs -- into
+	 * then copies the kernel -- Plugin, Module, ActivationHandler, the Bootable
+	 * and PluginAware contracts, the exceptions your plugin catches, and the
+	 * shared traits and helpers every class needs -- into
 	 * `{root}/Core/Kernel/`.
 	 *
 	 * Four files are written around that copy: `zestry.json`, recording the three
@@ -56,7 +56,7 @@ return new class() extends Command {
 	 * copied classes load without a further step.
 	 *
 	 * Refuses to run if zestry.json already exists, since that means the
-	 * plugin has already been initialized; run `wp zt add module <name>`
+	 * plugin has already been initialized; run `wp zt add <name>`
 	 * instead to copy in additional feature modules.
 	 *
 	 * That directory is where the plugin's *own* classes belong too, beside
@@ -148,15 +148,15 @@ return new class() extends Command {
 	 *     Wrote .prettierrc.js
 	 *     Wrote .prettierignore
 	 *     Added to package.json: eslint, @wordpress/eslint-plugin, prettier, ...
-	 *     Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
+	 *     Success: Initialized. Run `wp zt add <name>` to copy in feature modules.
 	 *
 	 *     # Unattended, taking every inferred default and setting up all four.
 	 *     $ wp zt init --yes
-	 *     Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
+	 *     Success: Initialized. Run `wp zt add <name>` to copy in feature modules.
 	 *
 	 *     # Unattended, and without the JS tooling.
 	 *     $ wp zt init --yes --no-eslint --no-prettier
-	 *     Success: Initialized. Run `wp zt add module <name>` to copy in feature modules.
+	 *     Success: Initialized. Run `wp zt add <name>` to copy in feature modules.
 	 *
 	 * @param array $args
 	 * @param array $assoc_args
@@ -200,7 +200,7 @@ return new class() extends Command {
 		}
 
 		/*
-		 * Only the kernel. Feature modules and services are opt-in through
+		 * Only the kernel. Feature modules are opt-in through
 		 * `wp zt add`, which writes beside this under the same `Core/` segment --
 		 * everything there came from the toolkit and `wp zt update` may replace
 		 * it, everything else under `{root}/` is the consumer's own.
@@ -222,7 +222,7 @@ return new class() extends Command {
 		$this->write_gitignore( $plugin_root );
 		$this->offer_tooling( $plugin_root, $root, $text_domain, $assoc_args );
 
-		$this->success( 'Initialized. Run `wp zt add module <name>` to copy in feature modules.' );
+		$this->success( 'Initialized. Run `wp zt add <name>` to copy in feature modules.' );
 	}
 
 	/**
@@ -780,7 +780,7 @@ return new class() extends Command {
 	}
 
 	/**
-	 * Write the `bootstrap.php` that `wp zt add module` appends to.
+	 * Write the `bootstrap.php` that `wp zt add` appends to.
 	 *
 	 * Left alone if one already exists: it is the plugin's own file the moment
 	 * it is written, and `init` has no business replacing declarations someone

@@ -3,7 +3,7 @@
 /**
  * Devtool command: `wp zt make module <name>`.
  *
- * Generates a new, plain consumer Module -- a hand-authored service (in the
+ * Generates a new, plain consumer Module -- one you write yourself (in the
  * spirit of Options/Log/Assets), not one of the file-based discovery
  * conventions (action/page/command/schedule/route/post-type/taxonomy) the
  * other `make` types generate.
@@ -25,13 +25,16 @@ return new class() extends MakeCommand {
 	 * being called, so `on_boot()` is where an `add_filter()` or an `add_action()`
 	 * belongs:
 	 *
-	 *     final class Editor extends Module {
+	 *     final class Editor extends Module implements Bootable {
 	 *
-	 *         protected function on_boot(): void {
+	 *         public function on_boot(): void {
 	 *             // Restrict which blocks a form post can hold.
 	 *             \add_filter( 'allowed_block_types_all', array( $this, 'filter_allowed' ), 10, 2 );
 	 *         }
 	 *     }
+	 *
+	 * The `implements Bootable` is what makes `on_boot()` run. A module without
+	 * it works only when something calls it, and is listed just the same.
 	 *
 	 * Anything that has to wait for `init` goes through
 	 * {@see \Zestry\WPToolkit\Kernel\Abstracts\Module::on_wp_init()} instead, since a module
@@ -44,9 +47,8 @@ return new class() extends MakeCommand {
 	 * rather than inside it, which `wp zt update` never touches.
 	 *
 	 * Because nothing discovers it, this is also the one `make` type that writes
-	 * to your `bootstrap.php`: the new class is appended there, which is what
-	 * service is built the moment something asks for it -- configure one from
-	 * `$plugin->configure()` in your entry file instead.
+	 * to your `bootstrap.php`: the new class is appended there, and being listed
+	 * is the only thing that builds a module.
 	 *
 	 * A generated file that does not yet parse is not declared at all. The
 	 * command says so, and declaring it is one edit away once the file parses.
@@ -129,10 +131,10 @@ return new class() extends MakeCommand {
 	 * that its module discovers, and so takes effect immediately; a plain
 	 * module is discovered by nothing, and is built only once declared.
 	 *
-	 * Written bare. The entry's value would be an initializer,
-	 * and there is none to supply for a class that was generated a moment ago --
-	 * being listed is the whole of what it needs, and `on_boot()` runs as soon
-	 * as the plugin builds it.
+	 * Written bare. The entry's value would be a configuration array, and there
+	 * is nothing to configure on a class generated a moment ago -- being listed
+	 * is the whole of what it needs, and a `Bootable` one runs its `on_boot()`
+	 * as soon as the plugin builds it.
 	 *
 	 * @param string                                                          $name        The class name given on the command line.
 	 * @param string                                                          $plugin_root Absolute path to the consuming plugin's root.

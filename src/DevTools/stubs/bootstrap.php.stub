@@ -3,8 +3,8 @@
 /**
  * What this plugin uses, and how each is configured.
  *
- * `wp zt add module <name>` appends to this file, so a module works as soon as
- * it is copied. The entry file reads it with `$plugin->bootstrap()`.
+ * `wp zt add <name>` appends to this file, so a module works as soon as it is
+ * copied. The entry file reads it with `$plugin->bootstrap()`.
  *
  * An entry is a class name on its own, or a class name with a configuration
  * array:
@@ -29,15 +29,12 @@
  * Everything works without an array, so add one only to change a default. See a
  * module's own page for what it accepts.
  *
- * This file is modules only, and listing one is what builds it. A module acts
- * on its own -- it binds a hook, registers a post type, walks a directory -- so
- * it has to be built for any of that to happen. Leave one out and its
- * `on_boot()` never runs, with no error to say so; `wp zt doctor` catches that.
- *
- * A service does not belong here. It is built the moment something asks for it
- * -- a `$plugin->get()`, or another class declaring a property of its type --
- * so listing it would only build it sooner than it needed to be. One that takes
- * configuration gets it from `$plugin->configure()` in your entry file.
+ * Everything this plugin is made of is here, and listing one is what builds it.
+ * Some modules act on their own -- they bind a hook, register a post type, walk
+ * a directory -- and some only work when you call them; both are listed the
+ * same way. Leave one out and nothing builds it: a module that acts on its own
+ * never runs its `on_boot()`, with no error to say so, and any other throws the
+ * moment something reaches for it. `wp zt doctor` catches the silent one.
  *
  * An entry file that runs the plugin as it loads runs `configure` before
  * `init`, where a `__()` loads the text domain early enough that WordPress
@@ -46,7 +43,7 @@
  *
  * ```
  * Blocks::class => array(
- *     'boots_on'    => 'init',
+ *     'boots_on'  => 'init',
  *     'configure' => function ( Blocks $blocks ): void {
  *         $blocks->add_categories( array( 'reports' => __( 'Reports', '{{text_domain}}' ) ) );
  *     },

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * DB API: DB service
+ * DB API: DB module
  */
 
 declare( strict_types=1 );
@@ -22,13 +22,13 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * settable with {@see set_table_prefix()}. {@see get_table()} builds the whole
  * name; nothing else in a plugin should build it by hand.
  *
- * `Migrations` uses this service to create tables, and every other module,
+ * `Migrations` uses this module to create tables, and every other module,
  * route, block or command uses it to find them afterwards -- which is the point
- * of it being a service every one of them can reach rather than a method on
+ * of it being a module every one of them can reach rather than a method on
  * `Migration`: a table created in a migration is queried everywhere else.
  *
  * @setup
- * Configure the service only to shorten the table prefix. It defaults to the
+ * Configure it only to shorten the table prefix. It defaults to the
  * plugin slug, which is usually right -- but MySQL caps a table name at 64
  * characters, and a long slug can leave too little room for the table's own
  * name. Set a shorter prefix rather than renaming the plugin.
@@ -38,7 +38,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * stops finding them.
  *
  * `bootstrap.php` is modules only, so the configuration goes in your entry
- * file, where the callback runs the first time something asks for the service.
+ * file, where the callback runs the first time something asks for the module.
  *
  * ```
  * // acme-plugin.php
@@ -62,7 +62,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * ```
  *
  * @example Reading and writing rows
- * `$wpdb` does the querying; this service names the table it runs against.
+ * `$wpdb` does the querying; this module names the table it runs against.
  * {@see get_wpdb()} hands you the handle so there is no `global` line -- assign
  * it to `$wpdb`, and read that method for why the name of the variable matters.
  *
@@ -189,8 +189,8 @@ class DB extends Module {
 	 * throws, including a `$wpdb` property that is not one.
 	 *
 	 * @rationale
-	 * This used to read `$wpdb->{$name}` and accept any non-empty string, which
-	 * made `get_core_table( 'prefix' )` return `wp_` and
+	 * Reading `$wpdb->{$name}` alone would accept any non-empty string, making
+	 * `get_core_table( 'prefix' )` return `wp_` and
 	 * `get_core_table( 'last_query' )` return the last SQL statement -- neither
 	 * a table, neither an error. Checking against `$wpdb->tables()` first is
 	 * what makes the method's name true. Keep the property read afterwards:
@@ -296,7 +296,7 @@ class DB extends Module {
 	/**
 	 * The plugin's own table-name prefix, normalised for SQL.
 	 *
-	 * Public so you can build a name this service does not cover -- an index
+	 * Public so you can build a name this module does not cover -- an index
 	 * name, say -- against the same prefix your tables use.
 	 *
 	 * @return string The configured prefix, or the slug, with a trailing underscore.

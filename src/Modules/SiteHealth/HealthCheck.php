@@ -30,8 +30,8 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *
  * @example A check
  * `run()` returns one of {@see good()}, {@see recommended()} or
- * {@see critical()}. Anything a Service or Module can be injected into this
- * can too, so the check reads real state rather than guessing.
+ * {@see critical()}. Reach any declared module with `$this->with( … )`, so the
+ * check reads real state rather than guessing.
  *
  * ```
  * namespace Acme\Plugin\HealthChecks;

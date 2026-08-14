@@ -9,11 +9,11 @@
 
 Base class for a file-based WordPress admin page.
 
-A page file returns an AdminPage subclass instance; the AdminPages module wires it (assigning the plugin and injecting typed module dependencies), registers it in the admin menu using the typed accessors below, and dispatches to render() when the page is viewed. The page's slug is derived from its path within the pages directory, so `admin-pages/settings.php` becomes `{plugin-slug}-settings` and `admin-pages/reports/index.php` becomes `{plugin-slug}-reports`. The root `admin-pages/index.php`, if present, becomes the bare `{plugin-slug}` itself.
+A page file returns an AdminPage subclass instance; the AdminPages module wires it (assigning the plugin, so `with()` reaches every module), registers it in the admin menu using the typed accessors below, and dispatches to render() when the page is viewed. The page's slug is derived from its path within the pages directory, so `admin-pages/settings.php` becomes `{plugin-slug}-settings` and `admin-pages/reports/index.php` becomes `{plugin-slug}-reports`. The root `admin-pages/index.php`, if present, becomes the bare `{plugin-slug}` itself.
 
 Authorization is enforced by the module before render(): the current user must satisfy capability(), and a nonce is verified on POST. A page therefore only has to describe itself (title, capability, placement) and render its markup.
 
-A file at `admin-pages/settings.php` registers as a top-level menu page with the slug `{plugin}-settings` (see `get_page_slug()`). Return a ParentMenu case from `parent()` to nest it under a core WordPress menu instead, such as `ParentMenu::Settings`. A property typed as a Service or Module subclass — `public Path $path;`, say — is injected automatically when the page is wired. `wp zt make page <name>` generates a starting point.
+A file at `admin-pages/settings.php` registers as a top-level menu page with the slug `{plugin}-settings` (see `get_page_slug()`). Return a ParentMenu case from `parent()` to nest it under a core WordPress menu instead, such as `ParentMenu::Settings`. Reach any declared module with `$this->with( Path::class )`; a page also has `views()`, `cookies()` and `admin_pages()` as typed accessors. `wp zt make page <name>` generates a starting point.
 
 A page rendering its own full-width application shell rather than the usual WordPress "wrap" layout should extend `ModernAdminPage` instead, which is this class plus a critical-CSS reset of wp-admin's default chrome. It satisfies the same discovery guard, so it is a drop-in swap for the `extends AdminPage` a generated file starts with.
 
@@ -366,7 +366,7 @@ public function render(): void {
 
 The template gets what this call passes and nothing else — it cannot reach the page for anything the call left out. So this call *is* the list of the template's inputs, and you can read it without opening the template.
 
-`Views` puts one thing of its own in scope: `$this`, the service itself, so a subview is `$this->render( 'admin-pages/-fields', array( ... ) )`.
+`Views` puts one thing of its own in scope: `$this`, the module itself, so a subview is `$this->render( 'admin-pages/-fields', array( ... ) )`.
 
 <br>
 
@@ -504,7 +504,7 @@ final protected function admin_pages(): AdminPages
 
 ### `views()`
 
-The Views service this page renders through.
+The `views` module this page renders through.
 
 ```php
 final protected function views(): Views
@@ -516,13 +516,13 @@ final protected function views(): Views
 | **Return** | `Views` |
 | **Throws** | — |
 
-Resolved rather than injected, matching `admin_pages()`: a public property would put it on every page's own surface, which is not where it belongs when `view()` is the thing to call.
+An accessor rather than a public property, matching `admin_pages()`: a property would put it on every page's own surface, which is not where it belongs when `view()` is the thing to call.
 
 <br>
 
 ### `cookies()`
 
-The Cookie service this page's flash values travel in.
+The `cookie` module this page's flash values travel in.
 
 ```php
 final protected function cookies(): Cookie

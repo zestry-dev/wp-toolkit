@@ -50,7 +50,7 @@ $html = $views->get( 'emails/receipt', array( 'order' => $order ) );
 
 ## Writing a template
 
-The template is plain PHP, with the passed data as local variables. Inside one, `$this` is this service, so a template renders a subview with the same `render()` everything else uses — and it costs no variable name to do it.
+The template is plain PHP, with the passed data as local variables. Inside one, `$this` is this module, so a template renders a subview with the same `render()` everything else uses — and it costs no variable name to do it.
 
 ```php
 <!-- views/emails/receipt.php -->
@@ -67,7 +67,7 @@ is in scope. Say so at the top and you get completion for all of it,
 
 ## Rendering an admin page
 
-This is the case most plugins reach for first, and it has a shortcut: an `AdminPage` calls `$this->view()` rather than resolving this service. `wp zt make page` writes both files, and the template gets exactly what the `render()` call names — nothing of the page itself, so its inputs are readable without opening it.
+This is the case most plugins reach for first, and it has a shortcut: an `AdminPage` calls `$this->view()` rather than resolving this module. `wp zt make page` writes both files, and the template gets exactly what the `render()` call names — nothing of the page itself, so its inputs are readable without opening it.
 
 ```php
 // admin-pages/settings.php
@@ -124,7 +124,7 @@ public function get( string $view, array $data = array() ): string
 
 Each key in `$data` becomes a template variable. For example, `get( 'card', array( 'title' => 'Hello' ) )` makes `$title` available to `views/card.php`. Escape the data in the template according to context.
 
-The including is `Path::include_file()`, which is also what reserves the names: only keys beginning `__include_` are, and every ordinary name reaches the template, `view` and `data` included. Rendering a subview costs no name at all, since a template reaches this service as `$this`.
+The including is `Path::include_file()`, which is also what reserves the names: only keys beginning `__include_` are, and every ordinary name reaches the template, `view` and `data` included. Rendering a subview costs no name at all, since a template reaches this module as `$this`.
 
 <br>
 

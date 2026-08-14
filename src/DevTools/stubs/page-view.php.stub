@@ -9,7 +9,7 @@
  * Escape on output, in the right context: esc_html() for text, esc_attr() for an
  * attribute, esc_url() for a URL.
  *
- * `$this` is the Views service, so a subview is
+ * `$this` is the `views` module, so a subview is
  * `$this->render( 'admin-pages/-fields', array( ... ) )`. The `@var` below is
  * what makes an editor complete it -- a template is included, not called, so
  * nothing else tells your editor what `$this` is here.
@@ -23,7 +23,7 @@
 
 declare( strict_types=1 );
 
-// Loaded by the Views service, never requested directly.
+// Loaded by the `views` module, never requested directly.
 defined( 'ABSPATH' ) || exit;
 
 ?>

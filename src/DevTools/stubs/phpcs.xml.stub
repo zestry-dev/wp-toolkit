@@ -51,7 +51,7 @@
 		</properties>
 	</rule>
 
-	<!-- A template is handed its variables by the Views service, through extract(),
+	<!-- A template is handed its variables by the `views` module, through extract(),
 	which no static analysis can follow. The `@var` block at the top of a generated
 	view does not help: this sniff reads no docblocks at all. Left on, every view
 	reports every variable it was passed as undefined. Scoped to the views

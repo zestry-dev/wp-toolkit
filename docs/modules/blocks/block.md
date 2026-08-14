@@ -9,7 +9,7 @@
 
 Base class for the server-side render of a dynamic block.
 
-A block's `block.php` returns a subclass instance. The Blocks module wires it (assigning the shared plugin and injecting typed module properties) and calls `render()` whenever WordPress renders the block, so the markup a block produces has the plugin's own modules available to it without a constructor or a `get()` call.
+A block's `block.php` returns a subclass instance. The Blocks module wires it (assigning the shared plugin, so `with()` reaches every module) and calls `render()` whenever WordPress renders the block, so the markup a block produces has the plugin's own modules available to it without a constructor or a `get()` call.
 
 Only a *dynamic* block needs one of these. A static block — markup saved into the post content by the editor — is discovered and registered by the module exactly the same way, it simply has no `block.php` and no class.
 

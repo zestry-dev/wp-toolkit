@@ -303,11 +303,11 @@ class Ajax extends Module implements Bootable {
 			}
 
 			// Wire the action so it behaves like a module: plugin assigned and
-			// declared module properties injected before handle() runs.
+			// the plugin assigned, so `with()` works before handle() runs.
 			$this->get_plugin()->wire( $instance );
 
 			// Discovered but switched off: wired first, so is_enabled() can read an
-			// injected service, then nothing about it is registered.
+			// module reached with `with()`, then nothing about it is registered.
 			if ( ! $instance->is_enabled() ) {
 				continue;
 			}

@@ -56,7 +56,7 @@ Each condition explains itself through a `zt:`-prefixed debug line — the wrong
 
 **It is not listed in `bootstrap.php`.**
 
-A module acts on its own, so it has to be *built* for any of that to happen, and being listed is what builds it. Leave it out and the class is never constructed, `on_boot()` never runs, no hook is bound, no directory is walked — and nothing anywhere says so. The feature is simply absent, which reads as the module being broken.
+A module has to be *built* for anything to happen, and being listed is what builds it. Leave it out and the class is never constructed, `on_boot()` never runs, no hook is bound, no directory is walked — and nothing anywhere says so. The feature is simply absent, which reads as the module being broken.
 
 ```php
 // bootstrap.php
@@ -89,11 +89,13 @@ Error: 1 problem found.
 Two limits on that check, so you know when to look yourself:
 
 - It knows the modules **it** copied in, under `lib/Core/Modules/`. A module *you* wrote under `lib/Modules/` is not in its registry, so an undeclared one is not flagged.
+- It reads `bootstrap.php` as written. A plugin that declares its modules from the entry file with `declare_modules()` instead has nothing there for `doctor` to read.
 
-Two other causes worth ruling out once the declaration is there:
+Three other causes worth ruling out once the declaration is there:
 
 - **`run()` never happens.** `bootstrap()` only queues; `run()` builds. `doctor` reports this one too — `bootstrap.php declares 6 classes, and nothing in this plugin built any of them` means the entry file never reached `->bootstrap()->run()`.
 - **`run()` happens too late for the hook.** `run()` resolves and boots synchronously, so a module deferred to `plugins_loaded` has already missed anything that fired before it. ActivationHandler is the sharp case — see [below](#a-post-type-404s).
+- **The module is declared but not `Bootable`.** A module only acts on its own if its class says `implements Bootable`; without it the plugin builds the class and it sits there. Check that line, and that `on_boot()` is `public`.
 
 ---
 

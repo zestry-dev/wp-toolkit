@@ -270,10 +270,9 @@ return new class() extends Command {
 	/**
 	 * Flag a copied-in module that nothing declares.
 	 *
-	 * The one silent failure the Service/Module split leaves. Only a `Module` is
-	 * worth flagging: it acts on its own and so has to be built for anything to
-	 * happen, while a service like `path` is built the moment something asks for
-	 * it and needs no declaration at all.
+	 * The one failure that produces no error at all. Nothing builds an
+	 * undeclared module, so one that acts on its own never runs its `on_boot()`
+	 * and any other throws the first time something reaches for it.
 	 *
 	 * @param string                                 $plugin_root  Absolute path to the plugin root.
 	 * @param array{namespace: string, root: string} $config       The project's zestry.json.
@@ -285,9 +284,8 @@ return new class() extends Command {
 		$namespace = Copier::get_target_namespace( $config['namespace'] );
 
 		foreach ( $registry as $name => $entry ) {
-			// Only a module: a service is built the moment something asks for
-			// it, so one that is copied in and never declared is doing exactly
-			// what it should.
+			// Guards the registry rather than the plugin: every entry is a
+			// Module, and only a Module is worth reporting as undeclared.
 			if ( ! is_a( $entry['source'], Module::class, true ) ) {
 				continue;
 			}

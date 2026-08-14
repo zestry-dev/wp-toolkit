@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 * event is not already on the calendar. Writing the file is the whole
 	 * registration; nothing has to be declared anywhere.
 	 *
-	 * Needs the `cron` module, so run `wp zt add module cron` first if you have
+	 * Needs the `cron` module, so run `wp zt add cron` first if you have
 	 * not already.
 	 *
 	 * ## OPTIONS

@@ -20,7 +20,7 @@ class Shortcode extends Module implements Bootable {
 
 **The `implements` clause is the declaration**, and it is on the line that names the class — so what a module does without being asked is visible before you read the body. Every module is listed in `bootstrap.php` either way; this decides only whether anything happens when the plugin builds it.
 
-`Module::boot()` is what calls this, once, and a module that does not implement this has nothing for it to call.
+`ModulesRepository` calls this once, as it builds the module, and a module that does not implement this has nothing for it to call.
 
 ## Methods
 
@@ -38,4 +38,4 @@ Runs once, when the plugin builds the module — which is what listing it in `bo
 
 `Module::on_wp_init()` is the way out of all three, and where anything a module registers belongs.
 
-Public because an interface has no other option, but it is the plugin's to call: `boot()` guards it so it runs once, and calling this directly runs it again.
+Public because an interface has no other option, but it is the plugin's to call: the plugin runs it once as it builds the module, and calling it yourself runs it again.

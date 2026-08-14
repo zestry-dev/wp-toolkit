@@ -9,7 +9,7 @@
 
 An AdminPage that gives a custom UI the whole admin canvas.
 
-Extend this instead of `AdminPage` when a page renders its own full-width application shell — a JS-driven interface, a custom dashboard — rather than the usual WordPress `.wrap` layout. Everything `AdminPage` offers is unchanged: title, capability, menu placement, nonce-verified POST handling, module injection, and discovery from the same `admin-pages/` directory. Adopting it is a one-word edit to an existing page's `extends` clause.
+Extend this instead of `AdminPage` when a page renders its own full-width application shell — a JS-driven interface, a custom dashboard — rather than the usual WordPress `.wrap` layout. Everything `AdminPage` offers is unchanged: title, capability, menu placement, nonce-verified POST handling, wiring, and discovery from the same `admin-pages/` directory. Adopting it is a one-word edit to an existing page's `extends` clause.
 
 The difference is a CSS reset, inlined before first paint so the page never renders in the default layout and then jumps. It applies only while one of this plugin's own pages is displayed, and no other screen in wp-admin is touched. What it changes:
 
@@ -287,7 +287,7 @@ public function render(): void {
 
 The template gets what this call passes and nothing else — it cannot reach the page for anything the call left out. So this call *is* the list of the template's inputs, and you can read it without opening the template.
 
-`Views` puts one thing of its own in scope: `$this`, the service itself, so a subview is `$this->render( 'admin-pages/-fields', array( ... ) )`.
+`Views` puts one thing of its own in scope: `$this`, the module itself, so a subview is `$this->render( 'admin-pages/-fields', array( ... ) )`.
 
 <br>
 
@@ -425,7 +425,7 @@ final protected function admin_pages(): AdminPages
 
 ### `views()`
 
-The Views service this page renders through.
+The `views` module this page renders through.
 
 ```php
 final protected function views(): Views
@@ -437,13 +437,13 @@ final protected function views(): Views
 | **Return** | `Views` |
 | **Throws** | — |
 
-Resolved rather than injected, matching `admin_pages()`: a public property would put it on every page's own surface, which is not where it belongs when `view()` is the thing to call.
+An accessor rather than a public property, matching `admin_pages()`: a property would put it on every page's own surface, which is not where it belongs when `view()` is the thing to call.
 
 <br>
 
 ### `cookies()`
 
-The Cookie service this page's flash values travel in.
+The `cookie` module this page's flash values travel in.
 
 ```php
 final protected function cookies(): Cookie

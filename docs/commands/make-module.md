@@ -10,20 +10,22 @@ Generate a new plain Module subclass.
 **This is where your own WordPress hooks go.** Every other `make` type writes into a directory some module already walks, which covers the hooks this toolkit has a convention for — a post type, a route, a cron event. For anything it does not, a module of your own is the thing that acts without being called, so `on_boot()` is where an `add_filter()` or an `add_action()` belongs:
 
 ```php
-final class Editor extends Module {
+final class Editor extends Module implements Bootable {
 
-    protected function on_boot(): void {
+    public function on_boot(): void {
         // Restrict which blocks a form post can hold.
         \add_filter( 'allowed_block_types_all', array( $this, 'filter_allowed' ), 10, 2 );
     }
 }
 ```
 
+The `implements Bootable` is what makes `on_boot()` run. A module without it works only when something calls it, and is listed just the same.
+
 Anything that has to wait for `init` goes through `Module::on_wp_init()` instead, since a module can be built on either side of it.
 
 Requires `wp zt init` to have already run in this plugin. Unlike every other `make` type, there is no fixed conventional directory to default to — a plain module is not discovered by anything — so its home is your own `{zestry.json root}/Modules/` directory, beside the copied `Core/` tree rather than inside it, which `wp zt update` never touches.
 
-Because nothing discovers it, this is also the one `make` type that writes to your `bootstrap.php`: the new class is appended there, which is what service is built the moment something asks for it — configure one from `$plugin->configure()` in your entry file instead.
+Because nothing discovers it, this is also the one `make` type that writes to your `bootstrap.php`: the new class is appended there, and being listed is the only thing that builds a module.
 
 A generated file that does not yet parse is not declared at all. The command says so, and declaring it is one edit away once the file parses.
 

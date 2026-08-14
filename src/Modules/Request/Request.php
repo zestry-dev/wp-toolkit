@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Request API: Request service
+ * Request API: Request module
  */
 
 declare( strict_types=1 );
@@ -75,7 +75,7 @@ class Request extends Module {
 	/**
 	 * The arguments an object declares, keyed by property name.
 	 *
-	 * Public and protected only, the same rule module injection uses: reflection
+	 * Public and protected only: reflection
 	 * cannot reliably reach a private property declared on an ancestor.
 	 *
 	 * @param object|string $target The object, or the class name of a structure.
@@ -639,8 +639,7 @@ class Request extends Module {
 		}
 
 		try {
-			// No setAccessible() call: relies on PHP 8.1+ implicit accessibility,
-			// the same as WithPlugin::_inject_services().
+			// No setAccessible() call: relies on PHP 8.1+ implicit accessibility.
 			$property->setValue( $target, $value );
 		} catch ( \TypeError $e ) {
 			throw new \InvalidArgumentException(
@@ -1071,7 +1070,7 @@ class Request extends Module {
 		try {
 			return new $concrete( (string) $value );
 		} catch ( \Exception $e ) {
-			// Unreachable through a schema this service built: `format: date-time`
+			// Unreachable through a schema this module built: `format: date-time`
 			// is checked before anything binds.
 			throw new \InvalidArgumentException(
 				\sprintf( '"%s" is not a date.', \is_scalar( $value ) ? (string) $value : \gettype( $value ) )
@@ -1098,7 +1097,7 @@ class Request extends Module {
 			}
 		}
 
-		// Unreachable through a schema this service built, which lists exactly
+		// Unreachable through a schema this module built, which lists exactly
 		// these -- so this means the schema was replaced by hand and no longer
 		// agrees with the property it fills.
 		throw new \InvalidArgumentException(
@@ -1203,7 +1202,7 @@ class Request extends Module {
 	/**
 	 * Call one of an argument's own callbacks, saying which if it will not run.
 	 *
-	 * A callback that cannot take what it is given fails inside this service,
+	 * A callback that cannot take what it is given fails inside this module,
 	 * where PHP's own message names the callback's parameter and a line of
 	 * library code -- true, and no help at all in finding the declaration that
 	 * paired them.

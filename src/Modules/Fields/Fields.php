@@ -481,7 +481,7 @@ class Fields extends Module implements Bootable {
 		// A meta key is the `meta_key` column, and appears in your REST responses.
 		// The filename is the default key, exactly as written.
 		foreach ( $this->walk_folder( $root_dir, array( 'php' ), 1 ) as $file ) {
-			// Wired inside, so is_enabled() can read an injected service whenever
+			// Wired inside, so is_enabled() can reach a module with `with()` whenever
 			// it is asked. Every file is kept, switched on or off: what a field
 			// declares is readable, and what it *registers* is decided in
 			// register_fields().

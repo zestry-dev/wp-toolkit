@@ -4,7 +4,7 @@
  * Devtool command: `wp zt update`.
  *
  * Brings a plugin's copied source up to the toolkit currently installed --
- * the kernel `init` wrote, plus every module and service `add` has copied
+ * the kernel `init` wrote, plus every module `add` has copied
  * since -- reporting, before it writes anything, which files it would replace
  * and which of those the consumer has edited.
  */
@@ -27,10 +27,10 @@ return new class() extends Command {
 	 * Copying is one-way: a later release of the toolkit does not reach a
 	 * plugin that has already run `wp zt init`. This is how you go and get
 	 * one. It looks at everything under your `Core/` directory -- the kernel,
-	 * and each module or service you have added -- and replaces it with what
+	 * and each module you have added -- and replaces it with what
 	 * the currently installed `zestry-dev/wp-toolkit` would write.
 	 *
-	 * Nothing outside `Core/` is touched. Your own modules and services live
+	 * Nothing outside `Core/` is touched. Your own modules live
 	 * beside it, and this command cannot see them.
 	 *
 	 * ## WHAT IT REPORTS
@@ -84,7 +84,7 @@ return new class() extends Command {
 	 *     # A module deleted from the plugin. This copies what you have, so it
 	 *     # says so rather than offering to put back what you took out.
 	 *     $ wp zt update
-	 *     2 files removed with the "ajax" module. `wp zt add module ajax` puts it back.
+	 *     2 files removed with the "ajax" module. `wp zt add ajax` puts it back.
 	 *     Success: Already up to date.
 	 *
 	 *     # Take it. Your edited files are kept.
@@ -254,7 +254,7 @@ return new class() extends Command {
 			}
 
 			// A directory module accounts for everything beneath it; a
-			// single-file service accounts for itself.
+			// single-file module accounts for itself.
 			$paths = array_values(
 				array_filter(
 					$missing,
@@ -282,7 +282,7 @@ return new class() extends Command {
 		foreach ( $removed as $name => $paths ) {
 			$this->log(
 				sprintf(
-					'%d file%s removed with the "%s" module. `wp zt add module %s` puts it back.',
+					'%d file%s removed with the "%s" module. `wp zt add %s` puts it back.',
 					count( $paths ),
 					1 === count( $paths ) ? '' : 's',
 					$name,

@@ -23,7 +23,7 @@ return new class() extends MakeCommand {
 	 * the singular and plural names below. Writing the file is the whole
 	 * registration; nothing has to be declared anywhere.
 	 *
-	 * Needs the `post-types` module, so run `wp zt add module post-types` first
+	 * Needs the `post-types` module, so run `wp zt add post-types` first
 	 * if you have not already.
 	 *
 	 * ## OPTIONS

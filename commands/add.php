@@ -62,7 +62,7 @@ return new class() extends AddCommand {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # Copy the REST API module, and the service it needs.
+	 *     # Copy the REST API module, and the modules it depends on.
 	 *     $ wp zt add rest-api
 	 *     Also adding required dependencies: path
 	 *     Added path
@@ -78,10 +78,6 @@ return new class() extends AddCommand {
 	 *     $ wp zt add cli
 	 *     Skipped cli (already present)
 	 *     Success: Done.
-	 *
-	 *     # Naming a service here says where to find it.
-	 *     $ wp zt add path
-	 *     Error: "path" is a service, not a module. Run `wp zt add service path`.
 	 *
 	 * @param array $args
 	 * @param array $assoc_args

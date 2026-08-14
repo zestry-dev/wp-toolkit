@@ -213,7 +213,7 @@ class PostTypes extends Module implements Bootable {
 			}
 
 			// Wired here rather than at registration, so that is_enabled() can
-			// read an injected service whenever it is asked.
+			// reach a module with `with()` whenever it is asked.
 			$this->get_plugin()->wire( $instance );
 
 			$this->post_types[ $name ] = $instance;
@@ -268,7 +268,7 @@ class PostTypes extends Module implements Bootable {
 			}
 
 			// Wired here rather than at registration, so that is_enabled() can
-			// read an injected service whenever it is asked.
+			// reach a module with `with()` whenever it is asked.
 			$this->get_plugin()->wire( $instance );
 
 			$this->taxonomies[ $name ] = $instance;

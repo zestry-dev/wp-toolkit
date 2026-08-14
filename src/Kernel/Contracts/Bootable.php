@@ -32,8 +32,8 @@ namespace Zestry\WPToolkit\Kernel\Contracts;
  * you read the body. Every module is listed in `bootstrap.php` either way; this
  * decides only whether anything happens when the plugin builds it.
  *
- * {@see \Zestry\WPToolkit\Kernel\Abstracts\Module::boot()} is what calls this, once, and
- * a module that does not implement this has nothing for it to call.
+ * {@see \Zestry\WPToolkit\Kernel\ModulesRepository} calls this once, as it builds the
+ * module, and a module that does not implement this has nothing for it to call.
  */
 interface Bootable {
 
@@ -56,8 +56,8 @@ interface Bootable {
 	 * three, and where anything a module registers belongs.
 	 *
 	 * Public because an interface has no other option, but it is the plugin's to
-	 * call: `boot()` guards it so it runs once, and calling this directly runs it
-	 * again.
+	 * call: the plugin runs it once as it builds the module, and calling it
+	 * yourself runs it again.
 	 *
 	 * @return void
 	 */

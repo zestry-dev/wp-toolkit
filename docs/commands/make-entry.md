@@ -13,11 +13,11 @@ Writes `src/entries/<name>/`, which the build compiles to `build/entries/<name>`
 $this->get_plugin()->get( Assets::class )->enqueue_entry( 'settings' );
 ```
 
-An entry is built by the `webpack.config.js` that `wp zt add module assets` writes, which is what lets one build produce blocks and entries together. A stock `@wordpress/scripts` setup cannot; the JavaScript guide covers why.
+An entry is built by the `webpack.config.js` that `wp zt add assets` writes, which is what lets one build produce blocks and entries together. A stock `@wordpress/scripts` setup cannot; the JavaScript guide covers why.
 
 The stylesheet beside `index.ts` is imported by it, which is what gets it built; it is registered under the same handle, so enqueuing the script brings it along.
 
-Needs the `assets` module, which brings the build configuration with it: `wp zt add module assets`.
+Needs the `assets` module, which brings the build configuration with it: `wp zt add assets`.
 
 ## Options
 

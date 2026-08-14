@@ -556,7 +556,7 @@ abstract class MakeCommand extends Command {
 	 *
 	 * A generated file names its base in a `use` line, and nothing before this
 	 * checked that the class had ever been copied in. `make page` in a plugin
-	 * that never ran `add module admin-pages` therefore wrote a file importing
+	 * that never ran `add admin-pages` therefore wrote a file importing
 	 * three classes that do not exist -- and said nothing, because PHP imports
 	 * are lazy, so it parses, lints clean, and lands in a directory no module is
 	 * walking. It does nothing at all until someone happens to add the module.
@@ -606,7 +606,7 @@ abstract class MakeCommand extends Command {
 			// comes back to when the file turns out to do nothing.
 			$this->warning(
 				\sprintf(
-					'Writing it anyway, but this plugin has no %s. Run `wp zt add module %s` before it can do anything.',
+					'Writing it anyway, but this plugin has no %s. Run `wp zt add %s` before it can do anything.',
 					$class,
 					$module
 				)
@@ -658,7 +658,7 @@ abstract class MakeCommand extends Command {
 	}
 
 	/**
-	 * Run `wp zt add module <name>` from inside this command.
+	 * Run `wp zt add <name>` from inside this command.
 	 *
 	 * The real command rather than a copy of what it does: it resolves the
 	 * module's dependencies, rewrites every namespace, declares it in

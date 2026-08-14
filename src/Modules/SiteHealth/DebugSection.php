@@ -35,8 +35,8 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *
  * @example A section
  * `fields()` is keyed by field id; each field needs a translated `label` and a
- * `value`. Anything a Service or Module can be injected into this can too, so
- * the section reports real state.
+ * `value`. Reach any declared module with `$this->with( … )`, so the section
+ * reports real state.
  *
  * ```
  * namespace Acme\Plugin\DebugSections;

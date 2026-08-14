@@ -193,8 +193,8 @@ abstract class AddCommand extends Command {
 	 * it. Declaring it as it is copied makes it active straight away, without
 	 * requiring a manual edit.
 	 *
-	 * Only modules are declared. A service is built the moment something asks
-	 * for it, so an entry naming one would do nothing.
+	 * Every copied module is declared, whether or not it acts on its own:
+	 * `bootstrap.php` is the whole inventory, and nothing outside it is built.
 	 *
 	 * @param string[] $copied      The module names that were copied.
 	 * @param string   $plugin_root Absolute path to the consuming plugin's root.
@@ -217,10 +217,8 @@ abstract class AddCommand extends Command {
 			$source = $registry[ $name ]['source'];
 
 			/*
-			 * Only a Module is declared. A Service is built the moment something
-			 * asks for it, so an entry that merely names one would do nothing --
-			 * it belongs in bootstrap.php only if the consumer later wants to
-			 * configure it, which is their edit to make rather than ours.
+			 * Guards the registry rather than the copy: every entry is a Module,
+			 * and a declaration is only meaningful for one.
 			 */
 			if ( ! \is_a( $source, Module::class, true ) ) {
 				continue;

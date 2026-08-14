@@ -9,7 +9,7 @@ Generate a new custom taxonomy.
 
 The PostTypes module discovers it. On `init` it walks your `taxonomies/` directory, requires every file in it, and hands the `Taxonomy` each one returns to `register_taxonomy()`, attached to the post types the file names. Writing the file is the whole registration; nothing has to be declared anywhere.
 
-Needs the `post-types` module — the same one that registers post types — so run `wp zt add module post-types` first if you have not already.
+Needs the `post-types` module — the same one that registers post types — so run `wp zt add post-types` first if you have not already.
 
 ## Options
 

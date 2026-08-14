@@ -74,7 +74,7 @@ Use this when a module of your own builds its command instances in PHP instead o
 
 `$name` is plugin-relative, matching `walk_and_load()`'s own behavior of prefixing every discovered command with the slug — pass only the command's own name/namespace, never the slug itself.
 
-Only instances of `Command` are passed to `Plugin::wire()`, since the plugin-assignment and property injection it performs is meaningful only for that base class; an instance of some other type is registered as-is, on the assumption that it exposes a compatible `handle()` method without needing plugin services.
+Only instances of `Command` are passed to `Plugin::wire()`, since the plugin it assigns is only meaningful to that base class; an instance of some other type is registered as-is, on the assumption that it exposes a compatible `handle()` method without needing to reach any module.
 
 This is a thin instance-side wrapper over `register_command_for()`, which is `static` precisely so a module can register a command without holding — and therefore without booting — a CLI instance. Prefer the static form from another module; see `Migrations`.
 

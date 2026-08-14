@@ -88,7 +88,7 @@ public function render(): void {
 }
 ```
 
-`public Cookie $cookies;` on the page is all the wiring it needs — a typed property is injected when the page is wired.
+`AdminPage::set_flash()` and `get_flash()` are the two-line version of this for a page, and need no wiring at all.
 
 > [!IMPORTANT]
 > Encryption stops the browser reading or forging the contents, and does nothing about size: browsers cap a cookie near 4 KB and drop a longer one without saying so. `set_flash()` handles that for you by moving a large payload into a transient. `set_encrypted()` cannot — a cookie's lifetime is yours to choose and a transient could not honour it — so it refuses and says so, past `MAX_COOKIE_BYTES`.

@@ -26,7 +26,7 @@ function zestry_parse_command_sections( string $body ): array {
 	 */
 	$lead = preg_split( '/\n## /', $body, 2 );
 
-	// Punctuation included: a heading like `## SERVICE OR MODULE?` is ordinary,
+	// Punctuation included: a heading like `## WHAT IS NOT CHECKED` is ordinary,
 	// and a pattern that quietly skips it drops the section from the page with
 	// nothing to show that it did.
 	preg_match_all( '/## ([A-Z][A-Z0-9 ?\/-]*)\n(.*?)(?=\n## |\n@|\z)/s', $body, $matches, PREG_SET_ORDER );

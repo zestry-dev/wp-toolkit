@@ -156,21 +156,22 @@ Circular module dependency detected: Acme\Plugin\Modules\Reports -> Acme\Plugin\
 namespace Acme\Plugin\Modules;
 
 use Acme\Plugin\Core\Kernel\Abstracts\Module;
+use Acme\Plugin\Core\Kernel\Contracts\Bootable;
 
-class Exporter extends Module {
+class Exporter extends Module implements Bootable {
 
     public function run(): void {
-        // Resolved when the hook fires, by which point Reports is fully built.
-        $reports = $this->get_plugin()->get( Reports::class );
+        // Reached when the hook fires, by which point Reports is fully built.
+        $reports = $this->with( Reports::class );
     }
 
-    protected function on_boot(): void {
+    public function on_boot(): void {
         add_action( 'acme_export', array( $this, 'run' ) );
     }
 }
 ```
 
-`get_plugin()->get()` at *use* time is safe where a property is not, because the cycle only exists during construction. If the two classes need each other in both directions permanently, that is usually a sign the shared part wants to be a third class both depend on.
+`with()` at *use* time is safe where reaching for it during boot is not, because the cycle only exists while both are being built. If the two classes need each other in both directions permanently, that is usually a sign the shared part wants to be a third class both depend on.
 
 ---
 

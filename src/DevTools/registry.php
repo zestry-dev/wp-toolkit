@@ -34,22 +34,21 @@ use Zestry\WPToolkit\Modules\Request\Request;
 use Zestry\WPToolkit\Modules\Views;
 
 /**
- * What `wp zt add <name>` can install, grouped the way `bootstrap.php` is.
+ * What `wp zt add <name>` can install.
  *
- * Two sections, `services` and `modules`, matching the two base classes and the
- * two directories they live in. A name is unique across both -- `wp zt add
- * path` needs no section, since the commands take a flat name.
+ * One flat list keyed by the name the commands take, matching `bootstrap.php`:
+ * everything here is a module, so there is nothing to file anything under and
+ * `wp zt add path` needs no qualifier.
  *
  * `source` is the class itself, and the rest is derived from it rather than
- * restated: PSR-4 gives the file (`Zestry\WPToolkit\Modules\Path` -> `src/Services/Path.php`),
+ * restated: PSR-4 gives the file (`Zestry\WPToolkit\Modules\Path` -> `src/Modules/Path.php`),
  * and the last namespace segment matching the class name marks a module with a
  * directory of its own (`Modules\Ajax\Ajax` -> copy `src/Modules/Ajax/`,
- * `Services\Path` -> copy the one file).
+ * `Modules\Path` -> copy the one file).
  *
- * `depends` names other entries that must be copied alongside, split the same
- * way. `add` resolves the full transitive closure before copying anything, so
- * requesting `rest-api` also brings in `path` without the caller knowing it
- * exists.
+ * `depends` names other entries that must be copied alongside. `add` resolves
+ * the full transitive closure before copying anything, so requesting `rest-api`
+ * also brings in `path` without the caller knowing it exists.
  *
  * `requires` is the oldest WordPress the entry works on, and is omitted by
  * everything that works on any. It is measured against the consuming plugin's
@@ -58,20 +57,11 @@ use Zestry\WPToolkit\Modules\Views;
  * promise a new enough WordPress for -- including one pulled in as a dependency
  * -- and `wp zt doctor` reports one already on disk.
  *
- * > [!IMPORTANT]
- * > **The section a class is filed under has to match what it extends.** The
- * > file says it here and the class says it in its `extends`; nothing enforces
- * > agreement, and only the class is load-bearing -- `Plugin::bootstrap()` and
- * > `AddCommand` both derive behaviour from `is_a( ..., Module::class, true )`,
- * > never from these headings. A misfiled entry therefore still *works*, and
- * > will simply read wrong. {@see \Zestry\WPToolkit\DevTools\Copier::normalize_registry()}
- * > reports the section it was filed under so a caller can say which it is.
- *
  * `::class` resolves at compile time from the literal name, so this file still
  * loads none of the classes it names -- it stays plain data, read before any
  * autoloader for the *target* project necessarily exists.
  *
- * @return array<string, array<string, array{source: class-string, requires?: string, depends: array{services: string[], modules: string[]}}>>
+ * @return array<string, array{source: class-string, requires?: string, depends?: string[]}>
  */
 return array(
 	'path'          => array(

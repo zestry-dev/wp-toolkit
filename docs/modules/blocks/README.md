@@ -18,7 +18,7 @@ A blocks directory contains one subdirectory per block, each holding the `block.
 
 The root is the *built* directory (`build/blocks` by default), not the source one: `block.json`'s own `file:` paths are relative to wherever it sits, so pointing WordPress at the build output is what makes them resolve without any rewriting here.
 
-A block declares its PHP with `"supports": { "{plugin-slug}-php": "file:./block.php" }`, and that file returns a `Block` instance — loaded the first time the block renders, wired, and called, so its PHP has the plugin's own modules injected. A file returning anything else raises a DiscoveryException.
+A block declares its PHP with `"supports": { "{plugin-slug}-php": "file:./block.php" }`, and that file returns a `Block` instance — loaded the first time the block renders, wired, and called, so its PHP reaches the plugin's own modules with `with()`. A file returning anything else raises a DiscoveryException.
 
 A block declaring WordPress's own `render` field instead is left alone entirely, and a block declaring neither is static. Both are still registered.
 

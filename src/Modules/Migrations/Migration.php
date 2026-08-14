@@ -19,7 +19,7 @@ use Zestry\WPToolkit\Modules\DB;
  * Base class for a file-based, one-time database migration.
  *
  * A migration file returns a subclass instance. The Migrations module wires it,
- * assigning the shared plugin and injecting typed module dependencies, then
+ * assigning the shared plugin so `with()` reaches every module, then
  * calls `up()` exactly once for a given site. Once it has run successfully it
  * never runs again, tracked by the migration's own identifier -- see
  * {@see Migrations} for how that identifier comes from the filename.
@@ -35,7 +35,7 @@ use Zestry\WPToolkit\Modules\DB;
  * timestamp prefix included.
  * A migration doing something `dbDelta()` cannot express (a data backfill, an
  * index `dbDelta()` cannot parse, a one-off `UPDATE`) uses `$wpdb` directly --
- * declare it as a typed property like any other injected dependency, or
+ * reach it with `$this->with( DB::class )` like any other module, or
  * reach `$GLOBALS['wpdb']` the way WordPress code ordinarily does.
  *
  * @stub migration.php.stub

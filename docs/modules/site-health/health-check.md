@@ -15,7 +15,7 @@ Site Health is the supported way to see a site you cannot log into: a user copie
 
 ## A check
 
-`run()` returns one of `good()`, `recommended()` or `critical()`. Anything a Service or Module can be injected into this can too, so the check reads real state rather than guessing.
+`run()` returns one of `good()`, `recommended()` or `critical()`. Reach any declared module with `$this->with( … )`, so the check reads real state rather than guessing.
 
 ```php
 namespace Acme\Plugin\HealthChecks;
@@ -82,9 +82,9 @@ return new class() extends HealthCheck {
 	// linking to wherever the problem is fixed.
 	//
 	// This runs on the Site Health screen and on the weekly cron behind it,
-	// so keep it quick and free of side effects. Anything a Module or Service
-	// Reach any declared module with `$this->with( Options::class )` and report
-	// real state rather than guessing.
+	// so keep it quick and free of side effects. Reach any declared module
+	// with `$this->with( Options::class )` and report real state rather than
+	// guessing.
 	public function run(): array {
 		return $this->good( 'Everything looks fine.' );
 	}

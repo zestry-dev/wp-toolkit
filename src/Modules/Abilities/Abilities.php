@@ -278,7 +278,7 @@ class Abilities extends Module implements Bootable {
 			$this->get_plugin()->wire( $instance );
 
 			// Discovered but switched off: wired first, so is_enabled() can read an
-			// injected service, then nothing about it is registered.
+			// module reached with `with()`, then nothing about it is registered.
 			if ( ! $instance->is_enabled() ) {
 				continue;
 			}

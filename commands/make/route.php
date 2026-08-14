@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 * nothing has to be declared anywhere, and subdirectories are organization
 	 * only, not part of the URL.
 	 *
-	 * Needs the `rest-api` module, so run `wp zt add module rest-api` first if
+	 * Needs the `rest-api` module, so run `wp zt add rest-api` first if
 	 * you have not already.
 	 *
 	 * ## OPTIONS

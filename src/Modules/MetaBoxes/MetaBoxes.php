@@ -135,7 +135,7 @@ class MetaBoxes extends Module implements Bootable {
 		foreach ( $this->walk_folder( $root_dir, array( 'php' ), 1 ) as $file ) {
 			$box = $this->wire_box_file( $root_dir . '/' . $file );
 
-			// Wired first, so is_enabled() can read an injected service.
+			// Wired first, so is_enabled() can reach a module with `with()`.
 			if ( ! $box->is_enabled() ) {
 				continue;
 			}

@@ -29,7 +29,7 @@ wp_add_inline_script(
 
 `wp_json_encode()` rather than `wp_localize_script()`, which casts every scalar it passes to a string — `bindable: false` arrives as `""`, and every field reads as bindable.
 
-`wp zt add module assets` brings the build with it: a `webpack.config.js` that compiles three directories, each with a different owner.
+`wp zt add assets` brings the build with it: a `webpack.config.js` that compiles three directories, each with a different owner.
 
 | Source | Built to | Registered by |
 | --- | --- | --- |
@@ -71,7 +71,7 @@ The stylesheet the entry imports is registered under that same handle, so it com
 
 ## An asset the build did not produce
 
-`$src` is resolved through `get_asset_url()` — relative to the configured assets directory (`assets` by default) — into a full URL via the injected Path service, so you never construct asset URLs by hand.
+`$src` is resolved through `get_asset_url()` — relative to the configured assets directory (`assets` by default) — into a full URL via the `path` module, so you never construct asset URLs by hand.
 
 ```php
 $app = $assets->register_script( 'app', 'app.js' );
@@ -197,7 +197,7 @@ public function register_script( string $handle, string $src, array $deps = arra
 
 |  | Details |
 |---|---|
-| **Parameters** | `$handle` — The local script handle<br>`$src` — The script path, relative to the configured assets directory, resolved via get_asset_url()<br>`$deps` — Handles this script depends on, as WordPress knows them — the return value of a previous register_script()/register_script_from_manifest() call for one of your own, or the plain handle ('jquery', 'wp-element') for anything registered outside this service. An external handle is passed straight through; running it through get_asset_slug() would namespace it to your plugin and leave the dependency unregistered<br>`$version` — Script version, false for the plugin's own, or null for none<br>`$args` — Extra registration args, or a bool for the legacy in-footer flag |
+| **Parameters** | `$handle` — The local script handle<br>`$src` — The script path, relative to the configured assets directory, resolved via get_asset_url()<br>`$deps` — Handles this script depends on, as WordPress knows them — the return value of a previous register_script()/register_script_from_manifest() call for one of your own, or the plain handle ('jquery', 'wp-element') for anything registered outside this module. An external handle is passed straight through; running it through get_asset_slug() would namespace it to your plugin and leave the dependency unregistered<br>`$version` — Script version, false for the plugin's own, or null for none<br>`$args` — Extra registration args, or a bool for the legacy in-footer flag |
 | **Return** | The namespaced handle, for use in a dependent asset's $deps |
 | **Throws** | `InvalidArgumentException` — When $src escapes the plugin root |
 
@@ -213,7 +213,7 @@ public function register_style( string $handle, string $src, array $deps = array
 
 |  | Details |
 |---|---|
-| **Parameters** | `$handle` — The local style handle<br>`$src` — The style path, relative to the configured assets directory, resolved via get_asset_url()<br>`$deps` — Handles this style depends on, as WordPress knows them — the return value of a previous register_style() call for one of your own, or the plain handle ('wp-components') for anything registered outside this service. An external handle is passed straight through; running it through get_asset_slug() would namespace it to your plugin and leave the dependency unregistered<br>`$version` — Style version, false for the plugin's own, or null for none<br>`$media` — The media type the style applies to |
+| **Parameters** | `$handle` — The local style handle<br>`$src` — The style path, relative to the configured assets directory, resolved via get_asset_url()<br>`$deps` — Handles this style depends on, as WordPress knows them — the return value of a previous register_style() call for one of your own, or the plain handle ('wp-components') for anything registered outside this module. An external handle is passed straight through; running it through get_asset_slug() would namespace it to your plugin and leave the dependency unregistered<br>`$version` — Style version, false for the plugin's own, or null for none<br>`$media` — The media type the style applies to |
 | **Return** | The namespaced handle, for use in a dependent asset's $deps |
 | **Throws** | `InvalidArgumentException` — When $src escapes the plugin root |
 

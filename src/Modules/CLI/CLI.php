@@ -71,11 +71,10 @@ class CLI extends Module implements Bootable {
 	 * only the command's own name/namespace, never the slug itself.
 	 *
 	 * Only instances of {@see Command} are passed to
-	 * {@see \Zestry\WPToolkit\Kernel\Plugin::wire()}, since the plugin-assignment and
-	 * property injection it performs is meaningful only for that base class;
-	 * an instance of some other type is registered as-is, on the assumption
-	 * that it exposes a compatible `handle()` method without needing plugin
-	 * services.
+	 * {@see \Zestry\WPToolkit\Kernel\Plugin::wire()}, since the plugin it assigns is
+	 * only meaningful to that base class; an instance of some other type is
+	 * registered as-is, on the assumption that it exposes a compatible
+	 * `handle()` method without needing to reach any module.
 	 *
 	 * This is a thin instance-side wrapper over {@see register_command_for()},
 	 * which is `static` precisely so a module can register a command without
@@ -318,11 +317,11 @@ class CLI extends Module implements Bootable {
 			return;
 		}
 
-		// Wire the command so it behaves like a module: plugin assigned and
-		// declared module properties injected before WP-CLI invokes handle().
+		// Wire the command so it behaves like a module: the plugin is assigned,
+		// so `with()` works before WP-CLI invokes handle().
 		$plugin->wire( $instance );
 
-		// Wired first, so is_enabled() can read an injected service. A command
+		// Wired first, so is_enabled() can reach a module with `with()`. A command
 		// switched off is never added, so `wp help` does not list it either.
 		if ( ! $instance->is_enabled() ) {
 			return;

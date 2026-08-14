@@ -9,7 +9,7 @@ Generate a new cron schedule.
 
 The Cron module discovers it. At boot it walks your `schedules/` directory, requires every file in it, binds the `Schedule` each one returns to its own hook, and calls `wp_schedule_event()` for it when the event is not already on the calendar. Writing the file is the whole registration; nothing has to be declared anywhere.
 
-Needs the `cron` module, so run `wp zt add module cron` first if you have not already.
+Needs the `cron` module, so run `wp zt add cron` first if you have not already.
 
 ## Options
 

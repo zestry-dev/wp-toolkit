@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 * `wp {slug} greet`, and nested directories become nested command
 	 * namespaces. Writing the file is the whole registration.
 	 *
-	 * Needs the `cli` module, so run `wp zt add module cli` first if you have
+	 * Needs the `cli` module, so run `wp zt add cli` first if you have
 	 * not already.
 	 *
 	 * ## OPTIONS

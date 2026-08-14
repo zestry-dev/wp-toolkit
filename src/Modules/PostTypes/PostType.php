@@ -19,7 +19,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * Base class for a file-based custom post type registration.
  *
  * A post type file returns a subclass instance; the PostTypes module wires it
- * (assigning the shared plugin and injecting typed module dependencies) and
+ * (assigning the shared plugin, so `with()` reaches every module) and
  * calls {@see get_args()} to build the array passed to WordPress core's own
  * `register_post_type()`. The post type's name is not derived from this class
  * at all -- it comes from the file's own name within the post types

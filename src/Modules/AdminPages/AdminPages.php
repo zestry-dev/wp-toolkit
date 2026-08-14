@@ -34,7 +34,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * The actual authoring surface for most developers is not this class but the
  * page files it discovers. A page such as `admin-pages/settings.php` need
  * only return an AdminPage subclass instance — the module assigns the
- * plugin, injects any typed module dependencies, derives the slug from the
+ * plugin, so `with()` reaches every module, derives the slug from the
  * file path, and wires up the menu entry.
  *
  * ```
@@ -59,7 +59,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * reviewable long before it stops growing.
  *
  * {@see AdminPage::view()} renders through the {@see \Zestry\WPToolkit\Modules\Views}
- * service, and the template gets what that call passes and nothing else -- it
+ * module, and the template gets what that call passes and nothing else -- it
  * cannot reach the page for anything the call left out. So the call is the list
  * of the template's inputs, readable without opening the template.
  *
@@ -76,7 +76,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * </div>
  * ```
  *
- * `$this` inside a template is the Views service -- rendering a subview is the
+ * `$this` inside a template is the `views` module -- rendering a subview is the
  * same call every other caller makes, and costs no variable name.
  */
 class AdminPages extends Module implements Bootable {
@@ -214,7 +214,7 @@ class AdminPages extends Module implements Bootable {
 		// an accumulation. register_pages() is hooked by name and is callable
 		// directly, so without this a second invocation would re-run
 		// add_menu_page()/add_submenu_page() for every already-discovered page.
-		// Module::boot()'s idempotency guards boot(), not a hook callback.
+		// Building a module only once guards on_boot(), not a hook callback.
 		$this->pages         = array();
 		$this->registered    = array();
 		$this->folder_parent = array();
@@ -249,7 +249,7 @@ class AdminPages extends Module implements Bootable {
 			$this->get_plugin()->wire( $instance );
 
 			// Discovered but switched off: wired first, so is_enabled() can read an
-			// injected service, then nothing about it is registered.
+			// module reached with `with()`, then nothing about it is registered.
 			if ( ! $instance->is_enabled() ) {
 				continue;
 			}

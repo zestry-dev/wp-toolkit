@@ -19,7 +19,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * Base class for file-based WP-Cron scheduled events.
  *
  * A schedule file returns a subclass instance. The Cron module wires it
- * (assigning the shared plugin and injecting typed module properties),
+ * (assigning the shared plugin, so `with()` reaches every module),
  * ensures its recurrence is scheduled with WordPress, and binds `run()` to
  * fire when WP-Cron's pseudo-cron eventually dispatches the hook.
  *

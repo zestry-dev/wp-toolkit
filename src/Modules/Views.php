@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Views API: Views service
+ * Views API: Views module
  */
 
 declare( strict_types=1 );
@@ -44,7 +44,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  *
  * @example Writing a template
  * The template is plain PHP, with the passed data as local variables. Inside
- * one, `$this` is this service, so a template renders a subview with the same
+ * one, `$this` is this module, so a template renders a subview with the same
  * `render()` everything else uses -- and it costs no variable name to do it.
  *
  * ```
@@ -65,7 +65,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * @example Rendering an admin page
  * This is the case most plugins reach for first, and it has a shortcut: an
  * {@see \Zestry\WPToolkit\Modules\AdminPages\AdminPage} calls `$this->view()` rather than
- * resolving this service. `wp zt make page` writes both files, and the
+ * resolving this module. `wp zt make page` writes both files, and the
  * template gets exactly what the `render()` call names -- nothing of the page
  * itself, so its inputs are readable without opening it.
  *
@@ -114,7 +114,7 @@ class Views extends Module {
 	 * also what reserves the names: only keys beginning `__include_` are, and
 	 * every ordinary name reaches the template, `view` and `data` included.
 	 * Rendering a subview costs no name at all, since a template reaches this
-	 * service as `$this`.
+	 * module as `$this`.
 	 *
 	 * @param string               $view Logical view name.
 	 * @param array<string, mixed> $data Variables made available to the view.

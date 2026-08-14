@@ -22,7 +22,7 @@ return new class() extends MakeCommand {
 	 * the action opts logged-out visitors in. Writing the file is the whole
 	 * registration; nothing has to be declared anywhere.
 	 *
-	 * Needs the `ajax` module, so run `wp zt add module ajax` first if you have
+	 * Needs the `ajax` module, so run `wp zt add ajax` first if you have
 	 * not already.
 	 *
 	 * ## OPTIONS

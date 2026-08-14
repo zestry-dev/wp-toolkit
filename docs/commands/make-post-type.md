@@ -9,7 +9,7 @@ Generate a new custom post type.
 
 The PostTypes module discovers it. On `init` it walks your `post-types/` directory, requires every file in it, and hands the `PostType` each one returns to `register_post_type()`, with a full `labels` array built from the singular and plural names below. Writing the file is the whole registration; nothing has to be declared anywhere.
 
-Needs the `post-types` module, so run `wp zt add module post-types` first if you have not already.
+Needs the `post-types` module, so run `wp zt add post-types` first if you have not already.
 
 ## Options
 

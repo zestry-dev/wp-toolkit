@@ -46,9 +46,9 @@ use WP_REST_Response;
  * permission_check() and RequestArgument-bound properties without one class
  * accumulating a method per HTTP method per concern. Logic genuinely shared
  * between them — loading the same resource, a repeated validation rule —
- * belongs in a small dependency (a Module, or any typed property) injected
- * into both files, the same way AdminPages and Ajax share Path rather than
- * duplicating path resolution.
+ * belongs in a small collaborator of your own -- a module, reached from both
+ * files with `with()` -- the same way AdminPages and Ajax share Path rather
+ * than duplicating path resolution.
  *
  * Authorization is deliberately not optional: permission_check() is abstract,
  * so every route makes an explicit allow/deny decision before handle() runs,

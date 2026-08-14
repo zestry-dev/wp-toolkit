@@ -18,7 +18,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
 /**
  * Base class for file-based AJAX action handlers.
  *
- * Action files return a subclass instance. The Ajax module injects the shared
+ * Action files return a subclass instance. The Ajax module assigns the shared
  * plugin, checks authorization via `capability_check()`, verifies the nonce when
  * required, and calls `handle()`. For example, an action named `save-profile.php`
  * may return `current_user_can( 'edit_user', $id )` from `capability_check()`,

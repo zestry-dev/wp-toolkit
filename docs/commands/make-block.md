@@ -9,7 +9,7 @@ Generate a new editor block.
 
 The Blocks module discovers it, but only after a build. What this command writes is source: a `block.json` and the scripts, styles and optional PHP it points at, under `src/blocks/{name}/`. `npm run build` compiles that into `build/blocks/`, which is the directory the module walks and registers from — so a block that has never been built registers nothing.
 
-Needs the `blocks` module, so run `wp zt add module blocks` first if you have not already; that is also what writes the npm scripts this build runs through.
+Needs the `blocks` module, so run `wp zt add blocks` first if you have not already; that is also what writes the npm scripts this build runs through.
 
 WordPress matches both halves of a block name against `^[a-z0-9-]+$`, so a name holding anything else is written as the one it accepts and the command says what it wrote.
 

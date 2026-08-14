@@ -52,7 +52,7 @@ return new class() extends MakeCommand {
 	 * into `build/blocks/`, which is the directory the module walks and registers
 	 * from -- so a block that has never been built registers nothing.
 	 *
-	 * Needs the `blocks` module, so run `wp zt add module blocks` first if you
+	 * Needs the `blocks` module, so run `wp zt add blocks` first if you
 	 * have not already; that is also what writes the npm scripts this build
 	 * runs through.
 	 *

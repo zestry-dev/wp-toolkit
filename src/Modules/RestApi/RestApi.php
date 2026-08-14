@@ -117,7 +117,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  *
  * Each file's RestRoute instance handles exactly one HTTP method (see
  * {@see RestRoute} for why). The module wires it, assigning the plugin and
- * injecting typed module dependencies, then hands it to
+ * so `with()` reaches every module, then hands it to
  * {@see \Zestry\WPToolkit\Modules\Request\Request} to turn its declared properties into
  * WordPress's args schema.
  *
@@ -182,7 +182,7 @@ class RestApi extends Module implements Bootable {
 			$this->get_plugin()->wire( $instance );
 
 			// Discovered but switched off: wired first, so is_enabled() can read an
-			// injected service, then nothing about it is registered.
+			// module reached with `with()`, then nothing about it is registered.
 			if ( ! $instance->is_enabled() ) {
 				continue;
 			}

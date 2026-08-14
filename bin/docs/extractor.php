@@ -9,11 +9,11 @@ declare( strict_types=1 );
 /**
  * This package's own root namespace, as PSR-4 maps it to `src/`.
  *
- * Named once because several call sites used to strip it by finding the first
- * backslash. That is exact only while the root is a single segment, and this one
- * is two -- so those derived `src/WPToolkit/Services/Path.php` for a file that
- * sits at `src/Services/Path.php`, a path wrong in a way that still looks like a
- * path. Measure the root, never count it.
+ * Named once so no call site strips it by finding the first backslash. That is
+ * exact only while the root is a single segment, and this one is two -- it would
+ * derive `src/WPToolkit/Modules/Path.php` for a file that sits at
+ * `src/Modules/Path.php`, a path wrong in a way that still looks like a path.
+ * Measure the root, never count it.
  */
 const ZESTRY_ROOT_NAMESPACE = 'Zestry\\WPToolkit';
 

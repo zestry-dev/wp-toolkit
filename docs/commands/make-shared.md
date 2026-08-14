@@ -19,7 +19,7 @@ The scope is your plugin slug. A script package registers as `{slug}-shared-{nam
 
 Run `npm install` afterwards: npm is what links the new directory into `node_modules/`, and until it has, the import resolves to nothing.
 
-Add the `assets` module to register what the build produces: `wp zt add module assets`.
+Add the `assets` module to register what the build produces: `wp zt add assets`.
 
 ## Options
 

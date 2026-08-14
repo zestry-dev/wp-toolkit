@@ -50,7 +50,7 @@ return new class() extends MakeCommand {
 	 * with one field does not need a template, and costs nothing for having
 	 * one; the point is that nobody has to notice when the threshold passed.
 	 *
-	 * Needs the `admin-pages` module, so run `wp zt add module admin-pages`
+	 * Needs the `admin-pages` module, so run `wp zt add admin-pages`
 	 * first if you have not already. It brings `views` with it, which is what
 	 * renders the template.
 	 *
@@ -67,7 +67,7 @@ return new class() extends MakeCommand {
 	 *
 	 * [--views-dir=<dir>]
 	 * : Write the template under this plugin-relative directory instead of
-	 * `views` -- pass it when you have pointed the Views service's root
+	 * `views` -- pass it when you have pointed the `views` module's root
 	 * somewhere other than its default.
 	 *
 	 * [--yes]

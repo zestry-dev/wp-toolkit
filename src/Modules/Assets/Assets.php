@@ -57,7 +57,7 @@ use Zestry\WPToolkit\Modules\Path;
  * scalar it passes to a string -- `bindable: false` arrives as `""`, and every
  * field reads as bindable.
  *
- * `wp zt add module assets` brings the build with it: a `webpack.config.js`
+ * `wp zt add assets` brings the build with it: a `webpack.config.js`
  * that compiles three directories, each with a different owner.
  *
  * | Source | Built to | Registered by |
@@ -91,8 +91,8 @@ use Zestry\WPToolkit\Modules\Path;
  *
  * @example An asset the build did not produce
  * `$src` is resolved through `get_asset_url()` -- relative to the configured
- * assets directory (`assets` by default) -- into a full URL via the injected
- * Path service, so you never construct asset URLs by hand.
+ * assets directory (`assets` by default) -- into a full URL via the
+ * `path` module, so you never construct asset URLs by hand.
  *
  * ```
  * $app = $assets->register_script( 'app', 'app.js' );
@@ -213,7 +213,7 @@ class Assets extends Module implements Bootable {
 	 *
 	 * @param string           $handle    The local script handle.
 	 * @param string           $src       The script path, relative to the configured assets directory, resolved via get_asset_url().
-	 * @param string[]         $deps      Handles this script depends on, as WordPress knows them -- the return value of a previous register_script()/register_script_from_manifest() call for one of your own, or the plain handle ('jquery', 'wp-element') for anything registered outside this service. An external handle is passed straight through; running it through get_asset_slug() would namespace it to your plugin and leave the dependency unregistered.
+	 * @param string[]         $deps      Handles this script depends on, as WordPress knows them -- the return value of a previous register_script()/register_script_from_manifest() call for one of your own, or the plain handle ('jquery', 'wp-element') for anything registered outside this module. An external handle is passed straight through; running it through get_asset_slug() would namespace it to your plugin and leave the dependency unregistered.
 	 * @param string|bool|null $version   Script version, false for the plugin's own, or null for none.
 	 * @param array|bool       $args      Extra registration args, or a bool for the legacy in-footer flag.
 	 * @return string The namespaced handle, for use in a dependent asset's $deps.
@@ -230,7 +230,7 @@ class Assets extends Module implements Bootable {
 	 *
 	 * @param string           $handle  The local style handle.
 	 * @param string           $src     The style path, relative to the configured assets directory, resolved via get_asset_url().
-	 * @param string[]         $deps    Handles this style depends on, as WordPress knows them -- the return value of a previous register_style() call for one of your own, or the plain handle ('wp-components') for anything registered outside this service. An external handle is passed straight through; running it through get_asset_slug() would namespace it to your plugin and leave the dependency unregistered.
+	 * @param string[]         $deps    Handles this style depends on, as WordPress knows them -- the return value of a previous register_style() call for one of your own, or the plain handle ('wp-components') for anything registered outside this module. An external handle is passed straight through; running it through get_asset_slug() would namespace it to your plugin and leave the dependency unregistered.
 	 * @param string|bool|null $version Style version, false for the plugin's own, or null for none.
 	 * @param string           $media   The media type the style applies to.
 	 * @return string The namespaced handle, for use in a dependent asset's $deps.
@@ -689,7 +689,7 @@ class Assets extends Module implements Bootable {
 				throw new DiscoveryException(
 					\sprintf(
 						'The build manifest "%s" was written by an older build configuration. Re-run '
-							. '`wp zt add module assets --overwrite` to refresh webpack.config.js, then rebuild.',
+							. '`wp zt add assets --overwrite` to refresh webpack.config.js, then rebuild.',
 						$path
 					)
 				);

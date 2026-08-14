@@ -28,9 +28,8 @@ return new class() extends AddCommand {
 	 * command entirely; nothing is copied, not even modules that were not
 	 * already present.
 	 *
-	 * Dependencies cross the two kinds, so a module's services are re-copied
-	 * with it. To replace a service on its own, use
-	 * `wp zt overwrite service <service>`.
+	 * A module's dependencies are re-copied with it. To replace one on its own,
+	 * name it: `wp zt overwrite path`.
 	 *
 	 * ## OPTIONS
 	 *

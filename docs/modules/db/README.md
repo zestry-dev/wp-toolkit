@@ -9,7 +9,7 @@ Names a plugin's own database tables, and WordPress's.
 
 A custom table is `{$wpdb->prefix}{plugin_prefix}_{name}`, so it carries both the site's prefix and the plugin's, and cannot collide with another plugin's table of the same local name. The plugin's half defaults to its slug and is settable with `set_table_prefix()`. `get_table()` builds the whole name; nothing else in a plugin should build it by hand.
 
-`Migrations` uses this service to create tables, and every other module, route, block or command uses it to find them afterwards — which is the point of it being a service every one of them can reach rather than a method on `Migration`: a table created in a migration is queried everywhere else.
+`Migrations` uses this module to create tables, and every other module, route, block or command uses it to find them afterwards — which is the point of it being a module every one of them can reach rather than a method on `Migration`: a table created in a migration is queried everywhere else.
 
 [Adding it](#adding-it) &nbsp;·&nbsp; [Naming a table](#naming-a-table) &nbsp;·&nbsp; [Reading and writing rows](#reading-and-writing-rows) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
@@ -40,7 +40,7 @@ $db->get_core_table( 'users' );    // wp_users
 
 ## Reading and writing rows
 
-`$wpdb` does the querying; this service names the table it runs against. `get_wpdb()` hands you the handle so there is no `global` line — assign it to `$wpdb`, and read that method for why the name of the variable matters.
+`$wpdb` does the querying; this module names the table it runs against. `get_wpdb()` hands you the handle so there is no `global` line — assign it to `$wpdb`, and read that method for why the name of the variable matters.
 
 Pass the table through `%i`, WordPress's identifier placeholder (6.2+), rather than interpolating it: `%i` backtick-quotes what it is given, so the query is correct even for a name that would need quoting. `%s` is for values and would wrap the table in single quotes, which is a string, not a table.
 
@@ -62,11 +62,11 @@ There is no `query()`, `insert()` or `get_results()` on this class. Naming a tab
 
 ## Changing the defaults
 
-Configure the service only to shorten the table prefix. It defaults to the plugin slug, which is usually right — but MySQL caps a table name at 64 characters, and a long slug can leave too little room for the table's own name. Set a shorter prefix rather than renaming the plugin.
+Configure it only to shorten the table prefix. It defaults to the plugin slug, which is usually right — but MySQL caps a table name at 64 characters, and a long slug can leave too little room for the table's own name. Set a shorter prefix rather than renaming the plugin.
 
 Decide it before the first migration runs: changing it later renames nothing, so the existing tables stay under the old name and your plugin stops finding them.
 
-`bootstrap.php` is modules only, so the configuration goes in your entry file, where the callback runs the first time something asks for the service.
+`bootstrap.php` is modules only, so the configuration goes in your entry file, where the callback runs the first time something asks for the module.
 
 ```php
 // acme-plugin.php
@@ -229,7 +229,7 @@ public function get_table_prefix(): string
 | **Return** | The configured prefix, or the slug, with a trailing underscore |
 | **Throws** | — |
 
-Public so you can build a name this service does not cover — an index name, say — against the same prefix your tables use.
+Public so you can build a name this module does not cover — an index name, say — against the same prefix your tables use.
 
 <br>
 

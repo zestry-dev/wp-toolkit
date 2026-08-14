@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Transients API: Transients service
+ * Transients API: Transients module
  */
 
 declare( strict_types=1 );

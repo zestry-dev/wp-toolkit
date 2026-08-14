@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Path API: Path service
+ * Path API: Path module
  */
 
 declare( strict_types=1 );
@@ -243,7 +243,7 @@ class Path extends Module {
 	 * nothing is the integer `1` -- so check the type you expected before reading
 	 * anything out of it.
 	 *
-	 * Inside the file, `$this` is `$scope`, or this service when none is given.
+	 * Inside the file, `$this` is `$scope`, or this module when none is given.
 	 * {@see \Zestry\WPToolkit\Modules\Views} passes itself, which is what makes a
 	 * subview `$this->render( … )` from inside a template.
 	 *
@@ -269,7 +269,7 @@ class Path extends Module {
 	 *
 	 * @param string               $file  Absolute path to an existing PHP file.
 	 * @param array<string, mixed> $data  Variables to make available to it.
-	 * @param object|null          $scope What `$this` is inside the file. Defaults to this service.
+	 * @param object|null          $scope What `$this` is inside the file. Defaults to this module.
 	 * @return array{returned: mixed, buffer: string} What it returned, and what it printed.
 	 */
 	public function include_file( string $file, array $data = array(), ?object $scope = null ): array {

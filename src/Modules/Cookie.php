@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Cookie API: Cookie service
+ * Cookie API: Cookie module
  */
 
 declare( strict_types=1 );
@@ -86,8 +86,8 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * }
  * ```
  *
- * `public Cookie $cookies;` on the page is all the wiring it needs -- a typed
- * property is injected when the page is wired.
+ * {@see \Zestry\WPToolkit\Modules\AdminPages\AdminPage::set_flash()} and `get_flash()`
+ * are the two-line version of this for a page, and need no wiring at all.
  *
  * > [!IMPORTANT]
  * > Encryption stops the browser reading or forging the contents, and does

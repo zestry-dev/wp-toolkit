@@ -12,8 +12,9 @@ namespace {{class_namespace}};
 \defined( 'ABSPATH' ) || exit;
 
 use {{copied_namespace}}\Kernel\Abstracts\Module;
+use {{copied_namespace}}\Kernel\Contracts\Bootable;
 
-class {{class_name}} extends Module {
+class {{class_name}} extends Module implements Bootable {
 
 	// Reach any other declared module with `$this->with( Path::class )`.
 
@@ -47,12 +48,13 @@ class {{class_name}} extends Module {
 	 * things, walk a directory: anything that has to happen without being
 	 * called.
 	 *
-	 * Nothing to do here? Then this is a service, not a module: run
-	 * `wp zt make service {{class_name}}` instead and delete this file.
+	 * Nothing to do here? Then drop the `implements Bootable` above and this
+	 * method. The class stays a module, listed the same way, and works when
+	 * something calls it.
 	 *
 	 * @return void
 	 */
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		// add_shortcode( 'example', array( $this, 'render' ) );
 	}
 }

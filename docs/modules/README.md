@@ -5,7 +5,7 @@
 
 # Modules
 
-A module acts on its own: it binds a hook, registers a post type, walks a directory. Because it acts without being called, it has to be built for that to happen — so every module is listed in `bootstrap.php`, and the plugin builds it as the plugin loads.
+A module is anything a plugin is made of, and `bootstrap.php` lists every one. Some act on their own — binding a hook, registering a post type, walking a directory — and some only work when you call them. Listing one is what builds it, and nothing outside that file is ever built.
 
 ## What your files are named
 
@@ -16,7 +16,7 @@ Whether your plugin slug is prefixed onto that name depends on where the name la
 - **Prefixed**, when the name goes into something every plugin on the site shares — admin page slugs, cron hooks, AJAX actions, Site Health checks, REST namespaces, WP-CLI commands. Two plugins with a `sync` schedule must not collide, so yours is `your-plugin-sync`. A hyphen joins the two halves wherever the destination takes one; the few that take something else say so — an option name joins with `_`, a REST namespace with `/`, a WP-CLI command with a space.
 - **Not prefixed**, when the name is your own public API and something else constrains it — post types and taxonomies, which WordPress caps at 20 and 32 characters; meta keys, which appear in your REST responses; block names, which `block.json` already qualifies. Prefix these yourself in the filename when you need to.
 
-All of them extend [`Module`](module.md), whose abstract `on_boot()` is where the acting-on-its-own goes; a module without it works only when you call it.
+All of them extend [`Module`](module.md). One that acts on its own also implements [`Bootable`](../kernel/bootable.md), whose `on_boot()` runs when the plugin builds it; a module without it works only when you call it.
 
 Everything here is optional. `wp zt add <name>` copies one into your plugin, along with anything it depends on.
 
@@ -50,7 +50,7 @@ Add nothing up front. Reach for one when you hit what it solves:
 | [`transients`](transients/) | keep a value past the request, with an expiry | — | — | — |
 | [`views`](views/) | render a PHP template | `views/` (read, not walked) | — | `path` |
 
-**`blocks` and `assets` also write build tooling outside their own tree** — npm scripts and devDependencies, a `tsconfig.json`, a `webpack.config.js`, `.gitignore` entries. Everything either writes is additive, and [`wp zt add module`](../commands/add.md) lists it.
+**`blocks` and `assets` also write build tooling outside their own tree** — npm scripts and devDependencies, a `tsconfig.json`, a `webpack.config.js`, `.gitignore` entries. Everything either writes is additive, and [`wp zt add`](../commands/add.md) lists it.
 
 One worth calling out: **`ajax` serves `admin-ajax.php`**, not the REST API. Reach for it when something already speaks that protocol — an existing script, a third-party integration — and `rest-api` otherwise.
 

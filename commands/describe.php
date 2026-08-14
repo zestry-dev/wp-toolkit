@@ -163,8 +163,8 @@ return new class() extends Command {
 			$entries[] = array(
 				'name'       => $name,
 				'installed'  => file_exists( rtrim( $plugin_root, '/\\' ) . '/' . $on_disk ),
-				// Only a module is ever declared; a service that is not is doing
-				// exactly what it should.
+				// Every registry entry is a Module, so an installed one that is
+				// absent from bootstrap.php is genuinely undeclared.
 				'declared'   => is_a( $entry['source'], Module::class, true ) ? array_key_exists( $class, $declarations ) : true,
 				'configured' => (bool) ( $declarations[ $class ]['initialize'] ?? false ),
 				'reads'      => implode(

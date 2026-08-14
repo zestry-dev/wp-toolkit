@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Globals API: Globals service
+ * Globals API: Globals module
  */
 
 declare( strict_types=1 );
