@@ -620,16 +620,17 @@ class AdminPages extends Module implements Bootable {
 			 * because plugin_basename() turns one into the other -- via str_replace()
 			 * calls that a null argument deprecates on PHP 8.1.
 			 */
-			$this->handle_submit_before_output(
-				\add_submenu_page(
-					'',
-					$page->title(),
-					$page->menu_title(),
-					$page->capability(),
-					$slug,
-					$render
-				)
+			$hook = \add_submenu_page(
+				'',
+				$page->title(),
+				$page->menu_title(),
+				$page->capability(),
+				$slug,
+				$render
 			);
+
+			$this->handle_submit_before_output( $hook );
+			$this->set_screen_title_before_output( $hook, $page );
 
 			return;
 		}
@@ -691,6 +692,37 @@ class AdminPages extends Module implements Bootable {
 		}
 
 		\add_action( 'load-' . $hook_suffix, array( $this, 'handle_submit' ) );
+	}
+
+	/**
+	 * Give a hidden page's screen its title before WordPress reads one.
+	 *
+	 * `get_admin_page_title()` looks in `$menu` when a page's parent is empty and
+	 * in `$submenu[$parent]` otherwise. A hidden page is registered with the empty
+	 * parent that keeps it off every menu, so it takes the first branch and is
+	 * searched for in the one place it is guaranteed not to be -- it is in
+	 * `$submenu['']`, which that branch never reads. The global stays null, and
+	 * `wp-admin/admin-header.php` passes it to `strip_tags()`.
+	 *
+	 * Set on `load-{$hook}`, which fires before that header is required, and read
+	 * by the early return in `get_admin_page_title()`.
+	 *
+	 * @param string|false $hook_suffix What `add_submenu_page()` returned.
+	 * @param AdminPage    $page        The page it registered.
+	 * @return void
+	 */
+	private function set_screen_title_before_output( string|false $hook_suffix, AdminPage $page ): void {
+		if ( ! \is_string( $hook_suffix ) || '' === $hook_suffix ) {
+			return;
+		}
+
+		\add_action(
+			'load-' . $hook_suffix,
+			static function () use ( $page ): void {
+				// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- the screen title, which nothing else sets for a page on no menu.
+				$GLOBALS['title'] = $page->title();
+			}
+		);
 	}
 
 	/**

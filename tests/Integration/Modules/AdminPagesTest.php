@@ -596,6 +596,51 @@ final class AdminPagesTest extends TestCase {
 	}
 
 	/**
+	 * A hidden page carries its own screen title.
+	 *
+	 * `get_admin_page_title()` searches `$menu` when a page's parent is empty, and
+	 * a hidden page is registered with exactly that parent to stay off every menu
+	 * -- so core looks for it where it cannot be, leaves the global null, and
+	 * `admin-header.php` deprecates on `strip_tags( null )`. Invisible unless PHP
+	 * notices are on, which is why it is pinned here.
+	 *
+	 * @return void
+	 */
+	public function test_a_hidden_page_sets_its_screen_title(): void {
+		$this->write_page(
+			'titled',
+			"public function title(): string { return 'Hidden Title'; }\n"
+				. "public function capability(): string { return 'manage_options'; }\n"
+				. "public function is_hidden(): bool { return true; }\n"
+				. "public function render(): void { echo 'body'; }"
+		);
+
+		$this->admin_pages();
+		do_action( 'admin_menu' );
+
+		// An empty parent gives get_plugin_page_hookname() no page type to read,
+		// so the hook is the bare `admin_page_` one.
+		$hook = 'admin_page_zestry-test-titled';
+
+		$this->assertArrayHasKey( $hook, $GLOBALS['_registered_pages'], 'The page registered under that hook.' );
+
+		$previous         = $GLOBALS['title'] ?? null;
+		$GLOBALS['title'] = null;
+
+		try {
+			do_action( 'load-' . $hook );
+
+			$this->assertSame(
+				'Hidden Title',
+				$GLOBALS['title'],
+				'strip_tags() in admin-header.php is handed a string, not null.'
+			);
+		} finally {
+			$GLOBALS['title'] = $previous;
+		}
+	}
+
+	/**
 	 * The submit pass is still bound, so a hidden page can be a form -- which is
 	 * most of what a page nobody browses to is for.
 	 *
