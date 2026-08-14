@@ -505,7 +505,7 @@ final class AdminPagesTest extends TestCase {
 	public function test_a_page_reads_its_declared_arguments_rather_than_the_post(): void {
 		$this->write_page(
 			'declared',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'How many.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How many.' )]\n"
 				. "public int \$quantity;\n"
 				. "public function title(): string { return 'Declared'; }\n"
 				. "public function capability(): string { return 'manage_options'; }\n"
@@ -545,7 +545,7 @@ final class AdminPagesTest extends TestCase {
 	public function test_a_refused_argument_stops_the_submission(): void {
 		$this->write_page(
 			'refuses',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'How many.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How many.' )]\n"
 				. "public int \$quantity;\n"
 				. "public function title(): string { return 'Refuses'; }\n"
 				. "public function capability(): string { return 'manage_options'; }\n"

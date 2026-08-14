@@ -170,7 +170,9 @@ final class CookieTest extends TestCase {
 		$this->writing_cookies()->set_encrypted( 'shared_name', array( 'mine' => true ) );
 
 		// A second plugin, same site, same salts, different slug.
-		$other = ( new Plugin( $this->entry_file, 'other-plugin' ) )->get( Cookie::class );
+		$other = ( new Plugin( $this->entry_file, 'other-plugin' ) )
+			->declare_modules( $this->get_toolkit_modules() )
+			->get( Cookie::class );
 
 		// Hand it the first plugin's sealed value under its own name.
 		$other->set( 'shared_name', (string) $this->cookies()->get( 'shared_name' ) );

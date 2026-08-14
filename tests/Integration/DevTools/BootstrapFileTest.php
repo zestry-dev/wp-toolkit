@@ -130,7 +130,7 @@ final class BootstrapFileTest extends TestCase {
 	 * @return void
 	 */
 	private function publish( string $path ): void {
-		$running = new Plugin( $this->plugin_dir . '/acme-plugin.php', 'acme-plugin' );
+		$running = ( new Plugin( $this->plugin_dir . '/acme-plugin.php', 'acme-plugin' ) )->declare_modules( $this->get_toolkit_modules() );
 		$running->bootstrap( $path );
 
 		$GLOBALS[ RuntimePlugin::REGISTRY ][ $this->plugin_dir ] = $running;

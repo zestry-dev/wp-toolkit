@@ -34,7 +34,7 @@ final class CopierTest extends TestCase {
 	public function test_copy_file_rewrites_use_imports(): void {
 		$source = $this->write_plugin_file(
 			'source/RestApi.php',
-			"<?php\n\nnamespace Zestry\\WPToolkit\\Modules\\RestApi;\n\nuse Zestry\\WPToolkit\\Kernel\\Abstracts\\Module;\nuse Zestry\\WPToolkit\\Services\\Path;\n\nclass RestApi extends Module {}\n"
+			"<?php\n\nnamespace Zestry\\WPToolkit\\Modules\\RestApi;\n\nuse Zestry\\WPToolkit\\Kernel\\Abstracts\\Module;\nuse Zestry\\WPToolkit\\Modules\\Path;\n\nclass RestApi extends Module {}\n"
 		);
 		$destination = $this->plugin_dir . '/dest/RestApi.php';
 
@@ -56,7 +56,7 @@ final class CopierTest extends TestCase {
 			'source/Ability.php',
 			"<?php\n\nnamespace Zestry\\WPToolkit\\Modules\\Abilities;\n\nclass Ability {\n"
 				. "    public function schema(): array {\n"
-				. "        return \$this->get_plugin()->get( \\Zestry\\WPToolkit\\Services\\Request\\Request::class )->get_schema( \$this );\n"
+				. "        return \$this->get_plugin()->get( \\Zestry\\WPToolkit\\Modules\\Request\\Request::class )->get_schema( \$this );\n"
 				. "    }\n\n"
 				. "    private function type(): \\Zestry\\WPToolkit\\Modules\\Fields\\MetaType {\n"
 				. "        return \\Zestry\\WPToolkit\\Modules\\Fields\\MetaType::Post;\n"

@@ -195,13 +195,19 @@ final class AjaxDiscoveryTest extends TestCase {
 		unset( $wp_actions['init'] );
 
 		try {
-			$ajax = $this->boot_ajax_with_root( 'actions' );
-			$slug = $ajax->get_action_slug( 'ping' );
+			// The module names its hook in the bootstrap entry -- what `wp zt add`
+			// writes from its `@setup-hook init` -- so `run()` holds it back
+			// rather than the module deferring part of its own boot.
+			$this->plugin->declare_modules(
+				array( Ajax::class => array( 'boots_on' => 'init' ) )
+			)->run();
 
-			// Nothing is registered yet — boot deferred to the init hook.
+			$slug = $this->plugin->get_namespaced_name( 'ping' );
+
+			// Nothing is registered yet: the module has not been built.
 			$this->assertFalse( has_action( 'wp_ajax_' . $slug ), 'Registration is deferred, not immediate.' );
 
-			// Firing init runs the deferred callback, which registers the handlers.
+			// Firing init builds the module, which registers the handlers.
 			do_action( 'init' );
 			$this->assertNotFalse( has_action( 'wp_ajax_' . $slug ), 'The init hook registers the handlers.' );
 		} finally {

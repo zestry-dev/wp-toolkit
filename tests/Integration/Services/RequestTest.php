@@ -250,7 +250,7 @@ final class RequestTest extends TestCase {
 	public function test_each_declarable_type_derives_a_usable_schema( string $declaration, array $expected ): void {
 		$file = $this->write_plugin_file(
 			'target.php',
-			"<?php\nuse Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument;\n"
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument;\n"
 				. "use Zestry\\WPToolkit\\Tests\\Integration\\Services\\RequestTestAddress;\n"
 				. "use Zestry\\WPToolkit\\Tests\\Integration\\Services\\RequestTestStatus;\n"
 				. "return new class() {\n{$declaration}\n};\n"
@@ -450,7 +450,7 @@ final class RequestTest extends TestCase {
 	public function test_a_type_that_cannot_be_described_throws( string $declaration ): void {
 		$file = $this->write_plugin_file(
 			'undescribable.php',
-			"<?php\nuse Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument;\n"
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument;\n"
 				. "return new class() {\n{$declaration}\n};\n"
 		);
 
@@ -682,7 +682,7 @@ final class RequestTest extends TestCase {
 	public function test_only_the_displaced_check_is_restored( string $declaration, $validate, $sanitize ): void {
 		$file = $this->write_plugin_file(
 			'callbacks.php',
-			"<?php\nuse Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument;\n"
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument;\n"
 				. "return new class() {\n{$declaration}\n"
 				. "public static function check( \$value ): bool { return true; }\n"
 				. "public static function clean( \$value ) { return \$value; }\n};\n"

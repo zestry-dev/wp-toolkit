@@ -132,9 +132,9 @@ final class AjaxDispatchTest extends TestCase {
 	public function test_declared_arguments_are_checked_and_bound(): void {
 		$slug = $this->register_action(
 			'save-draft',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
 				. "public int \$post_id;\n"
-				. "#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Whether to notify.' )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Whether to notify.' )]\n"
 				. "public bool \$notify = false;\n"
 				. 'public function capability_check(): bool { return true; }
 			 public function is_nonce_required(): bool { return false; }
@@ -157,7 +157,7 @@ final class AjaxDispatchTest extends TestCase {
 	public function test_a_bound_value_is_unslashed(): void {
 		$slug = $this->register_action(
 			'save-name',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'A name.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'A name.' )]\n"
 				. "public string \$name;\n"
 				. 'public function capability_check(): bool { return true; }
 			 public function is_nonce_required(): bool { return false; }
@@ -182,7 +182,7 @@ final class AjaxDispatchTest extends TestCase {
 	public function test_a_cookie_cannot_supply_a_declared_argument(): void {
 		$slug = $this->register_action(
 			'cookie-proof',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
 				. "public int \$post_id;\n"
 				. 'public function capability_check(): bool { return true; }
 			 public function is_nonce_required(): bool { return false; }
@@ -207,7 +207,7 @@ final class AjaxDispatchTest extends TestCase {
 	public function test_a_json_body_supplies_declared_arguments(): void {
 		$slug = $this->register_action(
 			'json-body',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
 				. "public int \$post_id;\n"
 				. 'public function capability_check(): bool { return true; }
 			 public function is_nonce_required(): bool { return false; }
@@ -231,7 +231,7 @@ final class AjaxDispatchTest extends TestCase {
 	public function test_the_body_wins_over_the_query_string(): void {
 		$slug = $this->register_action(
 			'body-first',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
 				. "public int \$post_id;\n"
 				. 'public function capability_check(): bool { return true; }
 			 public function is_nonce_required(): bool { return false; }
@@ -253,7 +253,7 @@ final class AjaxDispatchTest extends TestCase {
 	public function test_the_query_string_answers_when_the_body_does_not(): void {
 		$slug = $this->register_action(
 			'query-only',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
 				. "public int \$post_id;\n"
 				. 'public function capability_check(): bool { return true; }
 			 public function is_nonce_required(): bool { return false; }
@@ -270,7 +270,7 @@ final class AjaxDispatchTest extends TestCase {
 	public function test_an_argument_that_does_not_fit_is_refused_before_handle_runs(): void {
 		$slug = $this->register_action(
 			'typed',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
 				. "public int \$post_id;\n"
 				. 'public function capability_check(): bool { return true; }
 			 public function is_nonce_required(): bool { return false; }
@@ -292,7 +292,7 @@ final class AjaxDispatchTest extends TestCase {
 	public function test_a_missing_required_argument_is_refused(): void {
 		$slug = $this->register_action(
 			'needs-one',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
 				. "public int \$post_id;\n"
 				. 'public function capability_check(): bool { return true; }
 			 public function is_nonce_required(): bool { return false; }
@@ -312,7 +312,7 @@ final class AjaxDispatchTest extends TestCase {
 	public function test_arguments_are_bound_before_the_capability_check(): void {
 		$slug = $this->register_action(
 			'guarded-by-arg',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which post.' )]\n"
 				. "public int \$post_id;\n"
 				. 'public function capability_check(): bool { return 1 === $this->post_id; }
 			 public function is_nonce_required(): bool { return false; }

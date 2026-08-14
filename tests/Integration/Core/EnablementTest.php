@@ -306,29 +306,29 @@ final class EnablementTest extends TestCase {
 	public function test_the_switch_may_depend_on_an_injected_service(): void {
 		$this->write_plugin_file(
 			'post-types/conditional.php',
-			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\PostType;\nuse Zestry\\WPToolkit\\Services\\Globals;\n"
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\PostTypes\\PostType;\nuse Zestry\\WPToolkit\\Modules\\Globals;\n"
 				. "return new class extends PostType {\n"
-				. "public Globals \$globals;\n"
-				. "public function is_enabled(): bool { return (bool) \$this->globals->get( 'feature_on' ); }\n"
+				. "public function is_enabled(): bool { return (bool) \$this->with( Globals::class )->get( 'feature_on' ); }\n"
 				. "public function singular_name(): string { return 'Conditional'; }\n"
 				. "public function plural_name(): string { return 'Conditionals'; }\n};\n"
 		);
 
-		// Off: the property is injected, read, and answers false.
+		// Off: the switch reads the module and answers false.
 		$this->plugin->get( PostTypes::class );
 		do_action( 'init' );
 
-		$this->assertFalse( post_type_exists( 'conditional' ), 'The injected service decided.' );
+		$this->assertFalse( post_type_exists( 'conditional' ), 'The module it reached decided.' );
 
 		// And on, from a second plugin over the same file -- otherwise the
 		// assertion above would pass just as well if the switch were stuck off, or
 		// if the file had failed to load at all.
-		$second = new \Zestry\WPToolkit\Kernel\Plugin( $this->entry_file, 'zestry-second' );
+		$second = ( new \Zestry\WPToolkit\Kernel\Plugin( $this->entry_file, 'zestry-second' ) )->declare_modules( $this->get_toolkit_modules() );
+		$second->declare_modules( $this->get_toolkit_modules() );
 		$second->get( \Zestry\WPToolkit\Modules\Globals::class )->set( 'feature_on', true );
 		$second->get( PostTypes::class );
 		do_action( 'init' );
 
-		$this->assertTrue( post_type_exists( 'conditional' ), 'The same file registers when the service says so.' );
+		$this->assertTrue( post_type_exists( 'conditional' ), 'The same file registers when the module says so.' );
 	}
 
 	/**

@@ -509,15 +509,14 @@ final class BlocksTest extends TestCase {
 		$this->assertSame( '<second>', $render( 'second' ) );
 	}
 
-	public function test_a_renderer_can_use_an_injected_module(): void {
+	public function test_a_renderer_can_reach_a_module(): void {
 		$this->write_block(
 			'hero',
 			'zestry-test/hero',
-			"<?php\nuse Zestry\\WPToolkit\\Modules\\Blocks\\Block;\nuse Zestry\\WPToolkit\\Services\\Globals;\n"
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\Blocks\\Block;\nuse Zestry\\WPToolkit\\Modules\\Globals;\n"
 				. "return new class extends Block {\n"
-				. "public Globals \$globals;\n"
 				. "public function render( array \$attributes, string \$content, \\WP_Block \$block ): string {\n"
-				. "return 'from-module:' . get_class( \$this->globals );\n"
+				. "return 'from-module:' . get_class( \$this->with( Globals::class ) );\n"
 				. "}\n};\n"
 		);
 
@@ -534,7 +533,7 @@ final class BlocksTest extends TestCase {
 		);
 
 		$this->assertStringContainsString(
-			'Zestry\\WPToolkit\\Services\\Globals',
+			'Zestry\\WPToolkit\\Modules\\Globals',
 			$rendered,
 			'A typed module property must be injected before render() runs.'
 		);

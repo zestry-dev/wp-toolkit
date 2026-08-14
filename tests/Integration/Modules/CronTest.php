@@ -111,13 +111,14 @@ final class CronTest extends TestCase {
 		unset( $wp_actions['init'] );
 
 		try {
-			$this->plugin->configure(
-				Cron::class,
-				static function ( Cron $cron ): void {
-				}
-			);
-			$cron = $this->plugin->get( Cron::class );
-			$slug = $cron->get_schedule_slug( 'cleanup' );
+			// The module names its hook in the bootstrap entry -- what `wp zt add`
+			// writes from its `@setup-hook init` -- so `run()` holds it back
+			// rather than the module deferring part of its own boot.
+			$this->plugin->declare_modules(
+				array( Cron::class => array( 'boots_on' => 'init' ) )
+			)->run();
+
+			$slug = $this->plugin->get_namespaced_name( 'cleanup' );
 
 			$this->assertFalse( wp_next_scheduled( $slug ), 'Registration is deferred, not immediate.' );
 

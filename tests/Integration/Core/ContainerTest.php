@@ -21,13 +21,22 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  */
 final class ContainerTest extends TestCase {
 
+	/**
+	 * Nothing pre-declared: these tests are about what declaring does.
+	 *
+	 * @return array<class-string>
+	 */
+	protected function get_toolkit_modules(): array {
+		return array();
+	}
+
 	public function set_up(): void {
 		parent::set_up();
 
 		// Nothing is built without being declared, and these fixtures are
 		// modules like any other.
 		$this->plugin->declare_modules(
-			array( CycleA::class, CycleB::class, BootCounter::class, SelfWiringBooter::class )
+			array( Path::class, BootCounter::class, SelfWiringBooter::class )
 		);
 	}
 
@@ -86,9 +95,15 @@ final class ContainerTest extends TestCase {
 	}
 
 
-	public function test_circular_dependency_is_detected(): void {
+	/**
+	 * Only `make()` can cycle. `get()` publishes the shared instance before the
+	 * module boots, so anything reaching back for it during that boot gets the
+	 * in-flight one -- `make()` never publishes, so two modules making each
+	 * other would recurse until the stack gave out.
+	 */
+	public function test_a_cycle_between_unshared_instances_is_detected(): void {
 		$this->expectException( CircularDependencyException::class );
-		$this->plugin->get( CycleA::class );
+		$this->plugin->make( CycleA::class );
 	}
 
 	public function test_self_reference_during_boot_does_not_false_cycle(): void {
@@ -149,9 +164,11 @@ final class ContainerTest extends TestCase {
 
 		$this->plugin->bootstrap( $this->write_bootstrap() )->run();
 
-		$this->plugin->get( DeferredBooter::class );
-
-		$this->assertSame( array( 'on_boot' ), $GLOBALS['zestry_boot_order'] );
+		$this->assertSame(
+			array( 'configure', 'on_boot' ),
+			$GLOBALS['zestry_boot_order'],
+			'A hook that has been and gone means "not before", so run() builds it now.'
+		);
 	}
 
 	/**
@@ -179,6 +196,8 @@ final class ContainerTest extends TestCase {
 	}
 
 	public function test_bootable_module_is_booted_once_after_resolution(): void {
+		BootCounter::$boot_count = 0;
+
 		$module = $this->plugin->get( BootCounter::class );
 
 		$this->assertSame( 1, $module::$boot_count );
@@ -213,12 +232,18 @@ final class ContainerTest extends TestCase {
 
 // phpcs:disable Generic.Files.OneObjectStructurePerFile.MultipleFound -- test fixtures.
 
-final class CycleA extends Module {
-	public CycleB $b;
+final class CycleA extends Module implements Bootable {
+
+	public function on_boot(): void {
+		$this->get_plugin()->make( CycleB::class );
+	}
 }
 
-final class CycleB extends Module {
-	public CycleA $a;
+final class CycleB extends Module implements Bootable {
+
+	public function on_boot(): void {
+		$this->get_plugin()->make( CycleA::class );
+	}
 }
 
 final class BootCounter extends Module implements Bootable {

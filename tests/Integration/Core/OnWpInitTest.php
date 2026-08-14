@@ -4,6 +4,7 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\Core;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
@@ -154,7 +155,7 @@ final class OnWpInitTest extends TestCase {
 /**
  * A module with no behaviour of its own, for reaching the helper.
  */
-final class RunAtInitProbe extends Module {
+final class RunAtInitProbe extends Module implements Bootable {
 
-	protected function on_boot(): void {}
+	public function on_boot(): void {}
 }

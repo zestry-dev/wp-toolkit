@@ -432,9 +432,9 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'bound',
 			'return array( \'ok\' => 42 === $this->id && \'live\' === $this->mode );',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
 				. "public int \$id;\n"
-				. "#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'How to run.', schema: array( 'enum' => array( 'live', 'test' ) ) )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How to run.', schema: array( 'enum' => array( 'live', 'test' ) ) )]\n"
 				. "public string \$mode = 'live';"
 
 		);
@@ -462,9 +462,9 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'described',
 			'return array( \'ok\' => 42 === $this->id );',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
 				. "public int \$id;\n"
-				. "#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'How to run.' )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How to run.' )]\n"
 				. "public string \$mode = 'live';\n"
 				. "public function input_schema(): array {\n"
 				. "    return array( 'properties' => array( 'id' => array( 'description' => 'Care dintre ele.' ) ) );\n"
@@ -492,7 +492,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'stated',
 			'return array( \'extra\' => $input[\'extra\'] ?? null );',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'How to run.', schema: array( 'enum' => array( 'live', 'test', 'stub' ) ) )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How to run.', schema: array( 'enum' => array( 'live', 'test', 'stub' ) ) )]\n"
 				. "public string \$mode = 'live';\n"
 				. "public function input_schema(): array {\n"
 				. "    return array(\n"
@@ -529,7 +529,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'update-entity',
 			'return array( \'slug\' => $this->slug );',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
 				. 'public ?string $slug = null;'
 		);
 
@@ -562,7 +562,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'read-entity',
 			'return array( \'slug\' => $this->slug );',
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
 				. 'public ?string $slug = null;'
 		);
 
@@ -585,7 +585,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'guarded-by-arg',
 			"return array( 'ok' => true );",
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
 				. "public int \$id;\n"
 				. 'public function permission_check( mixed $input ): bool { return 1 === $this->id; }'
 		);
@@ -605,7 +605,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'checked',
 			"return array( 'ok' => true );",
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which one.', validate: array( self::class, 'is_known' ) )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.', validate: array( self::class, 'is_known' ) )]\n"
 				. "public int \$id;\n"
 				. 'public static function is_known( $value ): bool { return 1 === $value; }'
 		);
@@ -625,7 +625,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'trimmed',
 			"return array( 'ok' => 'acme' === \$this->name && 'acme' === \$input['name'] );",
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'A name.', sanitize: 'trim' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'A name.', sanitize: 'trim' )]\n"
 				. 'public string $name;'
 		);
 
@@ -643,7 +643,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'untyped',
 			"return array( 'ok' => true );",
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
 				. 'public $anything;'
 		);
 
@@ -662,11 +662,11 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'typed',
 			"return array( 'ok' => 42 === \$this->id && true === \$this->flag && 1.5 === \$this->ratio );",
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
 				. "public int \$id;\n"
-				. "#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Whether to.' )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Whether to.' )]\n"
 				. "public bool \$flag = false;\n"
-				. "#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'How much.' )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How much.' )]\n"
 				. 'public float $ratio = 0.0;'
 		);
 
@@ -684,7 +684,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'strict',
 			"return array( 'ok' => true );",
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Which one.', validate: 'is_int' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.', validate: 'is_int' )]\n"
 				. 'public int $id;'
 		);
 
@@ -703,7 +703,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'passthrough',
 			"return array( 'ok' => 'blue' === \$this->params->colour && array( 1, 2 ) === \$this->params->sizes && 'deep' === \$this->params->nested->level );",
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Whatever the caller keeps here.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Whatever the caller keeps here.' )]\n"
 				. 'public object $params;'
 		);
 
@@ -738,11 +738,11 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'picky',
 			"return array( 'ok' => true );",
-			"#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'One.', validate: 'is_int' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'One.', validate: 'is_int' )]\n"
 				. "public int \$first;\n"
-				. "#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Two.', validate: 'is_int' )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Two.', validate: 'is_int' )]\n"
 				. "public int \$second;\n"
-				. "#[\\Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument( 'Three.', validate: 'is_int' )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Three.', validate: 'is_int' )]\n"
 				. 'public int $third;'
 		);
 

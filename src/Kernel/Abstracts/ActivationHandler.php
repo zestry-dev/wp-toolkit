@@ -318,7 +318,8 @@ abstract class ActivationHandler extends Module implements Bootable {
 	 */
 	private function report_late_boot(): void {
 		\_doing_it_wrong(
-			__METHOD__,
+			// Named for what ran late, not for the method reporting it.
+			__CLASS__ . '::on_boot',
 			\esc_html(
 				\sprintf(
 					// Deliberately not translated: this runs at plugin load,

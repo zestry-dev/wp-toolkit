@@ -117,11 +117,10 @@ final class SiteHealthTest extends TestCase {
 	 * Checks are ordinary wired objects, so a check reads real state rather than
 	 * guessing at it.
 	 */
-	public function test_a_check_receives_its_injected_dependencies(): void {
+	public function test_a_check_can_reach_a_module(): void {
 		$this->write_check(
 			'paths',
-			"return \$this->good( \$this->path->get_plugin_path( 'x' ) );",
-			"public \\Zestry\\WPToolkit\\Services\\Path \$path;\n"
+			"return \$this->good( \$this->with( \\Zestry\\WPToolkit\\Modules\\Path::class )->get_plugin_path( 'x' ) );"
 		);
 
 		$tests  = $this->boot()->filter_site_status_tests( array() );

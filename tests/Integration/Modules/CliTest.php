@@ -63,14 +63,13 @@ final class CliTest extends TestCase {
 		);
 	}
 
-	public function test_a_command_is_wired_with_its_injected_dependencies(): void {
+	public function test_a_command_is_wired_and_can_reach_a_module(): void {
 		$this->define_wp_cli();
-		// The command records whether its injected Path dependency arrived.
+		// A discovered command is wired, so it can reach any declared module.
 		$this->write_plugin_file(
 			'commands/needs-path.php',
-			"<?php\nuse Zestry\\WPToolkit\\Modules\\CLI\\Command;\nuse Zestry\\WPToolkit\\Services\\Path;\n"
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\CLI\\Command;\nuse Zestry\\WPToolkit\\Modules\\Path;\n"
 				. "return new class extends Command {\n"
-				. "    public Path \$path;\n"
 				. "    public function handle( array \$args, array \$assoc_args ): void {}\n"
 				. "};\n"
 		);
@@ -80,7 +79,11 @@ final class CliTest extends TestCase {
 		// The registered callable is a closure bound to the command (see
 		// CLI::register_command_for()), so the instance comes off the binding.
 		$command = ( new \ReflectionFunction( \WP_CLI::last( 'add_command' )[1] ) )->getClosureThis();
-		$this->assertInstanceOf( \Zestry\WPToolkit\Modules\Path::class, $command->path, 'The command was wired.' );
+		$this->assertInstanceOf(
+			\Zestry\WPToolkit\Modules\Path::class,
+			$command->with( \Zestry\WPToolkit\Modules\Path::class ),
+			'The command was wired, so with() reaches the plugin.'
+		);
 	}
 
 	/**

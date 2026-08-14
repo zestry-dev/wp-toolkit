@@ -183,7 +183,7 @@ final class RuntimePluginTest extends TestCase {
 	 * @return Plugin
 	 */
 	private function publish( string $entry, string $slug ): Plugin {
-		$running = new Plugin( $entry, $slug );
+		$running = ( new Plugin( $entry, $slug ) )->declare_modules( $this->get_toolkit_modules() );
 
 		$GLOBALS[ RuntimePlugin::REGISTRY ][ dirname( $entry ) ] = $running;
 

@@ -392,7 +392,7 @@ final class RestApiTest extends TestCase {
 			'uploads',
 			'v1',
 			'/uploads',
-			"#[RequestArgument( 'The image to attach.' )]\npublic \\Zestry\\WPToolkit\\Services\\Request\\UploadedFile \$image;\n"
+			"#[RequestArgument( 'The image to attach.' )]\npublic \\Zestry\\WPToolkit\\Modules\\Request\\UploadedFile \$image;\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { return new WP_REST_Response( [ 'name' => \$this->image->name, 'ok' => \$this->image->is_ok() ] ); }\n"
 				. 'public function schema(): ?array { return null; }'
@@ -428,7 +428,7 @@ final class RestApiTest extends TestCase {
 			'uploads',
 			'v1',
 			'/uploads',
-			"#[RequestArgument( 'The image to attach.' )]\npublic \\Zestry\\WPToolkit\\Services\\Request\\UploadedFile \$image;\n"
+			"#[RequestArgument( 'The image to attach.' )]\npublic \\Zestry\\WPToolkit\\Modules\\Request\\UploadedFile \$image;\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { \$GLOBALS['zestry_handle_ran'] = true; return new WP_REST_Response( [] ); }\n"
 				. 'public function schema(): ?array { return null; }'
@@ -688,7 +688,7 @@ final class RestApiTest extends TestCase {
 			// for them here would be a no-op PHP warns about; only the toolkit's
 			// own classes need one.
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\RestApi\\Route;\nuse Zestry\\WPToolkit\\Modules\\RestApi\\RestRoute;\n"
-				. "use Zestry\\WPToolkit\\Services\\Request\\Attributes\\RequestArgument;\n"
+				. "use Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument;\n"
 				. "return Route::{$http_method}( '{$version}', '{$pattern}', new class extends RestRoute {\n{$class_body}\n} );\n"
 		);
 	}

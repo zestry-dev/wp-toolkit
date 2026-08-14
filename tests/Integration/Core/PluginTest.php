@@ -4,6 +4,7 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\Core;
 
+use Zestry\WPToolkit\Kernel\Contracts\Bootable;
 use Zestry\WPToolkit\Kernel\Exceptions\ModuleException;
 use Zestry\WPToolkit\Kernel\Plugin;
 use Zestry\WPToolkit\Modules\Path;
@@ -22,6 +23,15 @@ use Zestry\WPToolkit\Tests\Support\TestCase;
  * @covers \Zestry\WPToolkit\Kernel\Plugin
  */
 final class PluginTest extends TestCase {
+
+	/**
+	 * Nothing pre-declared: these tests are about what declaring does.
+	 *
+	 * @return array<class-string>
+	 */
+	protected function get_toolkit_modules(): array {
+		return array( Path::class );
+	}
 
 	public function test_get_slug_returns_the_configured_slug(): void {
 		$this->assertSame( 'zestry-test', $this->plugin->get_slug() );
@@ -50,7 +60,7 @@ final class PluginTest extends TestCase {
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( $slug );
 
-		new Plugin( $this->plugin_dir . '/plugin.php', $slug );
+		( new Plugin( $this->plugin_dir . '/plugin.php', $slug ) )->declare_modules( $this->get_toolkit_modules() );
 
 		$this->fail( 'Expected refusal: ' . $reason );
 	}
@@ -244,23 +254,28 @@ final class PluginTest extends TestCase {
 	 * file, and the callback waits for the first get() rather than running at
 	 * load.
 	 */
-	public function test_a_service_is_configured_through_register_rather_than_bootstrap(): void {
+	/**
+	 * `configure()` remembers a callback against a name and nothing else.
+	 * Declaring is what makes a module exist, so a configured class that was
+	 * never declared is never built and its callback never runs.
+	 */
+	public function test_configure_alone_does_not_declare_a_module(): void {
 		$GLOBALS['zestry_bootstrap_ran'] = false;
 
 		$this->plugin->configure(
-			Path::class,
-			static function ( Path $path ): void {
+			BootstrapProbe::class,
+			static function ( $module ): void {
 				$GLOBALS['zestry_bootstrap_ran'] = true;
 			}
 		);
 
 		$this->plugin->run();
 
-		$this->assertFalse( $GLOBALS['zestry_bootstrap_ran'], 'Registering does not build it.' );
+		$this->assertFalse( $GLOBALS['zestry_bootstrap_ran'], 'Configuring does not declare it.' );
 
-		$this->plugin->get( Path::class );
+		$this->plugin->declare_modules( array( BootstrapProbe::class ) )->run();
 
-		$this->assertTrue( $GLOBALS['zestry_bootstrap_ran'], 'The initializer runs when it is resolved.' );
+		$this->assertTrue( $GLOBALS['zestry_bootstrap_ran'], 'Declaring it is what runs the callback.' );
 		unset( $GLOBALS['zestry_bootstrap_ran'] );
 	}
 
@@ -509,7 +524,7 @@ final class PluginTest extends TestCase {
 			define( $constant, true );
 		}
 
-		$plugin = new Plugin( $this->entry_file, 'zestry-plugintest-true' );
+		$plugin = ( new Plugin( $this->entry_file, 'zestry-plugintest-true' ) )->declare_modules( $this->get_toolkit_modules() );
 
 		$this->assertSame( 'zestry-plugintest-true', $plugin->get_slug() );
 		$this->assertTrue( $plugin->is_plugin_debug() );
@@ -523,7 +538,7 @@ final class PluginTest extends TestCase {
 			define( $constant, false );
 		}
 
-		$plugin = new Plugin( $this->entry_file, 'zestry-plugintest-false' );
+		$plugin = ( new Plugin( $this->entry_file, 'zestry-plugintest-false' ) )->declare_modules( $this->get_toolkit_modules() );
 
 		$this->assertTrue( defined( $constant ) );
 		$this->assertFalse( $plugin->is_plugin_debug() );
@@ -615,7 +630,7 @@ final class PluginTest extends TestCase {
  * A module for the bootstrap test to declare: being a Module is what makes
  * run() build it, which is the behaviour under test.
  */
-final class BootstrapProbe extends \Zestry\WPToolkit\Kernel\Abstracts\Module {
+final class BootstrapProbe extends \Zestry\WPToolkit\Kernel\Abstracts\Module implements \Zestry\WPToolkit\Kernel\Contracts\Bootable {
 
 	/**
 	 * How many times boot() has run across the whole test run.
@@ -627,7 +642,7 @@ final class BootstrapProbe extends \Zestry\WPToolkit\Kernel\Abstracts\Module {
 	 */
 	public static int $boots = 0;
 
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		++self::$boots;
 	}
 }
@@ -635,9 +650,9 @@ final class BootstrapProbe extends \Zestry\WPToolkit\Kernel\Abstracts\Module {
 /**
  * Two modules that record the order they booted in, for the ordering test.
  */
-final class OrderProbeOne extends \Zestry\WPToolkit\Kernel\Abstracts\Module {
+final class OrderProbeOne extends \Zestry\WPToolkit\Kernel\Abstracts\Module implements \Zestry\WPToolkit\Kernel\Contracts\Bootable {
 
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		$GLOBALS['zestry_boot_order'][] = 'one';
 	}
 }
@@ -645,9 +660,9 @@ final class OrderProbeOne extends \Zestry\WPToolkit\Kernel\Abstracts\Module {
 /**
  * The second of the pair.
  */
-final class OrderProbeTwo extends \Zestry\WPToolkit\Kernel\Abstracts\Module {
+final class OrderProbeTwo extends \Zestry\WPToolkit\Kernel\Abstracts\Module implements \Zestry\WPToolkit\Kernel\Contracts\Bootable {
 
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		$GLOBALS['zestry_boot_order'][] = 'two';
 	}
 }
@@ -655,9 +670,9 @@ final class OrderProbeTwo extends \Zestry\WPToolkit\Kernel\Abstracts\Module {
 /**
  * A module whose boot fails, for the blast-radius test.
  */
-final class ThrowingProbe extends \Zestry\WPToolkit\Kernel\Abstracts\Module {
+final class ThrowingProbe extends \Zestry\WPToolkit\Kernel\Abstracts\Module implements \Zestry\WPToolkit\Kernel\Contracts\Bootable {
 
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		throw new \Zestry\WPToolkit\Kernel\Exceptions\ModuleException( 'boot refused' );
 	}
 }
@@ -666,9 +681,9 @@ final class ThrowingProbe extends \Zestry\WPToolkit\Kernel\Abstracts\Module {
  * A module whose boot throws something the toolkit does not own, for the test
  * that a consumer's own exception is not reclassified on its way out.
  */
-final class ForeignThrowingProbe extends \Zestry\WPToolkit\Kernel\Abstracts\Module {
+final class ForeignThrowingProbe extends \Zestry\WPToolkit\Kernel\Abstracts\Module implements \Zestry\WPToolkit\Kernel\Contracts\Bootable {
 
-	protected function on_boot(): void {
+	public function on_boot(): void {
 		throw new \RuntimeException( 'my own bug' );
 	}
 }

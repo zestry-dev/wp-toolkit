@@ -95,7 +95,7 @@ abstract class TestCase extends WPTestCase {
 		$this->entry_file = $this->plugin_dir . '/plugin.php';
 		file_put_contents( $this->entry_file, "<?php\n/* Plugin Name: Zestry Test */\n" );
 
-		$this->plugin = new Plugin( $this->entry_file, 'zestry-test' );
+		$this->plugin = ( new Plugin( $this->entry_file, 'zestry-test' ) )->declare_modules( $this->get_toolkit_modules() );
 		$this->plugin->declare_modules( $this->get_toolkit_modules() );
 	}
 
