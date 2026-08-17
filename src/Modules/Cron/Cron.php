@@ -173,10 +173,11 @@ class Cron extends Module implements Bootable {
 	/**
 	 * Clear every discovered schedule's WP-Cron events.
 	 *
-	 * Exposed for a consuming plugin's own ActivationHandler subclass to call from
-	 * deactivate() — Cron does not implement ActivationHandler itself, so nothing
-	 * clears scheduled events automatically; a plugin that schedules events
-	 * is responsible for unscheduling them.
+	 * Exposed for your own [`ActivationHandler`](../activation-handler.md)
+	 * subclass to call from `deactivate()` — Cron does not implement
+	 * `ActivationHandler` itself, so nothing clears scheduled events
+	 * automatically; a plugin that schedules events is responsible for
+	 * unscheduling them.
 	 *
 	 * Clearing runs over the schedules discovery finds, so it fails the same
 	 * way discovery does on a broken schedules directory.

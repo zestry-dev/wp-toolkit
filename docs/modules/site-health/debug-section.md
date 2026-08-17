@@ -20,8 +20,6 @@ Most plugins want exactly one, listing the handful of values you would ask for f
 `fields()` is keyed by field id; each field needs a translated `label` and a `value`. Reach any declared module with `$this->with( … )`, so the section reports real state.
 
 ```php
-namespace Acme\Plugin\DebugSections;
-
 use Acme\Plugin\Core\Modules\Options;
 use Acme\Plugin\Core\Modules\Options;
 use Acme\Plugin\Core\Modules\SiteHealth\DebugSection;

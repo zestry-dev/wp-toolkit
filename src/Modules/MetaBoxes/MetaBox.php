@@ -29,8 +29,6 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * escaping to think about is your own.
  *
  * ```
- * namespace Acme\Plugin\MetaBoxes;
- *
  * use Acme\Plugin\Core\Modules\Fields\Fields;
  * use Acme\Plugin\Core\Modules\MetaBoxes\MetaBox;
  * use WP_Post;

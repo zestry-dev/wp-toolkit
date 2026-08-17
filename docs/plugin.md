@@ -300,7 +300,7 @@ public function set_languages_path( string $path, ?string $text_domain = null ):
 
 Only needed for a plugin shipping a `languages/` directory of its own. WordPress already looks in `wp-content/languages/plugins` without being asked, which is where a wordpress.org-hosted plugin's translations are installed — so a plugin distributed that way needs no call at all.
 
-The text domain defaults to the plugin slug, matching what `wp zt init` writes into `zestry.json` and stamps into every copied file, so the two cannot disagree unless a consumer deliberately changes one.
+The text domain defaults to the plugin slug, matching what `wp zt init` writes into `zestry.json` and stamps into every copied file, so the two cannot disagree unless you deliberately change one.
 
 ```php
 // acme-plugin.php, inside the accessor that builds the plugin.

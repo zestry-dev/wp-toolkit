@@ -37,8 +37,6 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * @example A field
  * ```
  * // resources/fields/acme_rating.php
- * namespace Acme\Plugin\Fields;
- *
  * use Acme\Plugin\Core\Modules\Fields\Field;
  *
  * return new class extends Field {

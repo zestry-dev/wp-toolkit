@@ -50,13 +50,16 @@ $log->debug( 'Raw gateway response', array( 'body' => $body ) );
 
 ## Sending records somewhere else
 
-There is no hook to attach to, because this file belongs to the plugin: edit `write()` and every record goes wherever it says.
+There is no hook to attach to, because this file belongs to the plugin: edit `write()` and every record goes wherever it says. Add to the method rather than replacing it, or the records you did not name stop being written anywhere at all.
 
 ```php
 private function write( string $level, string $message, array $context = array() ): void {
     if ( self::LEVEL_ERROR === $level ) {
         Sentry::captureMessage( $message, $context );
     }
+
+    // Leave the rest of the method as it is, so every record still
+    // reaches error_log() as well.
 }
 ```
 

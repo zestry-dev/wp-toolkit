@@ -16,8 +16,6 @@ A file in `resources/meta-boxes/` returns one of these. You write the markup and
 `render()` writes the form. A nonce field is already printed, so the only escaping to think about is your own.
 
 ```php
-namespace Acme\Plugin\MetaBoxes;
-
 use Acme\Plugin\Core\Modules\Fields\Fields;
 use Acme\Plugin\Core\Modules\MetaBoxes\MetaBox;
 use WP_Post;

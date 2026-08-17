@@ -16,12 +16,12 @@ use Zestry\WPToolkit\Kernel\Traits\WithPlugin;
 use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
 
 /**
- * Command class.
+ * Base class for file-based WP-CLI commands.
  *
- * Base class for WP-CLI commands, providing helper methods for common output
- * and interaction patterns (log/success/error/warning/debug messages, plus
- * interactive confirm/ask prompts) so individual commands do not each re-wrap
- * the underlying `\WP_CLI` static calls.
+ * Provides helper methods for common output and interaction patterns
+ * (log/success/error/warning/debug messages, plus interactive confirm/ask
+ * prompts) so individual commands do not each re-wrap the underlying
+ * `\WP_CLI` static calls.
  *
  * A command file returns an instance of a Command subclass. When that file is
  * discovered by {@see CLI}, the plugin is assigned before WP-CLI invokes
@@ -108,8 +108,8 @@ abstract class Command extends \WP_CLI_Command implements PluginAware {
 	/**
 	 * The positional arguments this invocation was called with.
 	 *
-	 * Empty for a command invoked outside {@see CLI::register_command_for()},
-	 * which is the only caller that records them.
+	 * The same values `handle()` is given, reachable from a helper that was
+	 * never passed them. {@see get_assoc_args()} is the named half.
 	 *
 	 * @return array<int, string>
 	 */

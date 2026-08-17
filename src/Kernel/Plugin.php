@@ -475,7 +475,7 @@ class Plugin {
 	 *
 	 * The text domain defaults to the plugin slug, matching what `wp zt init`
 	 * writes into `zestry.json` and stamps into every copied file, so the two
-	 * cannot disagree unless a consumer deliberately changes one.
+	 * cannot disagree unless you deliberately change one.
 	 *
 	 * ```
 	 * // acme-plugin.php, inside the accessor that builds the plugin.

@@ -140,20 +140,6 @@ The escape hatch for a network too large to loop, and what a WP-CLI command woul
 
 <br>
 
-### `on_boot()`
-
-Register this module's activation and deactivation callbacks.
-
-```php
-public function on_boot(): void
-```
-
-WordPress associates both callbacks with the entry file held by the plugin, ensuring the hooks run only for this plugin. If this runs after the plugin's `activate_{plugin}` hook has already fired, the activation callback cannot bind in time, so a developer warning is emitted instead of failing silently. Deactivation is still registered because that hook fires on a later request.
-
-`register_activation_hook()` binds the callback to the action named `'activate_' . plugin_basename( $entry_file )`. That action is a normal WordPress hook: if it has already fired by the time this method calls `register_activation_hook()`, the call still succeeds and returns nothing to indicate failure, but the callback is bound too late to ever run for this request — WordPress does not re-fire past actions for late subscribers. This is exactly why ActivationHandler subclasses must be resolved synchronously at plugin load, as described on the class: on_boot() must run before that action fires, or activation logic silently never executes.
-
-<br>
-
 ### `is_network_active()`
 
 Whether this plugin is active across the whole network.

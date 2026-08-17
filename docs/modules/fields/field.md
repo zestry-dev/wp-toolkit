@@ -19,8 +19,6 @@ Registering meta rather than just calling `update_post_meta()` is what gives it 
 
 ```php
 // resources/fields/acme_rating.php
-namespace Acme\Plugin\Fields;
-
 use Acme\Plugin\Core\Modules\Fields\Field;
 
 return new class extends Field {

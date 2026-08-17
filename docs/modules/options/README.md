@@ -63,7 +63,7 @@ $api->save();
 
 **The plugin's own settings autoload; a group does not.** The default (ungrouped) row is what a plugin reads on ordinary requests, so it is loaded with the rest of WordPress's autoloaded options and costs no query. A `group()` is the opposite by construction — worth isolating means read by fewer requests — so it is written not-autoloaded and read on demand.
 
-Name a group that *is* read on most requests through `add_autoloaded_groups()` — a static, per-request registry `save()` consults live at write time, so it can be declared from more than one place (a module declaring its own group, a consumer's own `configure( Options::class, ... )` declaring further groups) without either caller needing to know about the other's list.
+Name a group that *is* read on most requests through `add_autoloaded_groups()` — a static, per-request registry `save()` consults live at write time, so it can be declared from more than one place (a module declaring its own group, your own `configure( Options::class, ... )` declaring further groups) without either caller needing to know about the other's list.
 
 ```php
 // bootstrap.php

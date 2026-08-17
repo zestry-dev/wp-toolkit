@@ -232,8 +232,8 @@ final class Arr {
 	/**
 	 * The first value passing the test, or `$fallback` when none does.
 	 *
-	 * Without a callback, simply the first value -- which for a keyed array is
-	 * not something `$data[0]` can tell you.
+	 * Without a callback, the first value -- which for a keyed array is not
+	 * something `$data[0]` can tell you.
 	 *
 	 * @param array<array-key, mixed>                 $data     The array to search.
 	 * @param callable(mixed, array-key): bool|null   $matches  The test, or null for the first of anything.

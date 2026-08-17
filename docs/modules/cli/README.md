@@ -16,7 +16,7 @@ Command files can be organized in subdirectories. A file at `resources/commands/
 > [!IMPORTANT]
 > **A name can be a command or a namespace, never both.** WP-CLI does not allow a command to have subcommands, so `resources/commands/cache.php` cannot sit alongside a `resources/commands/cache/` directory. Pick one: either `cache` is a command, or it is the namespace holding `cache clear`. Discovery checks this before loading anything and throws `\InvalidArgumentException` naming both files if they collide, which aborts the `wp` invocation.
 
-A discovered file that returns anything other than a `Command` throws `DiscoveryException`, as does a commands directory you named yourself with a file beneath `resources/commands/` that returns something other than a Command.
+A discovered file that returns anything other than a `Command` throws `DiscoveryException`.
 
 [Adding it](#adding-it) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Command](#writing-a-command) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
@@ -96,7 +96,7 @@ public static function register_command_for( Plugin $plugin, string $name, objec
 | **Return** | — |
 | **Throws** | — |
 
-`static`, and taking the plugin as its first argument, so you never have to resolve the CLI module to reach it. That matters: resolving a module boots it, and CLI's boot walks `resources/commands/` and throws when that directory is absent — so a plugin that added `migrations` but wanted no file-based commands would fail on every `wp` invocation.
+`static`, and taking the plugin as its first argument, so you never have to resolve the CLI module to reach it. That matters: resolving a module boots it, and booting CLI walks `resources/commands/` and registers everything under it — work a module registering one command of its own has no reason to trigger.
 
 If you already hold a CLI instance, `register_command()` is the same thing without the first argument.
 

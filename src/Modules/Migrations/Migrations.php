@@ -77,11 +77,14 @@ use Zestry\WPToolkit\Modules\Path;
  * A PHP timeout can still cut `run_pending()` off partway through a batch
  * (some migrations recorded as run, some not) -- see
  * {@see maybe_resume_interrupted_run()} for the opt-in recovery mechanism a
- * consumer's own periodic hook can call to detect and resume that.
+ * periodic hook of your own can call to detect and resume that.
  *
- * `ActivationHandler` declares both `activate()` and `deactivate()` as abstract, so
- * your subclass has to implement each one even when, as here, there is nothing
- * to undo.
+ * [`wp zt make activation`](../../commands/make-activation.md) writes the class
+ * and declares it. `ActivationHandler` makes both `activate()` and
+ * `deactivate()` abstract, so neither can be forgotten -- even when, as here,
+ * there is nothing to undo. Its one timing rule is that your entry file must
+ * call `run()` as it loads: see
+ * [`ActivationHandler`](../activation-handler.md).
  *
  * ```
  * class MyActivation extends ActivationHandler {

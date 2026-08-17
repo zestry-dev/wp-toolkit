@@ -8,6 +8,7 @@ This page is for the rest: the failures with no message attached. Find your symp
 |---|---|
 | `'zt' is not a registered wp command` | [below](#zt-is-not-a-registered-wp-command) |
 | A module is there, and nothing it does happens | [below](#a-module-does-nothing-and-nothing-errors) |
+| A scheduled event never runs | [below](#a-scheduled-event-never-runs) |
 | `Class "Acme\Plugin\..." not found` | [below](#class-not-found) |
 | `... is not declared, so nothing built it` | [below](#is-not-declared-so-nothing-built-it) |
 | A post type's permalinks 404 | [below](#a-post-type-404s) |
@@ -99,8 +100,31 @@ Two limits on that check, so you know when to look yourself:
 Three other causes worth ruling out once the declaration is there:
 
 - **`run()` never happens.** `bootstrap()` only queues; `run()` builds. `doctor` reports this one too — `bootstrap.php declares 6 classes, and nothing in this plugin built any of them` means the entry file never reached `->bootstrap()->run()`.
-- **`run()` happens too late for the hook.** `run()` resolves and boots synchronously, so a module deferred to `plugins_loaded` has already missed anything that fired before it. ActivationHandler is the sharp case — see [below](#a-post-type-404s).
+- **`run()` happens too late for the hook.** `run()` resolves and boots synchronously, so a module deferred to `plugins_loaded` has already missed anything that fired before it. ActivationHandler is the sharp case — see [`ActivationHandler`](modules/activation-handler.md).
 - **The module is declared but not `Bootable`.** A module only acts on its own if its class says `implements Bootable`; without it the plugin builds the class and it sits there. Check that line, and that `on_boot()` is `public`.
+
+---
+
+## A scheduled event never runs
+
+`wp cron event list` says whether it is scheduled at all, under the hook name your filename produces — `resources/schedules/sync.php` is `{plugin-slug}-sync`.
+
+**It is listed, and its time is in the past.** WP-Cron has no background process: an event fires only when some page load notices it is due. On a low-traffic site that can be very late, or never. Disable the pseudo-cron and drive it from a real crontab:
+
+```php
+// wp-config.php
+define( 'DISABLE_WP_CRON', true );
+```
+
+```bash
+*/5 * * * * cd /path/to/wp && wp cron event run --due-now
+```
+
+**It is not listed.** The module was never built — see [above](#a-module-does-nothing-and-nothing-errors). `cron` acts the moment it is built, so it goes under a heading in `bootstrap.php`, and `init` is the one `wp zt add` writes.
+
+**Something is listed under a name you do not recognise.** The hook is the filename, so renaming `resources/schedules/sync.php` schedules a new event and abandons the old one — WordPress keeps firing it, on time, forever, with nothing listening. `get_orphaned_events()` reports those and `unschedule_orphaned()` clears them; see [`cron`](modules/cron/).
+
+**It runs, and throws.** A `Schedule::run()` exception is caught and logged rather than propagating, so a failed occurrence leaves no trace on screen. Check `debug.log`, or add the [`log`](modules/log/) module, which `Cron` announces failures to.
 
 ---
 

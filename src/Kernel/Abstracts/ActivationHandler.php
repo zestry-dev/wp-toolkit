@@ -164,17 +164,9 @@ abstract class ActivationHandler extends Module implements Bootable {
 	 * failing silently. Deactivation is still registered because that hook fires on
 	 * a later request.
 	 *
-	 * `register_activation_hook()` binds the callback to the action named
-	 * `'activate_' . plugin_basename( $entry_file )`. That action is a normal
-	 * WordPress hook: if it has already fired by the time this method calls
-	 * `register_activation_hook()`, the call still succeeds and returns nothing
-	 * to indicate failure, but the callback is bound too late to ever run for
-	 * this request — WordPress does not re-fire past actions for late
-	 * subscribers. This is exactly why ActivationHandler subclasses must be resolved
-	 * synchronously at plugin load, as described on the class: on_boot() must
-	 * run before that action fires, or activation logic silently never executes.
-	 *
 	 * @return void
+	 *
+	 * @internal
 	 */
 	public function on_boot(): void {
 		$entry_file = $this->get_plugin()->get_entry_file();

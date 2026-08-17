@@ -169,7 +169,7 @@ public function unschedule_all(): void
 | **Return** | — |
 | **Throws** | `DiscoveryException` — When a file returns something other than a Schedule instance |
 
-Exposed for a consuming plugin's own ActivationHandler subclass to call from deactivate() — Cron does not implement ActivationHandler itself, so nothing clears scheduled events automatically; a plugin that schedules events is responsible for unscheduling them.
+Exposed for your own [`ActivationHandler`](../activation-handler.md) subclass to call from `deactivate()` — Cron does not implement `ActivationHandler` itself, so nothing clears scheduled events automatically; a plugin that schedules events is responsible for unscheduling them.
 
 Clearing runs over the schedules discovery finds, so it fails the same way discovery does on a broken schedules directory.
 

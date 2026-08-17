@@ -66,7 +66,7 @@ return new class() extends Command {
 	 * person: the two summary lines, then each problem with what it causes and
 	 * where. The machine-readable formats print the problems alone, with a
 	 * `file` and a `problem` field -- the advice is guidance for a reader, not
-	 * data for a consumer, so it is left out. Every format exits non-zero when
+	 * data for a script, so it is left out. Every format exits non-zero when
 	 * there is at least one problem, so any of them can gate a build.
 	 * ---
 	 * default: report

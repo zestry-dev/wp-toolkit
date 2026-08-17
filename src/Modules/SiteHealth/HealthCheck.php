@@ -34,8 +34,6 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * check reads real state rather than guessing.
  *
  * ```
- * namespace Acme\Plugin\HealthChecks;
- *
  * use Acme\Plugin\Core\Modules\SiteHealth\HealthCheck;
  * use Acme\Plugin\Core\Modules\Options;
  *

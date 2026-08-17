@@ -190,7 +190,7 @@ public static function first( array $data, ?callable $matches = null, mixed $fal
 | **Return** | `mixed` |
 | **Throws** | — |
 
-Without a callback, simply the first value — which for a keyed array is not something `$data[0]` can tell you.
+Without a callback, the first value — which for a keyed array is not something `$data[0]` can tell you.
 
 <br>
 

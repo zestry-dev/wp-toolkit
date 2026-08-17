@@ -6,10 +6,10 @@
 
 declare( strict_types=1 );
 
-namespace {{class_namespace}};
-
 // Loaded by WordPress, never requested directly.
 \defined( 'ABSPATH' ) || exit;
+
+namespace {{class_namespace}};
 
 use {{copied_namespace}}\Kernel\Abstracts\Module;
 {{bootable_import}}

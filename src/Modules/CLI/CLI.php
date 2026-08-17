@@ -40,9 +40,7 @@ use Zestry\WPToolkit\Modules\Path;
  * > naming both files if they collide, which aborts the `wp` invocation.
  *
  * A discovered file that returns anything other than a {@see Command} throws
- * `DiscoveryException`, as does a commands directory you named yourself with
- * a file beneath `resources/commands/` that returns something other than a Command.
- *
+ * `DiscoveryException`.
  *
  * @setup-hook init
  */
@@ -105,9 +103,7 @@ class CLI extends Module implements Bootable {
 		$root_dir = $this->with( Path::class )->get_plugin_path( self::COMMANDS_ROOT );
 
 		if ( ! \is_dir( $root_dir ) ) {
-			// Never named, and the default is absent: this plugin has none of
-			// these yet. Only a directory asked for by name is missing in the
-			// sense worth throwing over.
+			// No directory, no commands: this plugin has none of these yet.
 			return;
 		}
 
@@ -286,9 +282,9 @@ class CLI extends Module implements Bootable {
 	 *
 	 * `static`, and taking the plugin as its first argument, so you never have
 	 * to resolve the CLI module to reach it. That matters: resolving a module
-	 * boots it, and CLI's boot walks `resources/commands/` and throws when that directory
-	 * is absent -- so a plugin that added `migrations` but wanted no file-based
-	 * commands would fail on every `wp` invocation.
+	 * boots it, and booting CLI walks `resources/commands/` and registers
+	 * everything under it -- work a module registering one command of its own
+	 * has no reason to trigger.
 	 *
 	 * If you already hold a CLI instance, {@see register_command()} is the same
 	 * thing without the first argument.

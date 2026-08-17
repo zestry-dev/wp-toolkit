@@ -239,9 +239,11 @@ function zestry_heading_anchor( string $heading ): string {
  */
 function zestry_check_prose( string $relative, array $lines ): array {
 	$banned = array(
-		'the consumer'          => 'address the reader as "you"',
-		'the consuming plugin'  => 'address the reader as "your plugin"',
-		'consumers of'          => 'address the reader as "you"',
+		// Bare stems, so no article can slip one past: "a consumer's own hook"
+		// and "a consuming plugin's subclass" are the same third person as
+		// "the consumer", and the reader of every page here is that consumer.
+		'consumer'              => 'address the reader as "you"',
+		'consuming plugin'      => 'address the reader as "your plugin"',
 		'used to be'            => 'a reader did not see the old behaviour; state the current one',
 		'used to return'        => 'a reader did not see the old behaviour; state the current one',
 		'deliberately does not' => 'say what it does, not what it was decided against',

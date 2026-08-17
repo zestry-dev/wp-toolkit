@@ -18,8 +18,6 @@ Site Health is the supported way to see a site you cannot log into: a user copie
 `run()` returns one of `good()`, `recommended()` or `critical()`. Reach any declared module with `$this->with( … )`, so the check reads real state rather than guessing.
 
 ```php
-namespace Acme\Plugin\HealthChecks;
-
 use Acme\Plugin\Core\Modules\SiteHealth\HealthCheck;
 use Acme\Plugin\Core\Modules\Options;
 

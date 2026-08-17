@@ -7,9 +7,9 @@
 
 [Generated starting point](#generated-starting-point) &nbsp;·&nbsp; [You must implement](#you-must-implement) &nbsp;·&nbsp; [Methods you can use](#methods-you-can-use)
 
-Command class.
+Base class for file-based WP-CLI commands.
 
-Base class for WP-CLI commands, providing helper methods for common output and interaction patterns (log/success/error/warning/debug messages, plus interactive confirm/ask prompts) so individual commands do not each re-wrap the underlying `\WP_CLI` static calls.
+Provides helper methods for common output and interaction patterns (log/success/error/warning/debug messages, plus interactive confirm/ask prompts) so individual commands do not each re-wrap the underlying `\WP_CLI` static calls.
 
 A command file returns an instance of a Command subclass. When that file is discovered by `CLI`, the plugin is assigned before WP-CLI invokes `handle()` — so `$this->with( Path::class )` reaches any declared module, without the command touching global state.
 
@@ -102,7 +102,7 @@ final public function get_args(): array
 | **Return** | `array` |
 | **Throws** | — |
 
-Empty for a command invoked outside `CLI::register_command_for()`, which is the only caller that records them.
+The same values `handle()` is given, reachable from a helper that was never passed them. `get_assoc_args()` is the named half.
 
 <br>
 

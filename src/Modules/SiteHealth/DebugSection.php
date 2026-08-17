@@ -39,8 +39,6 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * reports real state.
  *
  * ```
- * namespace Acme\Plugin\DebugSections;
- *
  * use Acme\Plugin\Core\Modules\Options;
  * use Acme\Plugin\Core\Modules\Options;
  * use Acme\Plugin\Core\Modules\SiteHealth\DebugSection;
