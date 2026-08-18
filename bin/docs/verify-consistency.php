@@ -12,7 +12,7 @@ declare( strict_types=1 );
  * Named once and used by every check here, so adding a scaffolded tool does not
  * mean remembering three regexes.
  */
-const ZESTRY_SCAFFOLDED_TOOLS = 'prettier|eslint|phpcs|phpstan|stylelint|tsconfig|webpack|babel';
+const ZESTRY_SCAFFOLDED_TOOLS = 'prettier|eslint|phpcs|phpunit|phpstan|stylelint|tsconfig|webpack|babel';
 
 /**
  * Report a page stating something the source contradicts.

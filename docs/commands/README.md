@@ -14,6 +14,7 @@ been initialized — see [Getting started](../getting-started.md).
 ## Set the plugin up
 
 - [`wp zt init`](init.md) — Set up a plugin to receive wp-toolkit source.
+- [`wp zt tests`](tests.md) — Set this plugin up to run PHPUnit tests.
 
 ## Generate your own code
 
@@ -36,6 +37,7 @@ been initialized — see [Getting started](../getting-started.md).
 - [`wp zt make schedule`](make-schedule.md) — Generate a new cron schedule.
 - [`wp zt make shared`](make-shared.md) — Generate a shared JavaScript package.
 - [`wp zt make taxonomy`](make-taxonomy.md) — Generate a new custom taxonomy.
+- [`wp zt make test`](make-test.md) — Generate a test class.
 - [`wp zt make view`](make-view.md) — Generate a view template.
 
 ## Keep it healthy

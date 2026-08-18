@@ -1,0 +1,43 @@
+<?php
+/**
+ * PHPUnit bootstrap for the {{title}} test suite.
+ *
+ * Loads WordPress's own PHPUnit test suite -- which is what provides
+ * WP_UnitTestCase, a real database, real hook dispatch and the factories --
+ * then this plugin's Composer autoloader.
+ *
+ * The plugin's entry file is deliberately never loaded here. It builds and runs
+ * the real Plugin: every module booted, every hook bound, against the
+ * directories the plugin actually ships. Each test builds its own throwaway
+ * instance instead, and the autoloader alone makes every class available.
+ */
+
+declare( strict_types=1 );
+
+// wp-env sets this; a local install-wp-tests.sh checkout needs it exported.
+$_tests_dir = getenv( 'WP_TESTS_DIR' );
+
+if ( ! is_string( $_tests_dir ) || '' === $_tests_dir ) {
+	$_tests_dir = is_dir( '/wordpress-phpunit' ) ? '/wordpress-phpunit' : '';
+}
+
+if ( ! file_exists( $_tests_dir . '/includes/functions.php' ) ) {
+	// echo rather than STDERR, matching what WordPress's own test bootstrap does.
+	echo 'Could not find the WordPress test suite at ' . ( '' === $_tests_dir ? '(nowhere)' : $_tests_dir ) . ".\n";
+	echo "Run `npm run env:start`, or set WP_TESTS_DIR to a local install.\n";
+	exit( 1 );
+}
+
+/*
+ * Before the WordPress bootstrap, which checks for the PHPUnit polyfills and
+ * stops if they are missing -- this is what provides them, along with every
+ * class of your own.
+ */
+require dirname( __DIR__ ) . '/vendor/autoload.php';
+
+// WP-CLI doubles, so a file extending Command is loadable and its output is
+// assertable without the WP-CLI phar. Guarded; a real runtime wins.
+require __DIR__ . '/Support/wp-cli-stubs.php';
+
+require $_tests_dir . '/includes/functions.php';
+require $_tests_dir . '/includes/bootstrap.php';

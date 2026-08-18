@@ -184,6 +184,66 @@ class Tooling extends Module {
 	);
 
 	/**
+	 * Composer packages the generated test suite runs on.
+	 *
+	 * The polyfills are not optional and not this toolkit's idea: WordPress's
+	 * own PHPUnit bootstrap looks for `Yoast\PHPUnitPolyfills` and stops with
+	 * "Please run `composer update`" when it is absent, whatever the tests
+	 * themselves use.
+	 *
+	 * `wp-test-utils` is what the generated base test case extends, and the
+	 * reason is an editor rather than a runtime one: `WP_UnitTestCase` ships
+	 * with the WordPress test suite, which lives in the container rather than
+	 * in `vendor/`, so extending it directly leaves every editor unable to
+	 * resolve the parent -- and with it every assertion the suite calls. This
+	 * package is in `vendor/`, so the chain resolves as far as it goes.
+	 *
+	 * @var array<int, string>
+	 */
+	public const PHPUNIT_PACKAGES = array(
+		'phpunit/phpunit',
+		'yoast/phpunit-polyfills',
+		'yoast/wp-test-utils',
+	);
+
+	/**
+	 * npm packages that provide a WordPress to run the tests against.
+	 *
+	 * @var array<int, string>
+	 */
+	public const WP_ENV_PACKAGES = array( '@wordpress/env' );
+
+	/**
+	 * The wp-env configuration the test suite is run against.
+	 *
+	 * Its own file rather than the `.wp-env.json` wp-env reads by default, so a
+	 * plugin that already keeps one for development keeps it: this is written
+	 * beside it, on a port of its own, and both can be running at once.
+	 *
+	 * That separation is also what lets it declare `testsEnvironment: false`.
+	 * wp-env otherwise provisions two WordPress installs, and the second exists
+	 * to give tests a database they can destroy -- which is what the whole of
+	 * this one already is.
+	 */
+	public const WP_ENV_CONFIG = '.wp-env.test.json';
+
+	/**
+	 * The wp-env container the test suite is run in.
+	 *
+	 * The only one {@see WP_ENV_CONFIG} provisions, and it mounts the core
+	 * PHPUnit test suite at `/wordpress-phpunit` with `WP_TESTS_DIR` pointed at
+	 * it -- which is what the generated `tests/bootstrap.php` reads.
+	 */
+	public const WP_ENV_CONTAINER = 'wordpress';
+
+	/**
+	 * The Composer script that runs the suite.
+	 *
+	 * @var array<string, string>
+	 */
+	public const PHPUNIT_SCRIPTS = array( 'test' => 'phpunit' );
+
+	/**
 	 * Composer plugin phpcs needs allowed to discover installed standards.
 	 *
 	 * Without this, Composer silently declines to run the installer and
@@ -413,6 +473,64 @@ class Tooling extends Module {
 		$this->write_json( $plugin_root, 'package.json', $package_json );
 
 		return true;
+	}
+
+	/**
+	 * Declare a PSR-4 prefix in composer.json's `autoload-dev`.
+	 *
+	 * `autoload-dev` rather than `autoload`, so the test classes stay out of the
+	 * autoloader that ships: `composer install --no-dev` on a production deploy
+	 * drops them, and nothing in the plugin can reach a test helper by accident.
+	 *
+	 * A prefix already declared is left exactly as it is, like every other
+	 * manifest edit here -- including one pointing somewhere else, since a
+	 * plugin that maps its tests to another directory has said where they are.
+	 *
+	 * @param string $plugin_root Absolute path to the consuming plugin's root.
+	 * @param string $prefix      The namespace prefix to declare, without a trailing backslash.
+	 * @param string $directory   The directory it maps to, relative to the plugin root.
+	 * @return bool True when the declaration was added.
+	 * @throws \RuntimeException When composer.json cannot be written.
+	 */
+	public function add_composer_autoload_dev( string $plugin_root, string $prefix, string $directory ): bool {
+		$composer = $this->read_json( $plugin_root, 'composer.json' );
+		$key      = \rtrim( $prefix, '\\' ) . '\\';
+
+		if ( null === $composer || isset( $composer['autoload-dev']['psr-4'][ $key ] ) ) {
+			return false;
+		}
+
+		$composer['autoload-dev']['psr-4'][ $key ] = \trim( $directory, '/\\' ) . '/';
+
+		$this->write_json( $plugin_root, 'composer.json', $composer );
+
+		return true;
+	}
+
+	/**
+	 * The npm scripts that start the test environment and run the suite.
+	 *
+	 * A method rather than a constant, unlike {@see BUILD_SCRIPTS}: the suite
+	 * runs inside the container at the plugin's own path under
+	 * `wp-content/plugins/`, so the plugin's directory name is part of the
+	 * string and there is nothing constant to state.
+	 *
+	 * @param string $plugin_directory The consuming plugin's own directory name.
+	 * @return array<string, string> Command keyed by script name.
+	 */
+	public function get_test_scripts( string $plugin_directory ): array {
+		$env = 'wp-env --config ' . self::WP_ENV_CONFIG;
+
+		return array(
+			'env:start' => $env . ' start',
+			'env:stop'  => $env . ' stop',
+			'test:php'  => \sprintf(
+				"%s run --env-cwd='wp-content/plugins/%s' %s vendor/bin/phpunit",
+				$env,
+				$plugin_directory,
+				self::WP_ENV_CONTAINER
+			),
+		);
 	}
 
 	/**

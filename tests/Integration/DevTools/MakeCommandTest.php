@@ -1486,6 +1486,63 @@ final class MakeCommandTest extends TestCase {
 	}
 
 	/**
+	 * `make test` appends the suffix `phpunit.xml.dist` collects on, so the
+	 * file is picked up by the suite rather than sitting in it unread.
+	 */
+	public function test_make_test_appends_the_test_suffix(): void {
+		$this->install_test_suite();
+
+		$this->run_make( array( 'Reports' ), array(), 'test.php.stub' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/tests/Integration/ReportsTest.php' );
+	}
+
+	public function test_make_test_does_not_double_a_suffix_that_was_given(): void {
+		$this->install_test_suite();
+
+		$this->run_make( array( 'ReportsTest' ), array(), 'test.php.stub' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/tests/Integration/ReportsTest.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/tests/Integration/ReportsTestTest.php' );
+	}
+
+	public function test_make_test_nests_a_qualified_name(): void {
+		$this->install_test_suite();
+
+		$this->run_make( array( 'Modules/Reports' ), array(), 'test.php.stub' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/tests/Integration/Modules/ReportsTest.php' );
+	}
+
+	/**
+	 * A class extending one that does not exist is a fatal rather than a
+	 * failing test: PHPUnit stops before it collects anything, and says so by
+	 * naming the missing parent rather than what to do about it.
+	 */
+	public function test_make_test_refuses_a_plugin_with_no_suite(): void {
+		$this->run_make( array( 'Reports' ), array(), 'test.php.stub' );
+
+		$this->assertStringContainsString(
+			'wp zt tests',
+			(string) ( \WP_CLI::last( 'error' )[0] ?? '' )
+		);
+
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/tests/Integration/ReportsTest.php' );
+	}
+
+	/**
+	 * Stand up just enough of what `wp zt tests` writes for `make test` to run.
+	 *
+	 * @return void
+	 */
+	private function install_test_suite(): void {
+		$path = $this->target_plugin_dir . '/tests/Support/TestCase.php';
+
+		mkdir( dirname( $path ), 0777, true );
+		file_put_contents( $path, "<?php\n" );
+	}
+
+	/**
 	 * Build a concrete MakeCommand subclass, wire it, and invoke handle() with
 	 * the CWD inside the throwaway target plugin directory.
 	 *
@@ -1517,6 +1574,7 @@ final class MakeCommandTest extends TestCase {
 			'field'              => 'field.php',
 			'ability'            => 'ability.php',
 			'abstract'           => 'abstract.php',
+			'test.php.stub'      => 'test.php',
 		);
 
 		$command = isset( $stub_to_make_file[ $stub ] )

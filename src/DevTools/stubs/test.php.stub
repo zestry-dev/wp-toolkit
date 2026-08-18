@@ -1,0 +1,47 @@
+<?php
+
+/**
+ * {{title}} tests.
+ */
+
+declare( strict_types=1 );
+
+namespace {{namespace}}\Tests\Integration;
+
+use {{namespace}}\Tests\Support\TestCase;
+
+final class {{class_name}}Test extends TestCase {
+
+	/**
+	 * @return void
+	 */
+	public function test_it_does_what_it_says(): void {
+		/*
+		 * $this->plugin is a throwaway Plugin pointed at $this->plugin_dir, an
+		 * empty directory of this test's own. Give a module something to
+		 * discover with write_plugin_file(), then resolve it:
+		 *
+		 * ```
+		 * $this->write_plugin_file( 'resources/views/card.php', 'Hi <?php echo esc_html( $name ); ?>' );
+		 *
+		 * $views = $this->plugin->get( Views::class );
+		 *
+		 * $this->assertSame( 'Hi Ada', $views->get( 'card', array( 'name' => 'Ada' ) ) );
+		 * ```
+		 *
+		 * Write the fixture first. A discovery module walks its directory inside
+		 * on_boot(), and on_boot() runs inside get(), so a file written after
+		 * that call is never seen.
+		 *
+		 * To exercise one file you already ship, skip discovery entirely: require
+		 * it, and wire() it the way its module would.
+		 *
+		 * ```
+		 * $command = require \dirname( __DIR__, 2 ) . '/resources/commands/greet.php';
+		 *
+		 * $this->plugin->wire( $command );
+		 * ```
+		 */
+		$this->markTestIncomplete( 'Write the first assertion.' );
+	}
+}

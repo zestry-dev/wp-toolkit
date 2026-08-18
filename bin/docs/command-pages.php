@@ -292,7 +292,7 @@ function zestry_generate_command_pages( string $root ): int {
  */
 function zestry_group_command_index( array $index ): array {
 	$groups = array(
-		'Set the plugin up'      => array( 'init.php' ),
+		'Set the plugin up'      => array( 'init.php', 'tests.php' ),
 		'Add toolkit code'       => array( 'add/', 'overwrite/' ),
 		'Generate your own code' => array( 'make/' ),
 		'Keep it healthy'        => array( 'update.php', 'doctor.php' ),

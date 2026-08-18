@@ -1,0 +1,47 @@
+<?php
+
+/**
+ * A first test, to prove the suite runs.
+ */
+
+declare( strict_types=1 );
+
+namespace {{namespace}}\Tests\Integration;
+
+use {{namespace}}\Tests\Support\TestCase;
+
+/**
+ * Delete this file once you have written a test of your own.
+ */
+final class ExampleTest extends TestCase {
+
+	/**
+	 * The throwaway plugin is built, and carries the test slug.
+	 *
+	 * Every name a module registers is composed from that slug, which is what
+	 * keeps a test's option rows, hooks and actions clear of the real plugin's.
+	 *
+	 * @return void
+	 */
+	public function test_the_throwaway_plugin_uses_the_test_slug(): void {
+		$this->assertSame( '{{test_slug}}', $this->plugin->get_slug() );
+		$this->assertSame( '{{test_slug}}-reports', $this->plugin->get_namespaced_name( 'reports' ) );
+	}
+
+	/**
+	 * A fixture written into the throwaway directory is discovered.
+	 *
+	 * The shape almost every test here takes: write the file, then resolve the
+	 * module. Order is the whole thing -- a discovery module walks its directory
+	 * inside on_boot(), and on_boot() runs inside the get() call, so a fixture
+	 * written afterwards is never seen.
+	 *
+	 * @return void
+	 */
+	public function test_a_fixture_lands_in_the_throwaway_directory(): void {
+		$file = $this->write_plugin_file( 'resources/views/card.php', 'Hi' );
+
+		$this->assertFileExists( $file );
+		$this->assertStringStartsWith( $this->plugin_dir, $file );
+	}
+}

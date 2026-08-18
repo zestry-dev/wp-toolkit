@@ -1,0 +1,148 @@
+<?php
+
+/**
+ * Minimal WP-CLI doubles for the PHPUnit context.
+ *
+ * PHPUnit runs without the WP-CLI phar, so `WP_CLI_Command` -- which the Command
+ * base extends -- and the static `WP_CLI` facade do not exist. Any test touching
+ * a command file fatals without stand-ins.
+ *
+ * Every call is recorded rather than performed, which is what a test asserts
+ * against: `\WP_CLI::last( 'success' )` instead of captured output. `error()`
+ * and `halt()` record too rather than terminating, so a failure path can be
+ * tested rather than losing the process to it.
+ *
+ * Bracketed namespace syntax, since this declares both a global-namespace class
+ * and functions under `WP_CLI\Utils`. Cover whatever methods your own commands
+ * call -- `error_box()` reaches `error_multi_line()`, `run_command()` reaches
+ * `runcommand()` -- and call `\WP_CLI::reset()` in `set_up()` so one test's
+ * recorded calls do not leak into the next.
+ *
+ * The five sniffs below cannot be satisfied by a file of doubles, so they are
+ * turned off here rather than worked around. Two namespaces and two classes in
+ * one file is what the doubles have to be -- WP_CLI and WP_CLI_Command are
+ * global, get_flag_value() is not -- and splitting them apart would mean three
+ * files that each have to be required in the right order. The parameter names
+ * are WP-CLI's own; a double that renames them is documenting a signature
+ * nobody has.
+ */
+
+// phpcs:disable Universal.Namespaces.DisallowCurlyBraceSyntax.Forbidden
+// phpcs:disable Universal.Namespaces.DisallowDeclarationWithoutName.Forbidden
+// phpcs:disable Universal.Namespaces.OneDeclarationPerFile.MultipleFound
+// phpcs:disable Generic.Files.OneObjectStructurePerFile.MultipleFound
+// phpcs:disable Universal.NamingConventions.NoReservedKeywordParameterNames
+
+
+declare( strict_types=1 );
+
+namespace {
+
+	/*
+	 * The `false` is load-bearing: it claims the name without autoloading, so a
+	 * real wp-cli/wp-cli dev dependency cannot win the race. A real WP-CLI
+	 * runtime is never shadowed either way.
+	 */
+	if ( ! \class_exists( 'WP_CLI_Command', false ) ) {
+		// Command::__construct() calls parent::__construct(), so the base needs one.
+		class WP_CLI_Command {
+
+			public function __construct() {}
+		}
+	}
+
+	if ( ! \class_exists( 'WP_CLI', false ) ) {
+		/**
+		 * Records every static call, so a test can assert on output and registration.
+		 */
+		class WP_CLI {
+
+			/**
+			 * Recorded calls, as `array( method, ...args )` tuples.
+			 *
+			 * @var array<int, array<int, mixed>>
+			 */
+			public static array $calls = array();
+
+			/**
+			 * Forget every recorded call. Call this from set_up().
+			 *
+			 * @return void
+			 */
+			public static function reset(): void {
+				self::$calls = array();
+			}
+
+			/**
+			 * The arguments of the last call to a given method.
+			 *
+			 * @param string $method The method name.
+			 * @return array<int, mixed>|null Null when it was never called.
+			 */
+			public static function last( string $method ): ?array {
+				for ( $i = \count( self::$calls ) - 1; $i >= 0; $i-- ) {
+					if ( self::$calls[ $i ][0] === $method ) {
+						return \array_slice( self::$calls[ $i ], 1 );
+					}
+				}
+
+				return null;
+			}
+
+			public static function add_command( $name, $callable ): void {
+				self::$calls[] = array( 'add_command', $name, $callable );
+			}
+
+			public static function log( $message ): void {
+				self::$calls[] = array( 'log', $message );
+			}
+
+			public static function success( $message ): void {
+				self::$calls[] = array( 'success', $message );
+			}
+
+			public static function warning( $message ): void {
+				self::$calls[] = array( 'warning', $message );
+			}
+
+			public static function error( $message, $exit = true ): void {
+				self::$calls[] = array( 'error', $message, $exit );
+			}
+
+			public static function error_multi_line( $messages ): void {
+				self::$calls[] = array( 'error_multi_line', $messages );
+			}
+
+			public static function debug( $message, $group = false ): void {
+				self::$calls[] = array( 'debug', $message, $group );
+			}
+
+			public static function runcommand( $command, $options = array() ): void {
+				self::$calls[] = array( 'runcommand', $command, $options );
+			}
+
+			public static function halt( $code ): void {
+				self::$calls[] = array( 'halt', $code );
+			}
+		}
+	}
+}
+
+namespace WP_CLI\Utils {
+
+	if ( ! \function_exists( __NAMESPACE__ . '\get_flag_value' ) ) {
+		function get_flag_value( $assoc_args, $flag, $default = null ) {
+			return $assoc_args[ $flag ] ?? $default;
+		}
+	}
+
+	if ( ! \function_exists( __NAMESPACE__ . '\format_items' ) ) {
+		/**
+		 * Records the call instead of rendering, so a test can assert on the
+		 * items, fields and format a command asked to be displayed.
+		 */
+		function format_items( $format, $items, $fields ): void {
+			\WP_CLI::$calls[] = array( 'format_items', $format, $items, $fields );
+		}
+	}
+}

@@ -4,218 +4,97 @@ Your features are files in a directory, and the module that discovers them needs
 
 A `Plugin` takes an entry file path and derives everything from it — the plugin directory, the roots every module walks, the URLs `Path` and `Assets` produce. Point one at a temporary directory and you get a private, disposable filesystem to write fixtures into.
 
-## 1. Get a WordPress to test against
-
-`wp-env` is the shortest path: Docker, one config file, and a WordPress install with the core test suite already mounted.
+## 1. Scaffold the suite
 
 ```bash
-npm install --save-dev @wordpress/env
-composer require --dev phpunit/phpunit:^9.6 yoast/phpunit-polyfills:^1.1
+wp zt tests
 ```
 
-`.wp-env.json`, in your plugin's root:
+That writes everything below, and nothing it writes is overwritten on a second run — see [`wp zt tests`](commands/tests.md) for the full list.
 
-```json
-{
-    "core": "WordPress/WordPress",
-    "phpVersion": "8.1",
-    "mappings": {
-        "wp-content/plugins/acme-plugin": "."
-    }
-}
-```
+| | |
+|---|---|
+| `phpunit.xml.dist` | Collects `tests/Integration/`. Support code sits in `tests/Support/` and is deliberately outside the suite. |
+| `tests/bootstrap.php` | Finds WordPress's test suite, then loads your autoloader. |
+| `tests/Support/TestCase.php` | The base every test extends. Declares the modules you have installed. |
+| `tests/Support/wp-cli-stubs.php` | Recording doubles for `WP_CLI` and `WP_CLI_Command`. |
+| `tests/Integration/ExampleTest.php` | One passing test. Delete it once you have your own. |
+| `.wp-env.test.json` | The WordPress to run against. |
+
+It also adds PHPUnit and `wp-test-utils` to `composer.json`, an `autoload-dev` entry mapping `Acme\Plugin\Tests\` to `tests/`, and the npm scripts:
 
 ```bash
-npx wp-env start
-npx wp-env run --env-cwd='wp-content/plugins/acme-plugin' tests-wordpress vendor/bin/phpunit
+npm install && composer update
+npm run env:start
+npm run test:php
 ```
 
-Run in the **`tests-wordpress`** container, not `wordpress`. Both have the core test suite mounted at `/wordpress-phpunit` and `WP_TESTS_DIR` set to it, but only the tests container has its own database — and the WordPress test suite empties the database it is given on every run.
+Docker is what `wp-env` needs, and nothing else is. Without it, install the test suite with WordPress's `install-wp-tests.sh` and export `WP_TESTS_DIR`; the generated bootstrap reads it and nothing below changes.
 
-Worth two `package.json` scripts, since that command is long:
+A single test method runs with `--filter`:
 
-```json
-"scripts": {
-    "env:start": "wp-env start",
-    "test:php": "wp-env run --env-cwd='wp-content/plugins/acme-plugin' tests-wordpress vendor/bin/phpunit"
-}
+```bash
+npm run test:php -- --filter test_greet_says_hello
 ```
 
-Without Docker, install the test suite locally with WordPress's `install-wp-tests.sh` and export `WP_TESTS_DIR` to point at it. Nothing below cares which of the two you chose.
+Each new test file is one command:
 
-## 2. Bootstrap
-
-```xml
-<?xml version="1.0"?>
-<!-- phpunit.xml.dist -->
-<phpunit
-    bootstrap="tests/bootstrap.php"
-    backupGlobals="false"
-    colors="true"
-    failOnWarning="true"
->
-    <testsuites>
-        <testsuite name="integration">
-            <directory suffix="Test.php">tests</directory>
-        </testsuite>
-    </testsuites>
-</phpunit>
+```bash
+wp zt make test Reports
 ```
-
-```php
-<?php
-// tests/bootstrap.php
-
-declare( strict_types=1 );
-
-$tests_dir = getenv( 'WP_TESTS_DIR' ) ?: '/wordpress-phpunit';
-
-if ( ! file_exists( $tests_dir . '/includes/functions.php' ) ) {
-    fwrite( STDERR, "No WordPress test suite at {$tests_dir}.\n" );
-    exit( 1 );
-}
-
-// Your autoloader first: it provides your own classes, and the polyfills the
-// WordPress bootstrap checks for before it will start.
-require dirname( __DIR__ ) . '/vendor/autoload.php';
-
-// WP-CLI doubles, so anything extending Command is loadable. See section 6.
-require __DIR__ . '/wp-cli-stubs.php';
-
-require $tests_dir . '/includes/functions.php';
-require $tests_dir . '/includes/bootstrap.php';
-```
-
-Give your tests their own PSR-4 prefix, in `autoload-dev` so they stay out of the production autoloader:
-
-```json
-"autoload-dev": {
-    "psr-4": { "Acme\\Plugin\\Tests\\": "tests/" }
-}
-```
-
-Then `composer dump-autoload`.
 
 > [!IMPORTANT]
 > **Never load your plugin's entry file from a test.** It builds and runs the real `Plugin` — every module booted, every hook bound, against whatever directories your plugin actually ships. Tests build their own instance instead, and control what it can see. Your Composer autoloader already makes every class available without the entry file.
 
-## 3. A base test case
+## 2. What the base test case gives you
 
-Every test gets a fresh directory, a fake entry file in it, and a `Plugin` pointed at that file.
+Every test gets a fresh directory, a fake entry file in it, and a `Plugin` pointed at that file:
 
 ```php
-<?php
-// tests/TestCase.php
+namespace Acme\Plugin\Tests\Integration;
 
-declare( strict_types=1 );
+use Acme\Plugin\Tests\Support\TestCase;
 
-namespace Acme\Plugin\Tests;
+final class ReportsTest extends TestCase {
 
-use Acme\Plugin\Core\Kernel\Plugin;
-use Acme\Plugin\Core\Modules\Ajax\Ajax;
-use Acme\Plugin\Core\Modules\CLI\CLI;
-use Acme\Plugin\Core\Modules\Cron\Cron;
-use Acme\Plugin\Core\Modules\Options;
-use Acme\Plugin\Core\Modules\Path;
-use Acme\Plugin\Core\Modules\Views;
-
-abstract class TestCase extends \WP_UnitTestCase {
-
-    protected string $plugin_dir = '';
-
-    protected Plugin $plugin;
-
-    public function set_up(): void {
-        parent::set_up();
-
-        $this->plugin_dir = sys_get_temp_dir() . '/' . uniqid( 'acme-', true );
-        mkdir( $this->plugin_dir, 0777, true );
-
-        $entry = $this->plugin_dir . '/plugin.php';
-        file_put_contents( $entry, "<?php\n/* Plugin Name: Acme Test */\n" );
-
-        $this->plugin = new Plugin( $entry, 'acme-test' );
-
-        // Nothing is built that is not declared, so a test case declares what
-        // its tests reach for. The headings are nominal here: these tests call
-        // get() directly rather than run(), which is what waits on a hook.
-        $this->plugin->declare_multiple(
-            array(
-                Path::class,
-                Options::class,
-                Views::class,
-
-                'init' => array(
-                    CLI::class,
-                    Ajax::class,
-                    Cron::class,
-                ),
-            )
-        );
-    }
-
-    public function tear_down(): void {
-        $this->remove_dir( $this->plugin_dir );
-        parent::tear_down();
-    }
-
-    /**
-     * Write a file (and its parent directories) inside the throwaway plugin.
-     */
-    protected function write_plugin_file( string $relative_path, string $contents ): string {
-        $absolute = $this->plugin_dir . '/' . ltrim( $relative_path, '/' );
-
-        if ( ! is_dir( dirname( $absolute ) ) ) {
-            mkdir( dirname( $absolute ), 0777, true );
-        }
-
-        file_put_contents( $absolute, $contents );
-
-        return $absolute;
-    }
-
-    protected function remove_dir( string $dir ): void {
-        if ( ! is_dir( $dir ) ) {
-            return;
-        }
-
-        $items = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator( $dir, \FilesystemIterator::SKIP_DOTS ),
-            \RecursiveIteratorIterator::CHILD_FIRST
-        );
-
-        foreach ( $items as $item ) {
-            $item->isDir() && ! $item->isLink() ? rmdir( $item->getPathname() ) : unlink( $item->getPathname() );
-        }
-
-        rmdir( $dir );
+    public function test_something(): void {
+        $this->plugin;       // a Plugin on a temporary directory
+        $this->plugin_dir;   // that directory
+        $this->write_plugin_file( 'resources/views/card.php', '…' );
     }
 }
 ```
 
-The explicit slug matters. Every name a module registers carries it — option rows, hook names, AJAX actions, `wp {slug} …` commands — so a test slug keeps test data out of anything your real plugin stores.
+The explicit slug matters, and the generated file uses `{your-slug}-test`. Every name a module registers carries the slug — option rows, hook names, AJAX actions, `wp {slug} …` commands — so a test slug keeps test data out of anything your real plugin stores.
 
-The examples below import from your own tree, not from the toolkit's:
+**The module declarations are yours to edit.** Nothing is built that is not declared, so the generated file lists the modules you had installed when it was written:
 
 ```php
-use Acme\Plugin\Core\Kernel\Exceptions\DiscoveryException;
-use Acme\Plugin\Core\Modules\Ajax\Ajax;
-use Acme\Plugin\Core\Modules\CLI\CLI;
-use Acme\Plugin\Core\Modules\Options;
-use Acme\Plugin\Core\Modules\Views;
+$this->plugin = ( new Plugin( $this->entry_file, 'acme-plugin-test' ) )->declare_multiple(
+    array(
+        Path::class,
+        Views::class,
+
+        'acme-plugin-test_loaded' => array(
+            PostTypes::class,
+        ),
+    )
+);
 ```
 
-To exercise the files you actually ship instead, point the `Plugin` at your real entry file:
+Add to that list as you add modules, or call `declare()` in the test itself. The headings are nominal for a test that calls `get()` directly — `get()` builds and boots on the spot, and only `run()` waits on the hook — but a module that acts on its own still has to be under one, since [leaving it at the top level throws](kernel/bootable.md).
+
+To exercise the files you actually ship instead, point a second `Plugin` at your real entry file:
 
 ```php
-$plugin = new Plugin( dirname( __DIR__ ) . '/acme-plugin.php', 'acme-test' );
+$plugin = new Plugin( dirname( __DIR__, 2 ) . '/acme-plugin.php', 'acme-test' );
 $plugin->declare( CLI::class, 'init' );
 $plugin->get( CLI::class );   // discovers your real resources/commands/ directory
 ```
 
-That is a second, test-owned instance. It shares nothing with the one your entry file builds in production.
+That instance shares nothing with the one your entry file builds in production.
 
-## 4. Give a module files to discover
+## 3. Give a module files to discover
 
 Write the fixture first, then resolve the module. Resolving it is what boots it, and boot is what walks the directory.
 
@@ -240,7 +119,7 @@ public function test_a_command_is_registered_from_the_commands_directory(): void
 
     $this->plugin->get( CLI::class );
 
-    $this->assertSame( 'acme-test greet', \WP_CLI::last( 'add_command' )[0] );
+    $this->assertSame( 'acme-plugin-test greet', \WP_CLI::last( 'add_command' )[0] );
 }
 ```
 
@@ -274,13 +153,13 @@ $this->plugin->get( CLI::class );
 $this->assertNull( \WP_CLI::last( 'add_command' ) );
 ```
 
-## 5. Test one file, without its module
+## 4. Test one file, without its module
 
 A `Command`, an `AjaxAction`, a `Route`, a `Schedule` — each is a plain object its module `require`s and wires. You can do both halves yourself, and skip discovery entirely.
 
 ```php
 public function test_greet_says_hello(): void {
-    $command = require dirname( __DIR__ ) . '/resources/commands/greet.php';
+    $command = require dirname( __DIR__, 2 ) . '/resources/commands/greet.php';
 
     $this->plugin->wire( $command );
     $command->set_arguments( array( 'Ada' ), array() );
@@ -323,7 +202,7 @@ private function dispatch( callable $run ): array {
 }
 
 public function test_the_action_returns_the_report(): void {
-    $action = require dirname( __DIR__ ) . '/actions/report.php';
+    $action = require dirname( __DIR__, 2 ) . '/resources/actions/report.php';
     $this->plugin->wire( $action );
 
     $response = $this->dispatch( static function () use ( $action ): void { $action->handle(); } );
@@ -355,101 +234,20 @@ $response = $this->dispatch(
 );
 ```
 
-## 6. Provide WP-CLI doubles
+## 5. The WP-CLI doubles
 
-`Command` extends `\WP_CLI_Command`, and `WP_CLI` is a static facade — neither exists under PHPUnit, because the WP-CLI phar is not loaded. Any test that touches a command file fatals without stand-ins.
+`Command` extends `\WP_CLI_Command`, and `WP_CLI` is a static facade — neither exists under PHPUnit, because the WP-CLI phar is not loaded. `tests/Support/wp-cli-stubs.php` stands in for both, and `tests/bootstrap.php` requires it before the WordPress bootstrap.
 
-Write your own `tests/wp-cli-stubs.php` and `require` it from `tests/bootstrap.php`, before the WordPress bootstrap. The shape that matters:
-
-```php
-<?php
-
-declare( strict_types=1 );
-
-namespace {
-    // The `false` is load-bearing: it claims the name without autoloading,
-    // so a real wp-cli/wp-cli dev dependency cannot win the race.
-    if ( ! class_exists( 'WP_CLI_Command', false ) ) {
-        class WP_CLI_Command {
-            public function __construct() {}
-        }
-    }
-
-    if ( ! class_exists( 'WP_CLI', false ) ) {
-        class WP_CLI {
-
-            /** @var array<int, array<int, mixed>> */
-            public static array $calls = array();
-
-            public static function reset(): void {
-                self::$calls = array();
-            }
-
-            /** Arguments of the last call to a given method, or null. */
-            public static function last( string $method ): ?array {
-                for ( $i = count( self::$calls ) - 1; $i >= 0; $i-- ) {
-                    if ( self::$calls[ $i ][0] === $method ) {
-                        return array_slice( self::$calls[ $i ], 1 );
-                    }
-                }
-
-                return null;
-            }
-
-            public static function add_command( $name, $callable ): void {
-                self::$calls[] = array( 'add_command', $name, $callable );
-            }
-
-            public static function log( $message ): void {
-                self::$calls[] = array( 'log', $message );
-            }
-
-            public static function success( $message ): void {
-                self::$calls[] = array( 'success', $message );
-            }
-
-            public static function warning( $message ): void {
-                self::$calls[] = array( 'warning', $message );
-            }
-
-            public static function error( $message, $exit = true ): void {
-                self::$calls[] = array( 'error', $message, $exit );
-            }
-
-            public static function error_multi_line( $messages ): void {
-                self::$calls[] = array( 'error_multi_line', $messages );
-            }
-
-            public static function debug( $message, $group = false ): void {
-                self::$calls[] = array( 'debug', $message, $group );
-            }
-
-            public static function halt( $code ): void {
-                self::$calls[] = array( 'halt', $code );
-            }
-        }
-    }
-}
-
-namespace WP_CLI\Utils {
-    if ( ! function_exists( __NAMESPACE__ . '\get_flag_value' ) ) {
-        function get_flag_value( $assoc_args, $flag, $default = null ) {
-            return $assoc_args[ $flag ] ?? $default;
-        }
-    }
-}
-```
-
-Four properties make it work:
+Four properties make it work, and each matters if you extend it:
 
 1. **Guarded with `class_exists( …, false )`**, so a real WP-CLI runtime is never shadowed.
 2. **`WP_CLI_Command` has a no-argument constructor**, because `Command::__construct()` calls `parent::__construct()`.
 3. **`error()` and `halt()` record instead of terminating**, so a test can assert on a failure path rather than losing the process to it.
 4. **Every call is recorded**, which is what you assert against — `\WP_CLI::last( 'success' )` rather than captured output.
 
-Cover every method your commands actually call — `Command::error_box()` reaches `error_multi_line()`, `debug()` reaches `debug()` — and call `\WP_CLI::reset()` in `set_up()` so one test's recorded calls do not leak into the next.
+Cover any method your own commands call that is not there yet — `Command::error_box()` reaches `error_multi_line()`, `debug()` reaches `debug()` — and call `\WP_CLI::reset()` in `set_up()` so one test's recorded calls do not leak into the next.
 
-## 7. Reaching a module in a test
+## 6. Reaching a module in a test
 
 A module is built the same way anything else is:
 
@@ -461,7 +259,7 @@ $views = $this->plugin->get( Views::class );
 $this->assertSame( 'Hi Ada', $views->get( 'card', array( 'name' => 'Ada' ) ) );
 ```
 
-A module that is not `Bootable` reads the filesystem when you call it rather than at boot, so ordering is less strict here than in section 4 — but keeping fixtures first costs nothing and never surprises you.
+A module that is not `Bootable` reads the filesystem when you call it rather than at boot, so ordering is less strict here than in section 3 — but keeping fixtures first costs nothing and never surprises you.
 
 > [!IMPORTANT]
 > **Never `new` a module in a test.** The constructor is `final` and takes no arguments, so `new Path()` compiles — and then fatals on the first method call, because nothing assigned the plugin. `get()`, `make()` and `wire()` are the only three things that assign it.
@@ -486,23 +284,17 @@ Three ways to get an instance, and the difference matters in tests:
 
 Where you need a seam, give the class under test a setter and call it after `wire()`. A module reaches its dependencies through `with()` rather than through properties you can overwrite, so the seam has to be one the class offers.
 
-A module the plugin never declared throws rather than being built. The `TestCase` above declares the modules these examples use; add yours to that list, or call `declare()` in the test itself.
+## 7. Things that bite
 
-## 8. Things that bite
-
-- **`Options` writes only on `save()`.** Assert against the database only after calling it, and delete the row in `tear_down()`. The option name is `{slug}_{group}` — the default group is `_options_`, so a plugin with slug `acme-test` stores under `acme-test__options_`.
+- **`Options` writes only on `save()`.** Assert against the database only after calling it, and delete the row in `tear_down()`. The option name is `{slug}_{group}` — the default group is `_options_`, so a plugin with slug `acme-plugin-test` stores under `acme-plugin-test__options_`.
 - **Do not try to reproduce activation.** `ActivationHandler` detects a late boot and calls `_doing_it_wrong()`, which PHPUnit turns into a failed test — and `register_activation_hook()` fires from WordPress's own upgrade path, not from anything a test controls. Call `activate()` and `deactivate()` directly; they are public and abstract, so they are the whole contract.
 - **Migrations never run themselves.** Call `run_pending()` explicitly in the test that needs the schema.
-- **Database changes are rolled back after each test**, but the filesystem is not. Remove your temp directory in `tear_down()`, or a long run fills `/tmp`.
-- **A single test method** runs with `--filter`:
-
-  ```bash
-  npx wp-env run --env-cwd='wp-content/plugins/acme-plugin' tests-wordpress \
-      vendor/bin/phpunit --filter test_greet_says_hello
-  ```
+- **Database changes are rolled back after each test, but the filesystem is not.** The generated base case removes its temporary directory in `tear_down()`; anything you create outside it is yours to clean up.
 
 ## Next
 
+- [`wp zt tests`](commands/tests.md) — every file the scaffold writes, and what each is for
+- [`wp zt make test`](commands/make-test.md) — one command per new test file
 - [`Plugin`](plugin.md) — `get()`, `make()`, `wire()`, `configure()` and the rest of what a test drives
 - [Modules](modules/) — the directory each one discovers, and what its files return
 - [`wp zt doctor`](commands/doctor.md) — the wiring mistakes that produce no error at all, and no test either

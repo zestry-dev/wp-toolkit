@@ -198,7 +198,8 @@ Run from inside your plugin's directory, with the plugin active.
 |---|---|
 | [`wp zt init`](commands/init.md) | Copies the kernel; writes `zestry.json`, `zestry.lock.json`, `bootstrap.php`, the PSR-4 entry, `.gitignore`, the linter configs and `AGENTS.md`. `--no-phpcs`, `--no-eslint`, `--no-prettier`, `--no-agents`, `--yes` |
 | [`wp zt add <name>...`](commands/add.md) | Copies modules and their dependencies; declares each in `bootstrap.php`. Skips what is already there. Never asks. |
-| [`wp zt make <type> <name>`](commands/) | Generates one file from a stub — see the 20 types below. `--yes` on every type; `--extends=` on every type whose file returns a base-class instance, except `route` and `block`, plus `abstract`, which also takes `--for=<type>` |
+| [`wp zt tests`](commands/tests.md) | Writes the PHPUnit suite: `phpunit.xml.dist`, `tests/bootstrap.php`, `tests/Support/TestCase.php`, the WP-CLI doubles, an example test, `.wp-env.test.json`, and the composer/npm entries that run them. `--no-wp-env`, `--yes` |
+| [`wp zt make <type> <name>`](commands/) | Generates one file from a stub — see the 21 types below. `--yes` on every type; `--extends=` on every type whose file returns a base-class instance, except `route` and `block`, plus `abstract`, which also takes `--for=<type>` |
 | [`wp zt describe`](commands/describe.md) | Reports what this plugin has: each module installed, declared, the directory it reads and the base class a file there returns. `--format`, `--installed` |
 | [`wp zt doctor`](commands/doctor.md) | Reports the wiring mistakes that raise no error — chiefly a module on disk that nothing declares. `--format=report\|csv\|json\|yaml` |
 | [`wp zt debug`](commands/debug.md) | Reports this plugin's own `{SLUG}_DEBUG` constant, or writes it to `wp-config.php`. Takes `on` or `off`; omit both to report. |
@@ -231,11 +232,12 @@ Each type writes one file into the directory its module discovers, so the genera
 | [`module`](commands/make-module.md) | `lib/Modules/` | your own module, **declared in `bootstrap.php`**. `--bootable` |
 | [`activation`](commands/make-activation.md) | `lib/Modules/` | an activation handler, **declared** too |
 | [`abstract`](commands/make-abstract.md) | `lib/Abstracts/` | a base your own files share. `--for=<type>`, `--extends=` |
+| [`test`](commands/make-test.md) | `tests/Integration/` | a PHPUnit test, `Test`-suffixed. Needs [`wp zt tests`](commands/tests.md) first |
 
-The last three land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. Every type writes to one directory, fixed by the module that reads it; a name with a slash nests inside it, so `make command reports/daily` writes `resources/commands/reports/daily.php`.
+`module`, `activation` and `abstract` land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. Every type writes to one directory, fixed by the module that reads it; a name with a slash nests inside it, so `make command reports/daily` writes `resources/commands/reports/daily.php`.
 
 <!-- zestry:include generator="prompting-generators" -->
-**5 of the 20 generators ask for what you leave out** — [`block`](commands/make-block.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 15 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.
+**5 of the 21 generators ask for what you leave out** — [`block`](commands/make-block.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 16 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.
 <!-- /zestry:include -->
 
 `make module` and `make activation` are the only generators that also write to `bootstrap.php`, since being listed is the only thing that makes a module exist.

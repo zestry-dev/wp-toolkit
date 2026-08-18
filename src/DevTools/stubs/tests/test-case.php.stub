@@ -1,0 +1,189 @@
+<?php
+
+/**
+ * Base test case for the {{title}} integration tests.
+ */
+
+declare( strict_types=1 );
+
+namespace {{namespace}}\Tests\Support;
+
+use {{copied_namespace}}\Kernel\Plugin;
+use Yoast\WPTestUtils\WPIntegration\TestCase as WPTestCase;
+{{module_imports}}
+/**
+ * Gives every test a throwaway plugin directory and a Plugin pointed at it.
+ *
+ * A Plugin derives everything from its entry file -- the plugin directory, the
+ * roots every module walks, the URLs Path and Assets produce. Pointed at a
+ * temporary directory, it becomes a private filesystem to write fixtures into,
+ * while the WordPress test suite provides real hooks, options and nonces.
+ *
+ * The slug is `{{test_slug}}` rather than the real one. Every name a module
+ * registers carries it -- option rows, hook names, AJAX actions, `wp {slug} ...`
+ * commands -- so nothing a test stores can collide with what the plugin itself
+ * stores.
+ *
+ * The inherited API is annotated below because nothing in `vendor/` declares
+ * it: the chain reaches `WP_UnitTestCase`, which ships with the WordPress test
+ * suite rather than with any Composer package, so an editor resolving only
+ * `vendor/` sees every assertion here -- PHPUnit's included -- as undefined.
+ * These are the ones a suite usually calls; `PHPUnit\Framework\Assert` and
+ * `WP_UnitTestCase_Base` carry many more, and adding one you reach for costs a
+ * line.
+ *
+ * @method static \WP_UnitTest_Factory factory()
+ * @method void setExpectedIncorrectUsage( string $doing_it_wrong )
+ * @method void setExpectedDeprecated( string $deprecated )
+ * @method void expectException( string $exception )
+ * @method void expectExceptionMessage( string $message )
+ * @method void expectExceptionMessageMatches( string $regular_expression )
+ * @method void expectNotToPerformAssertions()
+ * @method void expectOutputString( string $expected )
+ * @method void fail( string $message = '' )
+ * @method void markTestSkipped( string $message = '' )
+ * @method void markTestIncomplete( string $message = '' )
+ * @method void assertArrayHasKey( int|string $key, array $array, string $message = '' )
+ * @method void assertArrayNotHasKey( int|string $key, array $array, string $message = '' )
+ * @method void assertContains( mixed $needle, iterable $haystack, string $message = '' )
+ * @method void assertNotContains( mixed $needle, iterable $haystack, string $message = '' )
+ * @method void assertCount( int $expected_count, \Countable|iterable $haystack, string $message = '' )
+ * @method void assertDirectoryExists( string $directory, string $message = '' )
+ * @method void assertDirectoryDoesNotExist( string $directory, string $message = '' )
+ * @method void assertFileExists( string $filename, string $message = '' )
+ * @method void assertFileDoesNotExist( string $filename, string $message = '' )
+ * @method void assertMatchesRegularExpression( string $pattern, string $string, string $message = '' )
+ * @method void assertDoesNotMatchRegularExpression( string $pattern, string $string, string $message = '' )
+ * @method void assertEquals( mixed $expected, mixed $actual, string $message = '' )
+ * @method void assertSame( mixed $expected, mixed $actual, string $message = '' )
+ * @method void assertNotSame( mixed $expected, mixed $actual, string $message = '' )
+ * @method void assertTrue( mixed $condition, string $message = '' )
+ * @method void assertFalse( mixed $condition, string $message = '' )
+ * @method void assertNotFalse( mixed $condition, string $message = '' )
+ * @method void assertNull( mixed $actual, string $message = '' )
+ * @method void assertNotNull( mixed $actual, string $message = '' )
+ * @method void assertEmpty( mixed $actual, string $message = '' )
+ * @method void assertNotEmpty( mixed $actual, string $message = '' )
+ * @method void assertInstanceOf( string $expected, mixed $actual, string $message = '' )
+ * @method void assertIsArray( mixed $actual, string $message = '' )
+ * @method void assertIsBool( mixed $actual, string $message = '' )
+ * @method void assertIsCallable( mixed $actual, string $message = '' )
+ * @method void assertIsInt( mixed $actual, string $message = '' )
+ * @method void assertIsString( mixed $actual, string $message = '' )
+ * @method void assertGreaterThan( mixed $expected, mixed $actual, string $message = '' )
+ * @method void assertGreaterThanOrEqual( mixed $expected, mixed $actual, string $message = '' )
+ * @method void assertLessThan( mixed $expected, mixed $actual, string $message = '' )
+ * @method void assertLessThanOrEqual( mixed $expected, mixed $actual, string $message = '' )
+ * @method void assertStringContainsString( string $needle, string $haystack, string $message = '' )
+ * @method void assertStringNotContainsString( string $needle, string $haystack, string $message = '' )
+ * @method void assertStringStartsWith( string $prefix, string $string, string $message = '' )
+ * @method void assertStringEndsWith( string $suffix, string $string, string $message = '' )
+ */
+abstract class TestCase extends WPTestCase {
+
+	/**
+	 * Absolute path to this test's temporary plugin directory.
+	 *
+	 * @var string
+	 */
+	protected string $plugin_dir = '';
+
+	/**
+	 * Absolute path to this test's fake plugin entry file.
+	 *
+	 * @var string
+	 */
+	protected string $entry_file = '';
+
+	/**
+	 * The plugin instance under test.
+	 *
+	 * @var Plugin
+	 */
+	protected Plugin $plugin;
+
+	/**
+	 * Build a throwaway plugin for the test about to run.
+	 *
+	 * @return void
+	 */
+	public function set_up(): void {
+		parent::set_up();
+
+		$this->plugin_dir = \get_temp_dir() . \uniqid( '{{test_slug}}-' );
+		$this->entry_file = $this->plugin_dir . '/plugin.php';
+
+		\wp_mkdir_p( $this->plugin_dir );
+		$this->get_filesystem()->put_contents( $this->entry_file, "<?php\n/* Plugin Name: {{title}} Test */\n" );
+
+		/*
+		 * Nothing is built that is not declared, so this lists what tests may
+		 * reach for -- the modules this plugin has installed, as of when
+		 * `wp zt tests` wrote this file. Add to it as you add modules.
+		 *
+		 * A module that acts on its own goes under a heading, because one left
+		 * at the top level throws at run(). The heading is nominal for a test
+		 * that calls get() directly: get() builds and boots on the spot, and
+		 * only run() waits on the hook.
+		 */
+		$this->plugin = ( new Plugin( $this->entry_file, '{{test_slug}}' ) )->declare_multiple(
+			array(
+{{module_declarations}}			)
+		);
+	}
+
+	/**
+	 * Throw the temporary directory away.
+	 *
+	 * The database is rolled back after each test and the filesystem is not, so
+	 * without this a long run fills the temp directory.
+	 *
+	 * @return void
+	 */
+	public function tear_down(): void {
+		$this->get_filesystem()->rmdir( $this->plugin_dir, true );
+
+		parent::tear_down();
+	}
+
+	/**
+	 * Write a file, and its parent directories, inside the throwaway plugin.
+	 *
+	 * The standard way to give a module something to discover. Write the
+	 * fixture first and resolve the module second: a discovery module walks its
+	 * directory inside on_boot(), and on_boot() runs inside the get() call, so
+	 * a file written afterwards is never seen.
+	 *
+	 * @param string $relative_path Path relative to the throwaway plugin directory.
+	 * @param string $contents      What to write.
+	 * @return string The absolute path written.
+	 */
+	protected function write_plugin_file( string $relative_path, string $contents ): string {
+		$absolute = $this->plugin_dir . '/' . \ltrim( $relative_path, '/' );
+
+		\wp_mkdir_p( \dirname( $absolute ) );
+		$this->get_filesystem()->put_contents( $absolute, $contents );
+
+		return $absolute;
+	}
+
+	/**
+	 * WordPress's own filesystem abstraction, initialized on first use.
+	 *
+	 * Used rather than mkdir()/rmdir()/file_put_contents() so these helpers pass
+	 * the same `composer lint` as the rest of the plugin -- and because its
+	 * rmdir() takes a `$recursive` flag, which is the whole of tear_down().
+	 *
+	 * @return \WP_Filesystem_Base
+	 */
+	protected function get_filesystem(): \WP_Filesystem_Base {
+		global $wp_filesystem;
+
+		if ( ! $wp_filesystem instanceof \WP_Filesystem_Base ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			\WP_Filesystem();
+		}
+
+		return $wp_filesystem;
+	}
+}

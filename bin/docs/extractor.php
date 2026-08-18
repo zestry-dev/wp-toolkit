@@ -113,9 +113,10 @@ function zestry_fenced_body( array $lines, int $index ): string {
  * Guess the language of a code block that does not name one.
  *
  * Only what the docblocks here actually contain, and only where the answer is
- * certain: a leading `<` that is not `<?php` is markup, and `import`/`export`
- * open a statement PHP has no form of. Everything else is PHP, which is what
- * nearly every block in this source is.
+ * certain: a leading `<` that is not `<?php` is markup, `import`/`export` open a
+ * statement PHP has no form of, and a block opening with one of the four
+ * commands this documentation tells people to run is a shell transcript.
+ * Everything else is PHP, which is what nearly every block in this source is.
  *
  * A block that needs saying explicitly can say it -- a fence takes an info
  * string, and that always wins over this.
@@ -132,6 +133,16 @@ function zestry_code_language( string $code ): string {
 
 	if ( preg_match( '/^(import|export)\s/', $text ) ) {
 		return 'js';
+	}
+
+	/*
+	 * Anchored to the first line and to a named command, rather than asking
+	 * whether the block "looks like" a shell: `wp` and `composer` are also
+	 * ordinary words, and a PHP sample explaining one in a comment must not be
+	 * relabelled. `$` covers a transcript that shows its prompt.
+	 */
+	if ( preg_match( '/^(\$ |#!|npm |npx |composer |wp )/', $text ) ) {
+		return 'bash';
 	}
 
 	return 'php';
