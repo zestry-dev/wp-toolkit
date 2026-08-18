@@ -16,55 +16,13 @@ use Yoast\WPTestUtils\WPIntegration\TestCase as WPTestCase;
  * pointed at it, so Path, Views, and file discovery run against real files while
  * the WordPress test suite provides real hooks, options, and nonces.
  *
- * The inherited API is annotated below because nothing in this repository
- * declares it: the chain reaches `WP_UnitTestCase`, which ships with the
- * WordPress test suite installed inside the wp-env containers, so an editor
- * resolving only `vendor/` sees the parent — and everything above it, PHPUnit's
- * assertions included — as undefined. These are the ones this suite calls;
- * `PHPUnit\Framework\Assert` and `WP_UnitTestCase_Base` carry many more.
- *
- * @method static \WP_UnitTest_Factory factory()
- * @method void setExpectedIncorrectUsage( string $doing_it_wrong )
- * @method void expectException( string $exception )
- * @method void expectExceptionMessage( string $message )
- * @method void expectExceptionMessageMatches( string $regular_expression )
- * @method void expectNotToPerformAssertions()
- * @method void expectOutputString( string $expected )
- * @method void fail( string $message = '' )
- * @method void markTestSkipped( string $message = '' )
- * @method void assertArrayHasKey( int|string $key, array $array, string $message = '' )
- * @method void assertArrayNotHasKey( int|string $key, array $array, string $message = '' )
- * @method void assertContains( mixed $needle, iterable $haystack, string $message = '' )
- * @method void assertNotContains( mixed $needle, iterable $haystack, string $message = '' )
- * @method void assertCount( int $expected_count, \Countable|iterable $haystack, string $message = '' )
- * @method void assertDirectoryDoesNotExist( string $directory, string $message = '' )
- * @method void assertFileExists( string $filename, string $message = '' )
- * @method void assertFileDoesNotExist( string $filename, string $message = '' )
- * @method void assertMatchesRegularExpression( string $pattern, string $string, string $message = '' )
- * @method void assertDoesNotMatchRegularExpression( string $pattern, string $string, string $message = '' )
- * @method void assertEquals( mixed $expected, mixed $actual, string $message = '' )
- * @method void assertSame( mixed $expected, mixed $actual, string $message = '' )
- * @method void assertNotSame( mixed $expected, mixed $actual, string $message = '' )
- * @method void assertTrue( mixed $condition, string $message = '' )
- * @method void assertFalse( mixed $condition, string $message = '' )
- * @method void assertNotFalse( mixed $condition, string $message = '' )
- * @method void assertNull( mixed $actual, string $message = '' )
- * @method void assertNotNull( mixed $actual, string $message = '' )
- * @method void assertNotEmpty( mixed $actual, string $message = '' )
- * @method void assertInstanceOf( string $expected, mixed $actual, string $message = '' )
- * @method void assertIsArray( mixed $actual, string $message = '' )
- * @method void assertIsCallable( mixed $actual, string $message = '' )
- * @method void assertIsInt( mixed $actual, string $message = '' )
- * @method void assertIsString( mixed $actual, string $message = '' )
- * @method void assertGreaterThan( mixed $expected, mixed $actual, string $message = '' )
- * @method void assertGreaterThanOrEqual( mixed $expected, mixed $actual, string $message = '' )
- * @method void assertLessThan( mixed $expected, mixed $actual, string $message = '' )
- * @method void assertLessThanOrEqual( mixed $expected, mixed $actual, string $message = '' )
- * @method void assertStringContainsString( string $needle, string $haystack, string $message = '' )
- * @method void assertStringNotContainsString( string $needle, string $haystack, string $message = '' )
- * @method void assertStringStartsWith( string $prefix, string $string, string $message = '' )
- * @method void assertStringEndsWith( string $suffix, string $string, string $message = '' )
- * @method void assertStringEndsNotWith( string $suffix, string $string, string $message = '' )
+ * `WP_UnitTestCase` ships with the WordPress test suite rather than with a
+ * Composer package, so the parent this chain reaches is not in `vendor/` and an
+ * editor resolves nothing above it -- not `assertNotWPError()`, not PHPUnit's
+ * own assertions. `php-stubs/wordpress-tests-stubs` is in `require-dev` to
+ * close that: it declares the whole chain up to
+ * `Yoast\PHPUnitPolyfills\TestCases\TestCase`, which is in `vendor/`, and
+ * carries no autoloader of its own, so nothing loads it at run time.
  */
 abstract class TestCase extends WPTestCase {
 

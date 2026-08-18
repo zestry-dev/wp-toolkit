@@ -191,12 +191,20 @@ class Tooling extends Module {
 	 * "Please run `composer update`" when it is absent, whatever the tests
 	 * themselves use.
 	 *
-	 * `wp-test-utils` is what the generated base test case extends, and the
-	 * reason is an editor rather than a runtime one: `WP_UnitTestCase` ships
-	 * with the WordPress test suite, which lives in the container rather than
-	 * in `vendor/`, so extending it directly leaves every editor unable to
-	 * resolve the parent -- and with it every assertion the suite calls. This
-	 * package is in `vendor/`, so the chain resolves as far as it goes.
+	 * The last two are there for an editor rather than for the run, and only
+	 * together do they finish the job. `WP_UnitTestCase` ships with the
+	 * WordPress test suite rather than with any Composer package, so nothing in
+	 * `vendor/` declares the class a test case extends -- and an editor that
+	 * cannot resolve the parent cannot offer a single assertion above it.
+	 * `wp-test-utils` supplies the class the generated base case names, and
+	 * `wordpress-tests-stubs` supplies everything from `WP_UnitTestCase` up to
+	 * `Yoast\PHPUnitPolyfills\TestCases\TestCase`, which is in `vendor/`
+	 * again -- so the chain closes and `assertNotWPError()` resolves like
+	 * anything else.
+	 *
+	 * The stubs package declares no autoloader at all, which is what makes it
+	 * safe to ship beside the real suite: Composer never loads the file, so the
+	 * declarations exist for the indexer and for nothing else.
 	 *
 	 * @var array<int, string>
 	 */
@@ -204,6 +212,7 @@ class Tooling extends Module {
 		'phpunit/phpunit',
 		'yoast/phpunit-polyfills',
 		'yoast/wp-test-utils',
+		'php-stubs/wordpress-tests-stubs',
 	);
 
 	/**

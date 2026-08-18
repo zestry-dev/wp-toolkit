@@ -82,17 +82,22 @@ return new class() extends Command {
 	 * rather than `.wp-env.json`, on a port of its own, so a plugin already
 	 * keeping one for development keeps it and both can run at once.
 	 *
-	 * It then adds PHPUnit, the polyfills and `wp-test-utils` to
+	 * It then adds PHPUnit and three packages your editor needs to
 	 * `composer.json`, an `autoload-dev` PSR-4 entry mapping `Tests\` to
 	 * `tests/`, `@wordpress/env` to `package.json`, the `env:start` /
 	 * `env:stop` / `test:php` scripts, and `.phpunit.result.cache` to
 	 * `.gitignore`.
 	 *
-	 * `wp-test-utils` is what the base test case extends, and the reason is
-	 * your editor rather than the run: `WP_UnitTestCase` ships with the
-	 * WordPress test suite rather than with a Composer package, so extending it
-	 * directly leaves nothing in `vendor/` to resolve -- and every assertion
-	 * your tests call reads as undefined.
+	 * Those three are worth naming, because between them they are what makes a
+	 * test file resolve. `WP_UnitTestCase` ships with the WordPress test suite
+	 * rather than with a Composer package, so nothing in `vendor/` declares the
+	 * class a test extends -- and an editor that cannot resolve the parent
+	 * offers no assertion above it, which is why `assertNotWPError()` reads as
+	 * undefined in a hand-rolled suite. `wp-test-utils` gives the base case a
+	 * real class to name, `phpunit-polyfills` sits above it, and
+	 * `wordpress-tests-stubs` fills the gap between them. It declares no
+	 * autoloader, so nothing loads it at run time: your tests still run against
+	 * the real suite.
 	 *
 	 * Nothing here is overwritten. A file already on disk is left exactly as it
 	 * is, a dependency already required keeps whatever constraint it has, and an
@@ -131,7 +136,7 @@ return new class() extends Command {
 	 *     Wrote tests/Support/wp-cli-stubs.php
 	 *     Wrote tests/Integration/ExampleTest.php
 	 *     Wrote .wp-env.test.json
-	 *     Added to composer.json: phpunit/phpunit, yoast/phpunit-polyfills, yoast/wp-test-utils
+	 *     Added to composer.json: phpunit/phpunit, yoast/phpunit-polyfills, ...
 	 *     Added autoload-dev: Acme\Plugin\Tests\ => tests/
 	 *     Added scripts: composer test
 	 *     Added to package.json: @wordpress/env

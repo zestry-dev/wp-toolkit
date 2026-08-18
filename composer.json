@@ -39,7 +39,8 @@
     "symfony/property-info": "^6.4",
     "symfony/serializer": "^6.4",
     "phpdocumentor/reflection-docblock": "^5.3",
-    "symfony/property-access": "^6.4"
+    "symfony/property-access": "^6.4",
+    "php-stubs/wordpress-tests-stubs": "^7.0"
   },
   "suggest": {
     "wp-cli/wp-cli": "Required only to use the CLI module (commands run under WP-CLI)."

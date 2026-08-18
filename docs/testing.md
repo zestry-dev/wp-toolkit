@@ -21,7 +21,7 @@ That writes everything below, and nothing it writes is overwritten on a second r
 | `tests/Integration/ExampleTest.php` | One passing test. Delete it once you have your own. |
 | `.wp-env.test.json` | The WordPress to run against. |
 
-It also adds PHPUnit and `wp-test-utils` to `composer.json`, an `autoload-dev` entry mapping `Acme\Plugin\Tests\` to `tests/`, and the npm scripts:
+It also adds PHPUnit and the three packages your editor needs to `composer.json` (see [below](#8-why-three-packages-just-for-the-editor)), an `autoload-dev` entry mapping `Acme\Plugin\Tests\` to `tests/`, and the npm scripts:
 
 ```bash
 npm install && composer update
@@ -290,6 +290,30 @@ Where you need a seam, give the class under test a setter and call it after `wir
 - **Do not try to reproduce activation.** `ActivationHandler` detects a late boot and calls `_doing_it_wrong()`, which PHPUnit turns into a failed test — and `register_activation_hook()` fires from WordPress's own upgrade path, not from anything a test controls. Call `activate()` and `deactivate()` directly; they are public and abstract, so they are the whole contract.
 - **Migrations never run themselves.** Call `run_pending()` explicitly in the test that needs the schema.
 - **Database changes are rolled back after each test, but the filesystem is not.** The generated base case removes its temporary directory in `tear_down()`; anything you create outside it is yours to clean up.
+
+## 8. Why three packages just for the editor
+
+`vendor/` holds no `WP_UnitTestCase`. It ships with the WordPress test suite — the thing `wp-env` mounts at `/wordpress-phpunit` — not with any Composer package, so a base test case that extends it directly extends something your editor cannot see. Nothing above that point resolves either, which is what produces:
+
+```
+Undefined method 'assertNotWPError'.  intelephense(P1013)
+```
+
+on a method WordPress really does define. The same goes for `assertSame()` and every other assertion, since PHPUnit's own `TestCase` is further up the same chain.
+
+Three `require-dev` packages close it, and each covers one link:
+
+| Package | Supplies |
+|---|---|
+| `yoast/wp-test-utils` | `Yoast\WPTestUtils\WPIntegration\TestCase`, the real class your base case extends |
+| `php-stubs/wordpress-tests-stubs` | `WP_UnitTestCase`, `WP_UnitTestCase_Base`, `WP_UnitTest_Factory` — every WordPress assertion |
+| `yoast/phpunit-polyfills` | `Yoast\PHPUnitPolyfills\TestCases\TestCase`, which reaches PHPUnit's own |
+
+With all three the chain is unbroken from your test file to `PHPUnit\Framework\TestCase`, and `assertNotWPError()` resolves like anything else — no `@method` annotations to maintain.
+
+**The stubs package declares no autoloader**, which is what makes it safe to have installed beside the real suite. Composer never loads the file, so its `WP_UnitTestCase` cannot collide with the one your tests actually run against; the declarations exist for your editor and for nothing else. Do not `require` it yourself — it names core classes it does not declare, and only an indexer is meant to read it. Pointing PHPStan or Psalm at the same file works, alongside `php-stubs/wordpress-stubs` for those core classes.
+
+Its version tracks WordPress's, so keep it at or above the WordPress you test against.
 
 ## Next
 

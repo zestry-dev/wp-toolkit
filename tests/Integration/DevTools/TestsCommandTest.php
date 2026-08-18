@@ -160,9 +160,11 @@ final class TestsCommandTest extends TestCase {
 		$this->assertArrayHasKey( 'phpunit/phpunit', $composer['require-dev'] );
 		$this->assertArrayHasKey( 'yoast/phpunit-polyfills', $composer['require-dev'] );
 
-		// The base the generated TestCase extends, so an editor has something
-		// in vendor/ to resolve the assertions through.
+		// The two an editor needs: the base the generated TestCase names, and
+		// the stubs declaring everything between that and PHPUnit's own
+		// assertions -- without which `assertNotWPError()` reads as undefined.
 		$this->assertArrayHasKey( 'yoast/wp-test-utils', $composer['require-dev'] );
+		$this->assertArrayHasKey( 'php-stubs/wordpress-tests-stubs', $composer['require-dev'] );
 		$this->assertSame( 'tests/', $composer['autoload-dev']['psr-4']['Acme\\Demo\\Tests\\'] );
 		$this->assertSame( 'phpunit', $composer['scripts']['test'] );
 	}
