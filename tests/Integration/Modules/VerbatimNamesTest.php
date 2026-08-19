@@ -61,7 +61,7 @@ final class VerbatimNamesTest extends TestCase {
 		$fields = $this->plugin->get( Fields::class );
 		$fields->register_fields();
 
-		$this->assertArrayHasKey( 'acme_rating', $fields->get_discovered_fields()['post'] );
+		$this->assertArrayHasKey( 'acme_rating', $fields->get_discovered_fields()['post']['post'] );
 	}
 
 	/**
@@ -74,7 +74,7 @@ final class VerbatimNamesTest extends TestCase {
 		$fields = $this->plugin->get( Fields::class );
 		$fields->register_fields();
 
-		$this->assertArrayHasKey( '_acme_secret', $fields->get_discovered_fields()['post'] );
+		$this->assertArrayHasKey( '_acme_secret', $fields->get_discovered_fields()['post']['post'] );
 		$this->assertTrue( is_protected_meta( '_acme_secret', 'post' ), 'Which is what makes it protected.' );
 	}
 

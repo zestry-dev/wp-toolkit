@@ -142,7 +142,7 @@ final class MakeCommandTest extends TestCase {
 	 */
 	public function data_shaped_names(): array {
 		return array(
-			'a meta key'   => array( 'field', 'field', 'acme_rating', 'resources/fields' ),
+			'a meta key'   => array( 'field', 'field', 'acme_rating', 'resources/fields/post/post' ),
 			'a post type'  => array( 'post-type', 'post-type.php.stub', 'acme_book', 'resources/post-types' ),
 			'a taxonomy'   => array( 'taxonomy', 'taxonomy.php.stub', 'acme_genre', 'resources/taxonomies' ),
 		);
@@ -679,6 +679,66 @@ final class MakeCommandTest extends TestCase {
 		$this->assertFileExists( $this->target_plugin_dir . '/resources/views/emails/receipt.php' );
 	}
 
+	/**
+	 * A field is filed under the table it lives in and the subtype it attaches
+	 * to, so the fields root reads as an index of what is stored where.
+	 */
+	public function test_field_type_files_by_object_type_and_subtype(): void {
+		$this->run_make( array( 'rating' ), array( 'subtypes' => 'book', 'yes' => true ), 'field' );
+
+		$path = $this->target_plugin_dir . '/resources/fields/post/book/rating.php';
+
+		$this->assertFileExists( $path );
+
+		$field = (string) file_get_contents( $path );
+
+		$this->assertStringContainsString( "return array( 'book' );", $field );
+		$this->assertStringContainsString( 'return MetaType::Post;', $field );
+	}
+
+	/**
+	 * No one folder is right for a field on several post types, so it is filed
+	 * under the table alone rather than under an arbitrary one of them.
+	 */
+	public function test_field_type_on_several_subtypes_is_filed_under_the_table(): void {
+		$this->run_make( array( 'rating' ), array( 'subtypes' => 'book,film', 'yes' => true ), 'field' );
+
+		$path = $this->target_plugin_dir . '/resources/fields/post/rating.php';
+
+		$this->assertFileExists( $path );
+		$this->assertStringContainsString( "return array( 'book', 'film' );", (string) file_get_contents( $path ) );
+	}
+
+	/**
+	 * A subtype on a table that has none registers meta nothing ever matches, so
+	 * it is refused here rather than left for discovery to throw over later.
+	 */
+	public function test_field_type_refuses_a_subtype_the_table_does_not_have(): void {
+		$this->run_make(
+			array( 'tier' ),
+			array( 'object-type' => 'user', 'subtypes' => 'administrator', 'yes' => true ),
+			'field'
+		);
+
+		$this->assertStringContainsString( 'user meta has no subtypes', $this->last_error() );
+	}
+
+	/**
+	 * User meta has no subtypes, so there is no second level to file under.
+	 */
+	public function test_field_type_for_user_meta_has_no_subtype_folder(): void {
+		$this->run_make( array( 'tier' ), array( 'object-type' => 'user', 'yes' => true ), 'field' );
+
+		$path = $this->target_plugin_dir . '/resources/fields/user/tier.php';
+
+		$this->assertFileExists( $path );
+
+		$field = (string) file_get_contents( $path );
+
+		$this->assertStringContainsString( 'return array();', $field );
+		$this->assertStringContainsString( 'return MetaType::User;', $field );
+	}
+
 	public function test_view_type_documents_the_scope_it_renders_in(): void {
 		$this->run_make( array( 'receipt' ), array(), 'view' );
 
@@ -1112,7 +1172,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'EntityField' ), 'field' );
 
-		$written = (string) file_get_contents( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/resources/fields/post/acme-rating.php' );
 
 		$this->assertStringContainsString( 'use ' . self::FIXTURE_NAMESPACE . '\\Abstracts\\EntityField;', $written );
 		$this->assertStringContainsString( 'extends EntityField', $written );
@@ -1142,7 +1202,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'EntityField' ), 'field' );
 
-		$written = (string) file_get_contents( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/resources/fields/post/acme-rating.php' );
 
 		// Throws a ParseError if what was written is not PHP.
 		token_get_all( $written, TOKEN_PARSE );
@@ -1170,7 +1230,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'EntityField' ), 'field' );
 
-		$written = (string) file_get_contents( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/resources/fields/post/acme-rating.php' );
 
 		$this->assertStringContainsString(
 			"\t/**\n\t * Render the stored value for display.\n"
@@ -1197,7 +1257,7 @@ final class MakeCommandTest extends TestCase {
 			'field'
 		);
 
-		$this->assertFileExists( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/resources/fields/post/acme-rating.php' );
 	}
 
 	/**
@@ -1213,7 +1273,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->assertStringContainsString( 'does not extend', $this->last_error() );
 		$this->assertFileDoesNotExist(
-			$this->target_plugin_dir . '/resources/fields/acme-rating.php',
+			$this->target_plugin_dir . '/resources/fields/post/acme-rating.php',
 			'Refused before anything was written.'
 		);
 	}
@@ -1227,7 +1287,7 @@ final class MakeCommandTest extends TestCase {
 		$this->run_make( array( 'acme-rating' ), array( 'extends' => 'SealedField' ), 'field' );
 
 		$this->assertStringContainsString( 'is final', $this->last_error() );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/resources/fields/post/acme-rating.php' );
 	}
 
 	/**
@@ -1245,7 +1305,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->assertStringContainsString( 'could be loaded', $error );
 		$this->assertStringContainsString( 'Abstracts\\NoSuchField', $error, 'It says where it looked.' );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/resources/fields/post/acme-rating.php' );
 	}
 
 	/**
@@ -1340,9 +1400,9 @@ final class MakeCommandTest extends TestCase {
 	public function test_without_the_flag_the_types_own_stub_is_still_used(): void {
 		$this->use_fixture_namespace();
 
-		$this->run_make( array( 'acme-rating' ), array(), 'field' );
+		$this->run_make( array( 'acme-rating' ), array( 'yes' => true ), 'field' );
 
-		$written = (string) file_get_contents( $this->target_plugin_dir . '/resources/fields/acme-rating.php' );
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/resources/fields/post/post/acme-rating.php' );
 
 		$this->assertStringContainsString( 'extends Field', $written );
 		$this->assertStringContainsString( 'public function subtypes(): array {', $written );

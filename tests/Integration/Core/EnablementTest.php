@@ -9,6 +9,7 @@ use Zestry\WPToolkit\Modules\AdminPages\AdminPages;
 use Zestry\WPToolkit\Modules\Ajax\Ajax;
 use Zestry\WPToolkit\Modules\Cron\Cron;
 use Zestry\WPToolkit\Modules\Fields\Fields;
+use Zestry\WPToolkit\Modules\Fields\MetaType;
 use Zestry\WPToolkit\Modules\PostTypes\PostTypes;
 use Zestry\WPToolkit\Modules\RestApi\RestApi;
 use Zestry\WPToolkit\Tests\Support\TestCase;
@@ -239,7 +240,11 @@ final class EnablementTest extends TestCase {
 		$fields = $this->plugin->get( Fields::class );
 		do_action( 'init' );
 
-		$this->assertArrayHasKey( 'off_key', $fields->get_all_fields(), 'Declared, so listed.' );
+		$this->assertArrayHasKey(
+			'off_key',
+			$fields->get_fields_of( MetaType::Post, 'zestry_enumerable' ),
+			'Declared, so listed.'
+		);
 		$this->assertArrayNotHasKey(
 			'off_key',
 			get_registered_meta_keys( 'post', 'zestry_enumerable' ),

@@ -177,7 +177,7 @@ final class FieldsTest extends TestCase {
 		$this->write_field( 'acme-rating' );
 		$this->boot()->register_fields();
 
-		$this->assertArrayHasKey( 'acme-rating', $this->boot()->get_discovered_fields()['post'] );
+		$this->assertArrayHasKey( 'acme-rating', $this->boot()->get_discovered_fields()['post']['post'] );
 	}
 
 	public function test_an_undeclared_field_leaves_wordpress_to_decide(): void {
@@ -522,7 +522,7 @@ final class FieldsTest extends TestCase {
 				. "public function is_shown_in_rest(): bool|array { return array( 'schema' => array( 'minimum' => 1, 'maximum' => 5 ) ); }\n"
 		);
 
-		$schema = $this->boot()->get_field( 'acme-rating' )->get_schema();
+		$schema = $this->boot()->get_field( 'acme-rating', MetaType::Post, 'post' )->get_schema();
 
 		$this->assertSame( 'integer', $schema['type'] );
 		$this->assertSame( 'Out of five.', $schema['description'] );
@@ -580,6 +580,207 @@ final class FieldsTest extends TestCase {
 		$this->assertTrue( $fields->set( $term_id, 'acme-colour', 'blue', MetaType::Term ) );
 
 		unregister_meta_key( 'term', 'acme-colour', 'category' );
+	}
+
+	/**
+	 * The whole point of the accessors is that they refuse a key this plugin
+	 * does not own -- and ownership is per subtype, because that is how
+	 * WordPress registers a key. A field declared on `post` never registered
+	 * anything for `page`, so a write there would store a raw value past the
+	 * type, the schema and the sanitiser.
+	 */
+	public function test_a_write_to_a_subtype_the_field_never_named_is_refused(): void {
+		$this->write_rated_field();
+
+		$fields  = $this->boot();
+		$page_id = self::factory()->post->create( array( 'post_type' => 'page' ) );
+
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'No post field declares the meta key "acme-rating" for "page"' );
+
+		$fields->set( $page_id, 'acme-rating', 'ninety-nine' );
+	}
+
+	/**
+	 * The same field, on the post type it did name.
+	 */
+	public function test_the_same_write_is_accepted_on_a_subtype_the_field_named(): void {
+		$this->write_rated_field();
+
+		$fields = $this->boot();
+		$fields->register_fields();
+
+		$this->assertTrue( $fields->set( self::factory()->post->create(), 'acme-rating', 4 ) );
+	}
+
+	/**
+	 * WordPress keys its own registry by object type, subtype and then meta key,
+	 * so one key holds an integer on one post type and a string on another. This
+	 * has to be able to say the same thing.
+	 */
+	public function test_one_key_on_two_post_types_is_two_registrations(): void {
+		register_post_type( 'zestry_book', array( 'public' => true, 'show_in_rest' => true ) );
+		register_post_type( 'zestry_film', array( 'public' => true, 'show_in_rest' => true ) );
+
+		$this->write_field(
+			'rating-book',
+			array( 'zestry_book' ),
+			"public function key(): string { return 'rating'; }\n"
+				. "public function type(): string { return 'integer'; }\n"
+		);
+		$this->write_field(
+			'rating-film',
+			array( 'zestry_film' ),
+			"public function key(): string { return 'rating'; }\n"
+		);
+
+		$fields = $this->boot();
+		$fields->register_fields();
+
+		$this->assertSame( 'integer', get_registered_meta_keys( 'post', 'zestry_book' )['rating']['type'] );
+		$this->assertSame( 'string', get_registered_meta_keys( 'post', 'zestry_film' )['rating']['type'] );
+
+		$book_id = self::factory()->post->create( array( 'post_type' => 'zestry_book' ) );
+		$film_id = self::factory()->post->create( array( 'post_type' => 'zestry_film' ) );
+
+		// Each field's own type governs its own post type, and neither the other's.
+		$this->assertTrue( $fields->set( $book_id, 'rating', 4 ) );
+		$this->assertTrue( $fields->set( $film_id, 'rating', 'four' ) );
+		$this->assertInstanceOf( \WP_Error::class, $fields->set( $film_id, 'rating', 4 ) );
+
+		unregister_meta_key( 'post', 'rating', 'zestry_book' );
+		unregister_meta_key( 'post', 'rating', 'zestry_film' );
+		unregister_post_type( 'zestry_book' );
+		unregister_post_type( 'zestry_film' );
+	}
+
+	/**
+	 * Directories under the fields root are organization and nothing else, so
+	 * two of them may hold one filename -- which is the readable way to write
+	 * the pair above, with no key() override in either file.
+	 */
+	public function test_two_folders_may_hold_the_same_filename(): void {
+		register_post_type( 'zestry_book', array( 'public' => true ) );
+		register_post_type( 'zestry_film', array( 'public' => true ) );
+
+		mkdir( $this->plugin_dir . '/resources/fields/books' );
+		mkdir( $this->plugin_dir . '/resources/fields/films' );
+
+		$this->write_field( 'books/rating', array( 'zestry_book' ), "public function type(): string { return 'integer'; }\n" );
+		$this->write_field( 'films/rating', array( 'zestry_film' ) );
+
+		$fields = $this->boot();
+		$fields->register_fields();
+
+		$this->assertSame( 'integer', get_registered_meta_keys( 'post', 'zestry_book' )['rating']['type'] );
+		$this->assertSame( 'string', get_registered_meta_keys( 'post', 'zestry_film' )['rating']['type'] );
+
+		unregister_meta_key( 'post', 'rating', 'zestry_book' );
+		unregister_meta_key( 'post', 'rating', 'zestry_film' );
+		unregister_post_type( 'zestry_book' );
+		unregister_post_type( 'zestry_film' );
+	}
+
+	/**
+	 * Sharing a key is legal only where the subtypes do not meet. Two files on
+	 * one post type means the second registration replaces the first, leaving a
+	 * file on disk that reads as though it does something.
+	 */
+	public function test_two_files_claiming_one_key_on_one_subtype_throw(): void {
+		$this->write_field( 'rating-a', array( 'post' ), "public function key(): string { return 'rating'; }\n" );
+		$this->write_field( 'rating-b', array( 'post', 'page' ), "public function key(): string { return 'rating'; }\n" );
+
+		$this->expectException( DiscoveryException::class );
+		$this->expectExceptionMessage( 'declare the post meta key "rating" for "post"' );
+
+		$this->boot()->get_discovered_fields();
+	}
+
+	/**
+	 * A field naming no subtypes is registered against every one, so it overlaps
+	 * a named claim on its key -- the case a per-subtype check alone would miss.
+	 */
+	public function test_an_every_subtype_field_overlaps_a_named_one(): void {
+		$this->write_field( 'rating-all', array(), "public function key(): string { return 'rating'; }\n" );
+		$this->write_field( 'rating-post', array( 'post' ), "public function key(): string { return 'rating'; }\n" );
+
+		$this->expectException( DiscoveryException::class );
+		$this->expectExceptionMessage( 'One key, one file per subtype' );
+
+		$this->boot()->get_discovered_fields();
+	}
+
+	/**
+	 * WordPress asks is_protected_meta() with an object type and a key, never a
+	 * subtype, so two fields sharing a key have one answer between them.
+	 */
+	public function test_two_fields_sharing_a_key_may_not_disagree_about_protection(): void {
+		register_post_type( 'zestry_book', array( 'public' => true ) );
+		register_post_type( 'zestry_film', array( 'public' => true ) );
+
+		$this->write_field(
+			'rating-book',
+			array( 'zestry_book' ),
+			"public function key(): string { return 'rating'; }\n"
+				. "public function is_protected(): ?bool { return true; }\n"
+		);
+		$this->write_field(
+			'rating-film',
+			array( 'zestry_film' ),
+			"public function key(): string { return 'rating'; }\n"
+				. "public function is_protected(): ?bool { return false; }\n"
+		);
+
+		try {
+			$this->expectException( DiscoveryException::class );
+			$this->expectExceptionMessage( 'disagree about is_protected()' );
+
+			$this->boot()->register_fields();
+		} finally {
+			unregister_post_type( 'zestry_book' );
+			unregister_post_type( 'zestry_film' );
+		}
+	}
+
+	/**
+	 * `get_object_subtype()` answers `user` for every user, so meta registered
+	 * against a role is never matched: the key does not resolve, its sanitize()
+	 * never runs, and update_user_meta() stores whatever it is handed. None of
+	 * that is visible, so it is refused at discovery.
+	 */
+	public function test_a_subtype_on_an_object_type_that_has_none_throws(): void {
+		$this->write_field(
+			'acme-tier',
+			array( 'administrator' ),
+			"public function object_type(): MetaType { return MetaType::User; }\n"
+		);
+
+		$this->expectException( DiscoveryException::class );
+		$this->expectExceptionMessage( 'on user meta, which has no subtypes' );
+
+		$this->boot()->get_discovered_fields();
+	}
+
+	/**
+	 * The same field with no subtypes attaches to every user, which is the only
+	 * shape user meta has.
+	 */
+	public function test_user_meta_declaring_no_subtypes_is_accepted(): void {
+		$this->write_field(
+			'acme-tier',
+			array(),
+			"public function object_type(): MetaType { return MetaType::User; }\n"
+		);
+
+		$fields = $this->boot();
+		$fields->register_fields();
+
+		$user_id = self::factory()->user->create();
+
+		$this->assertTrue( $fields->set( $user_id, 'acme-tier', 'gold', MetaType::User ) );
+		$this->assertSame( 'gold', $fields->get( $user_id, 'acme-tier', null, MetaType::User ) );
+
+		unregister_meta_key( 'user', 'acme-tier' );
 	}
 
 	public function test_a_missing_default_directory_is_not_an_error(): void {

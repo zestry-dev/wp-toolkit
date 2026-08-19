@@ -93,12 +93,22 @@ abstract class Field implements PluginAware {
 	 * name the file with a prefix when the field attaches to a post type you do
 	 * not own.
 	 *
+	 * **The filename, never the folders above it.** `wp zt make field` files each
+	 * one under `{object-type}/{subtype}/`, and nothing reads that: a meta key is
+	 * a database column, so the folder a file sits in must not be able to change
+	 * the key its rows are found by. Rearrange them freely. What a field attaches
+	 * to is {@see subtypes()}, in the file.
+	 *
 	 * A leading underscore works, so `resources/fields/_acme_secret.php` stores under
 	 * `_acme_secret` — WordPress's mark for protected meta. The filename is the
 	 * key, exactly as written, because the key is what stored rows are found by.
 	 * {@see is_protected()} is the other way to say the same thing, for a key
-	 * whose spelling you would rather choose freely. Override this only for a
-	 * key a filename genuinely cannot hold.
+	 * whose spelling you would rather choose freely.
+	 *
+	 * Override this for a key a filename genuinely cannot hold — or to give two
+	 * fields one key, which is legal as long as their {@see subtypes()} do not
+	 * overlap. Two files in different folders may simply share a filename, and
+	 * that is the easier way to say the same thing.
 	 *
 	 * @return string
 	 */
@@ -120,6 +130,14 @@ abstract class Field implements PluginAware {
 	 *
 	 * Post type names for post meta, taxonomy names for term meta, comment types
 	 * for comment meta. Users have no subtypes.
+	 *
+	 * **This is what decides the field owns its key**, not the filename and not
+	 * the folder it sits in. A meta key belongs to a subtype, the way WordPress
+	 * registers it: `rating` on `book` and `rating` on `movie` can be two fields
+	 * with a type and a schema each. So naming your subtypes is also what stops
+	 * {@see \Zestry\WPToolkit\Modules\Fields\Fields::set()} writing this field's
+	 * key to a post type it was never registered for — a write nothing here
+	 * would sanitise or validate, because to WordPress it is someone else's key.
 	 *
 	 * An empty list attaches the field to **every** subtype — every post type,
 	 * every taxonomy — which is what you want for user meta and rarely what you
@@ -241,6 +259,10 @@ abstract class Field implements PluginAware {
 	 * > -- so a field declared on `page` alone still answers for that key across
 	 * > every post type. A key is one key; only the subtypes it is *registered*
 	 * > against are narrower.
+	 * >
+	 * > This is the one thing two fields sharing a key cannot each decide for
+	 * > themselves. Where they disagree, discovery says so rather than letting
+	 * > whichever was read last quietly win.
 	 *
 	 * `null`, the default, defers to WordPress -- so a key already named with a
 	 * leading underscore stays protected without saying so twice.

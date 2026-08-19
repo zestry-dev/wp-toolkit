@@ -11,6 +11,8 @@ Registers post meta from files, with types, sanitisers and permissions.
 
 A file in `resources/fields/` returns a `Field` naming the post types it attaches to — so a field on your own post type and a field on core's `post` are written the same way, in the same place.
 
+`wp zt make field` files each one under `{object-type}/{subtype}/`, so the directory reads as an index of what is stored where. **Nothing reads those folders** — the filename is the key and `Field::subtypes()` is what the field attaches to — so rearrange them whenever the grouping stops helping. Two folders may hold the same filename, which is how one key holds an integer on `book` and a string on `movie`.
+
 Registering meta is what turns a bare `update_post_meta()` key into something typed, sanitised, permission-checked and visible to the block editor, which reads and writes meta over REST.
 
 **A field holds one value per post.** For several, store an array: one row, which is the shape REST and the block editor expect. You never have to ask whether a key holds one value or many, because it always holds one.
@@ -19,7 +21,9 @@ That costs you one thing — querying. `meta_query` matches a single row's value
 
 ## Reading and writing
 
-`get()`, `has()`, `set()` and `delete()` work on **the fields this plugin registers**, and refuse anything else — a key no file declares, and a key whose file switched itself off. That refusal is the point: a mistyped key handed to `get_post_meta()` returns `''`, which looks exactly like a field nobody has filled in.
+`get()`, `has()`, `set()` and `delete()` work on **the fields this plugin registers**, and refuse anything else — a key no file declares, a key whose file switched itself off, and a key declared for some other post type than the one you handed them. That refusal is the point: a mistyped key handed to `get_post_meta()` returns `''`, which looks exactly like a field nobody has filled in.
+
+**A meta key is owned per subtype**, which is how WordPress registers one and why these take the object rather than the key alone: they ask `get_object_subtype()` what they are holding, and look the key up for *that*. A field naming `book` is simply not found for a movie — where the key may well be another plugin's, and where writing it would store a value nothing here sanitises or validates.
 
 To list what a plugin declares rather than what it registers — a settings screen showing which features are available to switch on — use `get_all_fields()` or `get_fields_of()`, which include the switched-off ones.
 
@@ -52,11 +56,11 @@ return array(
 ## A field
 
 ```php
-// resources/fields/acme_rating.php -- the filename is the meta key
+// resources/fields/post/book/acme_rating.php -- the filename is the meta key
 return new class extends Field {
 
     public function subtypes(): array {
-        return array( 'book', 'post' );
+        return array( 'book' );
     }
 
     public function type(): string {
@@ -93,7 +97,7 @@ Where fields are discovered, relative to the plugin root.
 
 ### `get_discovered_fields()`
 
-Every discovered field, by object type and then by meta key.
+Every discovered field, by object type, then subtype, then meta key.
 
 ```php
 public function get_discovered_fields(): array
@@ -102,10 +106,14 @@ public function get_discovered_fields(): array
 |  | Details |
 |---|---|
 | **Parameters** | — |
-| **Return** | Object type => meta key => instance |
-| **Throws** | `DiscoveryException` — When a file returns the wrong value |
+| **Return** | Object type => subtype => meta key => instance |
+| **Throws** | `DiscoveryException` — When a file returns the wrong value, or two files claim one key on one subtype |
 
-Nested because a meta key is unique only within an object type. Use `get_fields_of()` when you know which type you want.
+The same three levels WordPress keys its own registry by, and for the same reason: a meta key is unique only within one subtype of one object type. `acme_note` on a post and on a term are two keys in two tables, and `rating` on `book` and on `movie` are two registrations with a type and a schema each — which is what WordPress stores, and what this has to be able to say.
+
+A field naming no subtypes sits under the `''` key, which is how WordPress spells "every subtype" and the only shape user meta has. A field naming several appears under each of them, exactly as it is registered several times.
+
+Reading it directly is rarely what you want — `get_fields_of()` resolves a subtype against the `''` bucket the way a lookup has to.
 
 Everything the directory declares, including a field whose `is_enabled()` returns false — so a screen offering to switch features on can list the ones currently switched off. Only `register_fields()` acts on the answer, and the value accessors refuse a key belonging to a field that is switched off.
 
@@ -127,6 +135,8 @@ public function get_key_of( Field $field ): string
 
 The same reverse lookup `PostTypes::get_post_type_of()` does, so a field named by its filename never repeats that name inside the file.
 
+The filename alone, never the folders above it: a meta key is a database column, so the folder a file sits in cannot decide what its rows are stored under.
+
 <br>
 
 ### `get( $object_id, $key, $fallback, $type )`
@@ -141,7 +151,7 @@ public function get( int $object_id, string $key, mixed $fallback = null, MetaTy
 |---|---|
 | **Parameters** | `$object_id` — The object to read from<br>`$key` — A meta key one of your fields declares<br>`$fallback` — Returned when the post has no value stored<br>`$type` — Which meta table the key lives in. Post meta by default |
 | **Return** | The stored value, or `$fallback` |
-| **Throws** | `InvalidArgumentException` — When no field declares that key |
+| **Throws** | `InvalidArgumentException` — When no field declares that key for this object's subtype |
 
 Two things this does that `get_post_meta()` cannot. It always reads a single value, because a field here always holds one — with the bare function, forgetting its `$single` argument hands back an array where you expected a value. And it refuses a key no field declares, rather than returning `''` for a typo the way the bare function does.
 
@@ -161,7 +171,7 @@ public function has( int $object_id, string $key, MetaType $type = MetaType::Pos
 |---|---|
 | **Parameters** | `$object_id` — The object to check<br>`$key` — A meta key one of your fields declares<br>`$type` — Which meta table the key lives in. Post meta by default |
 | **Return** | `bool` |
-| **Throws** | `InvalidArgumentException` — When no field declares that key |
+| **Throws** | `InvalidArgumentException` — When no field declares that key for this object's subtype |
 
 Distinct from `null !== get()`, which cannot tell a stored null from a post that has never had the field set.
 
@@ -179,7 +189,7 @@ public function set( int $object_id, string $key, mixed $value, MetaType $type =
 |---|---|
 | **Parameters** | `$object_id` — The object to write to<br>`$key` — A meta key one of your fields declares<br>`$value` — The value to store<br>`$type` — Which meta table the key lives in. Post meta by default |
 | **Return** | True once written, a `WP_Error` when the field refused the value, false when nothing was written for any other reason |
-| **Throws** | `InvalidArgumentException` — When no field declares that key |
+| **Throws** | `InvalidArgumentException` — When no field declares that key for this object's subtype |
 
 The field's `sanitize()` shapes the value and its `validate()` may then refuse it — WordPress's order for meta, applied from inside the write rather than here, so `update_post_meta()` behaves identically.
 
@@ -201,7 +211,7 @@ public function delete( int $object_id, string $key, MetaType $type = MetaType::
 |---|---|
 | **Parameters** | `$object_id` — The object to remove it from<br>`$key` — A meta key one of your fields declares<br>`$type` — Which meta table the key lives in. Post meta by default |
 | **Return** | — |
-| **Throws** | `InvalidArgumentException` — When no field declares that key |
+| **Throws** | `InvalidArgumentException` — When no field declares that key for this object's subtype |
 
 Removing something that was never there is not an error.
 
@@ -209,7 +219,7 @@ Removing something that was never there is not an error.
 
 ### `get_all_fields()`
 
-Every declared field, flattened, for iterating over all of them.
+Every declared field, for iterating over all of them.
 
 ```php
 public function get_all_fields(): array
@@ -218,44 +228,52 @@ public function get_all_fields(): array
 |  | Details |
 |---|---|
 | **Parameters** | — |
-| **Return** | Meta key => instance. A key shared by two object types appears once; use `get_fields_of()` to tell them apart |
+| **Return** | Every instance, once each — a field attached to several subtypes is not repeated |
 | **Throws** | `DiscoveryException` — When discovery fails |
+
+A plain list rather than a map, because a meta key does not identify one field: two of them can share a key on different subtypes. Use `get_fields_of()` when you want them keyed.
 
 Includes the switched-off ones — this is enumeration, and that is what it is for. Ask an instance's `is_enabled()` to tell them apart.
 
 <br>
 
-### `get_fields_of( $type )`
+### `get_fields_of( $type, $subtype )`
 
-Every field of one object type, by meta key.
+Every field attached to one subtype, by meta key.
 
 ```php
-public function get_fields_of( MetaType $type ): array
+public function get_fields_of( MetaType $type, string $subtype = '' ): array
 ```
 
 |  | Details |
 |---|---|
-| **Parameters** | `$type` — The object type |
+| **Parameters** | `$type` — The object type<br>`$subtype` — The subtype within it. `''` asks for the fields attached to every subtype and nothing else |
 | **Return** | `array` |
 | **Throws** | `DiscoveryException` — When discovery fails |
+
+The subtype's own fields over the ones attached to every subtype, so a `book` field named `rating` wins over a field of that key attached to all post types. That is the order WordPress picks a `sanitize_callback` and an `auth_callback` in — the subtype's if it has one, the general one otherwise. Its own `get_registered_meta_keys()` does not fall back at all, and reads one subtype's bucket exactly.
+
+The subtype is a post type name for post meta and a taxonomy name for term meta. Users and comments have one apiece, and `get_object_subtype()` is what names it for an object you are holding.
 
 Includes the switched-off ones, on the same terms as `get_all_fields()`.
 
 <br>
 
-### `get_field( $key, $type )`
+### `get_field( $key, $type, $subtype )`
 
-The field declaring a key, within an object type.
+The field declaring a key, within one subtype of an object type.
 
 ```php
-public function get_field( string $key, MetaType $type = MetaType::Post ): Field
+public function get_field( string $key, MetaType $type = MetaType::Post, string $subtype = '' ): Field
 ```
 
 |  | Details |
 |---|---|
-| **Parameters** | `$key` — The meta key<br>`$type` — The object type it belongs to. Post meta by default |
+| **Parameters** | `$key` — The meta key<br>`$type` — The object type it belongs to. Post meta by default<br>`$subtype` — The subtype it is attached to |
 | **Return** | `Field` |
-| **Throws** | `InvalidArgumentException` — When no field of that type declares that key, or the field that does is switched off |
+| **Throws** | `InvalidArgumentException` — When no field of that subtype declares that key, or the field that does is switched off |
+
+**A meta key is owned per subtype, not per plugin.** `rating` on `book` and `rating` on `movie` can be two fields with a type and a schema each, so a key alone does not say which one you mean — this is why the accessors ask `get_object_subtype()` about the object they were handed rather than looking the key up on its own. Leaving `$subtype` empty asks only about the fields attached to every subtype.
 
 A field that switched itself off is refused too, with its own message: its meta was never registered, so reading it would hand back `''` and writing it would store a value nothing knows the shape of — the two failures this method exists to prevent. Enumerate with `get_fields_of()` when you want everything declared.
 

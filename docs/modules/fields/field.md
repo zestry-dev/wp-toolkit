@@ -58,7 +58,7 @@ declare( strict_types=1 );
 \defined( 'ABSPATH' ) || exit;
 
 use Acme\Plugin\Core\Modules\Fields\Field;
-// use Acme\Plugin\Core\Modules\Fields\MetaType;
+use Acme\Plugin\Core\Modules\Fields\MetaType;
 
 return new class() extends Field {
 
@@ -78,15 +78,20 @@ return new class() extends Field {
 
 	// What this attaches to within its object type: post type names for post
 	// meta, taxonomy names for term meta. An empty list means every subtype.
+	//
+	// This is also what says the field owns its key. A meta key belongs to a
+	// subtype, so naming yours is what stops the Fields accessors writing this
+	// key to a post type it was never registered for -- where nothing here
+	// would sanitize or validate it.
 	public function subtypes(): array {
-		return array( 'post' );
+		return array( 'book' );
 	}
 
-	// Post meta by default. Term, User and Comment are the others.
-	//
-	// public function object_type(): MetaType {
-	//     return MetaType::Term;
-	// }
+	// Which meta table this is stored in. Post, Term, User or Comment -- each
+	// is a separate table, and a key is only ever unique within one of them.
+	public function object_type(): MetaType {
+		return MetaType::Post;
+	}
 
 	// string, boolean, integer, number, array or object. An array or object
 	// shown in REST needs a schema; see is_shown_in_rest().
@@ -145,7 +150,11 @@ public function key(): string
 
 Your filename, verbatim: `resources/fields/acme_rating.php` stores under `acme_rating`. Post meta keys are shared across every plugin on a post, so name the file with a prefix when the field attaches to a post type you do not own.
 
-A leading underscore works, so `resources/fields/_acme_secret.php` stores under `_acme_secret` — WordPress's mark for protected meta. The filename is the key, exactly as written, because the key is what stored rows are found by. `is_protected()` is the other way to say the same thing, for a key whose spelling you would rather choose freely. Override this only for a key a filename genuinely cannot hold.
+**The filename, never the folders above it.** `wp zt make field` files each one under `{object-type}/{subtype}/`, and nothing reads that: a meta key is a database column, so the folder a file sits in must not be able to change the key its rows are found by. Rearrange them freely. What a field attaches to is `subtypes()`, in the file.
+
+A leading underscore works, so `resources/fields/_acme_secret.php` stores under `_acme_secret` — WordPress's mark for protected meta. The filename is the key, exactly as written, because the key is what stored rows are found by. `is_protected()` is the other way to say the same thing, for a key whose spelling you would rather choose freely.
+
+Override this for a key a filename genuinely cannot hold — or to give two fields one key, which is legal as long as their `subtypes()` do not overlap. Two files in different folders may simply share a filename, and that is the easier way to say the same thing.
 
 <br>
 
@@ -180,6 +189,8 @@ public function subtypes(): array
 | **Throws** | — |
 
 Post type names for post meta, taxonomy names for term meta, comment types for comment meta. Users have no subtypes.
+
+**This is what decides the field owns its key**, not the filename and not the folder it sits in. A meta key belongs to a subtype, the way WordPress registers it: `rating` on `book` and `rating` on `movie` can be two fields with a type and a schema each. So naming your subtypes is also what stops `Fields::set()` writing this field's key to a post type it was never registered for — a write nothing here would sanitise or validate, because to WordPress it is someone else's key.
 
 An empty list attaches the field to **every** subtype — every post type, every taxonomy — which is what you want for user meta and rarely what you want for post meta.
 
@@ -302,6 +313,8 @@ field protected and no block can bind to it.
 
 > [!NOTE]
 > **The answer is per object type, not per subtype.** WordPress hands the filter `post`, `term`, `user` or `comment` and never `page` or `product` — so a field declared on `page` alone still answers for that key across every post type. A key is one key; only the subtypes it is *registered* against are narrower.
+>
+> This is the one thing two fields sharing a key cannot each decide for themselves. Where they disagree, discovery says so rather than letting whichever was read last quietly win.
 
 `null`, the default, defers to WordPress — so a key already named with a leading underscore stays protected without saying so twice.
 

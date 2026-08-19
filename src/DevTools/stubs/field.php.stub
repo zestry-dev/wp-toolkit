@@ -9,7 +9,7 @@ declare( strict_types=1 );
 \defined( 'ABSPATH' ) || exit;
 
 use {{copied_namespace}}\Modules\Fields\Field;
-// use {{copied_namespace}}\Modules\Fields\MetaType;
+use {{copied_namespace}}\Modules\Fields\MetaType;
 
 return new class() extends Field {
 
@@ -29,15 +29,20 @@ return new class() extends Field {
 
 	// What this attaches to within its object type: post type names for post
 	// meta, taxonomy names for term meta. An empty list means every subtype.
+	//
+	// This is also what says the field owns its key. A meta key belongs to a
+	// subtype, so naming yours is what stops the Fields accessors writing this
+	// key to a post type it was never registered for -- where nothing here
+	// would sanitize or validate it.
 	public function subtypes(): array {
-		return array( 'post' );
+		return {{subtypes}};
 	}
 
-	// Post meta by default. Term, User and Comment are the others.
-	//
-	// public function object_type(): MetaType {
-	//     return MetaType::Term;
-	// }
+	// Which meta table this is stored in. Post, Term, User or Comment -- each
+	// is a separate table, and a key is only ever unique within one of them.
+	public function object_type(): MetaType {
+		return MetaType::{{object_type}};
+	}
 
 	// string, boolean, integer, number, array or object. An array or object
 	// shown in REST needs a schema; see is_shown_in_rest().

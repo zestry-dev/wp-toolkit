@@ -24,6 +24,13 @@ use Zestry\WPToolkit\Modules\Path;
  * to — so a field on your own post type and a field on core's `post` are written
  * the same way, in the same place.
  *
+ * `wp zt make field` files each one under `{object-type}/{subtype}/`, so the
+ * directory reads as an index of what is stored where. **Nothing reads those
+ * folders** — the filename is the key and {@see Field::subtypes()} is what the
+ * field attaches to — so rearrange them whenever the grouping stops helping.
+ * Two folders may hold the same filename, which is how one key holds an integer
+ * on `book` and a string on `movie`.
+ *
  * Registering meta is what turns a bare `update_post_meta()` key into something
  * typed, sanitised, permission-checked and visible to the block editor, which
  * reads and writes meta over REST.
@@ -43,9 +50,17 @@ use Zestry\WPToolkit\Modules\Path;
  *
  * {@see get()}, {@see has()}, {@see set()} and {@see delete()} work on **the
  * fields this plugin registers**, and refuse anything else — a key no file
- * declares, and a key whose file switched itself off. That refusal is the
- * point: a mistyped key handed to `get_post_meta()` returns `''`, which looks
- * exactly like a field nobody has filled in.
+ * declares, a key whose file switched itself off, and a key declared for some
+ * other post type than the one you handed them. That refusal is the point: a
+ * mistyped key handed to `get_post_meta()` returns `''`, which looks exactly
+ * like a field nobody has filled in.
+ *
+ * **A meta key is owned per subtype**, which is how WordPress registers one and
+ * why these take the object rather than the key alone: they ask
+ * `get_object_subtype()` what they are holding, and look the key up for *that*.
+ * A field naming `book` is simply not found for a movie — where the key may
+ * well be another plugin's, and where writing it would store a value nothing
+ * here sanitises or validates.
  *
  * To list what a plugin declares rather than what it registers — a settings
  * screen showing which features are available to switch on — use
@@ -69,11 +84,11 @@ use Zestry\WPToolkit\Modules\Path;
  *
  * @example A field
  * ```
- * // resources/fields/acme_rating.php -- the filename is the meta key
+ * // resources/fields/post/book/acme_rating.php -- the filename is the meta key
  * return new class extends Field {
  *
  *     public function subtypes(): array {
- *         return array( 'book', 'post' );
+ *         return array( 'book' );
  *     }
  *
  *     public function type(): string {
@@ -105,10 +120,22 @@ class Fields extends Module implements Bootable {
 	private ?array $discovered = null;
 
 	/**
-	 * Every discovered field, by object type and then by meta key.
+	 * Every discovered field, by object type, then subtype, then meta key.
 	 *
-	 * Nested because a meta key is unique only within an object type. Use
-	 * {@see get_fields_of()} when you know which type you want.
+	 * The same three levels WordPress keys its own registry by, and for the same
+	 * reason: a meta key is unique only within one subtype of one object type.
+	 * `acme_note` on a post and on a term are two keys in two tables, and
+	 * `rating` on `book` and on `movie` are two registrations with a type and a
+	 * schema each — which is what WordPress stores, and what this has to be able
+	 * to say.
+	 *
+	 * A field naming no subtypes sits under the `''` key, which is how WordPress
+	 * spells "every subtype" and the only shape user meta has. A field naming
+	 * several appears under each of them, exactly as it is registered several
+	 * times.
+	 *
+	 * Reading it directly is rarely what you want — {@see get_fields_of()}
+	 * resolves a subtype against the `''` bucket the way a lookup has to.
 	 *
 	 * Everything the directory declares, including a field whose `is_enabled()`
 	 * returns false — so a screen offering to switch features on can list the
@@ -116,33 +143,30 @@ class Fields extends Module implements Bootable {
 	 * answer, and the value accessors refuse a key belonging to a field that is
 	 * switched off.
 	 *
-	 * @return array<string, array<string, Field>> Object type => meta key => instance.
-	 * @throws DiscoveryException When a file returns the wrong value.
+	 * @return array<string, array<string, array<string, Field>>> Object type => subtype => meta key => instance.
+	 * @throws DiscoveryException When a file returns the wrong value, or two files claim one key on one subtype.
 	 */
 	public function get_discovered_fields(): array {
 		$fields = array();
+		$claims = array();
 
 		foreach ( $this->get_fields_by_file() as $file => $field ) {
-			$type = $field->object_type()->value;
-			$key  = $field->key();
+			$type     = $field->object_type()->value;
+			$key      = $field->key();
+			$subtypes = $field->subtypes();
 
-			if ( isset( $fields[ $type ][ $key ] ) ) {
-				// Nesting settles the cross-type case -- `acme_note` on a post
-				// and on a term are two keys in two tables. Two files claiming
-				// one key on one type is not that, and keeping either silently
-				// would leave the other registered but unreachable.
-				throw new DiscoveryException(
-					\sprintf(
-						'Both %1$s.php and another file declare the %2$s meta key "%3$s". One key, one file -- switching one of them off does not settle which owns the key.',
-						$file,
-						$type,
-						$key
-					)
-				);
+			$this->assert_subtypes_are_possible( $file, $field, $subtypes );
+
+			// No subtype means every subtype, which is how WordPress reads an
+			// empty `object_subtype` -- and the only shape user meta has.
+			foreach ( array() === $subtypes ? array( '' ) : $subtypes as $subtype ) {
+				$claims[ $type ][ $key ][ $subtype ][] = $file;
+
+				$fields[ $type ][ $subtype ][ $key ] = $field;
 			}
-
-			$fields[ $type ][ $key ] = $field;
 		}
+
+		$this->assert_no_overlapping_claims( $claims );
 
 		return $fields;
 	}
@@ -154,20 +178,24 @@ class Fields extends Module implements Bootable {
 	 * does, so a field named by its filename never repeats that name inside the
 	 * file.
 	 *
+	 * The filename alone, never the folders above it: a meta key is a database
+	 * column, so the folder a file sits in cannot decide what its rows are
+	 * stored under.
+	 *
 	 * @param Field $field The instance to look up.
 	 * @return string
 	 * @throws \InvalidArgumentException When the instance was not discovered by this module.
 	 */
 	public function get_key_of( Field $field ): string {
-		$name = \array_search( $field, $this->get_fields_by_file(), true );
+		$path = \array_search( $field, $this->get_fields_by_file(), true );
 
-		if ( false === $name ) {
+		if ( false === $path ) {
 			throw new \InvalidArgumentException(
 				\sprintf( 'The given %s instance was not discovered by this Fields module.', Field::class )
 			);
 		}
 
-		return $name;
+		return \basename( $path );
 	}
 
 	/**
@@ -187,10 +215,10 @@ class Fields extends Module implements Bootable {
 	 * @param mixed  $fallback Returned when the post has no value stored.
 	 * @param MetaType $type     Which meta table the key lives in. Post meta by default.
 	 * @return mixed The stored value, or `$fallback`.
-	 * @throws \InvalidArgumentException When no field declares that key.
+	 * @throws \InvalidArgumentException When no field declares that key for this object's subtype.
 	 */
 	public function get( int $object_id, string $key, mixed $fallback = null, MetaType $type = MetaType::Post ): mixed {
-		$this->get_field( $key, $type );
+		$this->get_field( $key, $type, \get_object_subtype( $type->value, $object_id ) );
 
 		if ( ! \metadata_exists( $type->value, $object_id, $key ) ) {
 			return $fallback;
@@ -209,10 +237,10 @@ class Fields extends Module implements Bootable {
 	 * @param string   $key       A meta key one of your fields declares.
 	 * @param MetaType $type      Which meta table the key lives in. Post meta by default.
 	 * @return bool
-	 * @throws \InvalidArgumentException When no field declares that key.
+	 * @throws \InvalidArgumentException When no field declares that key for this object's subtype.
 	 */
 	public function has( int $object_id, string $key, MetaType $type = MetaType::Post ): bool {
-		$this->get_field( $key, $type );
+		$this->get_field( $key, $type, \get_object_subtype( $type->value, $object_id ) );
 
 		return \metadata_exists( $type->value, $object_id, $key );
 	}
@@ -238,10 +266,10 @@ class Fields extends Module implements Bootable {
 	 * @param mixed    $value     The value to store.
 	 * @param MetaType $type      Which meta table the key lives in. Post meta by default.
 	 * @return bool|\WP_Error True once written, a `WP_Error` when the field refused the value, false when nothing was written for any other reason.
-	 * @throws \InvalidArgumentException When no field declares that key.
+	 * @throws \InvalidArgumentException When no field declares that key for this object's subtype.
 	 */
 	public function set( int $object_id, string $key, mixed $value, MetaType $type = MetaType::Post ): bool|\WP_Error {
-		$field = $this->get_field( $key, $type );
+		$field = $this->get_field( $key, $type, \get_object_subtype( $type->value, $object_id ) );
 
 		// The write is what validates, through the filter this module binds, so
 		// the check lives in one place and covers update_post_meta() too.
@@ -270,47 +298,75 @@ class Fields extends Module implements Bootable {
 	 * @param string   $key       A meta key one of your fields declares.
 	 * @param MetaType $type      Which meta table the key lives in. Post meta by default.
 	 * @return void
-	 * @throws \InvalidArgumentException When no field declares that key.
+	 * @throws \InvalidArgumentException When no field declares that key for this object's subtype.
 	 */
 	public function delete( int $object_id, string $key, MetaType $type = MetaType::Post ): void {
-		$this->get_field( $key, $type );
+		$this->get_field( $key, $type, \get_object_subtype( $type->value, $object_id ) );
 
 		\delete_metadata( $type->value, $object_id, $key );
 	}
 
 	/**
-	 * Every declared field, flattened, for iterating over all of them.
+	 * Every declared field, for iterating over all of them.
+	 *
+	 * A plain list rather than a map, because a meta key does not identify one
+	 * field: two of them can share a key on different subtypes. Use
+	 * {@see get_fields_of()} when you want them keyed.
 	 *
 	 * Includes the switched-off ones — this is enumeration, and that is what it
 	 * is for. Ask an instance's `is_enabled()` to tell them apart.
 	 *
-	 * @return array<string, Field> Meta key => instance. A key shared by two
-	 *                              object types appears once; use
-	 *                              {@see get_fields_of()} to tell them apart.
+	 * @return array<int, Field> Every instance, once each — a field attached to
+	 *                           several subtypes is not repeated.
 	 * @throws DiscoveryException When discovery fails.
 	 */
 	public function get_all_fields(): array {
-		$by_type = \array_values( $this->get_discovered_fields() );
+		$fields = array();
 
-		return array() === $by_type ? array() : \array_merge( ...$by_type );
+		foreach ( $this->get_fields_by_file() as $field ) {
+			$fields[] = $field;
+		}
+
+		return $fields;
 	}
 
 	/**
-	 * Every field of one object type, by meta key.
+	 * Every field attached to one subtype, by meta key.
+	 *
+	 * The subtype's own fields over the ones attached to every subtype, so a
+	 * `book` field named `rating` wins over a field of that key attached to all
+	 * post types. That is the order WordPress picks a `sanitize_callback` and an
+	 * `auth_callback` in — the subtype's if it has one, the general one
+	 * otherwise. Its own `get_registered_meta_keys()` does not fall back at all,
+	 * and reads one subtype's bucket exactly.
+	 *
+	 * The subtype is a post type name for post meta and a taxonomy name for term
+	 * meta. Users and comments have one apiece, and `get_object_subtype()` is
+	 * what names it for an object you are holding.
 	 *
 	 * Includes the switched-off ones, on the same terms as
 	 * {@see get_all_fields()}.
 	 *
-	 * @param MetaType $type The object type.
+	 * @param MetaType $type    The object type.
+	 * @param string   $subtype The subtype within it. `''` asks for the fields attached to every subtype and nothing else.
 	 * @return array<string, Field>
 	 * @throws DiscoveryException When discovery fails.
 	 */
-	public function get_fields_of( MetaType $type ): array {
-		return $this->get_discovered_fields()[ $type->value ] ?? array();
+	public function get_fields_of( MetaType $type, string $subtype = '' ): array {
+		$declared = $this->get_discovered_fields()[ $type->value ] ?? array();
+
+		return ( $declared[ $subtype ] ?? array() ) + ( $declared[''] ?? array() );
 	}
 
 	/**
-	 * The field declaring a key, within an object type.
+	 * The field declaring a key, within one subtype of an object type.
+	 *
+	 * **A meta key is owned per subtype, not per plugin.** `rating` on `book` and
+	 * `rating` on `movie` can be two fields with a type and a schema each, so a
+	 * key alone does not say which one you mean — this is why the accessors ask
+	 * `get_object_subtype()` about the object they were handed rather than
+	 * looking the key up on its own. Leaving `$subtype` empty asks only about the
+	 * fields attached to every subtype.
 	 *
 	 * A field that switched itself off is refused too, with its own message: its
 	 * meta was never registered, so reading it would hand back `''` and writing
@@ -318,20 +374,22 @@ class Fields extends Module implements Bootable {
 	 * method exists to prevent. Enumerate with {@see get_fields_of()} when you
 	 * want everything declared.
 	 *
-	 * @param string   $key  The meta key.
-	 * @param MetaType $type The object type it belongs to. Post meta by default.
+	 * @param string   $key     The meta key.
+	 * @param MetaType $type    The object type it belongs to. Post meta by default.
+	 * @param string   $subtype The subtype it is attached to.
 	 * @return Field
-	 * @throws \InvalidArgumentException When no field of that type declares that key, or the field that does is switched off.
+	 * @throws \InvalidArgumentException When no field of that subtype declares that key, or the field that does is switched off.
 	 */
-	public function get_field( string $key, MetaType $type = MetaType::Post ): Field {
-		$fields = $this->get_fields_of( $type );
+	public function get_field( string $key, MetaType $type = MetaType::Post, string $subtype = '' ): Field {
+		$fields = $this->get_fields_of( $type, $subtype );
 
 		if ( ! isset( $fields[ $key ] ) ) {
 			throw new \InvalidArgumentException(
 				\sprintf(
-					'No %1$s field declares the meta key "%2$s", so this plugin does not own it. Declared: %3$s. Use get_metadata() for meta belonging to WordPress or another plugin.',
+					'No %1$s field declares the meta key "%2$s" for %3$s, so this plugin does not own it there. Declared for %3$s: %4$s. A field attaches to the subtypes its subtypes() names, and owns the key on those alone. Use get_metadata() for meta belonging to WordPress or another plugin.',
 					$type->value,
 					$key,
+					'' === $subtype ? 'every subtype' : '"' . $subtype . '"',
 					array() === $fields ? 'none' : \implode( ', ', \array_keys( $fields ) )
 				)
 			);
@@ -365,7 +423,7 @@ class Fields extends Module implements Bootable {
 		// shows and leave the authorization already decided.
 		$this->filter_protected_meta();
 
-		foreach ( $this->get_all_fields() as $key => $field ) {
+		foreach ( $this->get_all_fields() as $field ) {
 			// Declared but switched off. Discovery lists it either way; this is
 			// where it stops short of a registration, so nothing about it
 			// reaches REST or the block editor.
@@ -374,6 +432,7 @@ class Fields extends Module implements Bootable {
 			}
 
 			$type     = $field->object_type()->value;
+			$key      = $field->key();
 			$subtypes = $field->subtypes();
 
 			// No subtype means every subtype, which is how WordPress reads an
@@ -414,6 +473,10 @@ class Fields extends Module implements Bootable {
 	 * `acme_note` on a post and `acme_note` on a term are different keys, and
 	 * governing someone else's write would be worse than governing none.
 	 *
+	 * The subtype is resolved by the lookup rather than tested afterwards, so a
+	 * field naming `book` governs a book and is simply not found for a movie —
+	 * where the key may well be another plugin's.
+	 *
 	 * @param MetaType  $type       The object type whose filter fired.
 	 * @param null|bool $check      What an earlier filter decided, if anything.
 	 * @param int       $object_id  The object being written to.
@@ -427,21 +490,12 @@ class Fields extends Module implements Bootable {
 			return $check;
 		}
 
-		$field = $this->get_fields_of( $type )[ $meta_key ] ?? null;
+		$subtype = \get_object_subtype( $type->value, $object_id );
+		$field   = $this->get_fields_of( $type, $subtype )[ $meta_key ] ?? null;
 
 		// Nothing this plugin governs -- and a field that switched itself off
 		// registered no meta, so a write to that key is someone else's.
 		if ( null === $field || ! $field->is_enabled() ) {
-			return $check;
-		}
-
-		$subtypes = $field->subtypes();
-
-		// A field naming its subtypes governs only those. One naming none is
-		// registered against every subtype, so it governs every one.
-		if ( array() !== $subtypes
-			&& ! \in_array( \get_object_subtype( $type->value, $object_id ), $subtypes, true )
-		) {
 			return $check;
 		}
 
@@ -453,6 +507,11 @@ class Fields extends Module implements Bootable {
 
 	/**
 	 * Every discovered field, keyed by the file it came from.
+	 *
+	 * The key is the path below the root without its extension, not the bare
+	 * filename: directories here are organization, so `books/rating.php` and
+	 * `films/rating.php` are two files and one meta key, which is legal as long
+	 * as they attach to different subtypes.
 	 *
 	 * @return array<string, Field>
 	 * @throws DiscoveryException When a file returns the wrong value.
@@ -475,19 +534,24 @@ class Fields extends Module implements Bootable {
 
 		$instances = array();
 
+		// Walked to any depth, and a directory means nothing: a meta key is the
+		// `meta_key` column and appears in your REST responses, so nesting a file
+		// cannot change it the way it changes a command's name or a page's place
+		// in the menu. What a field attaches to is `subtypes()`, in the file.
+		// Folders are yours to organize with -- one per post type is the obvious
+		// way, and the toolkit reads nothing into it.
+		//
 		// The filename is only the *default* key -- `Field::key()` overrides it,
-		// and two fields may share a key across object types -- but the default
-		// is spelled the one way, like every other discovered name.
-		// A meta key is the `meta_key` column, and appears in your REST responses.
-		// The filename is the default key, exactly as written.
-		foreach ( $this->walk_folder( $root_dir, array( 'php' ), 1 ) as $file ) {
+		// and two fields may share a key across object types or subtypes -- but
+		// the default is spelled the one way, like every other discovered name.
+		foreach ( $this->walk_folder( $root_dir, array( 'php' ) ) as $file ) {
 			// Wired inside, so is_enabled() can reach a module with `with()` whenever
 			// it is asked. Every file is kept, switched on or off: what a field
 			// declares is readable, and what it *registers* is decided in
 			// register_fields().
 			$instance = $this->wire_field_file( $root_dir . '/' . $file );
 
-			$instances[ \basename( $file, '.php' ) ] = $instance;
+			$instances[ \substr( $file, 0, -\strlen( '.php' ) ) ] = $instance;
 		}
 
 		$this->discovered = $instances;
@@ -539,13 +603,19 @@ class Fields extends Module implements Bootable {
 	 * long after registration, by the capability map, by block bindings, and by
 	 * the Custom Fields panel.
 	 *
+	 * **This is the one answer a subtype cannot narrow.** WordPress hands the
+	 * filter an object type and a key and nothing else, so two fields sharing a
+	 * key on two post types have one answer between them. Disagreeing about it
+	 * is refused here rather than silently resolved, since either resolution
+	 * would leave one field's declaration quietly not doing what it says.
+	 *
 	 * @return void
-	 * @throws DiscoveryException When discovery fails.
+	 * @throws DiscoveryException When discovery fails, or two fields sharing a key disagree about protection.
 	 */
 	private function filter_protected_meta(): void {
 		$decided = array();
 
-		foreach ( $this->get_all_fields() as $key => $field ) {
+		foreach ( $this->get_all_fields() as $field ) {
 			// A field that registers nothing has no business deciding whether a
 			// key it does not own is protected -- this filter answers for every
 			// key on the site.
@@ -555,9 +625,24 @@ class Fields extends Module implements Bootable {
 
 			$protected = $field->is_protected();
 
-			if ( null !== $protected ) {
-				$decided[ $field->object_type()->value ][ $key ] = $protected;
+			if ( null === $protected ) {
+				continue;
 			}
+
+			$type = $field->object_type()->value;
+			$key  = $field->key();
+
+			if ( isset( $decided[ $type ][ $key ] ) && $decided[ $type ][ $key ] !== $protected ) {
+				throw new DiscoveryException(
+					\sprintf(
+						'Two %1$s fields share the meta key "%2$s" and disagree about is_protected(). WordPress asks that question per object type, never per subtype, so one key has one answer -- make them agree, or let one return null and leave the key\'s spelling to decide.',
+						$type,
+						$key
+					)
+				);
+			}
+
+			$decided[ $type ][ $key ] = $protected;
 		}
 
 		if ( array() === $decided ) {
@@ -596,6 +681,86 @@ class Fields extends Module implements Bootable {
 
 			\add_filter( 'add_' . $type->value . '_metadata', $guard, 10, 4 );
 			\add_filter( 'update_' . $type->value . '_metadata', $guard, 10, 4 );
+		}
+	}
+
+	/**
+	 * Refuse a subtype on an object type that has none.
+	 *
+	 * User and comment meta are not divided: `get_object_subtype()` answers with
+	 * the literal `user` and `comment` for every one of them, never a role or a
+	 * `comment_type`. So a field naming a subtype there registers meta against a
+	 * name nothing ever produces — the key is never matched, its `sanitize()`
+	 * never runs, and `update_user_meta()` stores whatever it is given. Nothing
+	 * about that failure is visible, which is why it is refused here rather than
+	 * left to be noticed.
+	 *
+	 * @param string   $file     The file the field came from, for the message.
+	 * @param Field    $field    The field being examined.
+	 * @param string[] $subtypes What it says it attaches to.
+	 * @return void
+	 * @throws DiscoveryException When the object type has no subtypes and the field names one.
+	 */
+	private function assert_subtypes_are_possible( string $file, Field $field, array $subtypes ): void {
+		if ( array() === $subtypes || $field->object_type()->has_subtypes() ) {
+			return;
+		}
+
+		throw new DiscoveryException(
+			\sprintf(
+				'%1$s.php declares subtypes( %2$s ) on %3$s meta, which has no subtypes: WordPress answers "%3$s" for every one of them, so meta registered against that name is never matched and the field silently does nothing. Return an empty array to attach it to every %3$s.',
+				$file,
+				\implode( ', ', $subtypes ),
+				$field->object_type()->value
+			)
+		);
+	}
+
+	/**
+	 * Refuse two files claiming one meta key where their subtypes meet.
+	 *
+	 * Sharing a key is legal, and is how `rating` holds an integer on `book` and
+	 * a string on `movie` — WordPress registers those separately, and so does
+	 * this. What is not legal is two files claiming it on the *same* subtype,
+	 * because the second registration replaces the first and leaves a file on
+	 * disk that reads as though it does something.
+	 *
+	 * A field attached to every subtype overlaps every other claim on its key,
+	 * which is the case a per-subtype check alone would miss.
+	 *
+	 * @param array<string, array<string, array<string, string[]>>> $claims Object type => meta key => subtype => the files claiming it.
+	 * @return void
+	 * @throws DiscoveryException When two files claim one key on one subtype.
+	 */
+	private function assert_no_overlapping_claims( array $claims ): void {
+		foreach ( $claims as $type => $keys ) {
+			foreach ( $keys as $key => $by_subtype ) {
+				foreach ( $by_subtype as $subtype => $files ) {
+					// A named subtype meets the fields attached to every
+					// subtype; `''` meets all of them at once.
+					$overlapping = '' === $subtype
+						? \array_merge( ...\array_values( $by_subtype ) )
+						: \array_merge( $files, $by_subtype[''] ?? array() );
+
+					// A file naming one subtype twice is not two files.
+					$overlapping = \array_values( \array_unique( $overlapping ) );
+
+					if ( \count( $overlapping ) < 2 ) {
+						continue;
+					}
+
+					throw new DiscoveryException(
+						\sprintf(
+							'Both %1$s.php and %2$s.php declare the %3$s meta key "%4$s" for %5$s. One key, one file per subtype -- switching one of them off does not settle which owns the key. Give them different keys, or narrow subtypes() so they do not overlap.',
+							$overlapping[0],
+							$overlapping[1],
+							$type,
+							$key,
+							'' === $subtype ? 'every subtype' : '"' . $subtype . '"'
+						)
+					);
+				}
+			}
 		}
 	}
 }

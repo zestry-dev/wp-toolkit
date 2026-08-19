@@ -221,7 +221,7 @@ Each type writes one file into the directory its module discovers, so the genera
 | [`ability`](commands/make-ability.md) | `resources/abilities/` | an ability (WP 6.9+) |
 | [`post-type`](commands/make-post-type.md) | `resources/post-types/` | a custom post type. `--singular=`, `--plural=` |
 | [`taxonomy`](commands/make-taxonomy.md) | `resources/taxonomies/` | a taxonomy. `--singular=`, `--plural=`, `--object-type=` |
-| [`field`](commands/make-field.md) | `resources/fields/` | a meta field |
+| [`field`](commands/make-field.md) | `resources/fields/{type}/{subtype}/` | a meta field. `--object-type=`, `--subtypes=` |
 | [`meta-box`](commands/make-meta-box.md) | `resources/meta-boxes/` | an editor meta box |
 | [`health-check`](commands/make-health-check.md) | `resources/health-checks/` | a Site Health **Status** test |
 | [`debug-section`](commands/make-debug-section.md) | `resources/debug-sections/` | a Site Health **Info** panel |
@@ -237,7 +237,7 @@ Each type writes one file into the directory its module discovers, so the genera
 `module`, `activation` and `abstract` land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. Every type writes to one directory, fixed by the module that reads it; a name with a slash nests inside it, so `make command reports/daily` writes `resources/commands/reports/daily.php`.
 
 <!-- zestry:include generator="prompting-generators" -->
-**5 of the 21 generators ask for what you leave out** — [`block`](commands/make-block.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 16 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.
+**6 of the 21 generators ask for what you leave out** — [`block`](commands/make-block.md), [`field`](commands/make-field.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 15 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.
 <!-- /zestry:include -->
 
 `make module` and `make activation` are the only generators that also write to `bootstrap.php`, since being listed is the only thing that makes a module exist.
