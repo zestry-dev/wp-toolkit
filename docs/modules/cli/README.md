@@ -44,7 +44,7 @@ return array(
 
 ## Writing a Command
 
-A file in `resources/commands/` returns a [`Command`](command.md) instance, which `wp zt make command <name>` generates.
+A file in `resources/commands/` returns a [`Command`](command.md) instance, which [`wp zt make command <name>`](../../commands/make-command.md) generates.
 
 ## Constants
 

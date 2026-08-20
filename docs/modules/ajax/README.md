@@ -50,7 +50,7 @@ return array(
 
 ## Writing an AjaxAction
 
-A file in `resources/actions/` returns an [`AjaxAction`](ajax-action.md) instance, which `wp zt make action <name>` generates.
+A file in `resources/actions/` returns an [`AjaxAction`](ajax-action.md) instance, which [`wp zt make action <name>`](../../commands/make-action.md) generates.
 
 ## Constants
 

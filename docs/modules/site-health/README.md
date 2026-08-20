@@ -81,11 +81,11 @@ return new class extends DebugSection {
 
 ## Writing a HealthCheck
 
-A file in `resources/health-checks/` returns a [`HealthCheck`](health-check.md) instance, which `wp zt make health-check <name>` generates.
+A file in `resources/health-checks/` returns a [`HealthCheck`](health-check.md) instance, which [`wp zt make health-check <name>`](../../commands/make-health-check.md) generates.
 
 ## Writing a DebugSection
 
-A file in `resources/debug-sections/` returns a [`DebugSection`](debug-section.md) instance, which `wp zt make debug-section <name>` generates.
+A file in `resources/debug-sections/` returns a [`DebugSection`](debug-section.md) instance, which [`wp zt make debug-section <name>`](../../commands/make-debug-section.md) generates.
 
 ## Related classes
 

@@ -53,9 +53,131 @@ function zestry_verify_consistency( string $root ): array {
 		zestry_check_example_slugs( $root, $pages ),
 		zestry_check_block_php_field( $pages ),
 		zestry_check_stranded_docblocks( $root ),
+		zestry_check_dropped_examples( $root ),
 		zestry_check_cheat_sheet_flags( $root, $pages ),
 		zestry_check_fenced_table_cells( $pages )
 	);
+}
+
+/**
+ * Report an `@example` or `@setup` block carrying no fenced code.
+ *
+ * `zestry_extract_custom_tags()` keeps a block only when it has code, so one
+ * written as prose alone is discarded whole -- its caption, its description and
+ * every paragraph under it. Nothing renders, nothing warns, and the page simply
+ * has one fewer section than the source appears to give it.
+ *
+ * The failure has no symptom at the source: the block looks published, and the
+ * only way to notice is to compare the page against the docblock section by
+ * section. `RestApi` lost a documented `\InvalidArgumentException` and a rule
+ * about pattern-bound arguments that way.
+ *
+ * Prose belongs above the first tag, where it renders as the class's own body.
+ * A block that really is an example needs a fence.
+ *
+ * @param string $root Absolute path to the repository root.
+ * @return string[] Problems found.
+ */
+function zestry_check_dropped_examples( string $root ): array {
+	$problems = array();
+
+	foreach ( array( 'resources', 'src' ) as $dir ) {
+		$files = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root . '/' . $dir ) );
+
+		foreach ( $files as $file ) {
+			if ( 'php' !== $file->getExtension() ) {
+				continue;
+			}
+
+			$relative = substr( $file->getPathname(), strlen( $root ) + 1 );
+			$lines    = (array) file( $file->getPathname(), FILE_IGNORE_NEW_LINES );
+
+			$problems = array_merge( $problems, zestry_find_uncoded_tag_blocks( $relative, $lines ) );
+		}
+	}
+
+	return $problems;
+}
+
+/**
+ * Walk one file's docblocks for tag bodies that never open a fence.
+ *
+ * Split out because the scan needs a small state machine -- which tag is open,
+ * whether it has seen a fence, where the docblock ends -- and inlining it in the
+ * per-file loop above buried the rule in bookkeeping.
+ *
+ * @param string   $relative Repo-relative path, for the message.
+ * @param string[] $lines    The file's lines, without terminators.
+ * @return string[] Problems found in this file.
+ */
+function zestry_find_uncoded_tag_blocks( string $relative, array $lines ): array {
+	$problems = array();
+	$tag      = null;
+	$caption  = '';
+	$start    = 0;
+	$fenced   = false;
+	$prose    = 0;
+
+	$close = static function () use ( &$tag, &$caption, &$start, &$fenced, &$prose, &$problems, $relative ): void {
+		// A tag with nothing under it says all it has to say in its caption; only
+		// a block whose prose is about to be thrown away is worth reporting.
+		if ( null !== $tag && ! $fenced && $prose > 0 ) {
+			$problems[] = sprintf(
+				'%s:%d: `@%s %s` has no fenced code, so the whole block -- caption, description and %d line(s) of prose -- is dropped and never reaches a page. Move the prose above the first tag, or give the block a fence.',
+				$relative,
+				$start,
+				$tag,
+				$caption,
+				$prose
+			);
+		}
+
+		$tag    = null;
+		$fenced = false;
+		$prose  = 0;
+	};
+
+	foreach ( $lines as $index => $line ) {
+		$trimmed = trim( $line );
+
+		if ( str_starts_with( $trimmed, '*/' ) ) {
+			$close();
+			continue;
+		}
+
+		$text = trim( ltrim( $trimmed, '*' ) );
+
+		if ( preg_match( '/^@(setup|example)(\s+.*)?$/', $text, $found ) ) {
+			$close();
+
+			$tag     = $found[1];
+			$caption = trim( $found[2] ?? '' );
+			$start   = $index + 1;
+			continue;
+		}
+
+		if ( null === $tag ) {
+			continue;
+		}
+
+		// Any other tag ends this block, the way the extractor's own flush does.
+		if ( preg_match( '/^@[\w-]+/', $text ) ) {
+			$close();
+			continue;
+		}
+
+		if ( str_starts_with( $text, '```' ) ) {
+			$fenced = true;
+		}
+
+		if ( '' !== $text ) {
+			++$prose;
+		}
+	}
+
+	$close();
+
+	return $problems;
 }
 
 /**

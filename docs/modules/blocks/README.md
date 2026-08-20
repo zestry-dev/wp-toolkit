@@ -73,7 +73,7 @@ The callback runs on that hook, right before the module registers anything. That
 
 ## Writing a Block
 
-A file in `build/blocks/` returns a [`Block`](block.md) instance, which `wp zt make block <name>` generates.
+A file in `build/blocks/` returns a [`Block`](block.md) instance, which [`wp zt make block <name>`](../../commands/make-block.md) generates.
 
 You write it in `src/blocks/` — that is what `wp zt make block <name>` creates and what you edit. `build/blocks/` holds the compiled output `npm run build` produces, and is the directory this module reads.
 

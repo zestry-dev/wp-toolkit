@@ -13,7 +13,16 @@ A routes directory contains PHP files, one per route — the same file-based con
 
 A route file returns a `Route` value, built with the static constructor matching its HTTP method. It declares its own namespace version and URL pattern as plain strings, so nothing about a route comes from its file's name or location.
 
-[Adding it](#adding-it) &nbsp;·&nbsp; [A minimal route file](#a-minimal-route-file) &nbsp;·&nbsp; [Narrowing what a route accepts](#narrowing-what-a-route-accepts) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Route](#writing-a-route) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
+Each file's RestRoute instance handles exactly one HTTP method. The module wires it, assigning the plugin so `with()` reaches every module, then hands it to `Request` to turn its declared properties into WordPress's args schema. `handle()` is wrapped, so each validated and sanitized request value is bound onto its property before the method runs. The route's response schema (see `RestRoute::schema()`) is published only when the route returns one.
+
+Each `{name}` token in a pattern becomes a named regex capture group, matching any run of non-slash characters. Declaring the matching property with a [`#[RequestArgument]`](../request/request-argument.md) is what narrows that — to an integer, say — and the module throws at registration if a token has no property to bind to.
+
+> [!NOTE]
+> **A property bound to a pattern token is always required**, whatever its declaration says. WordPress rejects a request whose URL does not provide it before routing even begins. Every other argument is required only when its property has no default.
+
+A `{id}` token is a plain string in PHP, never a filename, so it escapes WordPress.org's Plugin Check rules on special characters. Those reject any file or folder name containing `[`, `]`, `(`, `)`, `{` or `}` as `badly_named_files`.
+
+[Adding it](#adding-it) &nbsp;·&nbsp; [A minimal route file](#a-minimal-route-file) &nbsp;·&nbsp; [Narrowing what a route accepts](#narrowing-what-a-route-accepts) &nbsp;·&nbsp; [One route per HTTP method](#one-route-per-http-method) &nbsp;·&nbsp; [Changing the defaults](#changing-the-defaults) &nbsp;·&nbsp; [Writing a Route](#writing-a-route) &nbsp;·&nbsp; [Related classes](#related-classes) &nbsp;·&nbsp; [Constants](#constants) &nbsp;·&nbsp; [Methods](#methods) &nbsp;·&nbsp; [See also](#see-also)
 
 ## Adding it
 
@@ -37,28 +46,29 @@ return array(
 
 ## A minimal route file
 
-// resources/routes/widgets/get-one.php use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument; use Acme\Plugin\Core\Modules\RestApi\Route; use Acme\Plugin\Core\Modules\RestApi\RestRoute;
+```php
+// resources/routes/widgets/get-one.php
+use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
+use Acme\Plugin\Core\Modules\RestApi\Route;
+use Acme\Plugin\Core\Modules\RestApi\RestRoute;
 
 return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
+    #[RequestArgument( 'The widget to return.' )]
+    public int $id;
 
-```php
-#[RequestArgument( 'The widget to return.' )]
-public int $id;
+    public function permission_check( WP_REST_Request $request ): bool {
+        return true;
+    }
 
-public function permission_check( WP_REST_Request $request ): bool {
-    return true;
-}
+    public function handle( WP_REST_Request $request ): WP_REST_Response {
+        return new WP_REST_Response( array( 'id' => $this->id ) );
+    }
 
-public function handle( WP_REST_Request $request ): WP_REST_Response {
-    return new WP_REST_Response( array( 'id' => $this->id ) );
-}
-
-public function schema(): ?array {
-    return null;
-}
-```
-
+    public function schema(): ?array {
+        return null;
+    }
 } );
+```
 
 ## Narrowing what a route accepts
 
@@ -91,13 +101,31 @@ return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
 
 A check spanning two fields belongs in `handle()` rather than here: a callback sees one value in isolation, while by `handle()` every property is bound and an error can name the combination that was wrong.
 
+## One route per HTTP method
+
+A sibling file can declare that same `/widgets/{id}` pattern under a different method, with a stricter `permission_check()` of its own. Group them into folders however suits the plugin — the directory is organizational, and the pattern lives in the file.
+
+```php
+// resources/routes/widgets/delete-one.php
+return Route::delete( 'v1', '/widgets/{id}', new class extends RestRoute {
+    #[RequestArgument( 'The widget to delete.' )]
+    public int $id;
+
+    public function permission_check( WP_REST_Request $request ): bool {
+        return current_user_can( 'delete_posts' );
+    }
+
+    // ... handle(), schema()
+} );
+```
+
 ## Changing the defaults
 
 `RestApi` takes no configuration. The entry above is all it needs — reach it with `$this->with( RestApi::class )` from any module or discovered file, or `$plugin->get( RestApi::class )` from your entry file.
 
 ## Writing a Route
 
-A file in `resources/routes/` returns a [`Route`](route.md) instance, which `wp zt make route <name>` generates.
+A file in `resources/routes/` returns a [`Route`](route.md) instance, which [`wp zt make route <name>`](../../commands/make-route.md) generates.
 
 ## Related classes
 

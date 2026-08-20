@@ -55,7 +55,7 @@ return array(
 
 ## An ability
 
-A typed property carrying a `RequestArgument` is both the input schema and the value: it is described once, validated by WordPress, and bound before your code runs. The property says the type, and whether it is required — one with no default has to be supplied.
+A typed property carrying a [`#[RequestArgument]`](../request/request-argument.md) is both the input schema and the value: it is described once, validated by WordPress, and bound before your code runs. The property says the type, and whether it is required — one with no default has to be supplied.
 
 ```php
 // resources/abilities/publish-post.php
@@ -128,7 +128,7 @@ The callback runs on that hook, right before the module registers anything, whic
 
 ## Writing an Ability
 
-A file in `resources/abilities/` returns an [`Ability`](ability.md) instance, which `wp zt make ability <name>` generates.
+A file in `resources/abilities/` returns an [`Ability`](ability.md) instance, which [`wp zt make ability <name>`](../../commands/make-ability.md) generates.
 
 ## Related classes
 

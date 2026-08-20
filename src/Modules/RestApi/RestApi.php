@@ -31,30 +31,55 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * pattern as plain strings, so nothing about a route comes from its file's
  * name or location.
  *
+ * Each file's RestRoute instance handles exactly one HTTP method. The module
+ * wires it, assigning the plugin so `with()` reaches every module, then hands it
+ * to {@see \Zestry\WPToolkit\Modules\Request\Request} to turn its declared
+ * properties into WordPress's args schema. `handle()` is wrapped, so each
+ * validated and sanitized request value is bound onto its property before the
+ * method runs. The route's response schema (see {@see RestRoute::schema()}) is
+ * published only when the route returns one.
+ *
+ * Each `{name}` token in a pattern becomes a named regex capture group,
+ * matching any run of non-slash characters. Declaring the matching property
+ * with a [`#[RequestArgument]`](../request/request-argument.md) is what narrows
+ * that -- to an integer, say -- and the module throws at registration if a token
+ * has no property to bind to.
+ *
+ * > [!NOTE]
+ * > **A property bound to a pattern token is always required**, whatever its
+ * > declaration says. WordPress rejects a request whose URL does not provide it
+ * > before routing even begins. Every other argument is required only when its
+ * > property has no default.
+ *
+ * A `{id}` token is a plain string in PHP, never a filename, so it escapes
+ * WordPress.org's Plugin Check rules on special characters. Those reject any
+ * file or folder name containing `[`, `]`, `(`, `)`, `{` or `}` as
+ * `badly_named_files`.
+ *
  * @example A minimal route file
+ * ```
  * // resources/routes/widgets/get-one.php
  * use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
  * use Acme\Plugin\Core\Modules\RestApi\Route;
  * use Acme\Plugin\Core\Modules\RestApi\RestRoute;
  *
  * return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
- * ```
- * #[RequestArgument( 'The widget to return.' )]
- * public int $id;
+ *     #[RequestArgument( 'The widget to return.' )]
+ *     public int $id;
  *
- * public function permission_check( WP_REST_Request $request ): bool {
- *     return true;
- * }
+ *     public function permission_check( WP_REST_Request $request ): bool {
+ *         return true;
+ *     }
  *
- * public function handle( WP_REST_Request $request ): WP_REST_Response {
- *     return new WP_REST_Response( array( 'id' => $this->id ) );
- * }
+ *     public function handle( WP_REST_Request $request ): WP_REST_Response {
+ *         return new WP_REST_Response( array( 'id' => $this->id ) );
+ *     }
  *
- * public function schema(): ?array {
- *     return null;
- * }
- * ```
+ *     public function schema(): ?array {
+ *         return null;
+ *     }
  * } );
+ * ```
  *
  * @example Narrowing what a route accepts
  * The property's type is already a rule -- `int $id` rejects `abc` with a 400
@@ -94,37 +119,24 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * bound and an error can name the combination that was wrong.
  *
  * @example One route per HTTP method
- * A sibling `resources/routes/widgets/delete-one.php` can declare that same
- * `/widgets/{id}` pattern under `Route::delete()`, with a stricter
- * `permission_check()` of its own. One file per HTTP method (see
- * {@see RestRoute} for why), grouped into folders however suits the plugin.
+ * A sibling file can declare that same `/widgets/{id}` pattern under a
+ * different method, with a stricter `permission_check()` of its own. Group them
+ * into folders however suits the plugin -- the directory is organizational, and
+ * the pattern lives in the file.
  *
- * Each `{name}` token in a pattern becomes a named regex capture group,
- * matching any run of non-slash characters. Declaring the matching property
- * with a {@see RequestArgument} is what narrows that -- to an integer, say --
- * and the module throws at registration if a token has no property to bind to.
+ * ```
+ * // resources/routes/widgets/delete-one.php
+ * return Route::delete( 'v1', '/widgets/{id}', new class extends RestRoute {
+ *     #[RequestArgument( 'The widget to delete.' )]
+ *     public int $id;
  *
- * > [!NOTE]
- * > **A property bound to a pattern token is always required**, whatever its
- * > declaration says. WordPress rejects a request whose URL does not provide it
- * > before routing even begins. Every other argument is required only when its
- * > property has no default.
+ *     public function permission_check( WP_REST_Request $request ): bool {
+ *         return current_user_can( 'delete_posts' );
+ *     }
  *
- * A `{id}` token is a plain string in PHP, never a filename, so it escapes
- * WordPress.org's Plugin Check rules on special characters. Those reject any
- * file or folder name containing `[`, `]`, `(`, `)`, `{` or `}` as
- * `badly_named_files`.
- *
- * Each file's RestRoute instance handles exactly one HTTP method (see
- * {@see RestRoute} for why). The module wires it, assigning the plugin and
- * so `with()` reaches every module, then hands it to
- * {@see \Zestry\WPToolkit\Modules\Request\Request} to turn its declared properties into
- * WordPress's args schema.
- *
- * `handle()` is wrapped, so each validated and sanitized request value is
- * bound onto its property before the method runs. The route's response schema
- * (see {@see RestRoute::schema()}) is published only when the route returns
- * one.
+ *     // ... handle(), schema()
+ * } );
+ * ```
  *
  */
 class RestApi extends Module implements Bootable {

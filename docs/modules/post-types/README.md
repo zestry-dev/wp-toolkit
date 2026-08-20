@@ -43,11 +43,11 @@ return array(
 
 ## Writing a PostType
 
-A file in `resources/post-types/` returns a [`PostType`](post-type.md) instance, which `wp zt make post-type <name>` generates.
+A file in `resources/post-types/` returns a [`PostType`](post-type.md) instance, which [`wp zt make post-type <name>`](../../commands/make-post-type.md) generates.
 
 ## Writing a Taxonomy
 
-A file in `resources/taxonomies/` returns a [`Taxonomy`](taxonomy.md) instance, which `wp zt make taxonomy <name>` generates.
+A file in `resources/taxonomies/` returns a [`Taxonomy`](taxonomy.md) instance, which [`wp zt make taxonomy <name>`](../../commands/make-taxonomy.md) generates.
 
 ## Constants
 

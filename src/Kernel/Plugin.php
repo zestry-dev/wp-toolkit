@@ -586,9 +586,9 @@ class Plugin {
 	 * A local name, namespaced to this plugin.
 	 *
 	 * Every global name this plugin registers comes through here -- an action or
-	 * filter of your own, and behind the scenes a script handle, a transient key,
-	 * a meta box id, a cron hook, a Site Health identifier, a REST namespace, a
-	 * WP-CLI command, an option name. One function, so anything this plugin puts
+	 * filter of your own, a script handle, a transient key, a meta box id, a cron
+	 * hook, a Site Health identifier, a REST namespace, a WP-CLI command, an
+	 * option name. One function, so anything this plugin puts
 	 * into a namespace it shares with every other plugin on the site is prefixed
 	 * the same way and cannot collide.
 	 *

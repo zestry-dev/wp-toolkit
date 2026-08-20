@@ -72,7 +72,7 @@ class MyActivation extends ActivationHandler {
 
 ## Writing a Migration
 
-A file in `resources/migrations/` returns a [`Migration`](migration.md) instance, which `wp zt make migration <name>` generates.
+A file in `resources/migrations/` returns a [`Migration`](migration.md) instance, which [`wp zt make migration <name>`](../../commands/make-migration.md) generates.
 
 ## Constants
 

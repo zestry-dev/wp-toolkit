@@ -86,7 +86,7 @@ return new class extends MetaBox {
 
 ## Writing a MetaBox
 
-A file in `resources/meta-boxes/` returns a [`MetaBox`](meta-box.md) instance, which `wp zt make meta-box <name>` generates.
+A file in `resources/meta-boxes/` returns a [`MetaBox`](meta-box.md) instance, which [`wp zt make meta-box <name>`](../../commands/make-meta-box.md) generates.
 
 ## Related classes
 

@@ -55,7 +55,7 @@ return array(
 
 ## Writing a Schedule
 
-A file in `resources/schedules/` returns a [`Schedule`](schedule.md) instance, which `wp zt make schedule <name>` generates.
+A file in `resources/schedules/` returns a [`Schedule`](schedule.md) instance, which [`wp zt make schedule <name>`](../../commands/make-schedule.md) generates.
 
 ## Constants
 

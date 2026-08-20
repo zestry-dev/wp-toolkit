@@ -47,7 +47,15 @@ return new class() extends AdminPage {
         return 'manage_options';
     }
     public function render(): void {
-        $this->view( 'admin-pages/settings' );
+        $this->view(
+            'admin-pages/settings',
+            array(
+                'title'  => $this->title(),
+                'action' => $this->get_page_url(),
+                'nonce'  => $this->get_nonce_action(),
+                'notice' => $this->get_flash( '' ),
+            )
+        );
     }
 };
 ```
@@ -63,13 +71,18 @@ A page's markup belongs in a template, and `wp zt make page` writes one alongsid
 ?>
 <div class="wrap">
     <h1><?php echo esc_html( $title ); ?></h1>
+    <?php if ( '' !== $notice ) : ?>
+        <div class="notice notice-success"><p><?php echo esc_html( $notice ); ?></p></div>
+    <?php endif; ?>
     <form method="post" action="<?php echo esc_url( $action ); ?>">
         <?php wp_nonce_field( $nonce ); ?>
-        <?php $this->render( 'admin-pages/-fields', array( 'values' => $values ) ); ?>
+        <?php $this->render( 'admin-pages/-fields' ); ?>
         <?php submit_button(); ?>
     </form>
 </div>
 ```
+
+Every name the template reads is one the `render()` above passes, which is the whole of the rule: add a key there to use it here.
 
 `$this` inside a template is the `views` module — rendering a subview is the same call every other caller makes, and costs no variable name.
 
@@ -79,7 +92,7 @@ A page's markup belongs in a template, and `wp zt make page` writes one alongsid
 
 ## Writing an AdminPage
 
-A file in `resources/admin-pages/` returns an [`AdminPage`](admin-page.md) instance, which `wp zt make page <name>` generates.
+A file in `resources/admin-pages/` returns an [`AdminPage`](admin-page.md) instance, which [`wp zt make page <name>`](../../commands/make-page.md) generates.
 
 The toolkit also ships a specialised base to extend in place of `AdminPage`, satisfying the same guard:
 

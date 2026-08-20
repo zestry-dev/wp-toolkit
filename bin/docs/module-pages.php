@@ -1152,7 +1152,16 @@ function zestry_generate_module_pages( string $root ): int {
 				zestry_article( $base ),
 				$base,
 				zestry_base_slug( $base ),
-				null !== $stub ? sprintf( ', which `wp zt make %s <name>` generates', $stub['type'] ) : ''
+				// Linked, not just named: this sentence is where a reader decides
+				// to generate the file, and the command's own page is what carries
+				// its flags and prompts. Unlinked, that page is reachable only
+				// from the cheat sheet, which nobody consults for a concept.
+				null !== $stub
+					? sprintf(
+						', which [`wp zt make %1$s <name>`](../../commands/make-%1$s.md) generates',
+						$stub['type']
+					)
+					: ''
 			);
 
 			/*

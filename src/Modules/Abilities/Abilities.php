@@ -65,7 +65,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * {@see run()} — instead of the same operation written four times.
  *
  * @example An ability
- * A typed property carrying a {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument} is both the
+ * A typed property carrying a [`#[RequestArgument]`](../request/request-argument.md) is both the
  * input schema and the value: it is described once, validated by WordPress, and
  * bound before your code runs. The property says the type, and whether it is
  * required — one with no default has to be supplied.

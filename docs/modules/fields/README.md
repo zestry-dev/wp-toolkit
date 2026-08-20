@@ -75,7 +75,7 @@ return new class extends Field {
 
 ## Writing a Field
 
-A file in `resources/fields/` returns a [`Field`](field.md) instance, which `wp zt make field <name>` generates.
+A file in `resources/fields/` returns a [`Field`](field.md) instance, which [`wp zt make field <name>`](../../commands/make-field.md) generates.
 
 ## Related classes
 
