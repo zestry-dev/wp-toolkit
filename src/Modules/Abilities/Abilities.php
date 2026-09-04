@@ -263,7 +263,7 @@ class Abilities extends Module implements Bootable {
 
 		$instances = array();
 
-		foreach ( $this->walk_folder( $root_dir, array( 'php' ), 1 ) as $file ) {
+		foreach ( $this->walk_folder( $root_dir, array( 'php' ), 0 ) as $file ) {
 			$name = \basename( $file, '.php' );
 			$path = $root_dir . '/' . $file;
 
