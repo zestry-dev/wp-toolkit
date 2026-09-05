@@ -47,8 +47,83 @@ final class CliTest extends TestCase {
 		$this->assertIsCallable( $registered[1] );
 	}
 
+	/**
+	 * WP-CLI reads help off the callable it is handed, and what it is handed is
+	 * a closure with no docblock of its own -- so without the third argument
+	 * every documented command still printed a bare name.
+	 */
+	public function test_a_commands_help_comes_from_its_handle_docblock(): void {
+		$this->define_wp_cli();
+		$this->write_plugin_file( 'resources/commands/greet.php', $this->documented_command_file() );
 
+		$this->plugin->get( CLI::class );
 
+		$help = \WP_CLI::last( 'add_command' )[2];
+
+		$this->assertSame( 'Greets somebody.', $help['shortdesc'] );
+		$this->assertStringContainsString( '## OPTIONS', $help['longdesc'] );
+		$this->assertStringNotContainsString(
+			'@param',
+			$help['longdesc'],
+			'The longdesc stops at the first tag, as DocParser does.'
+		);
+	}
+
+	/**
+	 * The synopsis is composed from the OPTIONS section rather than declared a
+	 * second time, so the two lists cannot disagree. The `---` fences around a
+	 * list of accepted values are not arguments and must not reach it: WP-CLI
+	 * enforces a synopsis it can parse, so a stray token refuses the command
+	 * with "Parameter errors" before it runs.
+	 */
+	public function test_the_synopsis_is_composed_from_the_options_section(): void {
+		$this->define_wp_cli();
+		$this->write_plugin_file( 'resources/commands/greet.php', $this->documented_command_file() );
+
+		$this->plugin->get( CLI::class );
+
+		$this->assertSame(
+			'<who> [--loud] [--format=<format>] [--<field>=<value>]',
+			\WP_CLI::last( 'add_command' )[2]['synopsis']
+		);
+	}
+
+	/**
+	 * A command that states its own synopsis keeps it: composing one is the
+	 * fallback, not an override.
+	 */
+	public function test_an_explicit_synopsis_tag_is_kept(): void {
+		$this->define_wp_cli();
+		$this->write_plugin_file(
+			'resources/commands/greet.php',
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\CLI\\Command;\n"
+				. "return new class extends Command {\n"
+				. "    /**\n"
+				. "     * Greets somebody.\n"
+				. "     *\n"
+				. "     * @synopsis <who> [--loud]\n"
+				. "     */\n"
+				. "    public function handle( array \$args, array \$assoc_args ): void {}\n"
+				. "};\n"
+		);
+
+		$this->plugin->get( CLI::class );
+
+		$this->assertSame( '<who> [--loud]', \WP_CLI::last( 'add_command' )[2]['synopsis'] );
+	}
+
+	/**
+	 * An undocumented command is registered exactly as before: nothing empty is
+	 * passed, so WP-CLI's own defaults still apply.
+	 */
+	public function test_an_undocumented_command_passes_no_help(): void {
+		$this->define_wp_cli();
+		$this->write_plugin_file( 'resources/commands/greet.php', $this->command_file() );
+
+		$this->plugin->get( CLI::class );
+
+		$this->assertSame( array(), \WP_CLI::last( 'add_command' )[2] );
+	}
 
 	public function test_nested_directories_become_command_namespaces(): void {
 		$this->define_wp_cli();
@@ -172,6 +247,46 @@ final class CliTest extends TestCase {
 		if ( ! defined( 'WP_CLI' ) ) {
 			define( 'WP_CLI', true );
 		}
+	}
+
+	/**
+	 * A command file whose handle() carries the docblock WP-CLI reads help from.
+	 *
+	 * The `---` fenced list of accepted values is deliberate: it is the shape
+	 * that a naive synopsis regex mistakes for an argument.
+	 */
+	private function documented_command_file(): string {
+		return "<?php\nuse Zestry\\WPToolkit\\Modules\\CLI\\Command;\n"
+			. "return new class extends Command {\n"
+			. "    /**\n"
+			. "     * Greets somebody.\n"
+			. "     *\n"
+			. "     * ## OPTIONS\n"
+			. "     *\n"
+			. "     * <who>\n"
+			. "     * : Who to greet.\n"
+			. "     *\n"
+			. "     * [--loud]\n"
+			. "     * : Shout it.\n"
+			. "     *\n"
+			. "     * [--format=<format>]\n"
+			. "     * : Output format.\n"
+			. "     * ---\n"
+			. "     * default: table\n"
+			. "     * options:\n"
+			. "     *   - table\n"
+			. "     *   - json\n"
+			. "     * ---\n"
+			. "     *\n"
+			. "     * [--<field>=<value>]\n"
+			. "     * : Any further fields.\n"
+			. "     *\n"
+			. "     * @param array \$args       Positional arguments.\n"
+			. "     * @param array \$assoc_args Flags.\n"
+			. "     * @return void\n"
+			. "     */\n"
+			. "    public function handle( array \$args, array \$assoc_args ): void {}\n"
+			. "};\n";
 	}
 
 	/**

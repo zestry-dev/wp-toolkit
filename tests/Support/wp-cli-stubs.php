@@ -61,8 +61,8 @@ namespace {
 				return null;
 			}
 
-			public static function add_command( $name, $callable ): void {
-				self::$calls[] = array( 'add_command', $name, $callable );
+			public static function add_command( $name, $callable, $args = array() ): void {
+				self::$calls[] = array( 'add_command', $name, $callable, $args );
 			}
 
 			public static function log( $message ): void {

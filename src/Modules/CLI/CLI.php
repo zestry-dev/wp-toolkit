@@ -336,6 +336,71 @@ class CLI extends Module implements Bootable {
 			$instance
 		);
 
-		\WP_CLI::add_command( $plugin->get_namespaced_name( $name, ' ' ), $callable );
+		\WP_CLI::add_command(
+			$plugin->get_namespaced_name( $name, ' ' ),
+			$callable,
+			self::describe_command( $instance )
+		);
+	}
+
+	/**
+	 * A command's own docblock, handed to WP-CLI explicitly.
+	 *
+	 * WP-CLI reads help off the callable it is given, by reflection. What it is
+	 * given here is the closure above -- which has no docblock of its own -- so
+	 * `wp help {slug} {command}` printed a name and a bare synopsis for every
+	 * command this plugin ships, however carefully each was documented.
+	 *
+	 * So the docblock is read from `handle()`, where it was written, and passed
+	 * as the arguments WP-CLI would otherwise have derived. The synopsis is
+	 * composed from the OPTIONS section rather than declared twice: an explicit
+	 * `@synopsis` tag still wins where a command wants one, and a command that
+	 * had to write its argument list a second time would be a command whose two
+	 * lists disagree.
+	 *
+	 * @param object $instance The command.
+	 * @return array<string, mixed> `shortdesc`, `longdesc` and `synopsis`.
+	 */
+	private static function describe_command( object $instance ): array {
+		$comment = ( new \ReflectionMethod( $instance, 'handle' ) )->getDocComment();
+
+		if ( false === $comment ) {
+			return array();
+		}
+
+		$doc      = new \WP_CLI\DocParser( $comment );
+		$synopsis = $doc->get_synopsis();
+
+		if ( '' === $synopsis ) {
+			/*
+			 * Every line of the OPTIONS section that is an argument rather than
+			 * its description: `<name>`, `[<name>]`, `[--flag]`, `[--key=<key>]`
+			 * and `[--<field>=<value>]`, which is WP-CLI's own spelling for a
+			 * command that accepts arguments it cannot list.
+			 *
+			 * A letter or a `<` after the dashes, which is what tells an
+			 * argument from the `---` that fences a list of accepted values.
+			 * Getting that wrong is not cosmetic: a synopsis WP-CLI can parse is
+			 * also a synopsis it *enforces*, so a stray token refuses the
+			 * command with "Parameter errors" before it runs.
+			 */
+			$tokens = array();
+
+			\preg_match_all(
+				'/^(\[?<[^>]+>\]?|\[?--[a-z<][^\s\]]*\]?)$/m',
+				$doc->get_longdesc(),
+				$tokens
+			);
+
+			$synopsis = \implode( ' ', $tokens[1] );
+		}
+
+		return \array_filter(
+			array(
+				'shortdesc' => $doc->get_shortdesc(),
+				'longdesc'  => $doc->get_longdesc(),
+				'synopsis'  => $synopsis,
+			)
+		);
 	}
 }
