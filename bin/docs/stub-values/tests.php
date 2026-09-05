@@ -14,6 +14,8 @@ declare( strict_types=1 );
  */
 return array(
 	'{{root}}'                => 'lib',
+	// PluginTestCase points a Plugin at the entry file by name.
+	'{{entry_file}}'          => 'acme-plugin.php',
 	'{{test_slug}}'           => 'acme-plugin-test',
 	'{{plugin_dir}}'          => 'acme-plugin',
 	'{{module_imports}}'      => implode(

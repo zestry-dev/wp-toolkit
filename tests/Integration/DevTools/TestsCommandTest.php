@@ -28,6 +28,7 @@ final class TestsCommandTest extends TestCase {
 		'phpunit.xml.dist',
 		'tests/bootstrap.php',
 		'tests/Support/TestCase.php',
+		'tests/Support/PluginTestCase.php',
 		'tests/Support/wp-cli-stubs.php',
 		'tests/Integration/ExampleTest.php',
 		'.wp-env.test.json',
@@ -66,6 +67,67 @@ final class TestsCommandTest extends TestCase {
 		foreach ( self::WRITTEN as $relative ) {
 			$this->assertFileExists( $this->target_plugin_dir . '/' . $relative );
 		}
+	}
+
+	/**
+	 * The second case is the whole point of the file: a Plugin on the real
+	 * entry file, so every module walks the directories the plugin ships
+	 * instead of a fixture standing in for them.
+	 */
+	public function test_the_plugin_test_case_points_at_the_real_entry_file(): void {
+		$this->write_target_file( 'demo-plugin.php', "<?php\n/* Plugin Name: Demo Plugin */\n" );
+
+		$this->run_tests();
+
+		$this->assertStringContainsString(
+			"\\dirname( __DIR__, 2 ) . '/demo-plugin.php'",
+			$this->read_target_file( 'tests/Support/PluginTestCase.php' ),
+			'The entry file is reached relative to tests/Support/, not by an absolute path.'
+		);
+	}
+
+	/**
+	 * A plugin that has not written its entry file yet cannot be asked for it,
+	 * and the directory name is the same answer get_slug_or_default() gives.
+	 */
+	public function test_the_plugin_test_case_falls_back_to_the_directory_name(): void {
+		$this->run_tests();
+
+		$this->assertStringContainsString(
+			"\\dirname( __DIR__, 2 ) . '/zestry-tests-demo.php'",
+			$this->read_target_file( 'tests/Support/PluginTestCase.php' )
+		);
+	}
+
+	/**
+	 * Reading the real directories is safe only because the slug is still the
+	 * test one: every name a module composes carries it, so what these tests
+	 * write is never the row the real plugin reads.
+	 */
+	public function test_the_plugin_test_case_keeps_the_test_slug(): void {
+		$this->run_tests();
+
+		$contents = $this->read_target_file( 'tests/Support/PluginTestCase.php' );
+
+		$this->assertStringContainsString( "'zestry-tests-demo-test'", $contents );
+		$this->assertStringNotContainsString(
+			"'zestry-tests-demo'",
+			str_replace( "'zestry-tests-demo-test'", '', $contents ),
+			'Nothing names the real slug.'
+		);
+	}
+
+	/**
+	 * It extends the base rather than repeating it, so a test gets the
+	 * throwaway directory and the real one at once.
+	 */
+	public function test_the_plugin_test_case_extends_the_base_case(): void {
+		$this->run_tests();
+
+		$this->assertStringContainsString(
+			'abstract class PluginTestCase extends TestCase {',
+			$this->read_target_file( 'tests/Support/PluginTestCase.php' )
+		);
 	}
 
 	/**

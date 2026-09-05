@@ -1,0 +1,68 @@
+<?php
+
+/**
+ * Base test case for the {{title}} tests that run against its own files.
+ */
+
+declare( strict_types=1 );
+
+namespace {{namespace}}\Tests\Support;
+
+use {{copied_namespace}}\Kernel\Plugin;
+{{module_imports}}
+/**
+ * For the tests that are about what this plugin ships, not about a fixture.
+ *
+ * The throwaway directory {@see TestCase} hands every test is the right tool
+ * for asking whether a module discovers a file at all. It is the wrong one for
+ * asking whether the post types *this* plugin registers are coherent, or
+ * whether its own routes answer: those questions are about `resources/`, and a
+ * fixture standing in for it only ever confirms the fixture.
+ *
+ * So this points a second Plugin at the real entry file. Every module then
+ * walks the directories the plugin actually ships, with no fixture in between.
+ *
+ * The slug is still `{{test_slug}}`, and that is what keeps it safe. Every name
+ * a module composes carries the slug -- option rows, hook names, AJAX actions,
+ * `wp {slug} ...` commands -- so an option these tests write and delete is
+ * `{{test_slug}}_...` and never the row the real plugin reads.
+ *
+ * `$this->plugin`, `$this->plugin_dir` and `write_plugin_file()` are still
+ * here, on the throwaway directory, for a test that wants a fixture and the
+ * real thing at once. The two Plugins are independent -- each has its own
+ * registry -- but they share the slug, so resolving the same acting module
+ * from both registers whatever it registers twice. Reach for one or the other
+ * in a given test.
+ */
+abstract class PluginTestCase extends TestCase {
+
+	/**
+	 * A Plugin reading this plugin's own directories, storing under the test slug.
+	 *
+	 * @var Plugin
+	 */
+	protected Plugin $shipped_plugin;
+
+	/**
+	 * Build a Plugin on the real entry file, beside the throwaway one.
+	 *
+	 * @return void
+	 */
+	public function set_up(): void {
+		parent::set_up();
+
+		/*
+		 * Declared, not run. `run()` is what defers a module to the hook it is
+		 * listed under; with nothing deferred, `get()` builds and boots on the
+		 * spot -- which is what a test wants, since it decides when a post type
+		 * is registered rather than waiting for `init` to come round again.
+		 *
+		 * The same list TestCase declares, for the same reason: nothing is
+		 * built that is not declared. Edit it here as you add modules.
+		 */
+		$this->shipped_plugin = ( new Plugin( \dirname( __DIR__, 2 ) . '/{{entry_file}}', '{{test_slug}}' ) )->declare_multiple(
+			array(
+{{module_declarations}}			)
+		);
+	}
+}

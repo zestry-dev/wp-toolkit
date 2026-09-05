@@ -11,7 +11,7 @@ Set this plugin up to run PHPUnit tests.
 
 Your features are files in a directory, and the module that discovers them needs real files, real hooks and a real database — so tests run against WordPress's own PHPUnit suite, and each one builds a throwaway `Plugin` pointed at a temporary directory it can write fixtures into.
 
-That takes six files and a handful of manifest entries. This writes all of them.
+That takes seven files and a handful of manifest entries. This writes all of them.
 
 Requires `wp zt init` to have already run, since the generated files are written under your namespace and import your copy of `Plugin`.
 
@@ -25,6 +25,9 @@ in `tests/Support/` and is deliberately outside the suite, so the base test case
 
 - `tests/Support/TestCase.php`, the base every test extends. It declares
 the modules you have installed, since nothing is built that is not declared, and gives each test `$this->plugin`, `$this->plugin_dir` and `write_plugin_file()`. The declarations are a list in your own file — add to it as you add modules.
+
+- `tests/Support/PluginTestCase.php`, for the tests that are about what
+you ship rather than about a fixture. It extends the base and adds a second `Plugin` pointed at your real entry file, so every module walks `resources/` itself — still under the test slug, so what it writes is never the row the real plugin reads.
 
 - `tests/Support/wp-cli-stubs.php`, recording doubles for `WP_CLI` and
 `WP_CLI_Command`. PHPUnit runs without the WP-CLI phar, so any test touching a command file fatals without them.
@@ -69,6 +72,7 @@ $ wp zt tests
 Wrote phpunit.xml.dist
 Wrote tests/bootstrap.php
 Wrote tests/Support/TestCase.php
+Wrote tests/Support/PluginTestCase.php
 Wrote tests/Support/wp-cli-stubs.php
 Wrote tests/Integration/ExampleTest.php
 Wrote .wp-env.test.json

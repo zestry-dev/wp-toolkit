@@ -47,8 +47,8 @@ return new class() extends Command {
 	 * WordPress's own PHPUnit suite, and each one builds a throwaway `Plugin`
 	 * pointed at a temporary directory it can write fixtures into.
 	 *
-	 * That takes six files and a handful of manifest entries. This writes all of
-	 * them.
+	 * That takes seven files and a handful of manifest entries. This writes all
+	 * of them.
 	 *
 	 * Requires `wp zt init` to have already run, since the generated files are
 	 * written under your namespace and import your copy of `Plugin`.
@@ -70,6 +70,12 @@ return new class() extends Command {
 	 * declared, and gives each test `$this->plugin`, `$this->plugin_dir` and
 	 * `write_plugin_file()`. The declarations are a list in your own file --
 	 * add to it as you add modules.
+	 *
+	 * - `tests/Support/PluginTestCase.php`, for the tests that are about what
+	 * you ship rather than about a fixture. It extends the base and adds a
+	 * second `Plugin` pointed at your real entry file, so every module walks
+	 * `resources/` itself -- still under the test slug, so what it writes is
+	 * never the row the real plugin reads.
 	 *
 	 * - `tests/Support/wp-cli-stubs.php`, recording doubles for `WP_CLI` and
 	 * `WP_CLI_Command`. PHPUnit runs without the WP-CLI phar, so any test
@@ -133,6 +139,7 @@ return new class() extends Command {
 	 *     Wrote phpunit.xml.dist
 	 *     Wrote tests/bootstrap.php
 	 *     Wrote tests/Support/TestCase.php
+	 *     Wrote tests/Support/PluginTestCase.php
 	 *     Wrote tests/Support/wp-cli-stubs.php
 	 *     Wrote tests/Integration/ExampleTest.php
 	 *     Wrote .wp-env.test.json
@@ -180,6 +187,13 @@ return new class() extends Command {
 			 * test's writes exactly where the real plugin reads.
 			 */
 			'test_slug'           => $slug . '-test',
+			/*
+			 * The entry file by name, so PluginTestCase can point a Plugin at
+			 * it. A plugin that has not written one yet cannot be asked, and
+			 * the directory name is the same answer get_slug_or_default()
+			 * gives -- the generated file is the consumer's to correct.
+			 */
+			'entry_file'          => $this->get_entry_file_name( $plugin_root, $directory ),
 			'module_imports'      => '',
 			'module_declarations' => '',
 		);
@@ -214,11 +228,12 @@ return new class() extends Command {
 	 */
 	private function write_suite( string $plugin_root, array $values, bool $wp_env ): void {
 		$files = array(
-			'phpunit.xml.dist'                      => 'phpunit.xml.dist.stub',
-			'tests/bootstrap.php'                   => 'bootstrap.php.stub',
-			self::SUPPORT_DIR . '/TestCase.php'     => 'test-case.php.stub',
-			self::SUPPORT_DIR . '/wp-cli-stubs.php' => 'wp-cli-stubs.php.stub',
-			self::TESTS_DIR . '/ExampleTest.php'    => 'example-test.php.stub',
+			'phpunit.xml.dist'                        => 'phpunit.xml.dist.stub',
+			'tests/bootstrap.php'                     => 'bootstrap.php.stub',
+			self::SUPPORT_DIR . '/TestCase.php'       => 'test-case.php.stub',
+			self::SUPPORT_DIR . '/PluginTestCase.php' => 'plugin-test-case.php.stub',
+			self::SUPPORT_DIR . '/wp-cli-stubs.php'   => 'wp-cli-stubs.php.stub',
+			self::TESTS_DIR . '/ExampleTest.php'      => 'example-test.php.stub',
 		);
 
 		if ( $wp_env ) {
@@ -267,6 +282,23 @@ return new class() extends Command {
 		$this->with( Formatter::class )->format( $plugin_root, array( $destination ) );
 
 		$this->log( 'Wrote ' . $name );
+	}
+
+	/**
+	 * The entry file's own name, for the Plugin PluginTestCase builds.
+	 *
+	 * Only the basename is written into the generated file: it sits in
+	 * `tests/Support/`, and reaches the root with `dirname( __DIR__, 2 )`
+	 * rather than an absolute path that would break on another machine.
+	 *
+	 * @param string $plugin_root Absolute path to the consuming plugin's root.
+	 * @param string $directory   The plugin's own directory name, used when there is no entry file yet.
+	 * @return string
+	 */
+	private function get_entry_file_name( string $plugin_root, string $directory ): string {
+		$entry_file = $this->with( ConsumerPlugin::class )->get_entry_file( $plugin_root );
+
+		return null === $entry_file ? $directory . '.php' : basename( $entry_file );
 	}
 
 	/**
