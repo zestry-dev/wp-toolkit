@@ -431,6 +431,12 @@ return new class() extends Command {
 	 * keep at the root. None of that is wrong, and all of it is wider than a
 	 * command called `format` reads.
 	 *
+	 * `zestry.json` and `zestry.lock.json` are here for composer.json and
+	 * composer.lock's reason, and the lock is the one that has actually been
+	 * bitten: it is written with `JSON_PRETTY_PRINT`, whose four spaces Prettier
+	 * reindents on the first `format` that reaches it -- a diff in a generated
+	 * file nobody edits by hand.
+	 *
 	 * Written only when absent, like every other file here, so a project with its
 	 * own ignore list keeps it.
 	 *
@@ -458,6 +464,8 @@ return new class() extends Command {
 					'composer.json',
 					'composer.lock',
 					'package-lock.json',
+					'zestry.json',
+					'zestry.lock.json',
 					'.wp-env.json',
 					'*.md',
 					'',

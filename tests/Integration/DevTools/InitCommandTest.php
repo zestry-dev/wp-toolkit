@@ -191,7 +191,21 @@ final class InitCommandTest extends TestCase {
 
 		$contents = (string) file_get_contents( $file );
 
-		foreach ( array( 'composer.json', '.wp-env.json', '*.md', 'node_modules/' ) as $ignored ) {
+		/*
+		 * zestry.lock.json is the one that has actually been bitten: it is
+		 * written with JSON_PRETTY_PRINT, and Prettier reindents those four
+		 * spaces the first time `format` reaches it.
+		 */
+		$ignored_files = array(
+			'composer.json',
+			'zestry.json',
+			'zestry.lock.json',
+			'.wp-env.json',
+			'*.md',
+			'node_modules/',
+		);
+
+		foreach ( $ignored_files as $ignored ) {
 			$this->assertStringContainsString( $ignored, $contents );
 		}
 	}
