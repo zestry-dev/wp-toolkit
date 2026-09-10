@@ -1025,13 +1025,20 @@ class Request extends Module {
 	 * Turn a decoded JSON object back into an object.
 	 *
 	 * WordPress decodes a request body to associative arrays, so an argument
-	 * declared as an object has to be given one back. A list stays a list --
-	 * casting one would turn its positions into property names.
+	 * declared as an object has to be given one back. `{}` and `[]` both arrive
+	 * as `array()`, which means the value can no longer say which it was -- so
+	 * `$declared` carries what the call site knows instead.
 	 *
-	 * @param mixed $value The validated value.
+	 * Pass `true` where a declared type already says the value is an object, and
+	 * it is cast whatever its shape. Leave it `false` for a value nothing
+	 * declared -- the nested ones this walks -- where a list has to stay a list,
+	 * since casting one would turn its positions into property names.
+	 *
+	 * @param mixed $value    The validated value.
+	 * @param bool  $declared Whether a declared type says this value is an object.
 	 * @return mixed
 	 */
-	private function get_object_value( $value ) {
+	private function get_object_value( $value, bool $declared = false ) {
 		if ( ! \is_array( $value ) ) {
 			return $value;
 		}
@@ -1043,7 +1050,11 @@ class Request extends Module {
 			$value
 		);
 
-		return \array_is_list( $converted ) ? $converted : (object) $converted;
+		if ( ! $declared && \array_is_list( $converted ) ) {
+			return $converted;
+		}
+
+		return (object) $converted;
 	}
 
 	/**
@@ -1127,13 +1138,13 @@ class Request extends Module {
 		}
 
 		if ( 'object' === $name || \stdClass::class === $name ) {
-			return $this->get_object_value( $value );
+			return $this->get_object_value( $value, true );
 		}
 
 		if ( 'array' === $name && ( 'object' === $argument->of || \stdClass::class === $argument->of ) && \is_array( $value ) ) {
 			return \array_map(
 				function ( $item ) {
-					return $this->get_object_value( $item );
+					return $this->get_object_value( $item, true );
 				},
 				$value
 			);
