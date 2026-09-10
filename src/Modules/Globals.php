@@ -53,9 +53,10 @@ class Globals extends Module {
 	 * Setters here do not chain. Only `Plugin`'s builder methods are fluent.
 	 *
 	 * @rationale
-	 * This returned `$this` once, which made `$globals->set(...)->set(...)` work
-	 * while the identical-looking call on the sibling `Options` store was a
-	 * fatal. Keep every setter void.
+	 * Keep every setter here void. A setter that returned `$this` would make
+	 * `$globals->set(...)->set(...)` work while the identical-looking call on
+	 * the `Options` store is a fatal, so the two stores would read alike and
+	 * behave differently.
 	 *
 	 * @param string $key   The registry key.
 	 * @param mixed  $value The value to store.

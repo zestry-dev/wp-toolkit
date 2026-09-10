@@ -332,8 +332,7 @@ class Options extends Module {
 
 		// update_option() returns false both for a genuine failure AND for a
 		// value identical to what is stored, so the no-op has to be recognized
-		// before calling it -- otherwise a harmless re-save throws. See
-		// rules.md; this regressed once already.
+		// before calling it -- otherwise a harmless re-save throws.
 		if ( \get_option( $name, array() ) === $this->value ) {
 			$this->is_dirty = false;
 			return;

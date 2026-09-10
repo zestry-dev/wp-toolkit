@@ -77,7 +77,7 @@ public function get_arguments( object|string $target ): array
 |---|---|
 | **Parameters** | `$target` — The object, or the class name of a structure |
 | **Return** | `array` |
-| **Throws** | — |
+| **Throws** | `InvalidArgumentException` — When a property carrying the attribute is static |
 
 Public and protected only: reflection cannot reliably reach a private property declared on an ancestor.
 
