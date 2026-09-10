@@ -350,6 +350,70 @@ final class RequestTest extends TestCase {
 	}
 
 	/**
+	 * `{}` is how a caller says "an object with nothing in it". WordPress decodes
+	 * a JSON body to associative arrays, so `{}` and `[]` both arrive as `array()`
+	 * and the distinction is gone before binding sees the value -- but the
+	 * declared type still says which one was meant.
+	 */
+	public function test_an_empty_object_binds_where_an_object_is_declared(): void {
+		$target = new class() {
+			#[RequestArgument( 'Whatever the client keeps here.' )]
+			public \stdClass $meta;
+
+			#[RequestArgument( 'Anything at all.' )]
+			public object $extra;
+
+			#[RequestArgument( 'Several of them.', of: \stdClass::class )]
+			public array $blobs = array();
+		};
+
+		$this->request()->bind(
+			$target,
+			array(
+				'meta'  => array(),
+				'extra' => array(),
+				'blobs' => array( array(), array( 'two' => 2 ) ),
+			)
+		);
+
+		$this->assertInstanceOf( \stdClass::class, $target->meta, 'An empty object is still an object.' );
+		$this->assertSame( array(), \get_object_vars( $target->meta ), 'And it has nothing in it.' );
+		$this->assertInstanceOf( \stdClass::class, $target->extra );
+		$this->assertInstanceOf( \stdClass::class, $target->blobs[0], 'Including one inside a list of them.' );
+		$this->assertInstanceOf( \stdClass::class, $target->blobs[1] );
+		$this->assertSame( 2, $target->blobs[1]->two );
+	}
+
+	/**
+	 * The empty object above must not cost the empty list: where the declared
+	 * type is `array`, nothing casts, and a nested list keeps its positions.
+	 */
+	public function test_an_empty_list_stays_a_list_where_an_array_is_declared(): void {
+		$target = new class() {
+			#[RequestArgument( 'Plain values.' )]
+			public array $tags = array( 'untouched' );
+
+			#[RequestArgument( 'Whatever the client keeps here.' )]
+			public \stdClass $meta;
+		};
+
+		$this->request()->bind(
+			$target,
+			array(
+				'tags' => array(),
+				'meta' => array( 'empty' => array(), 'list' => array() ),
+			)
+		);
+
+		$this->assertSame( array(), $target->tags, 'An array argument is handed its array.' );
+		$this->assertSame(
+			array(),
+			$target->meta->list,
+			'A value nested under an open object declares nothing, so an empty array stays one.'
+		);
+	}
+
+	/**
 	 * An open object still takes a schema of its own, for the parts you do know.
 	 */
 	public function test_a_free_form_object_can_still_be_narrowed(): void {
