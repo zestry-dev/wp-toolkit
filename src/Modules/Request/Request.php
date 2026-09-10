@@ -74,11 +74,12 @@ class Request extends Module {
 	/**
 	 * The arguments an object declares, keyed by property name.
 	 *
-	 * Public and protected only: reflection
-	 * cannot reliably reach a private property declared on an ancestor.
+	 * Public and protected only: reflection cannot reliably reach a private
+	 * property declared on an ancestor.
 	 *
 	 * @param object|string $target The object, or the class name of a structure.
 	 * @return array<string, array{0: \ReflectionProperty, 1: RequestArgument}>
+	 * @throws \InvalidArgumentException When a property carrying the attribute is static.
 	 */
 	public function get_arguments( object|string $target ): array {
 		$properties = ( new \ReflectionClass( $target ) )->getProperties(

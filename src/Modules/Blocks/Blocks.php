@@ -537,8 +537,8 @@ class Blocks extends Module implements Bootable {
 	 *
 	 * The namespace rather than the file path: it does not care where the plugin
 	 * is installed, whether a symlink stands between the two paths, or what the
-	 * blocks root was configured to. A consumer choosing a different namespace
-	 * in `block.json` is opting out of this module's rendering.
+	 * blocks root is set to. A block naming a different namespace in
+	 * `block.json` opts out of this module's rendering.
 	 *
 	 * @param string $block_name The block's namespaced name.
 	 * @return bool True when the block is this plugin's.

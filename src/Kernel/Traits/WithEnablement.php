@@ -61,11 +61,11 @@ namespace Zestry\WPToolkit\Kernel\Traits;
  * caller reaches an instance through its own discovery guard, which has already
  * established the base class.
  *
- * `Migration` deliberately does not use this. Migrations run at most once ever,
- * in filename order, and a skipped one leaves a permanent gap -- enabling it
- * later runs it after migrations that already assumed it had run. A migration
- * that should not always do its work checks that inside `up()`, where the
- * decision is recorded as having been made.
+ * `Migration` does not use this. Migrations run at most once ever, in filename
+ * order, and a skipped one leaves a permanent gap -- enabling it later runs it
+ * after migrations that already assumed it had run. A migration that should not
+ * always do its work checks that inside `up()`, where the decision is recorded
+ * as having been made.
  */
 trait WithEnablement {
 

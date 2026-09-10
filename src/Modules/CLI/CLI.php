@@ -347,16 +347,15 @@ class CLI extends Module implements Bootable {
 	 * A command's own docblock, handed to WP-CLI explicitly.
 	 *
 	 * WP-CLI reads help off the callable it is given, by reflection. What it is
-	 * given here is the closure above -- which has no docblock of its own -- so
-	 * `wp help {slug} {command}` printed a name and a bare synopsis for every
-	 * command this plugin ships, however carefully each was documented.
+	 * given here is the closure above, which carries no docblock of its own, so
+	 * without this `wp help {slug} {command}` has nothing to print but a name
+	 * and a bare synopsis, however carefully the command is documented.
 	 *
-	 * So the docblock is read from `handle()`, where it was written, and passed
-	 * as the arguments WP-CLI would otherwise have derived. The synopsis is
+	 * The docblock is therefore read from `handle()`, where it is written, and
+	 * passed as the arguments WP-CLI would otherwise derive. The synopsis is
 	 * composed from the OPTIONS section rather than declared twice: an explicit
-	 * `@synopsis` tag still wins where a command wants one, and a command that
-	 * had to write its argument list a second time would be a command whose two
-	 * lists disagree.
+	 * `@synopsis` tag wins where a command wants one, and a command writing its
+	 * argument list a second time is a command whose two lists can disagree.
 	 *
 	 * @param object $instance The command.
 	 * @return array<string, mixed> `shortdesc`, `longdesc` and `synopsis`.

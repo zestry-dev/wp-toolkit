@@ -111,7 +111,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  * WordPress loads `sodium_compat` from `compat.php` when the extension is not
  * -- which is what makes it preferable to an OpenSSL path that would need a
  * fallback anyway. Signing alone is not enough: a serialized payload the browser
- * can read is one a consumer will eventually put something private in.
+ * can read is one that will eventually carry something private.
  *
  * The key is derived per plugin, so two plugins built with this toolkit on one
  * site cannot read each other's cookies, and rotating the site's salts
