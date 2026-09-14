@@ -10,7 +10,7 @@ Discovers `resources/migrations/` &nbsp;·&nbsp; Each file returns [`Migration`]
 Discovers plugin database migrations and runs each one, at most once, in filename order.
 
 > [!IMPORTANT]
-> **Nothing here runs on its own. You decide when.** Booting this module only registers the `wp {slug} migrations run`/`migrations list` commands, and those are invoked by hand. Call `run_pending()` from whatever fits your release process.
+> **Nothing here runs on its own. You decide when.** Booting this module only registers the `wp {slug} migrations run`/`migrations list`/`migrations squash` commands, and those are invoked by hand. Call `run_pending()` from whatever fits your release process.
 
 A hook cannot close the gap between new code and its migration: WordPress swaps the code in first, so a request landing mid-migration runs new code against the old schema. A release process can. Put the site in maintenance mode, migrate, then let requests back in — or migrate as a deploy step before the new code goes live at all.
 
@@ -20,7 +20,7 @@ That recorded name is the migration's identity, description and all, so renaming
 
 That consequence is visible rather than silent. The identifier that ran is still recorded, so a rename leaves an *orphan*: a recorded name with no file. `migrations list` reports one as `orphaned`, next to the new filename's `pending` row and sharing its timestamp prefix, and `run_pending()` refuses the whole batch when it sees that pair rather than running the migration a second time. Both are reporting only — identity is still the filename, and a migration still cannot name itself.
 
-The two registered commands are `wp {slug} migrations run`, which runs every pending migration and takes `--force`, and `wp {slug} migrations list`, which prints each identifier with a `ran`, `pending` or `orphaned` status and takes `--format=<table|csv|json|yaml|count>`, defaulting to `table`.
+The three registered commands are `wp {slug} migrations run`, which runs every pending migration and takes `--force`; `wp {slug} migrations list`, which prints each identifier with a `ran`, `pending` or `orphaned` status and takes `--format=<table|csv|json|yaml|count>`, defaulting to `table`; and `wp {slug} migrations squash`, which writes a [`Baseline`](baseline.md) from the schema your migrations have produced and takes `--check` and `--yes`.
 
 > [!WARNING]
 > **Keep every migration's timestamp the same width.** Filenames are sorted as plain strings, with no numeric-aware pass, so mixing widths (some zero-padded, some not) silently sorts them wrong. `wp zt make migration` generates a correct `YYYYMMDDHHmmss` prefix — in UTC, so migrations authored from different timezones still sort against each other correctly.
@@ -148,7 +148,7 @@ public function get_pending_migrations(): array
 
 What the next `run_pending()` would execute, in the order it would execute them, and an empty array when the database is level with the code.
 
-Worth asking from an `UpdateHandler`: that compares plugin versions, which answers whether the *code* changed rather than whether the *schema* is behind. The two diverge whenever a migration is added without a version bump — routine in development — and the migration then waits for a release that may be days away.
+Worth asking from an [`UpdateHandler`](../update-handler.md): that compares plugin versions, which answers whether the *code* changed rather than whether the *schema* is behind. The two diverge whenever a migration is added without a version bump — routine in development — and the migration then waits for a release that may be days away.
 
 Requires no migration file, like `get_discovered_migrations()`: this is filenames against a recorded list, and nothing here runs anything.
 

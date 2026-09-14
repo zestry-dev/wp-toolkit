@@ -25,8 +25,8 @@ use Zestry\WPToolkit\Modules\Path;
  *
  * > [!IMPORTANT]
  * > **Nothing here runs on its own. You decide when.** Booting this module
- * > only registers the `wp {slug} migrations run`/`migrations list` commands,
- * > and those are invoked by hand. Call {@see run_pending()} from whatever
+ * > only registers the `wp {slug} migrations run`/`migrations list`/`migrations
+ * > squash` commands, and those are invoked by hand. Call {@see run_pending()} from whatever
  * > fits your release process.
  *
  * A hook cannot close the gap between new code and its migration: WordPress
@@ -55,10 +55,12 @@ use Zestry\WPToolkit\Modules\Path;
  * second time. Both are reporting only -- identity is still the filename, and
  * a migration still cannot name itself.
  *
- * The two registered commands are `wp {slug} migrations run`, which runs every
- * pending migration and takes `--force`, and `wp {slug} migrations list`, which
+ * The three registered commands are `wp {slug} migrations run`, which runs every
+ * pending migration and takes `--force`; `wp {slug} migrations list`, which
  * prints each identifier with a `ran`, `pending` or `orphaned` status and takes
- * `--format=<table|csv|json|yaml|count>`, defaulting to `table`.
+ * `--format=<table|csv|json|yaml|count>`, defaulting to `table`; and
+ * `wp {slug} migrations squash`, which writes a [`Baseline`](baseline.md) from
+ * the schema your migrations have produced and takes `--check` and `--yes`.
  *
  * > [!WARNING]
  * > **Keep every migration's timestamp the same width.** Filenames are sorted
@@ -172,7 +174,7 @@ class Migrations extends Module implements Bootable {
 	 * What the next {@see run_pending()} would execute, in the order it would
 	 * execute them, and an empty array when the database is level with the code.
 	 *
-	 * Worth asking from an {@see \Zestry\WPToolkit\Kernel\Abstracts\UpdateHandler}:
+	 * Worth asking from an [`UpdateHandler`](../update-handler.md):
 	 * that compares plugin versions, which answers whether the *code* changed
 	 * rather than whether the *schema* is behind. The two diverge whenever a
 	 * migration is added without a version bump -- routine in development -- and
