@@ -74,6 +74,10 @@ class MyActivation extends ActivationHandler {
 
 A file in `resources/migrations/` returns a [`Migration`](migration.md) instance, which [`wp zt make migration <name>`](../../commands/make-migration.md) generates.
 
+The toolkit also ships a specialised base to extend in place of `Migration`, satisfying the same guard:
+
+- [`Baseline`](baseline.md) — a migration that stands in for every migration before it, on a site that has never run any of them
+
 ## Constants
 
 ### `OPTIONS_GROUP_NAME`
@@ -128,6 +132,28 @@ Exposed for `wp {slug} migrations list` (`ListMigrationsCommand`), separate from
 
 <br>
 
+### `get_pending_migrations()`
+
+Every discovered migration that has not run on this site yet.
+
+```php
+public function get_pending_migrations(): array
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | Pending identifiers, in run order |
+| **Throws** | — |
+
+What the next `run_pending()` would execute, in the order it would execute them, and an empty array when the database is level with the code.
+
+Worth asking from an `UpdateHandler`: that compares plugin versions, which answers whether the *code* changed rather than whether the *schema* is behind. The two diverge whenever a migration is added without a version bump — routine in development — and the migration then waits for a release that may be days away.
+
+Requires no migration file, like `get_discovered_migrations()`: this is filenames against a recorded list, and nothing here runs anything.
+
+<br>
+
 ### `get_orphaned_migrations()`
 
 Every migration identifier recorded as run for which no file exists.
@@ -145,6 +171,46 @@ public function get_orphaned_migrations(): array
 An orphan means one of exactly two things, and nothing here tries to tell them apart: the file was renamed, or it was deleted. The first is dangerous — the migration is about to run a second time under its new name — and the second is usually deliberate. Both are worth seeing.
 
 Returned in the order the identifiers ran, since that is the order the ran-list already holds them in.
+
+<br>
+
+### `get_baseline()`
+
+The baseline on disk, if the plugin has one.
+
+```php
+public function get_baseline(): ?string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | The baseline's identifier, or null when there is none |
+| **Throws** | `DiscoveryException` — When a file returns the wrong value<br>`ManyBaselinesException` — When the plugin has more than one baseline |
+
+Unlike `get_discovered_migrations()`, this **requires every migration file**: a baseline is one by its class, not by its name, and nothing on the outside of a file says which it is. That is deliberate — a filename convention would be a second source of truth, and the one that drifts.
+
+Reads no database, so it answers in a build with no MySQL: the question is about files, and the baseline is committed source like any migration.
+
+<br>
+
+### `get_migrations_after_baseline()`
+
+Every migration a baseline does not already stand in for.
+
+```php
+public function get_migrations_after_baseline(): array
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | Identifiers the baseline does not cover, in run order |
+| **Throws** | `DiscoveryException` — When a file returns the wrong value<br>`ManyBaselinesException` — When the plugin has more than one baseline |
+
+What a fresh install still runs one by one after the baseline has done its work — everything on disk that `Baseline::subsumes()` does not name. An empty return means a squash is current, and a long one means it is worth running again. Reads no database, which is what lets a build check it.
+
+Every migration when the plugin has no baseline at all: with nothing standing in for anything, a fresh install runs all of them.
 
 <br>
 
@@ -190,6 +256,8 @@ Public because nothing calls it automatically. Call it from wherever the plugin 
 > **A failing migration stops the batch, and its exception propagates.** The schema is now not what the plugin assumes, and later migrations likely build on the one that just failed — continuing would compound the damage silently. Cron's dispatch catches and logs instead, because one failed schedule must not stop the others.
 
 A probable rename (`get_probable_renames()`) stops the batch before anything runs at all, since running a renamed migration a second time is the damage rather than a symptom of it. Pass `$force` to go ahead: that runs the rename as the new migration it now looks like, and leaves the old identifier recorded.
+
+A `Baseline` among the pending migrations changes what happens here, and only on a site where nothing has ever run: it runs first, and every migration sorting before it is recorded without being executed. On a site with a history the baseline is recorded without being executed instead, and everything else runs one by one as it always did. Nothing about the call changes either way.
 
 <br>
 

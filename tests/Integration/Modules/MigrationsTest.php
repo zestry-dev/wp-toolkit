@@ -76,6 +76,27 @@ final class MigrationsTest extends TestCase {
 		unset( $GLOBALS['zestry_migration_runs'] );
 	}
 
+	public function test_get_pending_migrations_is_what_the_next_run_would_execute(): void {
+		$this->write_migration( '20260101000000-first', '' );
+		$this->write_migration( '20260102000000-second', '' );
+
+		$migrations = $this->plugin->get( Migrations::class );
+
+		$this->assertSame(
+			array( '20260101000000-first', '20260102000000-second' ),
+			$migrations->get_pending_migrations(),
+			'In run order, which is the order they would execute.'
+		);
+
+		$migrations->run_pending();
+
+		$this->assertSame(
+			array(),
+			$migrations->get_pending_migrations(),
+			'Empty means the database is level with the code -- the question an UpdateHandler asks.'
+		);
+	}
+
 	public function test_a_failing_migration_propagates_and_is_not_recorded(): void {
 		$this->write_migration( '20260101000000-broken', "throw new \\RuntimeException( 'boom' );" );
 

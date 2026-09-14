@@ -1,0 +1,62 @@
+<?php
+
+/**
+ * {{class_name}} update handler.
+ */
+
+declare( strict_types=1 );
+
+namespace {{class_namespace}};
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Kernel\Abstracts\UpdateHandler;
+
+class {{class_name}} extends UpdateHandler {
+
+	// Reach any declared module with `$this->with( Migrations::class )`.
+
+	/**
+	 * Bring this site up to date with the code that is now running.
+	 *
+	 * WordPress has no update hook -- `activate_{plugin}` does not fire on an
+	 * update, and `upgrader_process_complete` runs while the OLD code is still in
+	 * memory, and never at all for an FTP upload. So this compares your plugin's
+	 * `Version:` header against the version recorded here last time. They differ
+	 * exactly when new code is running, however it arrived.
+	 *
+	 * Runs on `admin_init`, so no front-end visitor carries the work. Override
+	 * get_hook() to move it.
+	 *
+	 * $previous is null when this site has no recorded version -- a fresh
+	 * install, or one that predates this handler. You cannot tell those apart, so
+	 * do the work that brings a site up to date from anywhere: run_pending() is
+	 * already exactly that, taking the baseline on a new site and the pending
+	 * migrations on an old one.
+	 *
+	 * TRUE IS THE ONLY THING THAT MEANS DONE. Return false or a WP_Error, or
+	 * throw, and the version is not recorded -- so this is retried -- and the
+	 * message is shown as an admin notice. Nothing propagates: an update that
+	 * fataled on every admin request would lock you out of the screen you would
+	 * fix it from.
+	 *
+	 * @param string|null $previous The version recorded last time, or null when there is none.
+	 * @param string      $current  The version running now.
+	 * @return bool|\WP_Error True when the work is done; false or a WP_Error to be retried.
+	 */
+	public function update( ?string $previous, string $current ): bool|\WP_Error {
+		// $this->with( Migrations::class )->run_pending();
+
+		// Work for sites coming from before a particular release. $previous is
+		// null on a site that has never recorded one, so check for it first.
+		//
+		// if ( null !== $previous && \version_compare( $previous, '2.0.0', '<' ) ) {
+		//     \delete_option( 'legacy_cache' );
+		// }
+
+		// \flush_rewrite_rules();
+
+		return true;
+	}
+}

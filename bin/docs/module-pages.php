@@ -490,6 +490,7 @@ function zestry_base_class_pages(): array {
 	return array(
 		'Module'            => 'modules/module.md',
 		'ActivationHandler' => 'modules/activation-handler.md',
+		'UpdateHandler'     => 'modules/update-handler.md',
 		'WithPlugin'        => 'kernel/with-plugin.md',
 		'WithEnablement'    => 'kernel/with-enablement.md',
 		'WithFolderWalker'  => 'kernel/with-folder-walker.md',
@@ -1293,6 +1294,13 @@ function zestry_generate_module_pages( string $root ): int {
 	 * anywhere to land. It sits beside Module, which is what it extends.
 	 */
 	zestry_write_base_class_page( $root, $output_dir, 'ActivationHandler', null );
+
+	/*
+	 * UpdateHandler for the same reason, and it is the half a reader is more
+	 * likely to go looking for: WordPress has an activation hook and no update
+	 * hook, so the class that stands in for the missing one has to be findable.
+	 */
+	zestry_write_base_class_page( $root, $output_dir, 'UpdateHandler', null );
 
 	/*
 	 * The kernel types every plugin meets and no module owns. The four

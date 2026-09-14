@@ -40,7 +40,7 @@ Add nothing up front. Reach for one when you hit what it solves:
 | [`icons-library`](icons-library/) | publish an SVG icon, for the editor and your own markup (WordPress 7.1+) | `resources/svg-icons/` | — | `path` |
 | [`log`](log/) | record what went wrong | — | — | — |
 | [`meta-boxes`](meta-boxes/) | put a panel on the post or comment editor | `resources/meta-boxes/` | [`MetaBox`](meta-boxes/meta-box.md) | `path`, `fields` |
-| [`migrations`](migrations/) | create or change a database table | `resources/migrations/` | [`Migration`](migrations/migration.md) | `path`, `db`, `options`, `cli` |
+| [`migrations`](migrations/) | create or change a database table | `resources/migrations/` | [`Migration`](migrations/migration.md), [`Baseline`](migrations/baseline.md) | `path`, `db`, `options`, `cli` |
 | [`options`](options/) | store settings | — | — | — |
 | [`path`](path/) | resolve a path or URL inside the plugin | — | — | — |
 | [`post-types`](post-types/) | register a custom post type or taxonomy | `resources/post-types/`, `resources/taxonomies/` | [`PostType`](post-types/post-type.md), [`Taxonomy`](post-types/taxonomy.md) | `path` |

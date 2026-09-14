@@ -167,6 +167,29 @@ class Migrations extends Module implements Bootable {
 	}
 
 	/**
+	 * Every discovered migration that has not run on this site yet.
+	 *
+	 * What the next {@see run_pending()} would execute, in the order it would
+	 * execute them, and an empty array when the database is level with the code.
+	 *
+	 * Worth asking from an {@see \Zestry\WPToolkit\Kernel\Abstracts\UpdateHandler}:
+	 * that compares plugin versions, which answers whether the *code* changed
+	 * rather than whether the *schema* is behind. The two diverge whenever a
+	 * migration is added without a version bump -- routine in development -- and
+	 * the migration then waits for a release that may be days away.
+	 *
+	 * Requires no migration file, like {@see get_discovered_migrations()}: this
+	 * is filenames against a recorded list, and nothing here runs anything.
+	 *
+	 * @return string[] Pending identifiers, in run order.
+	 */
+	public function get_pending_migrations(): array {
+		return \array_values(
+			\array_diff( $this->get_discovered_migrations(), $this->get_ran_migrations() )
+		);
+	}
+
+	/**
 	 * Every migration identifier recorded as run for which no file exists.
 	 *
 	 * An orphan means one of exactly two things, and nothing here tries to tell
@@ -182,6 +205,53 @@ class Migrations extends Module implements Bootable {
 	public function get_orphaned_migrations(): array {
 		return \array_values(
 			\array_diff( $this->get_ran_migrations(), $this->get_discovered_migrations() )
+		);
+	}
+
+	/**
+	 * The baseline on disk, if the plugin has one.
+	 *
+	 * Unlike {@see get_discovered_migrations()}, this **requires every migration
+	 * file**: a baseline is one by its class, not by its name, and nothing on
+	 * the outside of a file says which it is. That is deliberate -- a filename
+	 * convention would be a second source of truth, and the one that drifts.
+	 *
+	 * Reads no database, so it answers in a build with no MySQL: the question is
+	 * about files, and the baseline is committed source like any migration.
+	 *
+	 * @return string|null The baseline's identifier, or null when there is none.
+	 * @throws DiscoveryException When a file returns the wrong value.
+	 * @throws ManyBaselinesException When the plugin has more than one baseline.
+	 */
+	public function get_baseline(): ?string {
+		return $this->find_baseline( $this->get_loaded_migrations() );
+	}
+
+	/**
+	 * Every migration a baseline does not already stand in for.
+	 *
+	 * What a fresh install still runs one by one after the baseline has done its
+	 * work -- everything on disk that {@see Baseline::subsumes()} does not name.
+	 * An empty return means a squash is current, and a long one means it is worth
+	 * running again. Reads no database, which is what lets a build check it.
+	 *
+	 * Every migration when the plugin has no baseline at all: with nothing
+	 * standing in for anything, a fresh install runs all of them.
+	 *
+	 * @return string[] Identifiers the baseline does not cover, in run order.
+	 * @throws DiscoveryException When a file returns the wrong value.
+	 * @throws ManyBaselinesException When the plugin has more than one baseline.
+	 */
+	public function get_migrations_after_baseline(): array {
+		$loaded   = $this->get_loaded_migrations();
+		$baseline = $this->find_baseline( $loaded );
+
+		if ( null === $baseline ) {
+			return \array_keys( $loaded );
+		}
+
+		return \array_values(
+			\array_diff( \array_keys( $loaded ), $loaded[ $baseline ]->subsumes(), array( $baseline ) )
 		);
 	}
 
@@ -259,6 +329,13 @@ class Migrations extends Module implements Bootable {
 	 * runs the rename as the new migration it now looks like, and leaves the
 	 * old identifier recorded.
 	 *
+	 * A {@see Baseline} among the pending migrations changes what happens here,
+	 * and only on a site where nothing has ever run: it runs first, and every
+	 * migration sorting before it is recorded without being executed. On a site
+	 * with a history the baseline is recorded without being executed instead,
+	 * and everything else runs one by one as it always did. Nothing about the
+	 * call changes either way.
+	 *
 	 * @param bool $force Run even when a pending migration looks like a rename of one that already ran.
 	 * @return void
 	 * @throws DiscoveryException When a file returns the wrong value.
@@ -283,12 +360,32 @@ class Migrations extends Module implements Bootable {
 		$options->set( self::RUNNING_SINCE_KEY, \time() );
 		$options->save();
 
+		/*
+		 * Every pending file is loaded before any of them runs, for two reasons.
+		 * A baseline has to be found before the migrations it subsumes are run
+		 * one by one, which is the whole point of having one. And loading is
+		 * `require`, not `require_once`, so reading a file to see what it is and
+		 * then reading it again to run it would be fatal for a migration that
+		 * declares a named class instead of an anonymous one.
+		 */
+		$pending = array();
+
 		foreach ( $identifiers as $identifier ) {
 			if ( \in_array( $identifier, $ran, true ) ) {
 				continue;
 			}
 
-			$this->run_migration( $root_dir . '/' . $identifier . '.php' );
+			$pending[ $identifier ] = $this->load_migration( $root_dir . '/' . $identifier . '.php' );
+		}
+
+		$ran = $this->apply_baseline( $pending, $identifiers, $ran, $options );
+
+		foreach ( $pending as $identifier => $instance ) {
+			if ( \in_array( $identifier, $ran, true ) ) {
+				continue;
+			}
+
+			$instance->up();
 
 			$ran[] = $identifier;
 			$options->set( self::RAN_KEY, $ran );
@@ -349,8 +446,8 @@ class Migrations extends Module implements Bootable {
 	}
 
 	/**
-	 * Register the `wp {slug} migrations run`/`wp {slug} migrations list`
-	 * WP-CLI commands, under WP-CLI only.
+	 * Register the `wp {slug} migrations run`/`list`/`squash` WP-CLI commands,
+	 * under WP-CLI only.
 	 *
 	 * Deliberately the only thing this method does: this module never decides
 	 * on its own when migrations should run -- the
@@ -370,6 +467,7 @@ class Migrations extends Module implements Bootable {
 		if ( $this->get_plugin()->is_wp_cli() ) {
 			CLI::register_command_for( $this->get_plugin(), 'migrations run', new RunMigrationsCommand() );
 			CLI::register_command_for( $this->get_plugin(), 'migrations list', new ListMigrationsCommand() );
+			CLI::register_command_for( $this->get_plugin(), 'migrations squash', new SquashMigrationsCommand() );
 		}
 	}
 
@@ -437,13 +535,113 @@ class Migrations extends Module implements Bootable {
 	}
 
 	/**
-	 * Require, wire, and run a single migration file.
+	 * Take the baseline into account, and say what is now recorded as run.
+	 *
+	 * Does nothing at all when there is no baseline pending, which is every
+	 * plugin that has never squashed and every site that has already taken one.
+	 *
+	 * The two cases are opposite instructions, and the thing that tells them
+	 * apart is whether this site has any history: nothing recorded means a fresh
+	 * install, where the baseline is the fast way to the same schema and the
+	 * migrations before it are work that was never needed. Anything recorded
+	 * means the site got here the long way, so the baseline's schema is already
+	 * present and the migrations it would have subsumed are either behind us or
+	 * genuinely pending.
+	 *
+	 * @param array<string, Migration> $pending     Pending instances, keyed by identifier, in run order.
+	 * @param string[]                 $identifiers Every discovered identifier, in run order.
+	 * @param string[]                 $ran         Identifiers already recorded as run.
+	 * @param Options                  $options     The group the record is written to.
+	 * @return string[] The recorded identifiers, with whatever this added.
+	 * @throws ManyBaselinesException When more than one baseline is pending.
+	 */
+	private function apply_baseline( array $pending, array $identifiers, array $ran, Options $options ): array {
+		$baseline = $this->find_baseline( $pending );
+
+		if ( null === $baseline ) {
+			return $ran;
+		}
+
+		$subsumed = array();
+
+		if ( array() === $ran ) {
+			$pending[ $baseline ]->up();
+
+			/*
+			 * Exactly what the baseline names, and only what is still on disk:
+			 * the schema those migrations build up to step by step is what up()
+			 * just created in one. Nothing checks that they *would* have produced
+			 * it -- the generated baseline is dumped from a database they made,
+			 * which is the only check worth having.
+			 */
+			$subsumed = \array_values(
+				\array_diff( \array_intersect( $identifiers, $pending[ $baseline ]->subsumes() ), array( $baseline ) )
+			);
+		}
+
+		$ran = \array_merge( $ran, $subsumed, array( $baseline ) );
+
+		$options->set( self::RAN_KEY, $ran );
+		$options->save();
+
+		return $ran;
+	}
+
+	/**
+	 * The pending baseline, if there is one.
+	 *
+	 * @param array<string, Migration> $pending Pending instances, keyed by identifier.
+	 * @return string|null The baseline's identifier.
+	 * @throws ManyBaselinesException When more than one is pending.
+	 */
+	private function find_baseline( array $pending ): ?string {
+		$found = array();
+
+		foreach ( $pending as $identifier => $instance ) {
+			if ( $instance instanceof Baseline ) {
+				$found[] = (string) $identifier;
+			}
+		}
+
+		if ( 1 < \count( $found ) ) {
+			throw ManyBaselinesException::for_identifiers( $found );
+		}
+
+		return $found[0] ?? null;
+	}
+
+	/**
+	 * Every discovered migration, loaded and wired, keyed by identifier.
+	 *
+	 * Requires every file, unlike {@see get_discovered_migrations()}, because the
+	 * questions this serves are about what a file *is* rather than what it is
+	 * called. Reads no database.
+	 *
+	 * @return array<string, Migration> Wired instances, in run order.
+	 * @throws DiscoveryException When a file returns the wrong value.
+	 */
+	private function get_loaded_migrations(): array {
+		$root_dir  = $this->with( Path::class )->get_plugin_path( self::MIGRATIONS_ROOT );
+		$instances = array();
+
+		foreach ( $this->get_discovered_migrations() as $identifier ) {
+			$instances[ $identifier ] = $this->load_migration( $root_dir . '/' . $identifier . '.php' );
+		}
+
+		return $instances;
+	}
+
+	/**
+	 * Require and wire a single migration file, without running it.
+	 *
+	 * Running is the caller's, so that run_pending() can read what a file is
+	 * before deciding whether it should run at all.
 	 *
 	 * @param string $file Absolute path to the migration file.
-	 * @return void
+	 * @return Migration The wired instance.
 	 * @throws DiscoveryException When the file does not return a Migration instance.
 	 */
-	private function run_migration( string $file ): void {
+	private function load_migration( string $file ): Migration {
 		/** @var Migration $instance */
 		$instance = require $file;
 
@@ -459,12 +657,13 @@ class Migrations extends Module implements Bootable {
 		}
 
 		$this->get_plugin()->wire( $instance );
-		$instance->up();
 
 		// Recorded by the caller, not here: run_pending() writes $ran (with
-		// this identifier appended) via save() immediately after this
-		// returns, so a migration recorded as run and its up() having
-		// actually completed always stay in sync.
+		// this identifier appended) via save() immediately after up() returns,
+		// so a migration recorded as run and its up() having actually completed
+		// always stay in sync.
+
+		return $instance;
 	}
 
 	/**
