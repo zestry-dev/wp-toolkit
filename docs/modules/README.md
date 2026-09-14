@@ -45,7 +45,7 @@ Add nothing up front. Reach for one when you hit what it solves:
 | [`path`](path/) | resolve a path or URL inside the plugin | — | — | — |
 | [`post-types`](post-types/) | register a custom post type or taxonomy | `resources/post-types/`, `resources/taxonomies/` | [`PostType`](post-types/post-type.md), [`Taxonomy`](post-types/taxonomy.md) | `path` |
 | [`queue`](queue/) | run work in the background, out of the request that asked for it | `resources/jobs/` | [`Job`](queue/job.md) | `path`, `db`, `cli`, `migrations` |
-| [`request`](request/) | declare and validate what a route, ability, action or page accepts | — | — | — |
+| [`request`](request/) | declare and validate what a route, ability or action accepts | — | — | — |
 | [`rest-api`](rest-api/) | expose an HTTP endpoint | `resources/routes/` | [`Route`](rest-api/route.md) | `path`, `request` |
 | [`site-health`](site-health/) | report a verdict on Site Health, or list values on Info | `resources/health-checks/`, `resources/debug-sections/` | [`HealthCheck`](site-health/health-check.md), [`DebugSection`](site-health/debug-section.md) | `path` |
 | [`transients`](transients/) | keep a value past the request, with an expiry | — | — | — |

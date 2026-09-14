@@ -2039,7 +2039,7 @@ function zestry_entry_purpose( string $name ): string {
 		'db'            => 'name a database table, yours or WordPress\'s',
 		'globals'       => 'pass a value between classes within one request',
 		'path'          => 'resolve a path or URL inside the plugin',
-		'request'       => 'declare and validate what a route, ability, action or page accepts',
+		'request'       => 'declare and validate what a route, ability or action accepts',
 		'transients'    => 'keep a value past the request, with an expiry',
 		'views'         => 'render a PHP template',
 	);

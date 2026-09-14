@@ -69,7 +69,15 @@ return new class() extends AdminPage {
 	// keeps the notice off a refresh -- and off a bookmark, as `?updated=1` in
 	// the URL would not.
 	public function handle_submit(): void {
+		// The nonce and capability are already checked; reading and sanitising is
+		// yours. An upload is $_FILES, handed to WordPress's own mover:
+		//
 		// $name = isset( $_POST['name'] ) ? \sanitize_text_field( \wp_unslash( $_POST['name'] ) ) : '';
+		//
+		// require_once ABSPATH . 'wp-admin/includes/file.php';
+		// $upload = isset( $_FILES['import'] )
+		//     ? \wp_handle_upload( $_FILES['import'], array( 'test_form' => false ) )
+		//     : null;
 
 		$this->set_flash( \__( 'Saved.', '{{text_domain}}' ) );
 

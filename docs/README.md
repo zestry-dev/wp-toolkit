@@ -106,6 +106,7 @@ Almost everything is the same two steps: **add** the feature once, then **make**
 | Register a post type | `wp zt add post-types`<br>then `wp zt make post-type book` | [`post-types`](modules/post-types/) |
 | Add a field to the editor | `wp zt add fields`<br>then `wp zt make field acme_rating` | [`fields`](modules/fields/) |
 | Run something on a schedule | `wp zt add cron`<br>then `wp zt make schedule sync` | [`cron`](modules/cron/) |
+| Run work in the background | `wp zt add queue`<br>then `wp zt make job send-receipt` | [`queue`](modules/queue/) |
 | Create or change a table | `wp zt add migrations`<br>then `wp zt make migration create-books-table` | [`migrations`](modules/migrations/) |
 | Build a block | `wp zt add blocks`<br>then `wp zt make block card --dynamic --view=none`<br>then `npm run build` | [`blocks`](modules/blocks/) |
 | Give an AI agent a tool | `wp zt add abilities`<br>then `wp zt make ability publish-post` | [`abilities`](modules/abilities/) |

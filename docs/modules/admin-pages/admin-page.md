@@ -13,6 +13,8 @@ A page file returns an AdminPage subclass instance; the AdminPages module wires 
 
 Authorization is enforced by the module before render(): the current user must satisfy capability(), and a nonce is verified on POST. A page therefore only has to describe itself (title, capability, placement) and render its markup.
 
+**A page reads `$_POST` and `$_FILES` itself**, unlike a route or an ability, which declare what they accept with `#[RequestArgument]`. A page is reached twice by two methods — the GET that draws the form and the POST that submits it — and one declaration cannot describe both: a field that is required on the second is absent on the first. The nonce and the capability are still checked for you, so what is left is reading the values and sanitising them.
+
 A file at `resources/admin-pages/settings.php` registers as a top-level menu page with the slug `{plugin}-settings` (see `get_page_slug()`). Return a ParentMenu case from `parent()` to nest it under a core WordPress menu instead, such as `ParentMenu::Settings`. Reach any declared module with `$this->with( Path::class )`; a page also has `views()`, `cookies()` and `admin_pages()` as typed accessors. `wp zt make page <name>` generates a starting point.
 
 A page rendering its own full-width application shell rather than the usual WordPress "wrap" layout should extend `ModernAdminPage` instead, which is this class plus a critical-CSS reset of wp-admin's default chrome. It satisfies the same discovery guard, so it is a drop-in swap for the `extends AdminPage` a generated file starts with.
@@ -93,7 +95,15 @@ return new class() extends AdminPage {
 	// keeps the notice off a refresh -- and off a bookmark, as `?updated=1` in
 	// the URL would not.
 	public function handle_submit(): void {
+		// The nonce and capability are already checked; reading and sanitising is
+		// yours. An upload is $_FILES, handed to WordPress's own mover:
+		//
 		// $name = isset( $_POST['name'] ) ? \sanitize_text_field( \wp_unslash( $_POST['name'] ) ) : '';
+		//
+		// require_once ABSPATH . 'wp-admin/includes/file.php';
+		// $upload = isset( $_FILES['import'] )
+		//     ? \wp_handle_upload( $_FILES['import'], array( 'test_form' => false ) )
+		//     : null;
 
 		$this->set_flash( \__( 'Saved.', 'acme-plugin' ) );
 
