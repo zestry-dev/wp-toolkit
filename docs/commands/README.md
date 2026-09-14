@@ -28,6 +28,7 @@ been initialized — see [Getting started](../getting-started.md).
 - [`wp zt make entry`](make-entry.md) — Generate a script entry of this plugin's own.
 - [`wp zt make field`](make-field.md) — Generate a post meta field.
 - [`wp zt make health-check`](make-health-check.md) — Generate a Site Health check.
+- [`wp zt make job`](make-job.md) — Generate a new background job.
 - [`wp zt make meta-box`](make-meta-box.md) — Generate a post edit screen meta box.
 - [`wp zt make migration`](make-migration.md) — Generate a new database migration.
 - [`wp zt make module`](make-module.md) — Generate a new plain Module subclass.

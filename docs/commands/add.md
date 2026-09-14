@@ -22,7 +22,7 @@ Two modules also write build tooling outside their own tree. Everything either w
 ## Options
 
 - **`<module>...`**  
-  One or more module names to copy in. Available modules: path, request, cookie, globals, transients, db, views, assets, log, options, ajax, admin-pages, rest-api, cli, cron, fields, post-types, blocks, meta-boxes, site-health, abilities, icons-library, migrations.
+  One or more module names to copy in. Available modules: path, request, cookie, globals, transients, db, views, assets, log, options, ajax, admin-pages, rest-api, cli, cron, fields, post-types, blocks, meta-boxes, site-health, abilities, icons-library, migrations, queue.
 
 ## Examples
 

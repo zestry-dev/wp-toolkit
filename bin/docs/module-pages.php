@@ -2022,6 +2022,7 @@ function zestry_entry_purpose( string $name ): string {
 		'migrations'    => 'create or change a database table',
 		'options'       => 'store settings',
 		'post-types'    => 'register a custom post type or taxonomy',
+		'queue'         => 'run work in the background, out of the request that asked for it',
 		'rest-api'      => 'expose an HTTP endpoint',
 		'site-health'   => 'report a verdict on Site Health, or list values on Info',
 

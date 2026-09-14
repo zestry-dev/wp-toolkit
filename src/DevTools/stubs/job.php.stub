@@ -1,0 +1,77 @@
+<?php
+/**
+ * {{name}} background job.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\Queue\Job;
+
+return new class() extends Job {
+
+	// This file is the handler, not the work. Its name -- {{name}} -- is what
+	// dispatch() takes, and the same instance runs every job queued under it:
+	//
+	//     $this->with( Queue::class )->dispatch( '{{name}}', array( 'id' => 42 ) );
+	//
+	// So keep it stateless. A property set here is still set for the next job
+	// in the same batch.
+
+	// The queue this job's work goes on. A queue is just a label you drain
+	// independently -- worth its own name when this work wants a different
+	// interval from the rest, since everything on one queue waits its turn.
+	public function queue(): string {
+		return '{{queue}}';
+	}
+
+	// How many times this may run before it is given up on. Counting starts at
+	// the first run, so 3 is one attempt and two retries; 1 never retries. The
+	// attempt is spent when the job is claimed, not when it finishes, so work
+	// that kills the whole PHP process still runs out eventually.
+	public function get_max_attempts(): int {
+		return 3;
+	}
+
+	// How long to wait before the next attempt -- doubling by default, so a job
+	// failing because something else is down stops hammering it. Return 0 to
+	// retry at the next drain.
+	public function get_retry_delay( int $attempt ): int {
+		return \MINUTE_IN_SECONDS * ( 2 ** \max( 0, $attempt - 1 ) );
+	}
+
+	// The work. $payload is what dispatch() was given, decoded from the JSON it
+	// was stored as -- scalars and arrays, never objects, so load what you need
+	// from the ids in it.
+	//
+	// TRUE IS THE ONLY THING THAT MEANS DONE. Return false or a WP_Error and
+	// this goes back on the queue until the attempts run out -- a WP_Error is
+	// the better of the two, since its message is what `queue list` shows.
+	// Most of WordPress hands you one already:
+	//
+	//     $response = \wp_remote_post( $url, $args );
+	//
+	//     if ( \is_wp_error( $response ) ) {
+	//         return $response;
+	//     }
+	//
+	// Throwing works too and means the same thing; the exception is caught and
+	// becomes a WP_Error. Either way nothing reaches whatever drained the
+	// queue, so one bad job never stops the batch.
+	//
+	// Expect to run more than once: a retry re-runs the whole method, so make
+	// it safe to repeat, or check before acting.
+	public function handle( array $payload ): bool|\WP_Error {
+		return true;
+	}
+
+	// Called once, after the last attempt has failed and the row has been
+	// marked `failed`. The record is already written, so this is for telling
+	// somebody rather than for cleaning up. $error is a WP_Error however the
+	// job reported failure -- branch on $error->get_error_code().
+	//
+	// public function failed( array $payload, \WP_Error $error ): void {
+	// }
+};

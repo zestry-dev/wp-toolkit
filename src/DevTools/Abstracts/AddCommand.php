@@ -25,6 +25,7 @@ use Zestry\WPToolkit\DevTools\BootstrapFile;
 use Zestry\WPToolkit\DevTools\Copier;
 use Zestry\WPToolkit\DevTools\ZestryConfig;
 use Zestry\WPToolkit\Modules\CLI\Command;
+use Zestry\WPToolkit\Modules\Migrations\Migrations;
 use Zestry\WPToolkit\Modules\Path;
 use Zestry\WPToolkit\DevTools\RuntimePlugin;
 
@@ -49,6 +50,24 @@ use Zestry\WPToolkit\DevTools\RuntimePlugin;
  * covering the whole batch -- or empties the set entirely to cancel.
  */
 abstract class AddCommand extends Command {
+
+	/**
+	 * The migration `queue` ships, without its `.php` extension.
+	 *
+	 * Fixed rather than generated at copy time, so a second `add` recognises the
+	 * file it already wrote instead of writing another one beside it -- and so
+	 * this name means the same thing in every plugin, which is what lets the
+	 * module point at it by name when the table is missing.
+	 *
+	 * The timestamp is the Unix epoch, which is doing two jobs. It sorts before
+	 * anything a plugin can author, since `wp zt make migration` stamps
+	 * `gmdate( 'YmdHis' )` and nothing it produces is earlier -- so a migration
+	 * of yours may dispatch a job, or otherwise touch the queue, without having
+	 * to know this one exists. And it reads as a sentinel rather than as a date
+	 * somebody chose, which is what it is: shipped migrations sit in 1970 and
+	 * yours sit in real time, so the two can never be mistaken for each other.
+	 */
+	public const QUEUE_TABLE_MIGRATION = '19700101000000-create-queue-table';
 
 	/**
 	 * Resolve, and copy, the requested modules and their dependencies.
@@ -183,6 +202,10 @@ abstract class AddCommand extends Command {
 
 		if ( \in_array( 'assets', $copied, true ) ) {
 			$this->set_up_asset_build( $plugin_root );
+		}
+
+		if ( \in_array( 'queue', $copied, true ) ) {
+			$this->set_up_queue_table( $plugin_root );
 		}
 	}
 
@@ -365,6 +388,67 @@ abstract class AddCommand extends Command {
 		}
 
 		$this->log( 'Run `npm install && npm run build` to build your blocks.' );
+	}
+
+	/**
+	 * Write the migration that creates the queue table.
+	 *
+	 * The Queue module needs a table, and this is how it gets one: a migration
+	 * in your own `resources/migrations/` directory, run when you run the rest
+	 * of them. Nothing creates the table behind your back -- a schema change on
+	 * a request that only wanted to queue an email is exactly the surprise this
+	 * toolkit tries not to spring.
+	 *
+	 * Additive like everything else here. Any migration already ending in
+	 * `-create-queue-table.php` is left alone, whatever its timestamp, so a
+	 * second `wp zt add queue` writes nothing and an edited one keeps its edits.
+	 *
+	 * @param string $plugin_root Absolute path to the consuming plugin's root.
+	 * @return void
+	 */
+	protected function set_up_queue_table( string $plugin_root ): void {
+		$root      = \rtrim( $plugin_root, '/\\' );
+		$directory = $root . '/' . Migrations::MIGRATIONS_ROOT;
+		$existing  = \glob( $directory . '/*-create-queue-table.php' );
+
+		// Matched by suffix rather than by the whole filename: a plugin that
+		// renamed the timestamp still has the migration, and writing a second
+		// one would create the table twice -- or, once the first has run,
+		// report a rename and refuse the whole batch.
+		if ( \is_array( $existing ) && array() !== $existing ) {
+			$this->log( 'Kept your existing queue table migration: ' . \basename( $existing[0] ) );
+
+			return;
+		}
+
+		try {
+			$config = $this->with( ZestryConfig::class )->read( $plugin_root );
+		} catch ( \RuntimeException $exception ) {
+			// The module is copied and declared either way; only the migration
+			// is missing, and saying so is more use than failing the command.
+			$this->warning( 'Could not write the queue table migration: ' . $exception->getMessage() );
+
+			return;
+		}
+
+		$file = $directory . '/' . self::QUEUE_TABLE_MIGRATION . '.php';
+
+		$written = $this->write_if_absent(
+			$file,
+			$this->with( StubRenderer::class )->render(
+				$this->with( Path::class )->get_plugin_path( 'src/DevTools/stubs/queue-table.php.stub' ),
+				array(
+					'copied_namespace' => Copier::get_target_namespace( \rtrim( $config['namespace'], '\\' ) ),
+				)
+			)
+		);
+
+		if ( ! $written ) {
+			return;
+		}
+
+		$this->with( Formatter::class )->format( $plugin_root, array( $file ) );
+		$this->log( 'Run your migrations to create the queue table, then write a job with `wp zt make job <name>`.' );
 	}
 
 	/**

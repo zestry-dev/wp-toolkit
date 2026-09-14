@@ -4,6 +4,7 @@ declare( strict_types=1 );
 
 namespace Zestry\WPToolkit\Tests\Integration\DevTools;
 
+use Zestry\WPToolkit\DevTools\Abstracts\AddCommand;
 use Zestry\WPToolkit\Kernel\Plugin;
 use Zestry\WPToolkit\Modules\CLI\Command;
 use Zestry\WPToolkit\Tests\Support\TestCase;
@@ -193,6 +194,61 @@ final class AddCommandTest extends TestCase {
 
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/package.json' );
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/tsconfig.json' );
+	}
+
+	public function test_adding_queue_writes_the_migration_that_creates_its_table(): void {
+		$this->run_add( array( 'queue' ) );
+
+		$migration = $this->target_plugin_dir . '/resources/migrations/' . AddCommand::QUEUE_TABLE_MIGRATION . '.php';
+
+		$this->assertFileExists(
+			$migration,
+			'The Queue module refuses to run without its table, and this is the only thing that creates one.'
+		);
+
+		$contents = (string) file_get_contents( $migration );
+
+		// Rendered against the consuming plugin's own copied namespace, not
+		// this package's -- the same import every other generated file gets.
+		$this->assertStringContainsString( 'use Acme\Plugin\Core\Modules\Migrations\Migration;', $contents );
+		$this->assertStringContainsString( 'use Acme\Plugin\Core\Modules\Queue\Queue;', $contents );
+		$this->assertStringContainsString( 'Queue::TABLE_NAME', $contents );
+	}
+
+	public function test_adding_queue_twice_writes_only_one_migration(): void {
+		$this->run_add( array( 'queue' ) );
+		$this->run_add( array( 'queue' ) );
+
+		$this->assertCount(
+			1,
+			(array) glob( $this->target_plugin_dir . '/resources/migrations/*-create-queue-table.php' ),
+			'A second migration would create the table twice, or read as a rename of the first and stop the batch.'
+		);
+	}
+
+	public function test_adding_queue_keeps_a_table_migration_that_was_renamed(): void {
+		mkdir( $this->target_plugin_dir . '/resources/migrations', 0777, true );
+		file_put_contents(
+			$this->target_plugin_dir . '/resources/migrations/20990101000000-create-queue-table.php',
+			"<?php\n// mine\n"
+		);
+
+		$this->run_add( array( 'queue' ) );
+
+		$this->assertFileDoesNotExist(
+			$this->target_plugin_dir . '/resources/migrations/' . AddCommand::QUEUE_TABLE_MIGRATION . '.php',
+			'Matched by suffix, so a plugin that renamed the timestamp still has the migration.'
+		);
+		$this->assertCount(
+			1,
+			(array) glob( $this->target_plugin_dir . '/resources/migrations/*-create-queue-table.php' )
+		);
+	}
+
+	public function test_adding_a_module_other_than_queue_writes_no_migration(): void {
+		$this->run_add( array( 'views' ) );
+
+		$this->assertDirectoryDoesNotExist( $this->target_plugin_dir . '/resources/migrations' );
 	}
 
 	/**
