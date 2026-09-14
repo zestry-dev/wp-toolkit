@@ -194,7 +194,7 @@ Every name below is what you pass to `wp zt add` — `wp zt add meta-boxes`, `wp
 
 - [Modules](modules/) — everything a plugin can be made of:
   <!-- zestry:include generator="module-names" -->
-  `abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cookie`, `cron`, `db`, `fields`, `globals`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `path`, `post-types`, `request`, `rest-api`, `site-health`, `transients`, `views`
+  `abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cookie`, `cron`, `db`, `fields`, `globals`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `path`, `post-types`, `queue`, `request`, `rest-api`, `site-health`, `transients`, `views`
   <!-- /zestry:include -->
 - [`Plugin`](plugin.md) — the class your entry file builds, and everything it can be told to do.
 - [Command reference](commands/) — every `wp zt` command.

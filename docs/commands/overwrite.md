@@ -14,7 +14,7 @@ A module's dependencies are re-copied with it. To replace one on its own, name i
 ## Options
 
 - **`<module>...`**  
-  One or more module names to overwrite (or add, if not already present). Available modules: path, request, cookie, globals, transients, db, views, assets, log, options, ajax, admin-pages, rest-api, cli, cron, fields, post-types, blocks, meta-boxes, site-health, abilities, icons-library, migrations.
+  One or more module names to overwrite (or add, if not already present). Available modules: path, request, cookie, globals, transients, db, views, assets, log, options, ajax, admin-pages, rest-api, cli, cron, fields, post-types, blocks, meta-boxes, site-health, abilities, icons-library, migrations, queue.
 
 - **`[--yes]`**  
   Answer any confirmation prompt affirmatively, for an unattended run.

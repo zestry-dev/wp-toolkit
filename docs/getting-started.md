@@ -82,7 +82,7 @@ Dependencies come along automatically — nearly everything needs `path`, so it 
 Everything you can add is a **[module](modules/)**:
 
 <!-- zestry:include generator="module-names" -->
-`abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cookie`, `cron`, `db`, `fields`, `globals`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `path`, `post-types`, `request`, `rest-api`, `site-health`, `transients`, `views`
+`abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cookie`, `cron`, `db`, `fields`, `globals`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `path`, `post-types`, `queue`, `request`, `rest-api`, `site-health`, `transients`, `views`
 <!-- /zestry:include -->
 
 Some act on their own — `ajax` binds hooks, `post-types` walks a directory — and some only work when you call them, like `path` and `views`. Both are added, declared and reached the same way; what differs is whether the class implements [`Bootable`](kernel/bootable.md).

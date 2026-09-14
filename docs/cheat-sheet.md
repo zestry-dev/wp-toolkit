@@ -76,6 +76,7 @@ Add any of them with `wp zt add <name>`; dependencies come along.
 | [`site-health`](modules/site-health/) | `resources/debug-sections/` | [`DebugSection`](modules/site-health/debug-section.md) | [`make debug-section`](commands/make-debug-section.md) |
 | [`blocks`](modules/blocks/) | `build/blocks/` | [`Block`](modules/blocks/block.md) | [`make block`](commands/make-block.md) |
 | [`migrations`](modules/migrations/) | `resources/migrations/` | [`Migration`](modules/migrations/migration.md) | [`make migration`](commands/make-migration.md) |
+| [`queue`](modules/queue/) | `resources/jobs/` | [`Job`](modules/queue/job.md) | [`make job`](commands/make-job.md) |
 | [`assets`](modules/assets/) | `assets/`, `build/` (via its manifest) | — | [`make entry`](commands/make-entry.md), [`make shared`](commands/make-shared.md) |
 | [`options`](modules/options/) | — | — | — |
 | [`log`](modules/log/) | — | — | — |
@@ -115,6 +116,10 @@ Add any of them with `wp zt add <name>`; dependencies come along.
 - **`meta-boxes` reaches two screens.** Posts and comments are the only ones WordPress renders boxes on; terms and users take custom fields through action hooks instead. Register their meta with `fields` and render it on those forms yourself.
 - **`migrations` never triggers itself.** Call `$plugin->get( Migrations::class )->run_pending()`, or run `wp {slug} migrations run` / `wp {slug} migrations list`.
 - **A migration's identity is its filename**, description included, so renaming one makes it a migration your site has never run. `migrations list` shows the recorded name as `orphaned` beside the new name's `pending`, and `run` refuses the whole batch when the two share a timestamp — rename the file back, or `--force` to run it as new.
+- **`queue` never drains itself.** A job file is the handler; the work is a row. `$plugin->get( Queue::class )->dispatch( 'send-receipt', array( 'order_id' => 42 ) )` queues it, and something you own runs `process()` — a [`cron`](modules/cron/) schedule, or `wp {slug} queue work` from a real crontab. Two workers at once is safe: a job is claimed with a conditional `UPDATE`, so they split the queue rather than duplicating it.
+- **A job belongs to a queue, and a queue is a label you drain on its own interval.** `Job::queue()` names it; `process( 'mail' )` drains one and `process()` drains all. Work sharing a queue waits its turn, so slow work wants its own.
+- **`handle()` returns `true` for done; `false`, a `WP_Error` or a thrown exception all ask to be retried** — returning the `WP_Error` WordPress already gave you is usually the whole of a job's error handling. The attempt is counted, it goes back after `get_retry_delay()`, and `get_max_attempts()` is where it stops and becomes `failed`. The attempt is spent when the job is *claimed*, so work that kills the whole PHP process runs out too. `wp {slug} queue list --status=failed`, then `queue retry`.
+- **The queue table comes from a migration [`wp zt add queue`](commands/add.md) writes**, and migrations never run themselves — until you run yours, every dispatch throws `MissingQueueTableException` naming the command.
 - **`options` writes only when you tell it to.** `set()` and `delete()` change memory; `save()` is the only thing that reaches the database, so a request that dies halfway leaves the stored settings untouched. A key is a dotted path — `set( 'mail.from.name', … )` nests. The ungrouped row autoloads; a `group()` does not unless `add_autoloaded_groups()` names it.
 - **The directory each module reads is fixed**, and one that does not exist discovers nothing and says nothing — so adding a module before writing its first file is fine.
 - **Name a discovered file with hyphens** — `book-details.php`. It is a convention, not a rewrite: your filename registers exactly as written. Two destinations hold their filename to their own charset and **throw** rather than respell it — an admin page whose name a URL would have to encode, and an ability outside WordPress's `[a-z0-9-]`.
@@ -226,6 +231,7 @@ Each type writes one file into the directory its module discovers, so the genera
 | [`health-check`](commands/make-health-check.md) | `resources/health-checks/` | a Site Health **Status** test |
 | [`debug-section`](commands/make-debug-section.md) | `resources/debug-sections/` | a Site Health **Info** panel |
 | [`migration`](commands/make-migration.md) | `resources/migrations/` | a schema change, timestamp-prefixed |
+| [`job`](commands/make-job.md) | `resources/jobs/` | a background job. `--queue=` |
 | [`block`](commands/make-block.md) | `src/blocks/` | a block. `--dynamic`, `--view=none\|script\|module`, `--js` |
 | [`entry`](commands/make-entry.md) | `src/entries/` | your own script. `--kind=script\|module` |
 | [`shared`](commands/make-shared.md) | `src/shared/` | a package two entries can share. `--kind=script\|module` |
@@ -237,7 +243,7 @@ Each type writes one file into the directory its module discovers, so the genera
 `module`, `activation` and `abstract` land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. Every type writes to one directory, fixed by the module that reads it; a name with a slash nests inside it, so `make command reports/daily` writes `resources/commands/reports/daily.php`.
 
 <!-- zestry:include generator="prompting-generators" -->
-**6 of the 21 generators ask for what you leave out** — [`block`](commands/make-block.md), [`field`](commands/make-field.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 15 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.
+**6 of the 22 generators ask for what you leave out** — [`block`](commands/make-block.md), [`field`](commands/make-field.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 16 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.
 <!-- /zestry:include -->
 
 `make module` and `make activation` are the only generators that also write to `bootstrap.php`, since being listed is the only thing that makes a module exist.

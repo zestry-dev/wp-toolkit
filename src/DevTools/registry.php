@@ -23,6 +23,7 @@ use Zestry\WPToolkit\Modules\MetaBoxes\MetaBoxes;
 use Zestry\WPToolkit\Modules\Migrations\Migrations;
 use Zestry\WPToolkit\Modules\Options;
 use Zestry\WPToolkit\Modules\PostTypes\PostTypes;
+use Zestry\WPToolkit\Modules\Queue\Queue;
 use Zestry\WPToolkit\Modules\RestApi\RestApi;
 use Zestry\WPToolkit\Modules\SiteHealth\SiteHealth;
 use Zestry\WPToolkit\Modules\Cookie;
@@ -162,5 +163,11 @@ return array(
 	'migrations'    => array(
 		'source'  => Migrations::class,
 		'depends' => array( 'path', 'db', 'options', 'cli' ),
+	),
+	'queue'         => array(
+		'source'  => Queue::class,
+		// `migrations` because the queue table is created by a migration this
+		// module ships, rather than by a schema change made behind your back.
+		'depends' => array( 'path', 'db', 'cli', 'migrations' ),
 	),
 );

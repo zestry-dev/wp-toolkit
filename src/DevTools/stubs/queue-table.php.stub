@@ -1,0 +1,55 @@
+<?php
+/**
+ * Create the queue table.
+ */
+
+declare( strict_types=1 );
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\Migrations\Migration;
+use {{copied_namespace}}\Modules\Queue\Queue;
+
+return new class() extends Migration {
+
+	// Written by `wp zt add queue`, and yours from here on. Its timestamp is
+	// fixed rather than generated so re-running `add` recognises it instead of
+	// writing a second copy -- keep the filename as it is. The epoch, so this
+	// sorts ahead of every migration you write and a later one of yours can
+	// queue a job without wondering whether the table is there yet.
+	//
+	// The Queue module refuses to do anything until this has run: a schema
+	// change is not something it will make on a request that only wanted to
+	// queue an email. Run it the way you run the rest of them:
+	//
+	//     wp {plugin-slug} migrations run
+	public function up(): void {
+		$table = $this->get_table( Queue::TABLE_NAME );
+
+		// One row is one piece of work. A completed job's row is deleted, so
+		// this table stays the size of what is outstanding rather than of
+		// everything ever run.
+		//
+		// The `claim` index is the one that matters: every drain asks for the
+		// oldest available row on a queue, and this is what keeps that from
+		// scanning a backlog.
+		$this->db_delta(
+			"CREATE TABLE {$table} (
+				id bigint(20) unsigned NOT NULL auto_increment,
+				queue varchar(191) NOT NULL,
+				job varchar(191) NOT NULL,
+				payload longtext NOT NULL,
+				status varchar(20) NOT NULL,
+				attempts smallint(5) unsigned NOT NULL default 0,
+				available_at datetime NOT NULL,
+				reserved_at datetime default NULL,
+				created_at datetime NOT NULL,
+				last_error text,
+				PRIMARY KEY  (id),
+				KEY claim (queue,status,available_at),
+				KEY job (job,status)
+			) {$this->get_charset_collate()};"
+		);
+	}
+};
