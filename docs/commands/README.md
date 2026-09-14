@@ -39,6 +39,7 @@ been initialized — see [Getting started](../getting-started.md).
 - [`wp zt make shared`](make-shared.md) — Generate a shared JavaScript package.
 - [`wp zt make taxonomy`](make-taxonomy.md) — Generate a new custom taxonomy.
 - [`wp zt make test`](make-test.md) — Generate a test class.
+- [`wp zt make update`](make-update.md) — Generate an update handler.
 - [`wp zt make view`](make-view.md) — Generate a view template.
 
 ## Keep it healthy

@@ -352,6 +352,21 @@ final class MakeCommandTest extends TestCase {
 	 * A plain module is discovered by nothing, so generating one has to declare
 	 * it -- otherwise the file exists and is reachable by nothing.
 	 */
+	public function test_update_type_is_declared_under_a_hook_not_bare(): void {
+		file_put_contents( $this->target_plugin_dir . '/bootstrap.php', "<?php\n\nreturn array(\n);\n" );
+
+		$this->run_make( array( 'Update' ), array(), 'update.php.stub' );
+
+		$bootstrap = (string) file_get_contents( $this->target_plugin_dir . '/bootstrap.php' );
+
+		$this->assertStringContainsString( 'Update::class', $bootstrap );
+		$this->assertStringContainsString(
+			"'admin_init' => array(",
+			$bootstrap,
+			'The heading is the timing, and a Bootable module left at the top level throws at run().'
+		);
+	}
+
 	public function test_module_type_declares_itself_in_bootstrap(): void {
 		file_put_contents( $this->target_plugin_dir . '/bootstrap.php', "<?php\n\nreturn array(\n);\n" );
 
@@ -1635,6 +1650,7 @@ final class MakeCommandTest extends TestCase {
 			'ability'            => 'ability.php',
 			'abstract'           => 'abstract.php',
 			'test.php.stub'      => 'test.php',
+			'update.php.stub'    => 'update.php',
 		);
 
 		$command = isset( $stub_to_make_file[ $stub ] )
