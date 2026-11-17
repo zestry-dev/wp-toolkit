@@ -57,16 +57,12 @@ use Zestry\WPToolkit\Kernel\Helpers\Str;
  *
  * @example Caching a large index
  * ```
- * $files = $this->with( FileTransients::class );
- *
- * $index = $files->get( 'catalog' );
- *
- * if ( null === $index ) {
- *     $index = $this->build_index();
- *
- *     // Where the files are off this stores nothing, and the index is rebuilt next time.
- *     $files->set( 'catalog', $index, DAY_IN_SECONDS );
- * }
+ * // Built on a miss and kept for a day. Where the files are off it is built every time.
+ * $index = $this->with( FileTransients::class )->remember(
+ *     'catalog',
+ *     fn () => $this->build_index(),
+ *     DAY_IN_SECONDS
+ * );
  * ```
  *
  * @rationale Measured on PHP 8.3 / Apache with a 1,000-item array: 0.07–0.17 ms
@@ -140,9 +136,9 @@ class FileTransients extends Module implements Bootable {
 	 * @throws \InvalidArgumentException When the key is empty.
 	 */
 	public function get( string $key, mixed $fallback = null ): mixed {
-		$entry = $this->read( $key );
+		$value = null;
 
-		return null === $entry ? $fallback : $entry['value'];
+		return $this->is_stored( $key, $value ) ? $value : $fallback;
 	}
 
 	/**
@@ -187,7 +183,7 @@ class FileTransients extends Module implements Bootable {
 	 * @throws \InvalidArgumentException When the key is empty.
 	 */
 	public function has( string $key ): bool {
-		return null !== $this->read( $key );
+		return $this->is_stored( $key );
 	}
 
 	/**
@@ -206,6 +202,38 @@ class FileTransients extends Module implements Bootable {
 			// No folder, so no file to delete.
 			return;
 		}
+	}
+
+	/**
+	 * Read a value, or work it out, store it and return it.
+	 *
+	 * The callback runs only on a miss, and whatever it returns is stored, `null`
+	 * and `false` included, so "there was nothing" is remembered too.
+	 *
+	 * Where the files are off it runs every time and stores nothing: the value
+	 * is still right, only the saving is lost. A value the files cannot hold, a
+	 * `WP_Error` among them, is returned and not stored, with the
+	 * `_doing_it_wrong()` notice {@see set()} gives. To skip storing on failure,
+	 * throw from the callback.
+	 *
+	 * @param string   $key      Your own key.
+	 * @param callable $callback Works the value out. Called with no arguments.
+	 * @param int      $ttl      Seconds to keep it. 0 means no expiry.
+	 * @return mixed The stored value, or what the callback returned.
+	 * @throws \InvalidArgumentException When the key is empty.
+	 */
+	public function remember( string $key, callable $callback, int $ttl = 0 ): mixed {
+		$value = null;
+
+		if ( $this->is_stored( $key, $value ) ) {
+			return $value;
+		}
+
+		$value = $callback();
+
+		$this->set( $key, $value, $ttl );
+
+		return $value;
 	}
 
 	/**
@@ -355,38 +383,44 @@ class FileTransients extends Module implements Bootable {
 	}
 
 	/**
-	 * The stored entry, unless the files are off or it is missing or expired.
+	 * Whether a value is stored, handing it back through `$value` when it is.
 	 *
-	 * @param string $key Your own key.
-	 * @return array{expires: int, value: mixed}|null The entry, or null.
+	 * The answer and the value are kept apart so a stored `null` is a hit like
+	 * any other, and the file is included once for both.
+	 *
+	 * @param string $key   Your own key.
+	 * @param mixed  $value Set to the stored value on a hit; left alone on a miss.
+	 * @return bool False when the files are off, or the value is missing or expired.
 	 */
-	private function read( string $key ): ?array {
+	private function is_stored( string $key, mixed &$value = null ): bool {
 		$this->check_key( $key );
 
 		if ( ! $this->is_available() ) {
-			return null;
+			return false;
 		}
 
 		try {
 			$file = $this->get_file( $key );
 		} catch ( \RuntimeException $error ) {
 			// The filter turned the files on, but there is no folder to hold them.
-			return null;
+			return false;
 		}
 
 		$entry = $this->include_entry( $file );
 
 		if ( null === $entry ) {
-			return null;
+			return false;
 		}
 
 		if ( $this->is_expired( $entry, \time() ) ) {
 			$this->remove( $file );
 
-			return null;
+			return false;
 		}
 
-		return $entry;
+		$value = $entry['value'];
+
+		return true;
 	}
 
 	/**

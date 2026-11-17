@@ -138,4 +138,71 @@ final class TransientsTest extends TestCase {
 
 		$this->assertSame( 'x', $this->transients->get( $key ) );
 	}
+
+	public function test_remember_works_a_value_out_once_and_then_reads_it(): void {
+		$calls    = 0;
+		$callback = static function () use ( &$calls ): array {
+			++$calls;
+
+			return array( 'usd' => 1.1 );
+		};
+
+		$this->assertSame( array( 'usd' => 1.1 ), $this->transients->remember( 'rates', $callback, HOUR_IN_SECONDS ) );
+		$this->assertSame( array( 'usd' => 1.1 ), $this->transients->remember( 'rates', $callback, HOUR_IN_SECONDS ) );
+		$this->assertSame( 1, $calls );
+		$this->assertSame( array( 'usd' => 1.1 ), $this->transients->get( 'rates' ) );
+		$this->assertEqualsWithDelta( time() + HOUR_IN_SECONDS, (int) get_option( '_transient_timeout_zestry-test-rates' ), 5 );
+	}
+
+	/**
+	 * @dataProvider provide_falsy_values
+	 * @dataProvider provide_indistinguishable_values
+	 */
+	public function test_remember_keeps_a_falsy_answer_rather_than_asking_again( mixed $value ): void {
+		$calls    = 0;
+		$callback = static function () use ( &$calls, $value ): mixed {
+			++$calls;
+
+			return $value;
+		};
+
+		$this->transients->remember( 'answer', $callback );
+
+		$this->assertSame( $value, $this->transients->remember( 'answer', $callback ) );
+		$this->assertSame( 1, $calls );
+	}
+
+	public function test_remember_stores_nothing_when_the_callback_throws(): void {
+		try {
+			$this->transients->remember(
+				'rates',
+				static function (): never {
+					throw new \RuntimeException( 'The remote is down.' );
+				}
+			);
+			$this->fail( 'The exception was swallowed.' );
+		} catch ( \RuntimeException $e ) {
+			$this->assertSame( 'The remote is down.', $e->getMessage() );
+		}
+
+		$this->assertFalse( $this->transients->has( 'rates' ) );
+	}
+
+	public function test_remember_with_an_empty_key_throws_before_working_anything_out(): void {
+		$called = false;
+
+		try {
+			$this->transients->remember(
+				'',
+				static function () use ( &$called ): int {
+					$called = true;
+
+					return 1;
+				}
+			);
+			$this->fail( 'An empty key was accepted.' );
+		} catch ( \InvalidArgumentException $e ) {
+			$this->assertFalse( $called );
+		}
+	}
 }

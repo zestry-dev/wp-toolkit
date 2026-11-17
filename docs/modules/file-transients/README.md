@@ -46,16 +46,12 @@ return array(
 ## Caching a large index
 
 ```php
-$files = $this->with( FileTransients::class );
-
-$index = $files->get( 'catalog' );
-
-if ( null === $index ) {
-    $index = $this->build_index();
-
-    // Where the files are off this stores nothing, and the index is rebuilt next time.
-    $files->set( 'catalog', $index, DAY_IN_SECONDS );
-}
+// Built on a miss and kept for a day. Where the files are off it is built every time.
+$index = $this->with( FileTransients::class )->remember(
+    'catalog',
+    fn () => $this->build_index(),
+    DAY_IN_SECONDS
+);
 ```
 
 ## Changing the defaults
@@ -147,6 +143,26 @@ public function delete( string $key ): void
 | **Parameters** | `$key` — Your own key |
 | **Return** | — |
 | **Throws** | `InvalidArgumentException` — When the key is empty |
+
+<br>
+
+### `remember( $key, $callback, $ttl )`
+
+Read a value, or work it out, store it and return it.
+
+```php
+public function remember( string $key, callable $callback, int $ttl = 0 ): mixed
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$key` — Your own key<br>`$callback` — Works the value out. Called with no arguments<br>`$ttl` — Seconds to keep it. 0 means no expiry |
+| **Return** | The stored value, or what the callback returned |
+| **Throws** | `InvalidArgumentException` — When the key is empty |
+
+The callback runs only on a miss, and whatever it returns is stored, `null` and `false` included, so "there was nothing" is remembered too.
+
+Where the files are off it runs every time and stores nothing: the value is still right, only the saving is lost. A value the files cannot hold, a `WP_Error` among them, is returned and not stored, with the `_doing_it_wrong()` notice `set()` gives. To skip storing on failure, throw from the callback.
 
 <br>
 

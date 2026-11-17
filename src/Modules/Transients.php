@@ -36,14 +36,12 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
  *
  * @example Storing something expensive to work out
  * ```
- * public Transients $transients;
- *
  * public function get_summary(): array {
- *     if ( ! $this->with( Transients::class )->has( 'summary' ) ) {
- *         $this->with( Transients::class )->set( 'summary', $this->build_summary(), HOUR_IN_SECONDS );
- *     }
- *
- *     return $this->with( Transients::class )->get( 'summary' );
+ *     return $this->with( Transients::class )->remember(
+ *         'summary',
+ *         fn () => $this->build_summary(),
+ *         HOUR_IN_SECONDS
+ *     );
  * }
  * ```
  *
@@ -148,6 +146,35 @@ class Transients extends Module {
 	 */
 	public function delete( string $key ): void {
 		\delete_transient( $this->get_prefixed_key( $key ) );
+	}
+
+	/**
+	 * Read a value, or work it out, store it and return it.
+	 *
+	 * The callback runs only on a miss, and whatever it returns is stored, `null`
+	 * and `false` included, so "there was nothing" is remembered too.
+	 *
+	 * To skip storing on failure, throw from the callback. A returned `WP_Error`
+	 * is a value like any other and is kept for the whole `$ttl`.
+	 *
+	 * @param string   $key      Your own key, unprefixed.
+	 * @param callable $callback Works the value out. Called with no arguments.
+	 * @param int      $ttl      Seconds to keep it. 0 means no expiry.
+	 * @return mixed The stored value, or what the callback returned.
+	 * @throws \InvalidArgumentException When the key is empty or too long.
+	 */
+	public function remember( string $key, callable $callback, int $ttl = 0 ): mixed {
+		$stored = \get_transient( $this->get_prefixed_key( $key ) );
+
+		if ( $this->is_stored( $stored ) ) {
+			return $stored[ self::VALUE_KEY ];
+		}
+
+		$value = $callback();
+
+		$this->set( $key, $value, $ttl );
+
+		return $value;
 	}
 
 	/**

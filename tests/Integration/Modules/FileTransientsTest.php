@@ -551,6 +551,104 @@ final class FileTransientsTest extends TestCase {
 		$this->assertFalse( $store->has( 'live' ) );
 	}
 
+	public function test_remember_works_a_value_out_once_and_then_reads_the_file(): void {
+		$store    = $this->store( true );
+		$calls    = 0;
+		$callback = static function () use ( &$calls ): array {
+			++$calls;
+
+			return array( 'items' => array( 1, 2, 3 ) );
+		};
+
+		$this->assertSame( array( 'items' => array( 1, 2, 3 ) ), $store->remember( 'index', $callback, 3600 ) );
+		$this->assertSame( array( 'items' => array( 1, 2, 3 ) ), $store->remember( 'index', $callback, 3600 ) );
+		$this->assertSame( 1, $calls );
+		$this->assertFileExists( $store->get_file( 'index' ) );
+		$this->assertEqualsWithDelta( time() + 3600, ( include $store->get_file( 'index' ) )['expires'], 5 );
+	}
+
+	public function test_remember_keeps_a_null_answer_rather_than_asking_again(): void {
+		$store    = $this->store( true );
+		$calls    = 0;
+		$callback = static function () use ( &$calls ): mixed {
+			++$calls;
+
+			return null;
+		};
+
+		$store->remember( 'nothing', $callback );
+
+		$this->assertNull( $store->remember( 'nothing', $callback ) );
+		$this->assertSame( 1, $calls );
+	}
+
+	public function test_remember_works_it_out_again_once_expired(): void {
+		$store = $this->store( true );
+		$store->set( 'old', 'stale', -5 );
+
+		$this->assertSame( 'fresh', $store->remember( 'old', static fn (): string => 'fresh', 3600 ) );
+		$this->assertSame( 'fresh', $store->get( 'old' ) );
+	}
+
+	public function test_remember_with_the_files_off_works_it_out_every_time_and_writes_nothing(): void {
+		$store    = $this->store( false );
+		$calls    = 0;
+		$callback = static function () use ( &$calls ): int {
+			return ++$calls;
+		};
+
+		$this->assertSame( 1, $store->remember( 'k', $callback ) );
+		$this->assertSame( 2, $store->remember( 'k', $callback ) );
+		$this->assertFileDoesNotExist( $store->get_file( 'k' ) );
+	}
+
+	public function test_remember_returns_a_value_it_cannot_store_and_says_so(): void {
+		$this->setExpectedIncorrectUsage( FileTransients::class . '::set' );
+
+		$store = $this->store( true );
+		$error = new \WP_Error( 'down', 'The remote is down.' );
+
+		$this->assertSame( $error, $store->remember( 'k', static fn (): \WP_Error => $error ) );
+		$this->assertFalse( $store->has( 'k' ) );
+	}
+
+	public function test_remember_stores_nothing_when_the_callback_throws(): void {
+		$store = $this->store( true );
+
+		try {
+			$store->remember(
+				'k',
+				static function (): never {
+					throw new \RuntimeException( 'The remote is down.' );
+				}
+			);
+			$this->fail( 'The exception was swallowed.' );
+		} catch ( \RuntimeException $e ) {
+			$this->assertSame( 'The remote is down.', $e->getMessage() );
+		}
+
+		$this->assertFalse( $store->has( 'k' ) );
+		$this->assertFileDoesNotExist( $store->get_file( 'k' ) );
+	}
+
+	public function test_remember_with_an_empty_key_throws_before_working_anything_out(): void {
+		$called = false;
+
+		try {
+			$this->store( true )->remember(
+				' ',
+				static function () use ( &$called ): int {
+					$called = true;
+
+					return 1;
+				}
+			);
+			$this->fail( 'An empty key was accepted.' );
+		} catch ( \InvalidArgumentException $e ) {
+			$this->assertFalse( $called );
+		}
+	}
+
 	/**
 	 * A fresh module, its once-per-request decision forced one way.
 	 */

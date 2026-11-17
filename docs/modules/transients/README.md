@@ -36,14 +36,12 @@ return array(
 ## Storing something expensive to work out
 
 ```php
-public Transients $transients;
-
 public function get_summary(): array {
-    if ( ! $this->with( Transients::class )->has( 'summary' ) ) {
-        $this->with( Transients::class )->set( 'summary', $this->build_summary(), HOUR_IN_SECONDS );
-    }
-
-    return $this->with( Transients::class )->get( 'summary' );
+    return $this->with( Transients::class )->remember(
+        'summary',
+        fn () => $this->build_summary(),
+        HOUR_IN_SECONDS
+    );
 }
 ```
 
@@ -142,6 +140,26 @@ public function delete( string $key ): void
 Deleting something that was never there is not an error; it just returns false.
 
 There is deliberately no "delete everything" companion. Every plugin's transients share one object-cache group, and that cache offers no way to list keys — so such a method could only either miss everything on a site with an object cache, or delete other plugins' entries along with yours. Track the keys you need to clear, or give them a short enough `$ttl` that clearing is unnecessary.
+
+<br>
+
+### `remember( $key, $callback, $ttl )`
+
+Read a value, or work it out, store it and return it.
+
+```php
+public function remember( string $key, callable $callback, int $ttl = 0 ): mixed
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$key` — Your own key, unprefixed<br>`$callback` — Works the value out. Called with no arguments<br>`$ttl` — Seconds to keep it. 0 means no expiry |
+| **Return** | The stored value, or what the callback returned |
+| **Throws** | `InvalidArgumentException` — When the key is empty or too long |
+
+The callback runs only on a miss, and whatever it returns is stored, `null` and `false` included, so "there was nothing" is remembered too.
+
+To skip storing on failure, throw from the callback. A returned `WP_Error` is a value like any other and is kept for the whole `$ttl`.
 
 <br>
 
