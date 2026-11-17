@@ -174,9 +174,43 @@ public function get_prepared_values( object $target, array $values, string $erro
 | **Return** | The values with each sanitized in place, or the refusal |
 | **Throws** | — |
 
-For a caller with nowhere to hang them — an ability, whose input WordPress validates against the schema and no further. A route wires the same callbacks into WordPress's own slots instead, through `get_rest_args()`, so neither runs them twice.
+For a caller with nowhere to hang them — an ability on a WordPress older than 7.1, whose input is validated against the schema and no further. A route wires the same callbacks into WordPress's own slots instead, through `get_rest_args()`, so neither runs them twice.
 
-The schema's cast happens here too, and only here: an ability's input is validated and never sanitised, so this is where a value becomes the type its property was declared as.
+The two halves are `get_rule_refusal()` and `get_sanitized_values()`, for a platform that offers a slot for the first.
+
+<br>
+
+### `get_rule_refusal( $target, $values, $error_code )`
+
+Run each argument's own validate rule, and name every argument refused.
+
+```php
+public function get_rule_refusal( object $target, array $values, string $error_code ): ?\WP_Error
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$target` — The object declaring the arguments<br>`$values` — The values, already checked against the schema<br>`$error_code` — The code a refusal carries |
+| **Return** | The refusal, or null when every rule passed |
+| **Throws** | — |
+
+The rule sees the value as it was sent, before any cast — the order a route runs them in.
+
+<br>
+
+### `get_sanitized_values( $target, $values )`
+
+Cast each value to its declared type, then run its own sanitize callback.
+
+```php
+public function get_sanitized_values( object $target, array $values )
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$target` — The object declaring the arguments<br>`$values` — The values, already validated |
+| **Return** | The values with each sanitized in place, or the cast's error |
+| **Throws** | — |
 
 <br>
 

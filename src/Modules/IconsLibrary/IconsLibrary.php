@@ -28,11 +28,13 @@ use Zestry\WPToolkit\Modules\Path;
  * WordPress 7.1 or newer.
  *
  * > [!IMPORTANT]
- * > **WordPress keeps `<svg>`, `<path>` and `<polygon>` and throws the rest
- * > away.** It sanitizes every icon through `wp_kses()`, so a `<circle>`, a
- * > `<g>`, a `<rect>` or a `<use>` is removed, as is any attribute outside a
- * > short list -- `stroke` among them, which silently empties an icon drawn as
- * > outlines rather than fills. Export icons as filled paths.
+ * > **WordPress keeps a few SVG elements and throws the rest away.** It
+ * > sanitizes every icon through `wp_kses()`. WordPress 7.1 keeps `<svg>`,
+ * > `<path>` and `<polygon>`, and drops `stroke`, which silently empties an icon
+ * > drawn as outlines rather than fills. WordPress 7.2 adds `<rect>`, `<circle>`
+ * > and the stroke attributes. On both, a `<g>`, a `<use>` or an `<ellipse>` is
+ * > removed, as is any attribute outside a short list. Export icons as filled
+ * > paths if the plugin supports 7.1.
  * >
  * > With your plugin's own debug mode on — `wp zt debug on` — an icon that would
  * > lose anything throws a {@see DiscoveryException} naming the file and what it
@@ -662,9 +664,9 @@ class IconsLibrary extends Module implements Bootable {
 	 * Refuse an icon WordPress would quietly cut down.
 	 *
 	 * `wp_kses()` removes what it does not recognise and keeps the rest, so an
-	 * icon using anything outside `<svg>`, `<path>` and `<polygon>` registers
-	 * without complaint and renders as a fragment of itself -- most often as
-	 * nothing at all, since a stroked outline loses every attribute that drew it.
+	 * icon using anything outside its short list registers without complaint and
+	 * renders as a fragment of itself -- on 7.1 most often as nothing at all,
+	 * since a stroked outline loses every attribute that drew it.
 	 * WordPress only says something when the whole file sanitizes away.
 	 *
 	 * Asked by rendering the icon and comparing what came back against what the

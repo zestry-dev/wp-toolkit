@@ -217,29 +217,29 @@ final class IconsLibraryTest extends TestCase {
 		$this->write_icon(
 			'logo',
 			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-				. '<path d="M5 12h14" /><circle cx="12" cy="12" r="10" /></svg>'
+				. '<path d="M5 12h14" /><ellipse cx="12" cy="12" rx="10" ry="6" /></svg>'
 		);
 
 		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( '<circle>' );
+		$this->expectExceptionMessage( '<ellipse>' );
 
 		$this->boot();
 	}
 
 	/**
-	 * The expensive half of the same guard: every element here is allowed, and the
-	 * icon still renders as nothing, because an outline is drawn entirely in
-	 * attributes the sanitizer drops.
+	 * The other half of the same guard: every element here is allowed, and an
+	 * attribute on one is not. `stroke-dasharray` is dropped on every version
+	 * with the Icons API.
 	 */
-	public function test_an_outline_icon_loses_its_stroke_and_throws(): void {
+	public function test_an_attribute_wordpress_drops_throws(): void {
 		$this->write_icon(
-			'outline',
+			'dashed',
 			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-				. '<path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2" /></svg>'
+				. '<path d="M5 12h14" fill="none" stroke-dasharray="2 2" /></svg>'
 		);
 
 		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( 'path[stroke]' );
+		$this->expectExceptionMessage( 'path[stroke-dasharray]' );
 
 		$this->boot();
 	}
@@ -367,11 +367,11 @@ final class IconsLibraryTest extends TestCase {
 		file_put_contents(
 			$this->plugin_dir . '/resources/svg-icons/badge.svg',
 			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
-				. '<path d="M5 12h14" /><circle cx="12" cy="12" r="10" /></svg>'
+				. '<path d="M5 12h14" /><ellipse cx="12" cy="12" rx="10" ry="6" /></svg>'
 		);
 
 		$this->expectException( DiscoveryException::class );
-		$this->expectExceptionMessage( '<circle>' );
+		$this->expectExceptionMessage( '<ellipse>' );
 
 		$this->boot();
 	}

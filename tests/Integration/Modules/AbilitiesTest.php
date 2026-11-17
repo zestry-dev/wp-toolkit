@@ -653,8 +653,8 @@ final class AbilitiesTest extends TestCase {
 	}
 
 	/**
-	 * WordPress validates an ability's input and never sanitises it, and its
-	 * validation passes a numeric string for an integer -- so a caller sending
+	 * WordPress's schema check passes a numeric string for an integer, and
+	 * before 7.2 nothing casts it -- so a caller sending
 	 * `"42"` for an `int` argument is making a valid call, and it has to arrive
 	 * as the type the property was declared as.
 	 */

@@ -141,10 +141,12 @@ final class RequestPlatformAssumptionsTest extends TestCase {
 	}
 
 	/**
-	 * The whole of what an ability does to its input, in order. A sanitising
-	 * step appearing here would make the service's own cast a second one.
+	 * What an ability does to its input before the execute callback. Before 7.2
+	 * it validates and never sanitises, so `Request` casts; from 7.2 it casts
+	 * too, which is why the `validate:` rules moved to the validation filter.
+	 * `prepare_input()` is the 7.2 method that does it, so it is the marker.
 	 */
-	public function test_an_ability_validates_its_input_and_never_sanitises_it(): void {
+	public function test_an_ability_casts_its_input_only_from_wordpress_7_2(): void {
 		if ( ! function_exists( 'wp_register_ability' ) ) {
 			$this->markTestSkipped( 'Requires the Abilities API, added in WordPress 6.9.' );
 		}
@@ -186,7 +188,70 @@ final class RequestPlatformAssumptionsTest extends TestCase {
 		wp_get_ability( 'zestry-assumed/echo' )->execute( array( 'id' => '42' ) );
 		$this->reset_ability_registries();
 
-		$this->assertSame( '42', $received, 'WordPress passed the value through untouched.' );
+		if ( method_exists( \WP_Ability::class, 'prepare_input' ) ) {
+			$this->assertSame( 42, $received, 'WordPress 7.2 cast the value to the schema type.' );
+		} else {
+			$this->assertSame( '42', $received, 'WordPress passed the value through untouched.' );
+		}
+	}
+
+	/**
+	 * The filter `Abilities` runs the `validate:` rules from: from 7.1 it is
+	 * handed the input as it was sent, after the schema check and before 7.2's
+	 * cast.
+	 */
+	public function test_the_validate_input_filter_sees_the_value_as_it_was_sent(): void {
+		if ( ! function_exists( 'wp_register_ability' ) ) {
+			$this->markTestSkipped( 'Requires the Abilities API, added in WordPress 6.9.' );
+		}
+
+		$seen   = array();
+		$filter = static function ( $is_valid, $input, string $name ) use ( &$seen ) {
+			if ( 'zestry-assumed/raw' === $name ) {
+				$seen[] = $input['id'];
+			}
+
+			return $is_valid;
+		};
+
+		add_action(
+			'wp_abilities_api_categories_init',
+			static function (): void {
+				wp_register_ability_category( 'zestry-assumed', array( 'label' => 'Assumed', 'description' => 'For one test.' ) );
+			}
+		);
+
+		add_action(
+			'wp_abilities_api_init',
+			static function (): void {
+				wp_register_ability(
+					'zestry-assumed/raw',
+					array(
+						'label'               => 'Raw',
+						'description'         => 'Takes an integer.',
+						'category'            => 'zestry-assumed',
+						'input_schema'        => array(
+							'type'       => 'object',
+							'properties' => array( 'id' => array( 'type' => 'integer' ) ),
+						),
+						'permission_callback' => '__return_true',
+						'execute_callback'    => static fn (): array => array( 'ok' => true ),
+					)
+				);
+			}
+		);
+
+		add_filter( 'wp_ability_validate_input', $filter, 10, 3 );
+
+		try {
+			$this->reset_ability_registries();
+			wp_get_ability( 'zestry-assumed/raw' )->execute( array( 'id' => '42' ) );
+		} finally {
+			remove_filter( 'wp_ability_validate_input', $filter, 10 );
+			$this->reset_ability_registries();
+		}
+
+		$this->assertSame( version_compare( $GLOBALS['wp_version'], '7.1-alpha', '>=' ) ? array( '42' ) : array(), $seen );
 	}
 
 	/**

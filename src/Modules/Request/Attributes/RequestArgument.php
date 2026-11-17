@@ -288,9 +288,9 @@ namespace Zestry\WPToolkit\Modules\Request\Attributes;
  * body wins, then the form body, then the query string. A cookie is never a
  * parameter.
  *
- * An ability's input is validated and never sanitised — and that validation
- * accepts a numeric string for an `integer`, so `"42"` is a valid thing for a
- * caller to send. It arrives as `42` either way.
+ * An ability's schema check accepts a numeric string for an `integer`, so
+ * `"42"` is a valid thing for a caller to send. It arrives as `42` on every
+ * WordPress version, and a `validate:` rule sees the `"42"` that was sent.
  *
  * ## Translation, and anything else computed
  *

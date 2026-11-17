@@ -165,6 +165,24 @@ class Abilities extends Module implements Bootable {
 	private array $categories = array();
 
 	/**
+	 * Registered abilities by their full name, for the validation filter.
+	 *
+	 * @var array<string, Ability>
+	 */
+	private array $registered = array();
+
+	/**
+	 * Whether WordPress has run the argument rules this request.
+	 *
+	 * Set the first time {@see validate_input()} is called, which is on 7.1 and
+	 * later, before any ability's execute callback. Older versions have no
+	 * filter to run them from, so the execute callback runs them itself.
+	 *
+	 * @var bool
+	 */
+	private bool $rules_run_by_wordpress = false;
+
+	/**
 	 * Declare ability categories of your own.
 	 *
 	 * Every ability belongs to exactly one category, and WordPress refuses to
@@ -450,8 +468,11 @@ class Abilities extends Module implements Bootable {
 				 */
 				'execute_callback'    => function ( $input = null ) use ( $ability ) {
 					if ( \is_array( $input ) ) {
-						// The code WordPress itself uses when an ability's schema rejects input.
-						$prepared = $this->with( Request::class )->get_prepared_values( $ability, $input, 'ability_invalid_input' );
+						$request  = $this->with( Request::class );
+						$prepared = $this->rules_run_by_wordpress
+							? $request->get_sanitized_values( $ability, $input )
+							// The code WordPress itself uses when an ability's schema rejects input.
+							: $request->get_prepared_values( $ability, $input, 'ability_invalid_input' );
 
 						if ( \is_wp_error( $prepared ) ) {
 							return $prepared;
@@ -514,7 +535,36 @@ class Abilities extends Module implements Bootable {
 			// calls `_doing_it_wrong()` on every refusal, so WordPress has
 			// already reported it.
 			\wp_register_ability( $this->get_ability_name( $name ), $args );
+
+			$this->registered[ $this->get_ability_name( $name ) ] = $ability;
 		}
+	}
+
+	/**
+	 * Run this plugin's argument rules where WordPress validates an ability.
+	 *
+	 * WordPress 7.2 casts an ability's input to its schema's types after
+	 * validating it, so a `validate:` rule run from the execute callback would
+	 * see `42` where `"42"` was sent. This filter runs between the two, which is
+	 * where a route runs the same rule.
+	 *
+	 * @param true|\WP_Error $is_valid     What the schema check decided.
+	 * @param mixed          $input        The input as it was sent.
+	 * @param string         $ability_name The ability's full name.
+	 * @return true|\WP_Error
+	 *
+	 * @internal
+	 */
+	public function validate_input( $is_valid, mixed $input, string $ability_name ) {
+		$this->rules_run_by_wordpress = true;
+
+		$ability = $this->registered[ $ability_name ] ?? null;
+
+		if ( true !== $is_valid || null === $ability || ! \is_array( $input ) ) {
+			return $is_valid;
+		}
+
+		return $this->with( Request::class )->get_rule_refusal( $ability, $input, 'ability_invalid_input' ) ?? true;
 	}
 
 	/**
@@ -540,6 +590,9 @@ class Abilities extends Module implements Bootable {
 		// abilities one precisely so an ability can name a category registered here.
 		\add_action( 'wp_abilities_api_categories_init', array( $this, 'register_categories' ) );
 		\add_action( 'wp_abilities_api_init', array( $this, 'register_abilities' ) );
+
+		// From 7.1. Earlier versions never call it, and run the rules on execute.
+		\add_filter( 'wp_ability_validate_input', array( $this, 'validate_input' ), 10, 3 );
 	}
 
 	/**

@@ -415,14 +415,13 @@ class Request extends Module {
 	/**
 	 * Run each argument's own validate and sanitize callbacks.
 	 *
-	 * For a caller with nowhere to hang them — an ability, whose input WordPress
-	 * validates against the schema and no further. A route wires the same
-	 * callbacks into WordPress's own slots instead, through
+	 * For a caller with nowhere to hang them — an ability on a WordPress older
+	 * than 7.1, whose input is validated against the schema and no further. A
+	 * route wires the same callbacks into WordPress's own slots instead, through
 	 * {@see get_rest_args()}, so neither runs them twice.
 	 *
-	 * The schema's cast happens here too, and only here: an ability's input is
-	 * validated and never sanitised, so this is where a value becomes the type
-	 * its property was declared as.
+	 * The two halves are {@see get_rule_refusal()} and {@see get_sanitized_values()},
+	 * for a platform that offers a slot for the first.
 	 *
 	 * @param object              $target     The object declaring the arguments.
 	 * @param array<string,mixed> $values     The values, already checked against the schema.
@@ -433,29 +432,60 @@ class Request extends Module {
 	 * @return array<string,mixed>|\WP_Error The values with each sanitized in place, or the refusal.
 	 */
 	public function get_prepared_values( object $target, array $values, string $error_code ) {
-		$schema  = $this->get_schema( $target );
+		return $this->get_rule_refusal( $target, $values, $error_code ) ?? $this->get_sanitized_values( $target, $values );
+	}
+
+	/**
+	 * Run each argument's own validate rule, and name every argument refused.
+	 *
+	 * The rule sees the value as it was sent, before any cast — the order a
+	 * route runs them in.
+	 *
+	 * @param object              $target     The object declaring the arguments.
+	 * @param array<string,mixed> $values     The values, already checked against the schema.
+	 * @param string              $error_code The code a refusal carries.
+	 * @return \WP_Error|null The refusal, or null when every rule passed.
+	 */
+	public function get_rule_refusal( object $target, array $values, string $error_code ): ?\WP_Error {
 		$refused = array();
+
+		foreach ( $this->get_arguments( $target ) as $name => [ , $argument ] ) {
+			if ( null === $argument->validate || ! \array_key_exists( $name, $values ) ) {
+				continue;
+			}
+
+			// Collected rather than returned: WordPress answers a route with
+			// every parameter it refused at once, and a caller fixing its call
+			// should not have to discover them one round trip at a time.
+			if ( ! $this->get_callback_value( $argument->validate, $values[ $name ], $name, 'validate' ) ) {
+				$refused[] = $name;
+			}
+		}
+
+		return array() === $refused ? null : $this->get_refusal( $refused, $error_code );
+	}
+
+	/**
+	 * Cast each value to its declared type, then run its own sanitize callback.
+	 *
+	 * @param object              $target The object declaring the arguments.
+	 * @param array<string,mixed> $values The values, already validated.
+	 * @return array<string,mixed>|\WP_Error The values with each sanitized in place, or the cast's error.
+	 */
+	public function get_sanitized_values( object $target, array $values ) {
+		$schema = $this->get_schema( $target );
 
 		foreach ( $this->get_arguments( $target ) as $name => [ , $argument ] ) {
 			if ( ! \array_key_exists( $name, $values ) ) {
 				continue;
 			}
 
-			// The rule sees the value as it was sent, the same way a route's does.
-			if ( null !== $argument->validate && ! $this->get_callback_value( $argument->validate, $values[ $name ], $name, 'validate' ) ) {
-				// Collected rather than returned: WordPress answers a route with
-				// every parameter it refused at once, and a caller fixing its call
-				// should not have to discover them one round trip at a time.
-				$refused[] = $name;
-				continue;
-			}
-
 			/*
-			 * Then the schema's own cast, which nothing else here does: WordPress
-			 * validates an ability's input and never sanitises it, and its
-			 * validation passes a numeric string for an integer -- so `"42"` would
-			 * arrive as a string for an `int` argument and fail on the way onto
-			 * the property.
+			 * The schema's own cast. Before 7.2 WordPress validates an ability's
+			 * input and never sanitises it, and its validation passes a numeric
+			 * string for an integer -- so `"42"` would arrive as a string for an
+			 * `int` argument and fail on the way onto the property. From 7.2 it
+			 * casts too, and casting a cast value again changes nothing.
 			 */
 			$cast = \rest_sanitize_value_from_schema( $values[ $name ], $schema['properties'][ $name ], $name );
 
@@ -468,7 +498,7 @@ class Request extends Module {
 				: $cast;
 		}
 
-		return array() === $refused ? $values : $this->get_refusal( $refused, $error_code );
+		return $values;
 	}
 
 	/**
