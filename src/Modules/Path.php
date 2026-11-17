@@ -12,6 +12,7 @@ namespace Zestry\WPToolkit\Modules;
 \defined( 'ABSPATH' ) || exit;
 
 use Zestry\WPToolkit\Kernel\Abstracts\Module;
+use Zestry\WPToolkit\Kernel\Helpers\Str;
 
 /**
  * Provides utilities for accessing plugin files, directories, and URLs.
@@ -221,6 +222,78 @@ class Path extends Module {
 	}
 
 	/**
+	 * Get the plugin-specific directory inside wp-content.
+	 *
+	 * Returns `WP_CONTENT_DIR[/<parent>]/<slug>` without a trailing slash, e.g.
+	 * `get_plugin_content_dir( 'cache' )` is `wp-content/cache/<slug>`. Creates the
+	 * directory if it does not exist.
+	 *
+	 * Unlike the uploads directory this is not per-site on multisite: every site
+	 * gets the same folder, so a caller that needs one per site adds a blog-id
+	 * folder itself.
+	 *
+	 * `$folder` must stay inside wp-content: an absolute path (a leading separator
+	 * or a drive letter), a parent-directory (`..`) segment and a NUL byte are
+	 * rejected, there is no `$allow_escape` opt-out.
+	 *
+	 * @param string $folder Optional folder inside wp-content to nest the plugin folder in, such as `cache`.
+	 * @return string The plugin content directory path.
+	 * @throws \InvalidArgumentException When the parent is absolute or escapes wp-content.
+	 * @throws \RuntimeException When the directory cannot be created.
+	 */
+	public function get_plugin_content_dir( string $folder = '' ): string {
+		$dir = Str::join_path( WP_CONTENT_DIR, $this->normalize_content_parent( $folder ), $this->get_plugin()->get_slug() );
+
+		if ( ! \wp_mkdir_p( $dir ) ) {
+			// Do not return a path that callers cannot safely write to.
+			throw new \RuntimeException( 'Could not create content directory: ' . $dir );
+		}
+
+		return $dir;
+	}
+
+	/**
+	 * Get a plugin-specific wp-content URL.
+	 *
+	 * Constructs a URL to a resource in the plugin wp-content directory (see
+	 * get_plugin_content_dir()), built from content_url(). Path components are
+	 * URL-encoded, matching get_plugin_url(). The resource path is contained within
+	 * that directory unless containment is explicitly waived; `$folder` is always
+	 * contained in wp-content. Not per-site on multisite. Does not create the
+	 * directory. The returned URL must still pass through esc_url()/esc_url_raw() at
+	 * output time.
+	 *
+	 * @param string $folder       Optional folder inside wp-content the plugin folder sits in, such as `cache`.
+	 * @param string $path         The resource path relative to the plugin content directory.
+	 * @param array  $query_args   Optional query arguments to append to the URL.
+	 * @param bool   $allow_escape When true, skip the containment checks on `$path` (never on `$folder`).
+	 * @return string The full content resource URL.
+	 * @throws \InvalidArgumentException When the parent is absolute or escapes wp-content, or the path escapes the plugin content directory and escape is not allowed.
+	 */
+	public function get_plugin_content_url( string $folder = '', string $path = '', array $query_args = array(), bool $allow_escape = false ): string {
+		$folder = $this->normalize_content_parent( $folder );
+		$path   = \ltrim( $path, '/\\' );
+
+		if ( ! $allow_escape && $this->is_escaping_root( $path ) ) {
+			throw new \InvalidArgumentException( 'Resource path must stay within the plugin content directory.' );
+		}
+
+		$base_url = \untrailingslashit( \content_url() );
+
+		if ( $folder !== '' ) {
+			$base_url .= '/' . \implode( '/', \array_map( 'rawurlencode', \explode( '/', $folder ) ) );
+		}
+
+		$base_url .= '/' . $this->get_plugin()->get_slug();
+
+		if ( $path !== '' ) {
+			$base_url .= '/' . \implode( '/', \array_map( 'rawurlencode', \explode( '/', $path ) ) );
+		}
+
+		return \add_query_arg( $query_args, $base_url );
+	}
+
+	/**
 	 * Include a PHP file, keeping both halves of what it produced.
 	 *
 	 * A PHP file that is data rather than a class produces two things and PHP
@@ -296,6 +369,29 @@ class Path extends Module {
 		 * it needs `$this` to be the caller's object.
 		 */
 		return \Closure::bind( $include, $scope ?? $this )( $file, $data );
+	}
+
+	/**
+	 * Validate and normalize a wp-content parent folder.
+	 *
+	 * Separators become `/` and surrounding ones are trimmed. An absolute path (a
+	 * leading separator or a drive letter) is refused rather than trimmed, since
+	 * `/tmp` quietly becoming `wp-content/tmp` hides a mistake.
+	 *
+	 * @param string $folder The parent folder, relative to wp-content.
+	 * @return string The normalized parent, empty for none.
+	 * @throws \InvalidArgumentException When the parent is absolute or escapes wp-content.
+	 */
+	private function normalize_content_parent( string $folder ): string {
+		if ( $folder === '' ) {
+			return '';
+		}
+
+		if ( \preg_match( '#^([/\\\\]|[A-Za-z]:)#', $folder ) === 1 || $this->is_escaping_root( $folder ) ) {
+			throw new \InvalidArgumentException( 'Parent folder must stay within wp-content.' );
+		}
+
+		return \trim( \str_replace( '\\', '/', $folder ), '/' );
 	}
 
 	/**

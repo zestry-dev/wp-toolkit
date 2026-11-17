@@ -284,23 +284,23 @@ A plugin with a hand-written entry file needs none of this: `declare_multiple()`
 
 <br>
 
-### `set_languages_path( $path, $text_domain )`
+### `set_languages_path( $path )`
 
 Tell WordPress where this plugin keeps its own translations.
 
 ```php
-public function set_languages_path( string $path, ?string $text_domain = null ): self
+public function set_languages_path( string $path ): self
 ```
 
 |  | Details |
 |---|---|
-| **Parameters** | `$path` — Plugin-relative directory holding the `.mo` files<br>`$text_domain` — Text domain; defaults to the plugin slug |
+| **Parameters** | `$path` — Plugin-relative directory holding the `.mo` files |
 | **Return** | `self` |
 | **Throws** | — |
 
 Only needed for a plugin shipping a `languages/` directory of its own. WordPress already looks in `wp-content/languages/plugins` without being asked, which is where a wordpress.org-hosted plugin's translations are installed — so a plugin distributed that way needs no call at all.
 
-The text domain defaults to the plugin slug, matching what `wp zt init` writes into `zestry.json` and stamps into every copied file, so the two cannot disagree unless you deliberately change one.
+The files load under get_text_domain(): the entry file's `Text Domain:` header, else the plugin slug. That is the same order `wp zt init` uses for the domain it stamps into every copied file, so the `.mo` files load under the domain the strings ask for. A plugin whose domain is neither declares it in that header.
 
 ```php
 // acme-plugin.php, inside the accessor that builds the plugin.
@@ -446,6 +446,38 @@ public function get_entry_file(): string
 |---|---|
 | **Parameters** | — |
 | **Return** | `string` |
+| **Throws** | — |
+
+<br>
+
+### `get_text_domain()`
+
+The plugin's text domain: the `Text Domain:` header, else the slug.
+
+```php
+public function get_text_domain(): string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | The text domain |
+| **Throws** | — |
+
+<br>
+
+### `get_languages_path()`
+
+The absolute languages directory set_languages_path() registered.
+
+```php
+public function get_languages_path(): ?string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | — |
+| **Return** | The directory, or null when the plugin never named one (WordPress then looks in `wp-content/languages/plugins`) |
 | **Throws** | — |
 
 <br>

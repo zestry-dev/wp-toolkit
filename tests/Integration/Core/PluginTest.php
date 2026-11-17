@@ -468,15 +468,25 @@ final class PluginTest extends TestCase {
 		);
 	}
 
-	public function test_set_languages_path_accepts_a_text_domain_of_its_own(): void {
+	public function test_set_languages_path_prefers_the_text_domain_header_to_the_slug(): void {
 		global $wp_textdomain_registry;
 
-		$this->plugin->set_languages_path( 'languages', 'acme-plugin' );
+		file_put_contents( $this->entry_file, "<?php\n/**\n * Plugin Name: Zestry Test\n * Text Domain: acme-header\n */\n" );
+
+		$this->plugin->set_languages_path( 'languages' );
 
 		$paths = new \ReflectionProperty( $wp_textdomain_registry, 'custom_paths' );
 		$paths->setAccessible( true );
+		$registered = $paths->getValue( $wp_textdomain_registry );
 
-		$this->assertArrayHasKey( 'acme-plugin', $paths->getValue( $wp_textdomain_registry ) );
+		$this->assertArrayHasKey( 'acme-header', $registered );
+	}
+
+	public function test_get_text_domain_prefers_the_header_to_the_slug(): void {
+		$this->assertSame( 'zestry-test', $this->plugin->get_text_domain() );
+
+		file_put_contents( $this->entry_file, "<?php\n/**\n * Plugin Name: Zestry Test\n * Text Domain: acme-header\n */\n" );
+		$this->assertSame( 'acme-header', $this->plugin->get_text_domain() );
 	}
 
 	public function test_get_header_reads_a_declared_header(): void {

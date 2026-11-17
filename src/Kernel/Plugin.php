@@ -16,6 +16,7 @@ use Zestry\WPToolkit\Kernel\Contracts\PluginAware;
 use Zestry\WPToolkit\Kernel\Exceptions\CircularDependencyException;
 use Zestry\WPToolkit\Kernel\Exceptions\ModuleException;
 use Zestry\WPToolkit\Kernel\Exceptions\ModuleNotFoundException;
+use Zestry\WPToolkit\Kernel\Helpers\Str;
 
 /**
  * The one object your plugin builds, in its entry file.
@@ -157,6 +158,11 @@ class Plugin {
 	 * @var string
 	 */
 	private string $entry_file = '';
+
+	/**
+	 * The absolute languages directory, once set_languages_path() named one.
+	 */
+	private ?string $languages_path = null;
 
 	/**
 	 * Repository that builds and holds this plugin's modules.
@@ -473,9 +479,11 @@ class Plugin {
 	 * asked, which is where a wordpress.org-hosted plugin's translations are
 	 * installed -- so a plugin distributed that way needs no call at all.
 	 *
-	 * The text domain defaults to the plugin slug, matching what `wp zt init`
-	 * writes into `zestry.json` and stamps into every copied file, so the two
-	 * cannot disagree unless you deliberately change one.
+	 * The files load under get_text_domain(): the entry file's `Text Domain:`
+	 * header, else the plugin slug. That is the same order `wp zt init` uses
+	 * for the domain it stamps into every copied file, so the `.mo` files load
+	 * under the domain the strings ask for. A plugin whose domain is neither
+	 * declares it in that header.
 	 *
 	 * ```
 	 * // acme-plugin.php, inside the accessor that builds the plugin.
@@ -491,18 +499,19 @@ class Plugin {
 	 * warns about is *using* a translation before `init`, not registering where
 	 * they live.
 	 *
-	 * @param string      $path        Plugin-relative directory holding the `.mo` files.
-	 * @param string|null $text_domain Text domain; defaults to the plugin slug.
+	 * @param string $path Plugin-relative directory holding the `.mo` files.
 	 * @return $this
 	 */
-	public function set_languages_path( string $path, ?string $text_domain = null ): self {
+	public function set_languages_path( string $path ): self {
+		$this->languages_path = Str::join_path( \dirname( $this->entry_file ), $path );
+
 		\load_plugin_textdomain(
-			$text_domain ?? $this->slug,
+			$this->get_text_domain(),
 			false,
 			// load_plugin_textdomain() resolves this against WP_PLUGIN_DIR, so
 			// it wants the plugin's own directory name on the front rather than
 			// an absolute path.
-			\basename( \dirname( $this->entry_file ) ) . '/' . \trim( $path, '/' )
+			Str::join_path( \basename( \dirname( $this->entry_file ) ), $path )
 		);
 
 		return $this;
@@ -640,6 +649,25 @@ class Plugin {
 	 */
 	public function get_entry_file(): string {
 		return $this->entry_file;
+	}
+
+	/**
+	 * The plugin's text domain: the `Text Domain:` header, else the slug.
+	 *
+	 * @return string The text domain.
+	 */
+	public function get_text_domain(): string {
+		return $this->get_header( 'Text Domain' ) ?? $this->slug;
+	}
+
+	/**
+	 * The absolute languages directory set_languages_path() registered.
+	 *
+	 * @return string|null The directory, or null when the plugin never named one
+	 *                     (WordPress then looks in `wp-content/languages/plugins`).
+	 */
+	public function get_languages_path(): ?string {
+		return $this->languages_path;
 	}
 
 	/**

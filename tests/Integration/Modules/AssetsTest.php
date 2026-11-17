@@ -599,6 +599,54 @@ final class AssetsTest extends TestCase {
 		$this->assertNotContains( $slug, wp_scripts()->queue );
 	}
 
+	public function test_a_script_depending_on_wp_i18n_gets_its_translations_set(): void {
+		$this->write_plugin_file(
+			'build/app.asset.php',
+			"<?php return array( 'dependencies' => array( 'wp-i18n' ), 'version' => 'abc123' );\n"
+		);
+
+		$slug = $this->assets()->register_script_from_manifest( 'app', 'app' );
+
+		// WordPress records the call as the script's `translations` data: the
+		// domain, and the path only when the plugin named a languages directory.
+		$this->assertSame(
+			array(
+				'domain' => $this->plugin->get_text_domain(),
+				'path'   => null,
+			),
+			array(
+				'domain' => wp_scripts()->registered[ $slug ]->textdomain,
+				'path'   => wp_scripts()->registered[ $slug ]->translations_path ?: null,
+			)
+		);
+	}
+
+	public function test_the_languages_directory_the_plugin_named_goes_with_it(): void {
+		$this->write_plugin_file(
+			'build/app.asset.php',
+			"<?php return array( 'dependencies' => array( 'wp-i18n' ), 'version' => 'abc123' );\n"
+		);
+		$this->plugin->set_languages_path( 'languages' );
+
+		$slug = $this->assets()->register_script_from_manifest( 'app', 'app' );
+
+		$this->assertSame(
+			dirname( $this->plugin->get_entry_file() ) . '/languages',
+			wp_scripts()->registered[ $slug ]->translations_path
+		);
+	}
+
+	public function test_a_script_without_wp_i18n_gets_no_translations(): void {
+		$this->write_plugin_file(
+			'build/app.asset.php',
+			"<?php return array( 'dependencies' => array( 'wp-element' ), 'version' => 'abc123' );\n"
+		);
+
+		$slug = $this->assets()->register_script_from_manifest( 'app', 'app' );
+
+		$this->assertEmpty( wp_scripts()->registered[ $slug ]->textdomain );
+	}
+
 	public function test_register_script_from_manifest_defaults_to_in_footer(): void {
 		$this->write_plugin_file(
 			'build/app.asset.php',

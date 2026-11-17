@@ -277,6 +277,8 @@ class Assets extends Module implements Bootable {
 			$args ?? array( 'in_footer' => true )
 		);
 
+		$this->set_translations( $slug, \array_merge( $manifest['dependencies'], $deps ) );
+
 		$styles = $this->get_entry_styles( $entry );
 
 		if ( array() !== $styles ) {
@@ -630,6 +632,31 @@ class Assets extends Module implements Bootable {
 		// wp-api-fetch almost always needs to run after the DOM and after those
 		// are available.
 		\wp_register_script( $handle, $source, $dependencies, $version, array( 'in_footer' => true ) );
+
+		$this->set_translations( $handle, $dependencies );
+	}
+
+	/**
+	 * Tell WordPress where a registered script's translations are.
+	 *
+	 * Only a script that depends on `wp-i18n` can hold a `@wordpress/i18n`
+	 * string, so only that one is asked about. WordPress looks for the JSON file
+	 * `wp i18n make-json` wrote (`{domain}-{locale}-{md5 of the build path}.json`)
+	 * in the plugin's languages directory when it named one, and in
+	 * `wp-content/languages/plugins` always.
+	 *
+	 * @param string   $handle       The registered script handle.
+	 * @param string[] $dependencies The handles it depends on.
+	 * @return void
+	 */
+	private function set_translations( string $handle, array $dependencies ): void {
+		if ( ! \in_array( 'wp-i18n', $dependencies, true ) ) {
+			return;
+		}
+
+		$plugin = $this->get_plugin();
+
+		\wp_set_script_translations( $handle, $plugin->get_text_domain(), $plugin->get_languages_path() );
 	}
 
 	/**

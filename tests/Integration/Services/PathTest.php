@@ -85,6 +85,100 @@ final class PathTest extends TestCase {
 		);
 	}
 
+	public function test_get_plugin_content_dir_creates_and_returns_the_slug_directory(): void {
+		$dir = $this->path()->get_plugin_content_dir();
+
+		$this->assertSame( untrailingslashit( WP_CONTENT_DIR ) . '/' . $this->plugin->get_slug(), $dir );
+		$this->assertTrue( is_dir( $dir ) );
+
+		$this->remove_dir( $dir );
+	}
+
+	public function test_get_plugin_content_dir_nests_in_the_parent(): void {
+		$dir = $this->path()->get_plugin_content_dir( 'zt-path-test/cache/' );
+
+		$this->assertSame( untrailingslashit( WP_CONTENT_DIR ) . '/zt-path-test/cache/' . $this->plugin->get_slug(), $dir );
+		$this->assertTrue( is_dir( $dir ) );
+
+		$this->remove_dir( $dir );
+		rmdir( dirname( $dir ) );
+		rmdir( dirname( $dir, 2 ) );
+	}
+
+	/**
+	 * @dataProvider provide_bad_parents
+	 */
+	public function test_get_plugin_content_dir_rejects_a_parent_outside_wp_content( string $parent ): void {
+		$this->expectException( \InvalidArgumentException::class );
+		$this->path()->get_plugin_content_dir( $parent );
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function provide_bad_parents(): array {
+		return array(
+			'parent segment'      => array( '../outside' ),
+			'nested parent'       => array( 'a/../../b' ),
+			'backslash parent'    => array( 'a\\..\\b' ),
+			'absolute'            => array( '/tmp' ),
+			'windows absolute'    => array( 'C:\\Windows' ),
+			'windows drive'       => array( 'C:/x' ),
+			'nul byte'            => array( "a\0b" ),
+		);
+	}
+
+	public function test_get_plugin_content_dir_throws_when_directory_cannot_be_created(): void {
+		$target = untrailingslashit( WP_CONTENT_DIR ) . '/' . $this->plugin->get_slug();
+
+		if ( is_dir( $target ) ) {
+			$this->remove_dir( $target );
+		}
+
+		file_put_contents( $target, 'not a directory' );
+
+		try {
+			$this->expectException( \RuntimeException::class );
+			$this->path()->get_plugin_content_dir();
+		} finally {
+			unlink( $target );
+		}
+	}
+
+	public function test_get_plugin_content_url_builds_from_content_url(): void {
+		$slug = $this->plugin->get_slug();
+
+		$this->assertSame( untrailingslashit( content_url() ) . '/' . $slug, $this->path()->get_plugin_content_url() );
+		$this->assertSame( untrailingslashit( content_url() ) . '/cache/' . $slug, $this->path()->get_plugin_content_url( 'cache' ) );
+		$this->assertSame(
+			untrailingslashit( content_url() ) . '/cache/' . $slug . '/a%20b/file.css',
+			$this->path()->get_plugin_content_url( 'cache/', '/a b/file.css' )
+		);
+	}
+
+	public function test_get_plugin_content_url_encodes_the_parent_and_appends_query_args(): void {
+		$url = $this->path()->get_plugin_content_url( 'my cache', 'x.css', array( 'v' => '1' ) );
+
+		$this->assertSame( untrailingslashit( content_url() ) . '/my%20cache/' . $this->plugin->get_slug() . '/x.css?v=1', $url );
+	}
+
+	public function test_get_plugin_content_url_rejects_an_escaping_path(): void {
+		$this->expectException( \InvalidArgumentException::class );
+		$this->path()->get_plugin_content_url( 'cache', '../evil' );
+	}
+
+	public function test_get_plugin_content_url_allow_escape_skips_path_containment(): void {
+		$this->assertSame(
+			untrailingslashit( content_url() ) . '/' . $this->plugin->get_slug() . '/../evil',
+			$this->path()->get_plugin_content_url( '', '../evil', array(), true )
+		);
+	}
+
+	public function test_get_plugin_content_url_never_waives_parent_containment(): void {
+		$this->expectException( \InvalidArgumentException::class );
+		$this->path()->get_plugin_content_url( '../x', 'a.css', array(), true );
+	}
+
 	public function test_plugin_file_exists_is_true_for_a_created_file(): void {
 		$this->write_plugin_file( 'assets/app.js', '// app' );
 

@@ -187,7 +187,7 @@ get_version(): ?string                                 // shorthand for get_head
 get_slug(): string                                     // what every registered name is namespaced with
 ```
 
-Also on it: `get_loaded_hook()`, `get_namespaced_name( $name, $glue = '-' )`, `get_entry_file()`, `get_bootstrap_file()`, `set_languages_path( $path, $text_domain = null )`, `is_wp_debug()`, `is_wp_cli()`, `is_plugin_debug()`. Full page: [`Plugin`](plugin.md).
+Also on it: `get_loaded_hook()`, `get_namespaced_name( $name, $glue = '-' )`, `get_entry_file()`, `get_bootstrap_file()`, `set_languages_path( $path )`, `get_text_domain()`, `is_wp_debug()`, `is_wp_cli()`, `is_plugin_debug()`. Full page: [`Plugin`](plugin.md).
 
 An [`ActivationHandler`](modules/activation-handler.md) subclass only works if `run()` is called as the entry file loads — WordPress fires `activate_{plugin}` right after that, and a `run()` deferred to `plugins_loaded` has already missed it.
 

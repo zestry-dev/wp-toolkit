@@ -172,6 +172,46 @@ Constructs a URL to a resource in the plugin uploads directory. Path components 
 
 <br>
 
+### `get_plugin_content_dir( $folder )`
+
+Get the plugin-specific directory inside wp-content.
+
+```php
+public function get_plugin_content_dir( string $folder = '' ): string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$folder` — Optional folder inside wp-content to nest the plugin folder in, such as `cache` |
+| **Return** | The plugin content directory path |
+| **Throws** | `InvalidArgumentException` — When the parent is absolute or escapes wp-content<br>`RuntimeException` — When the directory cannot be created |
+
+Returns `WP_CONTENT_DIR[/<parent>]/<slug>` without a trailing slash, e.g. `get_plugin_content_dir( 'cache' )` is `wp-content/cache/<slug>`. Creates the directory if it does not exist.
+
+Unlike the uploads directory this is not per-site on multisite: every site gets the same folder, so a caller that needs one per site adds a blog-id folder itself.
+
+`$folder` must stay inside wp-content: an absolute path (a leading separator or a drive letter), a parent-directory (`..`) segment and a NUL byte are rejected, there is no `$allow_escape` opt-out.
+
+<br>
+
+### `get_plugin_content_url( $folder, $path, $query_args, $allow_escape )`
+
+Get a plugin-specific wp-content URL.
+
+```php
+public function get_plugin_content_url( string $folder = '', string $path = '', array $query_args = array(), bool $allow_escape = false ): string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$folder` — Optional folder inside wp-content the plugin folder sits in, such as `cache`<br>`$path` — The resource path relative to the plugin content directory<br>`$query_args` — Optional query arguments to append to the URL<br>`$allow_escape` — When true, skip the containment checks on `$path` (never on `$folder`) |
+| **Return** | The full content resource URL |
+| **Throws** | `InvalidArgumentException` — When the parent is absolute or escapes wp-content, or the path escapes the plugin content directory and escape is not allowed |
+
+Constructs a URL to a resource in the plugin wp-content directory (see get_plugin_content_dir()), built from content_url(). Path components are URL-encoded, matching get_plugin_url(). The resource path is contained within that directory unless containment is explicitly waived; `$folder` is always contained in wp-content. Not per-site on multisite. Does not create the directory. The returned URL must still pass through esc_url()/esc_url_raw() at output time.
+
+<br>
+
 ### `include_file( $file, $data, $scope )`
 
 Include a PHP file, keeping both halves of what it produced.
