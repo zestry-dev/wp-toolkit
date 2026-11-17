@@ -179,6 +179,27 @@ final class PathTest extends TestCase {
 		$this->path()->get_plugin_content_url( '../x', 'a.css', array(), true );
 	}
 
+	public function test_read_file_header_reads_a_plugin_style_header(): void {
+		$this->write_plugin_file( 'style.css', "/*\nTheme Name: Acme\nVersion: 2.1.0\n*/\nbody { color: red; }\n" );
+		$file = $this->path()->get_plugin_path( 'style.css' );
+
+		$this->assertSame( '2.1.0', $this->path()->read_file_header( $file, 'Version' ) );
+		$this->assertSame( 'Acme', $this->path()->read_file_header( $file, 'theme name' ), 'The name matches without regard to case.' );
+	}
+
+	public function test_read_file_header_reads_a_header_on_the_opening_php_line_without_running_the_file(): void {
+		$this->write_plugin_file( 'cache.php', "<?php // Expires: 1763380000\nthrow new \\RuntimeException( 'ran' );\n" );
+
+		$this->assertSame( '1763380000', $this->path()->read_file_header( $this->path()->get_plugin_path( 'cache.php' ), 'Expires' ) );
+	}
+
+	public function test_read_file_header_is_null_for_an_absent_header_or_a_missing_file(): void {
+		$this->write_plugin_file( 'plain.php', "<?php\nreturn 1;\n" );
+
+		$this->assertNull( $this->path()->read_file_header( $this->path()->get_plugin_path( 'plain.php' ), 'Version' ) );
+		$this->assertNull( $this->path()->read_file_header( $this->plugin_dir . '/nope.php', 'Version' ) );
+	}
+
 	public function test_plugin_file_exists_is_true_for_a_created_file(): void {
 		$this->write_plugin_file( 'assets/app.js', '// app' );
 

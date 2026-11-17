@@ -209,6 +209,15 @@
 		<type>warning</type>
 	</rule>
 
+	<!-- Never silence an error with @: stop the cause, or let it be seen. No function is exempt. -->
+	<rule ref="WordPress.PHP.NoSilencedErrors">
+		<type>error</type>
+		<severity>7</severity>
+		<properties>
+			<property name="usePHPFunctionsList" value="false" />
+		</properties>
+	</rule>
+
 	<!-- No PHP short open tags allowed. -->
 	<rule ref="Generic.PHP.DisallowShortOpenTag" />
 	<rule ref="Generic.PHP.DisallowShortOpenTag.Found">

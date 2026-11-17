@@ -64,7 +64,7 @@ return new class() extends AddCommand {
 	 *
 	 * <module>...
 	 * : One or more module names to copy in.
-	 * Available modules: path, request, cookie, globals, transients, db, views, assets, log, options,
+	 * Available modules: path, request, cookie, globals, transients, file-transients, db, views, assets, log, options,
 	 * ajax, admin-pages, rest-api, cli, cron, fields, post-types, blocks, meta-boxes, site-health,
 	 * abilities, icons-library, migrations, queue.
 	 *

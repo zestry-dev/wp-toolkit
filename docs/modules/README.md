@@ -36,6 +36,7 @@ Add nothing up front. Reach for one when you hit what it solves:
 | [`cron`](cron/) | run something on a schedule | `resources/schedules/` | [`Schedule`](cron/schedule.md) | `path` |
 | [`db`](db/) | name a database table, yours or WordPress's | — | — | — |
 | [`fields`](fields/) | register post meta, and render it on the editor | `resources/fields/` | [`Field`](fields/field.md) | `path` |
+| [`file-transients`](file-transients/) | keep a large value in memory between requests, with OPcache | — | — | `path` |
 | [`globals`](globals/) | pass a value between classes within one request | — | — | — |
 | [`icons-library`](icons-library/) | publish an SVG icon, for the editor and your own markup (WordPress 7.1+) | `resources/svg-icons/` | — | `path` |
 | [`log`](log/) | record what went wrong | — | — | — |

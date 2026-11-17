@@ -294,6 +294,39 @@ class Path extends Module {
 	}
 
 	/**
+	 * Read one header from a file's opening comment, the way WordPress reads a plugin's or a theme's.
+	 *
+	 * A header is a `Name: value` line near the top of the file: in a PHP
+	 * file's opening comment (`<?php // Expires: 1763380000`), a docblock, or
+	 * a stylesheet's first comment. This is `get_file_data()`, the function
+	 * behind `Version:` in your entry file and `Theme Name:` in a `style.css`,
+	 * so it reads only the first 8 KB and never runs the file.
+	 *
+	 * The name is matched without regard to case, and the first line naming it
+	 * wins.
+	 *
+	 * ```
+	 * $version = $path->read_file_header( $path->get_plugin_path( 'blocks/hero/style.css' ), 'Version' );
+	 * ```
+	 *
+	 * The path is used as given and is not resolved against the plugin root,
+	 * as for {@see include_file()}.
+	 *
+	 * @param string $file   Absolute path to the file.
+	 * @param string $header The header's name, e.g. `Version`.
+	 * @return string|null The header's value, trimmed; null when the file does not exist or does not declare it.
+	 */
+	public function read_file_header( string $file, string $header ): ?string {
+		if ( ! \is_file( $file ) ) {
+			return null;
+		}
+
+		$value = \get_file_data( $file, array( 'value' => $header ) )['value'];
+
+		return '' === $value ? null : $value;
+	}
+
+	/**
 	 * Include a PHP file, keeping both halves of what it produced.
 	 *
 	 * A PHP file that is data rather than a class produces two things and PHP

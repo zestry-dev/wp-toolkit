@@ -213,6 +213,14 @@
 		<type>warning</type>
 	</rule>
 
+	<rule ref="WordPress.PHP.NoSilencedErrors">
+		<type>error</type>
+		<severity>7</severity>
+		<properties>
+			<property name="usePHPFunctionsList" value="false" />
+		</properties>
+	</rule>
+
 	<rule ref="Generic.PHP.DisallowShortOpenTag" />
 	<rule ref="Generic.PHP.DisallowShortOpenTag.Found">
 		<severity>7</severity>

@@ -212,6 +212,32 @@ Constructs a URL to a resource in the plugin wp-content directory (see get_plugi
 
 <br>
 
+### `read_file_header( $file, $header )`
+
+Read one header from a file's opening comment, the way WordPress reads a plugin's or a theme's.
+
+```php
+public function read_file_header( string $file, string $header ): ?string
+```
+
+|  | Details |
+|---|---|
+| **Parameters** | `$file` — Absolute path to the file<br>`$header` — The header's name, e.g. `Version` |
+| **Return** | The header's value, trimmed; null when the file does not exist or does not declare it |
+| **Throws** | — |
+
+A header is a `Name: value` line near the top of the file: in a PHP file's opening comment (`<?php // Expires: 1763380000`), a docblock, or a stylesheet's first comment. This is `get_file_data()`, the function behind `Version:` in your entry file and `Theme Name:` in a `style.css`, so it reads only the first 8 KB and never runs the file.
+
+The name is matched without regard to case, and the first line naming it wins.
+
+```php
+$version = $path->read_file_header( $path->get_plugin_path( 'blocks/hero/style.css' ), 'Version' );
+```
+
+The path is used as given and is not resolved against the plugin root, as for `include_file()`.
+
+<br>
+
 ### `include_file( $file, $data, $scope )`
 
 Include a PHP file, keeping both halves of what it produced.

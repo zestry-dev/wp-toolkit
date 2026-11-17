@@ -17,6 +17,7 @@ use Zestry\WPToolkit\Modules\Blocks\Blocks;
 use Zestry\WPToolkit\Modules\CLI\CLI;
 use Zestry\WPToolkit\Modules\Cron\Cron;
 use Zestry\WPToolkit\Modules\Fields\Fields;
+use Zestry\WPToolkit\Modules\FileTransients;
 use Zestry\WPToolkit\Modules\IconsLibrary\IconsLibrary;
 use Zestry\WPToolkit\Modules\Log;
 use Zestry\WPToolkit\Modules\MetaBoxes\MetaBoxes;
@@ -65,106 +66,110 @@ use Zestry\WPToolkit\Modules\Views;
  * @return array<string, array{source: class-string, requires?: string, depends?: string[]}>
  */
 return array(
-	'path'          => array(
+	'path'            => array(
 		'source'  => Path::class,
 		'depends' => array(),
 	),
-	'request'       => array(
+	'request'         => array(
 		'source'  => Request::class,
 		'depends' => array(),
 	),
-	'cookie'        => array(
+	'cookie'          => array(
 		'source'  => Cookie::class,
 		// `transients` only for a flash too large to fit in a cookie; the
 		// common case never touches the database.
 		'depends' => array( 'transients' ),
 	),
-	'globals'       => array(
+	'globals'         => array(
 		'source'  => Globals::class,
 		'depends' => array(),
 	),
-	'transients'    => array(
+	'transients'      => array(
 		'source'  => Transients::class,
 		'depends' => array(),
 	),
-	'db'            => array(
+	'file-transients' => array(
+		'source'  => FileTransients::class,
+		'depends' => array( 'path' ),
+	),
+	'db'              => array(
 		'source'  => DB::class,
 		'depends' => array(),
 	),
-	'views'         => array(
+	'views'           => array(
 		'source'  => Views::class,
 		'depends' => array( 'path' ),
 	),
-	'assets'        => array(
+	'assets'          => array(
 		'source'  => Assets::class,
 		'depends' => array( 'path' ),
 	),
-	'log'           => array(
+	'log'             => array(
 		'source'  => Log::class,
 		'depends' => array(),
 	),
-	'options'       => array(
+	'options'         => array(
 		'source'  => Options::class,
 		'depends' => array(),
 	),
-	'ajax'          => array(
+	'ajax'            => array(
 		'source'  => Ajax::class,
 		'depends' => array( 'path', 'request' ),
 	),
-	'admin-pages'   => array(
+	'admin-pages'     => array(
 		'source'  => AdminPages::class,
 		// `views` because AdminPage::view() is the default way a page
 		// renders, and a page whose markup is a concatenated string
 		// stops being reviewable long before it stops growing.
 		'depends' => array( 'cookie', 'path', 'views' ),
 	),
-	'rest-api'      => array(
+	'rest-api'        => array(
 		'source'  => RestApi::class,
 		'depends' => array( 'path', 'request' ),
 	),
-	'cli'           => array(
+	'cli'             => array(
 		'source'  => CLI::class,
 		'depends' => array( 'path' ),
 	),
-	'cron'          => array(
+	'cron'            => array(
 		'source'  => Cron::class,
 		'depends' => array( 'path' ),
 	),
-	'fields'        => array(
+	'fields'          => array(
 		'source'  => Fields::class,
 		'depends' => array( 'path' ),
 	),
-	'post-types'    => array(
+	'post-types'      => array(
 		'source'  => PostTypes::class,
 		'depends' => array( 'path' ),
 	),
-	'blocks'        => array(
+	'blocks'          => array(
 		'source'  => Blocks::class,
 		'depends' => array( 'path' ),
 	),
-	'meta-boxes'    => array(
+	'meta-boxes'      => array(
 		'source'  => MetaBoxes::class,
 		'depends' => array( 'path', 'fields' ),
 	),
-	'site-health'   => array(
+	'site-health'     => array(
 		'source'  => SiteHealth::class,
 		'depends' => array( 'path' ),
 	),
-	'abilities'     => array(
+	'abilities'       => array(
 		'source'   => Abilities::class,
 		'requires' => '6.9',
 		'depends'  => array( 'path', 'request' ),
 	),
-	'icons-library' => array(
+	'icons-library'   => array(
 		'source'   => IconsLibrary::class,
 		'requires' => '7.1',
 		'depends'  => array( 'path' ),
 	),
-	'migrations'    => array(
+	'migrations'      => array(
 		'source'  => Migrations::class,
 		'depends' => array( 'path', 'db', 'options', 'cli' ),
 	),
-	'queue'         => array(
+	'queue'           => array(
 		'source'  => Queue::class,
 		// `migrations` because the queue table is created by a migration this
 		// module ships, rather than by a schema change made behind your back.

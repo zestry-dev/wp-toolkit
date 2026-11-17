@@ -85,6 +85,7 @@ Add any of them with `wp zt add <name>`; dependencies come along.
 | [`db`](modules/db/) | — | — | — |
 | [`globals`](modules/globals/) | — | — | — |
 | [`transients`](modules/transients/) | — | — | — |
+| [`file-transients`](modules/file-transients/) | `wp-content/cache/{slug}/` | — | — |
 | [`cookie`](modules/cookie/) | — | — | — |
 | [`request`](modules/request/) | — | — | — |
 
@@ -163,7 +164,7 @@ Eight modules do nothing on their own — no `Bootable`, no `on_boot()`. They ar
 | [`transients`](modules/transients/) | Key/value that outlives the request, with a TTL | `$this->with( Transients::class )->set( 'rates', $r, HOUR_IN_SECONDS )` |
 | [`cookie`](modules/cookie/) | Cookies, encrypted, and one value carried across a redirect | `$this->with( Cookie::class )->set_flash( 'Saved.' )` |
 
-`globals`, `transients` and `options` are the same four verbs — `get`, `set`, `has`, `delete` — differing only in how long a value lasts: this request, until it expires, or until you change it.
+`globals`, `transients` and `options` are the same four verbs — `get`, `set`, `has`, `delete` — differing only in how long a value lasts: this request, until it expires, or until you change it. [`file-transients`](modules/file-transients/) speaks them too, for a value too large to unserialize on every request: it keeps it in a PHP file OPcache holds in memory, and stores nothing where OPcache is off.
 
 ## The `Plugin` API
 
