@@ -1,0 +1,38 @@
+/**
+ * A first end-to-end test, to prove the suite runs.
+ *
+ * Delete this file once you have written a spec of your own. The fixtures
+ * come from `@wordpress/e2e-test-utils-playwright`: `admin` visits wp-admin
+ * screens, `editor` drives the block editor, `requestUtils` sets state up over
+ * the REST API, and `page` is Playwright's own.
+ */
+
+/**
+ * WordPress dependencies
+ */
+const { test, expect } = require( '@wordpress/e2e-test-utils-playwright' );
+
+// The plugin's file, as WordPress identifies it.
+const PLUGIN_FILE = '{{plugin_file}}';
+
+test.describe( '{{title}}', () => {
+	// Activated here rather than relied on, so the spec passes however the
+	// plugin reached the site. By its file rather than through
+	// `requestUtils.activatePlugin()`, which looks a plugin up by a slug
+	// derived from its Plugin Name header.
+	test.beforeAll( async ( { requestUtils } ) => {
+		await requestUtils.rest( {
+			method: 'PUT',
+			path: `/wp/v2/plugins/${ PLUGIN_FILE.replace( /\.php$/, '' ) }`,
+			data: { status: 'active' },
+		} );
+	} );
+
+	test( 'is active', async ( { admin, page } ) => {
+		await admin.visitAdminPage( 'plugins.php' );
+
+		await expect(
+			page.locator( `tr[data-plugin="${ PLUGIN_FILE }"]` )
+		).toHaveClass( /\bactive\b/ );
+	} );
+} );

@@ -1569,7 +1569,7 @@ final class MakeCommandTest extends TestCase {
 
 		$this->run_make( array( 'Reports' ), array(), 'test.php.stub' );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/tests/Integration/ReportsTest.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/tests/php/ReportsTest.php' );
 	}
 
 	public function test_make_test_does_not_double_a_suffix_that_was_given(): void {
@@ -1577,8 +1577,8 @@ final class MakeCommandTest extends TestCase {
 
 		$this->run_make( array( 'ReportsTest' ), array(), 'test.php.stub' );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/tests/Integration/ReportsTest.php' );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/tests/Integration/ReportsTestTest.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/tests/php/ReportsTest.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/tests/php/ReportsTestTest.php' );
 	}
 
 	public function test_make_test_nests_a_qualified_name(): void {
@@ -1586,7 +1586,130 @@ final class MakeCommandTest extends TestCase {
 
 		$this->run_make( array( 'Modules/Reports' ), array(), 'test.php.stub' );
 
-		$this->assertFileExists( $this->target_plugin_dir . '/tests/Integration/Modules/ReportsTest.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/tests/php/Modules/ReportsTest.php' );
+	}
+
+	/**
+	 * A nested test declares the namespace its folder gives it, which is what
+	 * PSR-4 expects of a class under `tests/php/Modules/`.
+	 */
+	public function test_make_test_gives_a_nested_test_its_folder_namespace(): void {
+		$this->install_test_suite();
+
+		$this->run_make( array( 'Modules/Reports' ), array(), 'test.php.stub' );
+
+		$this->assertStringContainsString(
+			'namespace Acme\\Plugin\\Tests\\Modules;',
+			(string) file_get_contents( $this->target_plugin_dir . '/tests/php/Modules/ReportsTest.php' )
+		);
+	}
+
+	/**
+	 * Given a file, the test mirrors it: `resources/` is dropped, and every
+	 * segment becomes a class name, since a namespace cannot hold a dash.
+	 */
+	public function test_make_test_mirrors_a_php_source_file(): void {
+		$this->install_test_suite();
+		$this->write_target( 'resources/post-types/book.php', "<?php\n" );
+
+		$this->run_make( array( 'resources/post-types/book.php' ), array(), 'test.php.stub' );
+
+		$test = $this->target_plugin_dir . '/tests/php/PostTypes/BookTest.php';
+
+		$this->assertFileExists( $test );
+		$this->assertStringContainsString( 'namespace Acme\\Plugin\\Tests\\PostTypes;', (string) file_get_contents( $test ) );
+		$this->assertStringContainsString( 'final class BookTest extends TestCase', (string) file_get_contents( $test ) );
+	}
+
+	public function test_make_test_drops_the_source_root_from_a_class_file(): void {
+		$this->install_test_suite();
+		$this->write_target( 'lib/Modules/Reports.php', "<?php\n" );
+
+		$this->run_make( array( 'lib/Modules/Reports.php' ), array(), 'test.php.stub' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/tests/php/Modules/ReportsTest.php' );
+	}
+
+	/**
+	 * A migration's timestamp cannot start a class name, and guessing one
+	 * would write a test nobody asked for.
+	 */
+	public function test_make_test_refuses_a_file_no_class_name_can_carry(): void {
+		$this->install_test_suite();
+		$this->write_target( 'resources/migrations/20240101000000-create-table.php', "<?php\n" );
+
+		$this->run_make( array( 'resources/migrations/20240101000000-create-table.php' ), array(), 'test.php.stub' );
+
+		$this->assertStringContainsString( 'cannot become part of a class name', (string) ( \WP_CLI::last( 'error' )[0] ?? '' ) );
+		$this->assertDirectoryDoesNotExist( $this->target_plugin_dir . '/tests/php/Migrations' );
+	}
+
+	/**
+	 * A script gets a test in its own language, mirroring `src/` and keeping
+	 * its extension, and it needs nothing of the PHP suite.
+	 */
+	public function test_make_test_mirrors_a_script(): void {
+		$this->write_target( 'src/shared/collections/index.tsx', "export {};\n" );
+
+		$this->run_make( array( 'src/shared/collections/index.tsx' ), array(), 'test.php.stub' );
+
+		$test = $this->target_plugin_dir . '/tests/js/shared/collections/index.test.tsx';
+
+		$this->assertFileExists( $test );
+		$this->assertStringContainsString( "from '../../../../src/shared/collections/index';", (string) file_get_contents( $test ) );
+	}
+
+	public function test_make_test_resolves_a_package_by_its_main(): void {
+		$this->write_target( 'src/shared/collections/package.json', (string) wp_json_encode( array( 'main' => 'lib/main.js' ) ) );
+		$this->write_target( 'src/shared/collections/lib/main.js', "export {};\n" );
+		$this->write_target( 'src/shared/collections/index.ts', "export {};\n" );
+
+		$this->run_make( array( 'src/shared/collections' ), array(), 'test.php.stub' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/tests/js/shared/collections/lib/main.test.js' );
+	}
+
+	public function test_make_test_resolves_a_package_by_its_one_index(): void {
+		$this->write_target( 'src/entries/dashboard/index.jsx', "export {};\n" );
+
+		$this->run_make( array( 'src/entries/dashboard' ), array(), 'test.php.stub' );
+
+		$this->assertFileExists( $this->target_plugin_dir . '/tests/js/entries/dashboard/index.test.jsx' );
+	}
+
+	/**
+	 * The build picks one of two index files by an order of its own; this
+	 * asks instead of copying that order and drifting from it.
+	 */
+	public function test_make_test_asks_which_of_two_index_files(): void {
+		$this->write_target( 'src/shared/collections/index.ts', "export {};\n" );
+		$this->write_target( 'src/shared/collections/index.js', "export {};\n" );
+
+		$this->run_make( array( 'src/shared/collections' ), array(), 'test.php.stub' );
+
+		$error = (string) ( \WP_CLI::last( 'error' )[0] ?? '' );
+
+		$this->assertStringContainsString( 'index.js and index.ts', $error );
+		$this->assertDirectoryDoesNotExist( $this->target_plugin_dir . '/tests/js' );
+	}
+
+	/**
+	 * Jest collects `[jt]sx?` only; a test for anything else would pass by
+	 * never running.
+	 */
+	public function test_make_test_refuses_a_script_jest_never_collects(): void {
+		$this->write_target( 'src/shared/collections/index.mjs', "export {};\n" );
+
+		$this->run_make( array( 'src/shared/collections/index.mjs' ), array(), 'test.php.stub' );
+
+		$this->assertStringContainsString( 'never running', (string) ( \WP_CLI::last( 'error' )[0] ?? '' ) );
+		$this->assertDirectoryDoesNotExist( $this->target_plugin_dir . '/tests/js' );
+	}
+
+	public function test_make_test_refuses_a_script_that_does_not_exist(): void {
+		$this->run_make( array( 'src/shared/missing/index.ts' ), array(), 'test.php.stub' );
+
+		$this->assertStringContainsString( 'There is no', (string) ( \WP_CLI::last( 'error' )[0] ?? '' ) );
 	}
 
 	/**
@@ -1602,7 +1725,24 @@ final class MakeCommandTest extends TestCase {
 			(string) ( \WP_CLI::last( 'error' )[0] ?? '' )
 		);
 
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/tests/Integration/ReportsTest.php' );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/tests/php/ReportsTest.php' );
+	}
+
+	/**
+	 * Write a file, and its parent directories, into the target plugin.
+	 *
+	 * @param string $relative Path relative to the target plugin's root.
+	 * @param string $contents What to write.
+	 * @return void
+	 */
+	private function write_target( string $relative, string $contents ): void {
+		$path = $this->target_plugin_dir . '/' . $relative;
+
+		if ( ! is_dir( dirname( $path ) ) ) {
+			mkdir( dirname( $path ), 0777, true );
+		}
+
+		file_put_contents( $path, $contents );
 	}
 
 	/**
@@ -1611,7 +1751,7 @@ final class MakeCommandTest extends TestCase {
 	 * @return void
 	 */
 	private function install_test_suite(): void {
-		$path = $this->target_plugin_dir . '/tests/Support/TestCase.php';
+		$path = $this->target_plugin_dir . '/tests/php/Support/TestCase.php';
 
 		mkdir( dirname( $path ), 0777, true );
 		file_put_contents( $path, "<?php\n" );

@@ -33,7 +33,7 @@ if ( ! file_exists( $_tests_dir . '/includes/functions.php' ) ) {
  * stops if they are missing -- this is what provides them, along with every
  * class of your own.
  */
-require dirname( __DIR__ ) . '/vendor/autoload.php';
+require dirname( __DIR__, 2 ) . '/vendor/autoload.php';
 
 // WP-CLI doubles, so a file extending Command is loadable and its output is
 // assertable without the WP-CLI phar. Guarded; a real runtime wins.

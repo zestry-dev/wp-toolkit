@@ -1,0 +1,40 @@
+/**
+ * Playwright configuration for the {{title}} end-to-end tests.
+ *
+ * Everything comes from `@wordpress/scripts`: a logged-in admin, one worker,
+ * a trace and a screenshot kept for a failing test. Two things are this
+ * plugin's own. The site is the one `.wp-env.test.json` describes, on its
+ * port, unless `WP_BASE_URL` names another. And it is started with
+ * `npm run env:start` rather than the default `npm run wp-env start`, which
+ * is the development site. If something already answers on the port, it is
+ * reused and nothing is started.
+ */
+
+/**
+ * External dependencies
+ */
+const { existsSync, readFileSync } = require( 'node:fs' );
+const { join } = require( 'node:path' );
+
+const WP_ENV_CONFIG = join( __dirname, '..', '..', '.wp-env.test.json' );
+
+// Before the base config is read: it takes its URL and port from this.
+if ( ! process.env.WP_BASE_URL && existsSync( WP_ENV_CONFIG ) ) {
+	const { port = 8889 } = JSON.parse( readFileSync( WP_ENV_CONFIG, 'utf8' ) );
+
+	process.env.WP_BASE_URL = `http://localhost:${ port }`;
+}
+
+/**
+ * WordPress dependencies
+ */
+const baseConfig = require( '@wordpress/scripts/config/playwright.config.js' );
+
+module.exports = {
+	...baseConfig,
+	testDir: './specs',
+	webServer: {
+		...baseConfig.webServer,
+		command: 'npm run env:start',
+	},
+};

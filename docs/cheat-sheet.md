@@ -208,7 +208,7 @@ Run from inside your plugin's directory, with the plugin active.
 |---|---|
 | [`wp zt init`](commands/init.md) | Copies the kernel; writes `zestry.json`, `zestry.lock.json`, `bootstrap.php`, the PSR-4 entry, `.gitignore`, the linter configs and `AGENTS.md`. `--no-phpcs`, `--no-eslint`, `--no-prettier`, `--no-agents`, `--yes` |
 | [`wp zt add <name>...`](commands/add.md) | Copies modules and their dependencies; declares each in `bootstrap.php`. Skips what is already there. Never asks. |
-| [`wp zt tests`](commands/tests.md) | Writes the PHPUnit suite: `phpunit.xml.dist`, `tests/bootstrap.php`, `tests/Support/TestCase.php`, the WP-CLI doubles, an example test, `.wp-env.test.json`, and the composer/npm entries that run them. `--no-wp-env`, `--yes` |
+| [`wp zt tests`](commands/tests.md) | Writes the test suites, one directory per runner: PHPUnit in `tests/php/`, Jest in `tests/js/`, Playwright in `tests/e2e/`, plus `.wp-env.test.json` and the composer/npm entries that run them. `--no-php`, `--no-unit`, `--no-e2e`, `--no-wp-env`, `--yes` |
 | [`wp zt make <type> <name>`](commands/) | Generates one file from a stub — see the 21 types below. `--yes` on every type; `--extends=` on every type whose file returns a base-class instance, except `route` and `block`, plus `abstract`, which also takes `--for=<type>` |
 | [`wp zt describe`](commands/describe.md) | Reports what this plugin has: each module installed, declared, the directory it reads and the base class a file there returns. `--format`, `--installed` |
 | [`wp zt doctor`](commands/doctor.md) | Reports the wiring mistakes that raise no error — chiefly a module on disk that nothing declares. `--format=report\|csv\|json\|yaml` |
@@ -244,7 +244,7 @@ Each type writes one file into the directory its module discovers, so the genera
 | [`activation`](commands/make-activation.md) | `lib/Modules/` | an activation handler, **declared** too |
 | [`update`](commands/make-update.md) | `lib/Modules/` | an update handler, **declared** too |
 | [`abstract`](commands/make-abstract.md) | `lib/Abstracts/` | a base your own files share. `--for=<type>`, `--extends=` |
-| [`test`](commands/make-test.md) | `tests/Integration/` | a PHPUnit test, `Test`-suffixed. Needs [`wp zt tests`](commands/tests.md) first |
+| [`test`](commands/make-test.md) | `tests/php/`, `tests/js/` | a test mirroring the file you name: PHPUnit for PHP, Jest for a script. A class name gives a PHPUnit test. PHP needs [`wp zt tests`](commands/tests.md) first |
 
 `module`, `activation` and `abstract` land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. Every type writes to one directory, fixed by the module that reads it; a name with a slash nests inside it, so `make command reports/daily` writes `resources/commands/reports/daily.php`.
 

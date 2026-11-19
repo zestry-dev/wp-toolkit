@@ -1,0 +1,20 @@
+/**
+ * Tests for {{source}}.
+ *
+ * Run with `npm run test:unit`. Jest provides `describe`, `it` and `expect`
+ * as globals, and runs in a simulated browser, so `document` and `window`
+ * are there too.
+ */
+
+/**
+ * Internal dependencies
+ */
+import * as subject from '{{import_path}}';
+
+describe( '{{source}}', () => {
+	it( 'loads', () => {
+		expect( subject ).toBeDefined();
+	} );
+
+	it.todo( 'does what it says' );
+} );

@@ -2,7 +2,7 @@
 <phpunit
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.6/phpunit.xsd"
-	bootstrap="tests/bootstrap.php"
+	bootstrap="tests/php/bootstrap.php"
 	backupGlobals="false"
 	colors="true"
 	beStrictAboutOutputDuringTests="true"
@@ -11,7 +11,8 @@
 >
 	<testsuites>
 		<testsuite name="integration">
-			<directory suffix="Test.php">tests/Integration</directory>
+			<directory suffix="Test.php">tests/php</directory>
+			<exclude>tests/php/Support</exclude>
 		</testsuite>
 	</testsuites>
 
@@ -23,11 +24,14 @@
 	</coverage>
 
 	<!--
-		tests/Support/ is deliberately outside the suite: the base test case is
-		not a test, and a `suffix` narrow enough to exclude it there is one more
-		thing to keep in step with a file name.
+		tests/php/Support/ is deliberately outside the suite: the base test case
+		is not a test, and a `suffix` narrow enough to exclude it there is one
+		more thing to keep in step with a file name.
 
-		The WordPress test suite is located by tests/bootstrap.php -- the
+		Only tests/php/ is PHPUnit's. tests/js/ is Jest's and tests/e2e/ is
+		Playwright's, so each runner collects one directory.
+
+		The WordPress test suite is located by tests/php/bootstrap.php -- the
 		WP_TESTS_DIR environment variable, which wp-env sets, then the default
 		/wordpress-phpunit mount. No path is hard-coded here.
 	-->

@@ -18,6 +18,8 @@ return array(
 	'{{entry_file}}'          => 'acme-plugin.php',
 	'{{test_slug}}'           => 'acme-plugin-test',
 	'{{plugin_dir}}'          => 'acme-plugin',
+	// The example spec activates the plugin, and finds its row, by this.
+	'{{plugin_file}}'         => 'acme-plugin/acme-plugin.php',
 	'{{module_imports}}'      => implode(
 		"\n",
 		array(

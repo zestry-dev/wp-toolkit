@@ -6,7 +6,7 @@
 
 declare( strict_types=1 );
 
-namespace {{namespace}}\Tests\Integration;
+namespace {{test_namespace}};
 
 use {{namespace}}\Tests\Support\TestCase;
 
@@ -37,7 +37,7 @@ final class {{class_name}}Test extends TestCase {
 		 * it, and wire() it the way its module would.
 		 *
 		 * ```
-		 * $command = require \dirname( __DIR__, 2 ) . '/resources/commands/greet.php';
+		 * $command = require self::get_shipped_path( 'resources/commands/greet.php' );
 		 *
 		 * $this->plugin->wire( $command );
 		 * ```

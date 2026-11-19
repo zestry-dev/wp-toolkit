@@ -26,11 +26,13 @@ final class TestsCommandTest extends TestCase {
 	 */
 	private const WRITTEN = array(
 		'phpunit.xml.dist',
-		'tests/bootstrap.php',
-		'tests/Support/TestCase.php',
-		'tests/Support/PluginTestCase.php',
-		'tests/Support/wp-cli-stubs.php',
-		'tests/Integration/ExampleTest.php',
+		'tests/php/bootstrap.php',
+		'tests/php/Support/TestCase.php',
+		'tests/php/Support/PluginTestCase.php',
+		'tests/php/Support/wp-cli-stubs.php',
+		'tests/php/ExampleTest.php',
+		'tests/e2e/playwright.config.js',
+		'tests/e2e/specs/plugin.spec.js',
 		'.wp-env.test.json',
 	);
 
@@ -80,9 +82,9 @@ final class TestsCommandTest extends TestCase {
 		$this->run_tests();
 
 		$this->assertStringContainsString(
-			"\\dirname( __DIR__, 2 ) . '/demo-plugin.php'",
-			$this->read_target_file( 'tests/Support/PluginTestCase.php' ),
-			'The entry file is reached relative to tests/Support/, not by an absolute path.'
+			"self::get_shipped_path( 'demo-plugin.php' )",
+			$this->read_target_file( 'tests/php/Support/PluginTestCase.php' ),
+			'The entry file is reached relative to the suite, not by an absolute path.'
 		);
 	}
 
@@ -94,8 +96,8 @@ final class TestsCommandTest extends TestCase {
 		$this->run_tests();
 
 		$this->assertStringContainsString(
-			"\\dirname( __DIR__, 2 ) . '/zestry-tests-demo.php'",
-			$this->read_target_file( 'tests/Support/PluginTestCase.php' )
+			"self::get_shipped_path( 'zestry-tests-demo.php' )",
+			$this->read_target_file( 'tests/php/Support/PluginTestCase.php' )
 		);
 	}
 
@@ -107,7 +109,7 @@ final class TestsCommandTest extends TestCase {
 	public function test_the_plugin_test_case_keeps_the_test_slug(): void {
 		$this->run_tests();
 
-		$contents = $this->read_target_file( 'tests/Support/PluginTestCase.php' );
+		$contents = $this->read_target_file( 'tests/php/Support/PluginTestCase.php' );
 
 		$this->assertStringContainsString( "'zestry-tests-demo-test'", $contents );
 		$this->assertStringNotContainsString(
@@ -126,7 +128,7 @@ final class TestsCommandTest extends TestCase {
 
 		$this->assertStringContainsString(
 			'abstract class PluginTestCase extends TestCase {',
-			$this->read_target_file( 'tests/Support/PluginTestCase.php' )
+			$this->read_target_file( 'tests/php/Support/PluginTestCase.php' )
 		);
 	}
 
@@ -137,15 +139,15 @@ final class TestsCommandTest extends TestCase {
 	public function test_the_generated_files_carry_the_configured_namespace(): void {
 		$this->run_tests();
 
-		$test_case = $this->read_target_file( 'tests/Support/TestCase.php' );
+		$test_case = $this->read_target_file( 'tests/php/Support/TestCase.php' );
 
 		$this->assertStringContainsString( 'namespace Acme\\Demo\\Tests\\Support;', $test_case );
 		$this->assertStringContainsString( 'use Acme\\Demo\\Core\\Kernel\\Plugin;', $test_case );
 		$this->assertStringNotContainsString( 'Zestry\\WPToolkit', $test_case );
 
 		$this->assertStringContainsString(
-			'namespace Acme\\Demo\\Tests\\Integration;',
-			$this->read_target_file( 'tests/Integration/ExampleTest.php' )
+			'namespace Acme\\Demo\\Tests;',
+			$this->read_target_file( 'tests/php/ExampleTest.php' )
 		);
 	}
 
@@ -159,7 +161,7 @@ final class TestsCommandTest extends TestCase {
 
 		$this->assertStringContainsString(
 			"'zestry-tests-demo-test'",
-			$this->read_target_file( 'tests/Support/TestCase.php' )
+			$this->read_target_file( 'tests/php/Support/TestCase.php' )
 		);
 	}
 
@@ -172,7 +174,7 @@ final class TestsCommandTest extends TestCase {
 
 		$this->run_tests();
 
-		$test_case = $this->read_target_file( 'tests/Support/TestCase.php' );
+		$test_case = $this->read_target_file( 'tests/php/Support/TestCase.php' );
 
 		$this->assertStringContainsString( 'use Acme\\Demo\\Core\\Modules\\Views;', $test_case );
 		$this->assertStringContainsString( 'Views::class,', $test_case );
@@ -181,7 +183,7 @@ final class TestsCommandTest extends TestCase {
 	public function test_it_declares_nothing_for_a_module_that_is_not_installed(): void {
 		$this->run_tests();
 
-		$test_case = $this->read_target_file( 'tests/Support/TestCase.php' );
+		$test_case = $this->read_target_file( 'tests/php/Support/TestCase.php' );
 
 		$this->assertStringNotContainsString( 'Views::class', $test_case );
 		$this->assertStringNotContainsString( 'PostTypes::class', $test_case );
@@ -198,7 +200,7 @@ final class TestsCommandTest extends TestCase {
 
 		$this->run_tests();
 
-		$test_case = $this->read_target_file( 'tests/Support/TestCase.php' );
+		$test_case = $this->read_target_file( 'tests/php/Support/TestCase.php' );
 
 		$this->assertMatchesRegularExpression(
 			"/'zestry-tests-demo-test_loaded' => array\(\s*PostTypes::class,/",
@@ -227,7 +229,7 @@ final class TestsCommandTest extends TestCase {
 		// assertions -- without which `assertNotWPError()` reads as undefined.
 		$this->assertArrayHasKey( 'yoast/wp-test-utils', $composer['require-dev'] );
 		$this->assertArrayHasKey( 'php-stubs/wordpress-tests-stubs', $composer['require-dev'] );
-		$this->assertSame( 'tests/', $composer['autoload-dev']['psr-4']['Acme\\Demo\\Tests\\'] );
+		$this->assertSame( 'tests/php/', $composer['autoload-dev']['psr-4']['Acme\\Demo\\Tests\\'] );
 		$this->assertSame( 'phpunit', $composer['scripts']['test'] );
 	}
 
@@ -262,10 +264,15 @@ final class TestsCommandTest extends TestCase {
 		$this->run_tests( array( 'wp-env' => false ) );
 
 		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/.wp-env.test.json' );
-		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/package.json' );
+
+		$package = $this->read_target_json( 'package.json' );
+
+		$this->assertArrayNotHasKey( '@wordpress/env', $package['devDependencies'] );
+		$this->assertArrayNotHasKey( 'env:start', $package['scripts'] );
+		$this->assertArrayNotHasKey( 'test:php', $package['scripts'] );
 
 		// The PHP half is still written: it is what WP_TESTS_DIR is for.
-		$this->assertFileExists( $this->target_plugin_dir . '/tests/bootstrap.php' );
+		$this->assertFileExists( $this->target_plugin_dir . '/tests/php/bootstrap.php' );
 	}
 
 	/**
@@ -317,6 +324,189 @@ final class TestsCommandTest extends TestCase {
 			'.phpunit.result.cache',
 			$this->read_target_file( '.gitignore' )
 		);
+	}
+
+	public function test_it_ignores_playwright_artifacts(): void {
+		$this->run_tests();
+
+		$this->assertStringContainsString( 'artifacts/', $this->read_target_file( '.gitignore' ) );
+	}
+
+	/**
+	 * Each runner owns one directory, so PHPUnit must collect `tests/php/`
+	 * alone -- and not the support code that sits inside it.
+	 */
+	public function test_phpunit_collects_the_php_directory_and_excludes_support(): void {
+		$this->run_tests();
+
+		$config = $this->read_target_file( 'phpunit.xml.dist' );
+
+		$this->assertStringContainsString( 'bootstrap="tests/php/bootstrap.php"', $config );
+		$this->assertStringContainsString( '<directory suffix="Test.php">tests/php</directory>', $config );
+		$this->assertStringContainsString( '<exclude>tests/php/Support</exclude>', $config );
+	}
+
+	/**
+	 * The bootstrap sits two levels down now, and the autoloader is at the root.
+	 */
+	public function test_the_bootstrap_reaches_the_root_autoloader(): void {
+		$this->run_tests();
+
+		$this->assertStringContainsString(
+			"dirname( __DIR__, 2 ) . '/vendor/autoload.php'",
+			$this->read_target_file( 'tests/php/bootstrap.php' )
+		);
+	}
+
+	public function test_it_adds_the_javascript_runners_and_their_scripts(): void {
+		$this->run_tests();
+
+		$package = $this->read_target_json( 'package.json' );
+
+		$this->assertArrayHasKey( '@wordpress/scripts', $package['devDependencies'] );
+		$this->assertArrayHasKey( '@wordpress/e2e-test-utils-playwright', $package['devDependencies'] );
+		$this->assertArrayHasKey( '@playwright/test', $package['devDependencies'] );
+		$this->assertSame( 'wp-scripts test-unit-js --passWithNoTests', $package['scripts']['test:unit'] );
+		$this->assertSame(
+			'playwright test --config tests/e2e/playwright.config.js',
+			$package['scripts']['test:e2e']
+		);
+	}
+
+	/**
+	 * The default config starts the development site with `npm run wp-env
+	 * start`; the suite runs against the test one.
+	 */
+	public function test_the_playwright_config_starts_the_test_wordpress(): void {
+		$this->run_tests();
+
+		$config = $this->read_target_file( 'tests/e2e/playwright.config.js' );
+
+		$this->assertStringContainsString( "require( '@wordpress/scripts/config/playwright.config.js' )", $config );
+		$this->assertStringContainsString( "command: 'npm run env:start'", $config );
+
+		// Its port, read before the base config takes its URL from the variable.
+		$this->assertStringContainsString( "'.wp-env.test.json'", $config );
+		$this->assertLessThan(
+			(int) strpos( $config, "require( '@wordpress/scripts/config/playwright.config.js' )" ),
+			(int) strpos( $config, 'process.env.WP_BASE_URL =' )
+		);
+		$this->assertStringContainsString( "testDir: './specs'", $config );
+	}
+
+	/**
+	 * Identified by its file, which is exact, rather than by a slug derived
+	 * from its Plugin Name header.
+	 */
+	public function test_the_example_spec_names_the_plugin_by_its_file(): void {
+		$this->write_target_file( 'demo-plugin.php', "<?php\n/* Plugin Name: Demo Plugin */\n" );
+
+		$this->run_tests();
+
+		$this->assertStringContainsString(
+			"const PLUGIN_FILE = 'zestry-tests-demo/demo-plugin.php';",
+			$this->read_target_file( 'tests/e2e/specs/plugin.spec.js' )
+		);
+	}
+
+	public function test_it_writes_an_example_unit_test_for_a_shared_package(): void {
+		$this->write_target_file( 'src/shared/collections/index.ts', "export const x = 1;\n" );
+
+		$this->run_tests();
+
+		$test = $this->read_target_file( 'tests/js/shared/collections/index.test.ts' );
+
+		$this->assertStringContainsString( "from '../../../../src/shared/collections/index';", $test );
+		$this->assertStringContainsString( "describe( 'src/shared/collections/index.ts'", $test );
+	}
+
+	/**
+	 * Nothing of the plugin's own to test means no test: a fake package would
+	 * be one more file to delete.
+	 */
+	public function test_it_writes_no_unit_test_without_a_package(): void {
+		$this->run_tests();
+
+		$this->assertDirectoryDoesNotExist( $this->target_plugin_dir . '/tests/js' );
+		$this->assertArrayHasKey( 'test:unit', $this->read_target_json( 'package.json' )['scripts'] );
+	}
+
+	/**
+	 * Two index files is a question for `make test`, which asks it; the
+	 * example moves on to a package that has one answer.
+	 */
+	public function test_an_ambiguous_package_is_passed_over_for_the_example(): void {
+		$this->write_target_file( 'src/shared/alpha/index.ts', "export {};\n" );
+		$this->write_target_file( 'src/shared/alpha/index.js', "export {};\n" );
+		$this->write_target_file( 'src/entries/dashboard/index.js', "export {};\n" );
+
+		$this->run_tests();
+
+		$this->assertDirectoryDoesNotExist( $this->target_plugin_dir . '/tests/js/shared' );
+		$this->assertFileExists( $this->target_plugin_dir . '/tests/js/entries/dashboard/index.test.js' );
+	}
+
+	public function test_no_php_skips_the_phpunit_suite_and_composer(): void {
+		$this->run_tests( array( 'php' => false ) );
+
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/phpunit.xml.dist' );
+		$this->assertDirectoryDoesNotExist( $this->target_plugin_dir . '/tests/php' );
+		$this->assertArrayNotHasKey( 'require-dev', $this->read_target_json( 'composer.json' ) );
+
+		// The end-to-end tests still want a WordPress, without a PHP runner.
+		$scripts = $this->read_target_json( 'package.json' )['scripts'];
+
+		$this->assertArrayHasKey( 'env:start', $scripts );
+		$this->assertArrayNotHasKey( 'test:php', $scripts );
+	}
+
+	public function test_no_unit_and_no_e2e_leave_the_php_suite_alone(): void {
+		$this->write_target_file( 'src/shared/collections/index.ts', "export {};\n" );
+
+		$this->run_tests(
+			array(
+				'unit' => false,
+				'e2e'  => false,
+			)
+		);
+
+		$this->assertDirectoryDoesNotExist( $this->target_plugin_dir . '/tests/js' );
+		$this->assertDirectoryDoesNotExist( $this->target_plugin_dir . '/tests/e2e' );
+		$this->assertFileExists( $this->target_plugin_dir . '/tests/php/ExampleTest.php' );
+
+		$package = $this->read_target_json( 'package.json' );
+
+		$this->assertArrayNotHasKey( '@wordpress/scripts', $package['devDependencies'] );
+		$this->assertArrayNotHasKey( 'test:unit', $package['scripts'] );
+		$this->assertArrayNotHasKey( 'test:e2e', $package['scripts'] );
+	}
+
+	/**
+	 * A Jest-only suite needs no WordPress, so none is provisioned.
+	 */
+	public function test_unit_alone_provisions_no_wordpress(): void {
+		$this->run_tests(
+			array(
+				'php' => false,
+				'e2e' => false,
+			)
+		);
+
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/.wp-env.test.json' );
+		$this->assertArrayNotHasKey( '@wordpress/env', $this->read_target_json( 'package.json' )['devDependencies'] );
+	}
+
+	public function test_turning_every_suite_off_is_refused(): void {
+		$this->run_tests(
+			array(
+				'php'  => false,
+				'unit' => false,
+				'e2e'  => false,
+			)
+		);
+
+		$this->assertStringContainsString( 'Nothing to write', (string) ( \WP_CLI::last( 'error' )[0] ?? '' ) );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/package.json' );
 	}
 
 	/**

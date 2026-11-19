@@ -140,4 +140,18 @@ abstract class TestCase extends WPTestCase {
 
 		return $wp_filesystem;
 	}
+
+	/**
+	 * Absolute path to a file this plugin ships, as opposed to a fixture.
+	 *
+	 * For a test that exercises one real file -- require a command, wire() it --
+	 * without counting how many directories deep the test itself sits.
+	 *
+	 * @param string $relative_path Path relative to the plugin's root.
+	 * @return string
+	 */
+	protected static function get_shipped_path( string $relative_path = '' ): string {
+		// This file sits in tests/php/Support/, three levels below the root.
+		return \rtrim( \dirname( __DIR__, 3 ) . '/' . \ltrim( $relative_path, '/' ), '/' );
+	}
 }

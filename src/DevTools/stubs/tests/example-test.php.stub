@@ -6,7 +6,7 @@
 
 declare( strict_types=1 );
 
-namespace {{namespace}}\Tests\Integration;
+namespace {{namespace}}\Tests;
 
 use {{namespace}}\Tests\Support\TestCase;
 

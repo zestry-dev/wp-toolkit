@@ -253,6 +253,60 @@ class Tooling extends Module {
 	public const PHPUNIT_SCRIPTS = array( 'test' => 'phpunit' );
 
 	/**
+	 * npm packages the JavaScript unit tests run on.
+	 *
+	 * `@wordpress/scripts` alone: its `test-unit-js` is Jest with WordPress's
+	 * preset, Babel included, so a TypeScript test needs nothing more.
+	 *
+	 * @var array<int, string>
+	 */
+	public const UNIT_TEST_PACKAGES = array( '@wordpress/scripts' );
+
+	/**
+	 * npm packages the end-to-end tests run on.
+	 *
+	 * `@playwright/test` is the runner, and `@wordpress/e2e-test-utils-playwright`
+	 * is what logs in and gives every spec its `admin`, `editor` and
+	 * `requestUtils` fixtures. `@wordpress/scripts` holds the config the
+	 * generated one extends, though the scripts call Playwright directly.
+	 *
+	 * @var array<int, string>
+	 */
+	public const E2E_TEST_PACKAGES = array(
+		'@wordpress/scripts',
+		'@wordpress/e2e-test-utils-playwright',
+		'@playwright/test',
+	);
+
+	/**
+	 * The npm scripts that run the JavaScript unit tests.
+	 *
+	 * `--passWithNoTests` because a plugin with no JavaScript of its own is
+	 * given no example test, and Jest otherwise fails a run that finds none.
+	 *
+	 * @var array<string, string>
+	 */
+	public const UNIT_TEST_SCRIPTS = array(
+		'test:unit'       => 'wp-scripts test-unit-js --passWithNoTests',
+		'test:unit:watch' => 'wp-scripts test-unit-js --watch',
+	);
+
+	/**
+	 * The npm scripts that run the end-to-end tests.
+	 *
+	 * Playwright's own CLI rather than `wp-scripts test-playwright`, which
+	 * sets `WP_BASE_URL` from `.wp-env.json` before the config is read -- the
+	 * development site's test port, not the port of {@see WP_ENV_CONFIG}. The
+	 * generated config reads that file instead.
+	 *
+	 * @var array<string, string>
+	 */
+	public const E2E_TEST_SCRIPTS = array(
+		'test:e2e'       => 'playwright test --config ' . TestMirror::E2E_DIR . '/playwright.config.js',
+		'test:e2e:debug' => 'playwright test --config ' . TestMirror::E2E_DIR . '/playwright.config.js --ui',
+	);
+
+	/**
 	 * Composer plugin phpcs needs allowed to discover installed standards.
 	 *
 	 * Without this, Composer silently declines to run the installer and

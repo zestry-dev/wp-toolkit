@@ -60,7 +60,7 @@ abstract class PluginTestCase extends TestCase {
 		 * The same list TestCase declares, for the same reason: nothing is
 		 * built that is not declared. Edit it here as you add modules.
 		 */
-		$this->shipped_plugin = ( new Plugin( \dirname( __DIR__, 2 ) . '/{{entry_file}}', '{{test_slug}}' ) )->declare_multiple(
+		$this->shipped_plugin = ( new Plugin( self::get_shipped_path( '{{entry_file}}' ), '{{test_slug}}' ) )->declare_multiple(
 			array(
 {{module_declarations}}			)
 		);

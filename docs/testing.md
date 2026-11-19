@@ -2,6 +2,16 @@
 
 Your features are files in a directory, and the module that discovers them needs real files, real hooks and a real database. So tests run against WordPress's own PHPUnit suite, and each test builds a **throwaway `Plugin`** pointed at whichever directory that test wants the modules to read.
 
+Every test lives under `tests/`, in one directory per runner:
+
+| | Runner | Mirrors |
+|---|---|---|
+| `tests/php/` | PHPUnit | your PHP: `resources/post-types/book.php` → `tests/php/PostTypes/BookTest.php` |
+| `tests/js/` | Jest | `src/`: `src/shared/collections/index.ts` → `tests/js/shared/collections/index.test.ts` |
+| `tests/e2e/` | Playwright | nothing: a spec tests a flow through the whole plugin |
+
+Most of this page is about the PHP suite. JavaScript is [section 9](#9-javascript-unit-tests), the browser [section 10](#10-end-to-end-tests).
+
 A `Plugin` takes an entry file path and derives everything from it — the plugin directory, the roots every module walks, the URLs `Path` and `Assets` produce. Point one at a temporary directory and you get a private, disposable filesystem to write fixtures into.
 
 ## 1. Scaffold the suite
@@ -14,20 +24,28 @@ That writes everything below, and nothing it writes is overwritten on a second r
 
 | | |
 |---|---|
-| `phpunit.xml.dist` | Collects `tests/Integration/`. Support code sits in `tests/Support/` and is deliberately outside the suite. |
-| `tests/bootstrap.php` | Finds WordPress's test suite, then loads your autoloader. |
-| `tests/Support/TestCase.php` | The base every test extends. Declares the modules you have installed. |
-| `tests/Support/wp-cli-stubs.php` | Recording doubles for `WP_CLI` and `WP_CLI_Command`. |
-| `tests/Integration/ExampleTest.php` | One passing test. Delete it once you have your own. |
+| `phpunit.xml.dist` | Collects `tests/php/`. Support code sits in `tests/php/Support/` and is excluded from the suite. |
+| `tests/php/bootstrap.php` | Finds WordPress's test suite, then loads your autoloader. |
+| `tests/php/Support/TestCase.php` | The base every test extends. Declares the modules you have installed. |
+| `tests/php/Support/wp-cli-stubs.php` | Recording doubles for `WP_CLI` and `WP_CLI_Command`. |
+| `tests/php/ExampleTest.php` | One passing test. Delete it once you have your own. |
+| `tests/js/…/index.test.ts` | One unit test for your first package under `src/shared/` or `src/entries/`, if you have one. |
+| `tests/e2e/playwright.config.js` | Playwright, set up to start the test WordPress. |
+| `tests/e2e/specs/plugin.spec.js` | One spec that finds your plugin active. |
 | `.wp-env.test.json` | The WordPress to run against. |
 
-It also adds PHPUnit and the three packages your editor needs to `composer.json` (see [below](#8-why-three-packages-just-for-the-editor)), an `autoload-dev` entry mapping `Acme\Plugin\Tests\` to `tests/`, and the npm scripts:
+It also adds PHPUnit and the three packages your editor needs to `composer.json` (see [below](#8-why-three-packages-just-for-the-editor)), an `autoload-dev` entry mapping `Acme\Plugin\Tests\` to `tests/php/`, and the npm packages and scripts:
 
 ```bash
-npm install && composer update
+composer update && npm install
+npx playwright install chromium   # once: the browser Playwright drives
 npm run env:start
 npm run test:php
+npm run test:unit
+npm run test:e2e
 ```
+
+Leave out a runner you do not want with `--no-php`, `--no-unit` or `--no-e2e`.
 
 Docker is what `wp-env` needs, and nothing else is. Without it, install the test suite with WordPress's `install-wp-tests.sh` and export `WP_TESTS_DIR`; the generated bootstrap reads it and nothing below changes.
 
@@ -37,11 +55,15 @@ A single test method runs with `--filter`:
 npm run test:php -- --filter test_greet_says_hello
 ```
 
-Each new test file is one command:
+Each new test file is one command. Give it the file you want to test and the test lands at the path that mirrors it, so finding one from the other is never a search:
 
 ```bash
-wp zt make test Reports
+wp zt make test resources/post-types/book.php   # tests/php/PostTypes/BookTest.php
+wp zt make test lib/Modules/Reports.php         # tests/php/Modules/ReportsTest.php
+wp zt make test Reports                         # tests/php/ReportsTest.php, for something not written yet
 ```
+
+Every path segment becomes a class name, since a test class autoloads through PSR-4 and a namespace cannot hold a dash. Your source root and `resources/` are dropped.
 
 > [!IMPORTANT]
 > **Never load your plugin's entry file from a test.** It builds and runs the real `Plugin` — every module booted, every hook bound, against whatever directories your plugin actually ships. Tests build their own instance instead, and control what it can see. Your Composer autoloader already makes every class available without the entry file.
@@ -51,7 +73,7 @@ wp zt make test Reports
 Every test gets a fresh directory, a fake entry file in it, and a `Plugin` pointed at that file:
 
 ```php
-namespace Acme\Plugin\Tests\Integration;
+namespace Acme\Plugin\Tests;
 
 use Acme\Plugin\Tests\Support\TestCase;
 
@@ -87,7 +109,7 @@ Add to that list as you add modules, or call `declare()` in the test itself. The
 To exercise the files you actually ship instead, point a second `Plugin` at your real entry file:
 
 ```php
-$plugin = new Plugin( dirname( __DIR__, 2 ) . '/acme-plugin.php', 'acme-test' );
+$plugin = new Plugin( self::get_shipped_path( 'acme-plugin.php' ), 'acme-test' );
 $plugin->declare( CLI::class, 'init' );
 $plugin->get( CLI::class );   // discovers your real resources/commands/ directory
 ```
@@ -159,7 +181,7 @@ A `Command`, an `AjaxAction`, a `Route`, a `Schedule` — each is a plain object
 
 ```php
 public function test_greet_says_hello(): void {
-    $command = require dirname( __DIR__, 2 ) . '/resources/commands/greet.php';
+    $command = require self::get_shipped_path( 'resources/commands/greet.php' );
 
     $this->plugin->wire( $command );
     $command->set_arguments( array( 'Ada' ), array() );
@@ -169,6 +191,8 @@ public function test_greet_says_hello(): void {
     $this->assertSame( array( 'Hello, Ada' ), \WP_CLI::last( 'success' ) );
 }
 ```
+
+`get_shipped_path()` is on the base test case, and resolves against your plugin's root however deep the test sits.
 
 `wire()` is the whole trick: it assigns the plugin, exactly as the module would, on an object the module has never seen. Skip it and the first `$this->with( … )` in your handler fatals on an uninitialised property.
 
@@ -202,7 +226,7 @@ private function dispatch( callable $run ): array {
 }
 
 public function test_the_action_returns_the_report(): void {
-    $action = require dirname( __DIR__, 2 ) . '/resources/actions/report.php';
+    $action = require self::get_shipped_path( 'resources/actions/report.php' );
     $this->plugin->wire( $action );
 
     $response = $this->dispatch( static function () use ( $action ): void { $action->handle(); } );
@@ -236,7 +260,7 @@ $response = $this->dispatch(
 
 ## 5. The WP-CLI doubles
 
-`Command` extends `\WP_CLI_Command`, and `WP_CLI` is a static facade — neither exists under PHPUnit, because the WP-CLI phar is not loaded. `tests/Support/wp-cli-stubs.php` stands in for both, and `tests/bootstrap.php` requires it before the WordPress bootstrap.
+`Command` extends `\WP_CLI_Command`, and `WP_CLI` is a static facade — neither exists under PHPUnit, because the WP-CLI phar is not loaded. `tests/php/Support/wp-cli-stubs.php` stands in for both, and `tests/php/bootstrap.php` requires it before the WordPress bootstrap.
 
 Four properties make it work, and each matters if you extend it:
 
@@ -314,6 +338,49 @@ With all three the chain is unbroken from your test file to `PHPUnit\Framework\T
 **The stubs package declares no autoloader**, which is what makes it safe to have installed beside the real suite. Composer never loads the file, so its `WP_UnitTestCase` cannot collide with the one your tests actually run against; the declarations exist for your editor and for nothing else. Do not `require` it yourself — it names core classes it does not declare, and only an indexer is meant to read it. Pointing PHPStan or Psalm at the same file works, alongside `php-stubs/wordpress-stubs` for those core classes.
 
 Its version tracks WordPress's, so keep it at or above the WordPress you test against.
+
+## 9. JavaScript unit tests
+
+`npm run test:unit` is Jest, through `wp-scripts test-unit-js`: WordPress's own preset, Babel included, so TypeScript and JSX need nothing more. A test runs in a simulated browser, with `document` and `window` there.
+
+Tests live in `tests/js/`, mirroring `src/`, and keep the extension of the file they test:
+
+```bash
+wp zt make test src/shared/collections/index.ts   # tests/js/shared/collections/index.test.ts
+wp zt make test src/shared/collections            # the same, found from the package
+```
+
+Given a directory, the test is for its `package.json` `main`, or for its one `index` script. If it has both `index.ts` and `index.js`, you are asked which one you mean, rather than one being picked for you.
+
+Only `.js`, `.jsx`, `.ts` and `.tsx` are accepted. Those are what Jest collects, and a test for an `.mjs` file would pass by never running.
+
+```js
+import { formatCount } from '../../../../src/shared/collections/index';
+
+describe( 'formatCount', () => {
+	it( 'groups thousands', () => {
+		expect( formatCount( 12000 ) ).toBe( '12,000' );
+	} );
+} );
+```
+
+## 10. End-to-end tests
+
+`npm run test:e2e` is Playwright, on the config `@wordpress/scripts` ships, driving a real browser against the WordPress in `.wp-env.test.json`. It reads that file's port, and starts the WordPress itself when nothing is answering there yet. Point `WP_BASE_URL` at another site to run against that instead.
+
+Specs go in `tests/e2e/specs/` and take their fixtures from `@wordpress/e2e-test-utils-playwright`: `admin` opens wp-admin screens, `editor` drives the block editor, `requestUtils` sets state up over the REST API, and `page` is Playwright's own. Every spec starts logged in as an administrator.
+
+```js
+const { test, expect } = require( '@wordpress/e2e-test-utils-playwright' );
+
+test( 'the reports screen lists last month', async ( { admin, page } ) => {
+	await admin.visitAdminPage( 'admin.php', 'page=acme-plugin-reports' );
+
+	await expect( page.getByRole( 'heading', { name: 'Reports' } ) ).toBeVisible();
+} );
+```
+
+`npm run test:e2e:debug` opens Playwright's UI, to step through a spec. A failing run leaves its trace and a screenshot in `artifacts/`, which is ignored by git.
 
 ## Next
 
