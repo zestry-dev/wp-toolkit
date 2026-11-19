@@ -113,6 +113,29 @@ final class CliTest extends TestCase {
 	}
 
 	/**
+	 * A documented command with no OPTIONS section would otherwise get no
+	 * synopsis, and WP-CLI accepts any arguments for a command without one.
+	 * A blank synopsis is enforced: it refuses a stray positional or flag.
+	 */
+	public function test_a_documented_command_without_options_gets_a_blank_synopsis(): void {
+		$this->define_wp_cli();
+		$this->write_plugin_file(
+			'resources/commands/greet.php',
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\CLI\\Command;\n"
+				. "return new class extends Command {\n"
+				. "    /**\n"
+				. "     * Greets everybody.\n"
+				. "     */\n"
+				. "    public function handle( array \$args, array \$assoc_args ): void {}\n"
+				. "};\n"
+		);
+
+		$this->plugin->get( CLI::class );
+
+		$this->assertSame( ' ', \WP_CLI::last( 'add_command' )[2]['synopsis'] );
+	}
+
+	/**
 	 * An undocumented command is registered exactly as before: nothing empty is
 	 * passed, so WP-CLI's own defaults still apply.
 	 */

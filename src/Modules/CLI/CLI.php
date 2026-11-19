@@ -394,6 +394,19 @@ class CLI extends Module implements Bootable {
 			$synopsis = \implode( ' ', $tokens[1] );
 		}
 
+		if ( '' === $synopsis ) {
+			/*
+			 * A command with no arguments to list would be registered with no
+			 * synopsis, and WP-CLI accepts any arguments for a command without
+			 * one: a stray `extra` ran it. An empty string counts as none, but a
+			 * single space is a synopsis WP-CLI parses to nothing and enforces,
+			 * so a stray positional ("Too many positional arguments") or an
+			 * unknown `--flag` refuses the command before it runs. It matters
+			 * most for a command that changes something.
+			 */
+			$synopsis = ' ';
+		}
+
 		return \array_filter(
 			array(
 				'shortdesc' => $doc->get_shortdesc(),
