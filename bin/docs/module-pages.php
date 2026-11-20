@@ -39,9 +39,9 @@ function zestry_record_missing_base( ?string $base = null ): array {
  */
 function zestry_find_class_file( string $root, string $class ): ?string {
 	/*
-	 * Two levels under the tree, not one: `RequestArgument` lives at
-	 * `src/Modules/Request/Attributes/`, and a single-level glob could not see
-	 * it -- so the attribute appeared in several code samples and had no page.
+	 * Two levels under the tree, not one: the built-in rules live at
+	 * `src/Modules/Validation/Rules/`, and a single-level glob could not see
+	 * them -- so a rule would appear in code samples and have no page.
 	 */
 	$candidates = array(
 		$root . '/src/Modules/*/' . $class . '.php',
@@ -2016,7 +2016,7 @@ function zestry_find_companion_types( string $module_dir, array $documented ): a
 function zestry_entry_purpose( string $name ): string {
 	$purposes = array(
 		// Modules.
-		'abilities'       => 'give an AI agent a tool it can call (WordPress 6.9+)',
+		'abilities'       => 'give an AI agent a tool it can call (WordPress 7.2+)',
 		'admin-pages'     => 'add a screen to the admin menu',
 		'ajax'            => 'answer `admin-ajax.php`, for callers that already speak it',
 		'assets'          => 'enqueue a script or stylesheet, and share code between them',
@@ -2040,8 +2040,9 @@ function zestry_entry_purpose( string $name ): string {
 		'db'              => 'name a database table, yours or WordPress\'s',
 		'globals'         => 'pass a value between classes within one request',
 		'path'            => 'resolve a path or URL inside the plugin',
-		'request'         => 'declare and validate what a route, ability or action accepts',
+		'request'         => 'read what a route or action was sent, uploads included',
 		'transients'      => 'keep a value past the request, with an expiry',
+		'validation'      => 'describe a value as a class, then check, clean and build it',
 		'views'           => 'render a PHP template',
 	);
 

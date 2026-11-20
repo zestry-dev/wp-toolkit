@@ -1,0 +1,47 @@
+<?php
+
+/**
+ * {{class_name}} rule.
+ */
+
+declare( strict_types=1 );
+
+namespace {{class_namespace}};
+
+// Loaded by WordPress, never requested directly.
+\defined( 'ABSPATH' ) || exit;
+
+use {{copied_namespace}}\Modules\Validation\Rule;
+
+/**
+ * Narrows a property it is put on:
+ *
+ * ```php
+ * #[{{class_name}}]
+ * public string $value;
+ * ```
+ */
+#[\Attribute( \Attribute::TARGET_PROPERTY )]
+final class {{class_name}} extends Rule {
+
+	// Override only the halves this rule needs, and delete the rest.
+
+	// What JSON Schema can say: `pattern`, `maxLength`, `enum`, `minimum`.
+	// Published, so a caller reads the limit before sending anything.
+	public function get_schema(): array {
+		return array( 'maxLength' => 64 );
+	}
+
+	// What a schema cannot say: that a post exists, that a name is free.
+	// Return null when the value is fine, or the message saying what is wrong.
+	//
+	// public function check( mixed $value ): ?string {
+	//     return null;
+	// }
+
+	// Clean the value once it has passed. Never refuse here -- that is check().
+	//
+	// public function sanitize( mixed $value ): mixed {
+	//     return \trim( $value );
+	// }
+}

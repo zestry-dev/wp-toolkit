@@ -12,25 +12,14 @@ A route file returns one of these, built with the static constructor matching it
 RestApi discovers route files the way Ajax discovers actions and AdminPages discovers pages: one file per route, in a configured directory. The directory structure is purely organizational, so grouping `widgets/get-one.php` beside `widgets/delete-one.php` is for a human's benefit, not RestApi's.
 
 ```php
-use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 use Acme\Plugin\Core\Modules\RestApi\Route;
 use Acme\Plugin\Core\Modules\RestApi\RestRoute;
+use Acme\Plugin\Core\Modules\Validation\Property;
+use Acme\Plugin\Core\Modules\Validation\Rules\Range;
 
 return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
-    #[RequestArgument(
-        'The widget to return.',
-        validate: [ self::class, 'is_valid_id' ],
-        sanitize: [ self::class, 'to_id' ]
-    )]
+    #[Property( 'The widget to return.' ), Range( min: 1 )]
     public int $id;
-
-    public static function is_valid_id( $value ): bool {
-        return is_numeric( $value );
-    }
-
-    public static function to_id( $value ): int {
-        return (int) $value;
-    }
 
     public function permission_check( WP_REST_Request $request ): bool {
         return true;
@@ -46,7 +35,7 @@ return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
 } );
 ```
 
-`{id}` in the pattern is a plain string literal here, not a filename — so, unlike a folder or file name, it is never subject to WordPress.org's Plugin Check restrictions on special characters. RestApi turns each `{name}` token in the pattern into a named regex capture group matching any run of non-slash characters (`(?P<name>[^/]+)`); a `RequestArgument`-attributed property on the route named `name` binds to it (and can narrow the match, for example to digits only, via its validate callback).
+`{id}` in the pattern is a plain string literal here, not a filename — so, unlike a folder or file name, it is never subject to WordPress.org's Plugin Check restrictions on special characters. RestApi turns each `{name}` token in the pattern into a named regex capture group matching any run of non-slash characters (`(?P<name>[^/]+)`); a declared property on the route named `name` binds to it, and its type and rules narrow the match — `int` accepts digits only.
 
 `$version` is combined with the plugin's own slug to form WordPress's actual REST namespace (`{plugin-slug}/{version}`) — the same `{plugin-slug}/v1` shape `Ajax` and `AdminPages` use for their own namespacing.
 
@@ -67,7 +56,9 @@ declare( strict_types=1 );
 
 use Acme\Plugin\Core\Modules\RestApi\Route;
 use Acme\Plugin\Core\Modules\RestApi\RestRoute;
-// use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
+// use Acme\Plugin\Core\Modules\Validation\Property;
+// use Acme\Plugin\Core\Modules\Validation\Rule;
+// use Acme\Plugin\Core\Modules\Validation\Rules\Range;
 
 return Route::get(
 	'v1',
@@ -77,29 +68,33 @@ return Route::get(
 		// A {token} in the pattern above (or a query-string/body parameter of the
 		// same name) binds onto a typed property instead of being pulled out of
 		// $request by hand. The property states the type and, by having no
-		// default, that it is required; `schema:` states anything else JSON Schema
-		// can express, which a client can read before calling. Uncomment to use:
+		// default, that it is required; a rule narrows it, and one that says so
+		// in the schema is a limit a client can read before calling. Uncomment
+		// to use:
 		//
-		// #[RequestArgument( 'The widget to return.', schema: array( 'minimum' => 1 ) )]
+		// #[Property( 'The widget to return.' ), Range( min: 1 )]
 		// public int $id;
 		//
-		// `validate:` is for what the schema cannot say -- that a row exists, that
-		// a slug is free:
+		// A check is for what a schema cannot say -- that a row exists, that a
+		// slug is free. Return null when the value is fine, or the message:
 		//
-		// #[RequestArgument( 'The widget to return.', validate: array( self::class, 'is_known' ) )]
+		// #[Rule( check: array( self::class, 'is_known' ) )]
 		// public int $id;
 		//
-		// public static function is_known( $value ): bool {
-		//     return null !== acme_find_widget( $value );
+		// public static function is_known( $value ): ?string {
+		//     return null !== acme_find_widget( $value ) ? null : \__( 'There is no such widget.', 'acme-plugin' );
 		// }
+		//
+		// Once a rule appears on a second property, `wp zt make rule` gives it
+		// a class of its own.
 		//
 		// `__()` cannot go inside an attribute -- PHP allows only constant
 		// expressions there. Say a translated description in args() instead,
 		// which is stated over the schema the declarations already give, so the
-		// property keeps its type, its required-ness and its binding. Drop the
+		// property keeps its type, its rules and its required-ness. Drop the
 		// description from the attribute when you do, so it stays in one place:
 		//
-		// #[RequestArgument]
+		// #[Property]
 		// public int $id;
 		//
 		// public function args(): array {
@@ -119,7 +114,7 @@ return Route::get(
 			return \current_user_can( 'manage_options' );
 		}
 
-		// Runs only after permission_check() passes and any #[RequestArgument]
+		// Runs only after permission_check() passes and any declared
 		// properties above have been validated/bound (read them as $this->id,
 		// not $request->get_param( 'id' )).
 		public function handle( WP_REST_Request $request ): WP_REST_Response {
@@ -127,8 +122,8 @@ return Route::get(
 		}
 
 		// Describes the shape of the response handle() returns, as a JSON
-		// Schema array -- unrelated to #[RequestArgument]'s request-side validation
-		// above. null means "publish no schema" -- return it explicitly, the
+		// Schema array -- unrelated to the request-side validation of the
+		// properties above. null means "publish no schema" -- return it explicitly, the
 		// same way permission_check() has to; a non-null array becomes
 		// discoverable via an OPTIONS request, same as core's own REST routes.
 		public function schema(): ?array {

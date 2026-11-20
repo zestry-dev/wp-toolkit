@@ -26,25 +26,14 @@ namespace Zestry\WPToolkit\Modules\RestApi;
  * `widgets/delete-one.php` is for a human's benefit, not RestApi's.
  *
  * ```
- * use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
  * use Acme\Plugin\Core\Modules\RestApi\Route;
  * use Acme\Plugin\Core\Modules\RestApi\RestRoute;
+ * use Acme\Plugin\Core\Modules\Validation\Property;
+ * use Acme\Plugin\Core\Modules\Validation\Rules\Range;
  *
  * return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
- *     #[RequestArgument(
- *         'The widget to return.',
- *         validate: [ self::class, 'is_valid_id' ],
- *         sanitize: [ self::class, 'to_id' ]
- *     )]
+ *     #[Property( 'The widget to return.' ), Range( min: 1 )]
  *     public int $id;
- *
- *     public static function is_valid_id( $value ): bool {
- *         return is_numeric( $value );
- *     }
- *
- *     public static function to_id( $value ): int {
- *         return (int) $value;
- *     }
  *
  *     public function permission_check( WP_REST_Request $request ): bool {
  *         return true;
@@ -64,9 +53,9 @@ namespace Zestry\WPToolkit\Modules\RestApi;
  * unlike a folder or file name, it is never subject to WordPress.org's Plugin
  * Check restrictions on special characters. RestApi turns each `{name}` token
  * in the pattern into a named regex capture group matching any run of
- * non-slash characters (`(?P<name>[^/]+)`); a {@see RequestArgument}-attributed
- * property on the route named `name` binds to it (and can narrow the match,
- * for example to digits only, via its validate callback).
+ * non-slash characters (`(?P<name>[^/]+)`); a declared property on the route
+ * named `name` binds to it, and its type and rules narrow the match -- `int`
+ * accepts digits only.
  *
  * `$version` is combined with the plugin's own slug to form WordPress's
  * actual REST namespace (`{plugin-slug}/{version}`) — the same

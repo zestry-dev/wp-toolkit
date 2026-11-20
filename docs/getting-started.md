@@ -77,12 +77,12 @@ wp zt add cli admin-pages
 Dependencies come along automatically — nearly everything needs `path`, so it arrives too, and `migrations` also pulls in `db`, `options` and `cli`.
 
 > [!IMPORTANT]
-> **Two modules need a newer WordPress than the rest**, and `add` checks your header rather than your site: `abilities` needs 6.9, `icons-library` needs 7.1. Both are measured against the `Requires at least:` your entry file declares — the number your *users'* sites are held to — not against the WordPress you happen to be developing on. A header that promises less refuses the whole batch and copies nothing, naming the version to set. Raise the header first.
+> **Two modules need a newer WordPress than the rest**, and `add` checks your header rather than your site: `abilities` needs 7.2, `icons-library` needs 7.1. Both are measured against the `Requires at least:` your entry file declares — the number your *users'* sites are held to — not against the WordPress you happen to be developing on. A header that promises less refuses the whole batch and copies nothing, naming the version to set. Raise the header first.
 
 Everything you can add is a **[module](modules/)**:
 
 <!-- zestry:include generator="module-names" -->
-`abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cookie`, `cron`, `db`, `fields`, `file-transients`, `globals`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `path`, `post-types`, `queue`, `request`, `rest-api`, `site-health`, `transients`, `views`
+`abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cookie`, `cron`, `db`, `fields`, `file-transients`, `globals`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `path`, `post-types`, `queue`, `request`, `rest-api`, `site-health`, `transients`, `validation`, `views`
 <!-- /zestry:include -->
 
 Some act on their own — `ajax` binds hooks, `post-types` walks a directory — and some only work when you call them, like `path` and `views`. Both are added, declared and reached the same way; what differs is whether the class implements [`Bootable`](kernel/bootable.md).

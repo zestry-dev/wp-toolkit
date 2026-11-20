@@ -12,7 +12,7 @@ use WP_REST_Server;
 
 /**
  * Route discovery/registration, pattern-to-regex translation, dispatch, and
- * RequestArgument binding.
+ * declared-property binding.
  *
  * @covers \Zestry\WPToolkit\Modules\RestApi\RestApi
  * @covers \Zestry\WPToolkit\Modules\RestApi\Route
@@ -126,7 +126,7 @@ final class RestApiTest extends TestCase {
 			'widgets',
 			'v1',
 			'/widgets/{id}',
-			"#[RequestArgument( 'The widget to return.' )]\npublic int \$id;\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'The widget to return.' )]\npublic int \$id;\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { return new WP_REST_Response( [ 'id' => \$this->id ] ); }\n"
 				. 'public function schema(): ?array { return null; }'
@@ -141,7 +141,7 @@ final class RestApiTest extends TestCase {
 	}
 
 	/**
-	 * The published example is `#[RequestArgument( ..., sanitize: 'intval' )]`, and
+	 * The published example is `#[Sanitize( 'intval' )]`, and
 	 * a bare builtin is the case the arity adapter exists for.
 	 *
 	 * `intval` is declared `intval( $value, $base = 10 )`, so forwarding its
@@ -156,7 +156,7 @@ final class RestApiTest extends TestCase {
 			'widgets',
 			'v1',
 			'/widgets/{id}',
-			"#[RequestArgument( 'A widget id.', sanitize: 'intval' )]\npublic int \$id;\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'A widget id.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rules\\Sanitize( 'intval' )]\npublic int \$id;\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { return new WP_REST_Response( [ 'id' => \$this->id ] ); }\n"
 				. 'public function schema(): ?array { return null; }'
@@ -181,7 +181,7 @@ final class RestApiTest extends TestCase {
 			'widgets',
 			'v1',
 			'/widgets/{name}',
-			"#[RequestArgument( 'A widget name.', sanitize: 'trim' )]\npublic string \$name;\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'A widget name.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rules\\Sanitize( 'trim' )]\npublic string \$name;\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { return new WP_REST_Response( [ 'name' => \$this->name ] ); }\n"
 				. 'public function schema(): ?array { return null; }'
@@ -207,7 +207,7 @@ final class RestApiTest extends TestCase {
 			'widgets',
 			'v1',
 			'/widgets/{id}',
-			"#[RequestArgument( 'A widget id.', validate: [ self::class, 'needs_two' ] )]\npublic int \$id;\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'A widget id.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rule( check: [ self::class, 'needs_two' ] )]\npublic int \$id;\n"
 				. "public static function needs_two( \$value, \$request ): bool { return true; }\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { return new WP_REST_Response( [ 'id' => \$this->id ] ); }\n"
@@ -218,7 +218,7 @@ final class RestApiTest extends TestCase {
 		// Still loud, and now it says which argument declared the callback that
 		// promised an argument nothing passes it.
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'The validate callback for "id"' );
+		$this->expectExceptionMessage( 'on "id" cannot check the value it was given' );
 
 		$request = new WP_REST_Request( 'GET', '/zestry-test/v1/widgets/42' );
 		$GLOBALS['wp_rest_server']->dispatch( $request );
@@ -230,7 +230,7 @@ final class RestApiTest extends TestCase {
 			'widgets',
 			'v1',
 			'/widgets/{id}',
-			"#[RequestArgument( 'An even widget id.', validate: [ self::class, 'is_even' ] )]\npublic int \$id;\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'An even widget id.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rule( check: [ self::class, 'is_even' ] )]\npublic int \$id;\n"
 				. "public static function is_even( \$value ): bool { return 0 === \$value % 2; }\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { \$GLOBALS['zestry_handle_ran'] = true; return new WP_REST_Response( [ 'id' => \$this->id ] ); }\n"
@@ -253,7 +253,7 @@ final class RestApiTest extends TestCase {
 			'widgets',
 			'v1',
 			'/widgets',
-			"#[RequestArgument( 'The widget name.' )]\npublic string \$name;\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'The widget name.' )]\npublic string \$name;\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { \$GLOBALS['zestry_handle_ran'] = true; return new WP_REST_Response( [] ); }\n"
 				. 'public function schema(): ?array { return null; }'
@@ -277,7 +277,7 @@ final class RestApiTest extends TestCase {
 			'gizmos',
 			'v1',
 			'/gizmos',
-			"#[RequestArgument( 'A gizmo name.' )]\npublic string \$name = '';\n" . $this->open_get()
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'A gizmo name.' )]\npublic string \$name = '';\n" . $this->open_get()
 		);
 
 		$this->boot_and_discover();
@@ -307,8 +307,8 @@ final class RestApiTest extends TestCase {
 			'widgets',
 			'v1',
 			'/widgets/{id}',
-			"#[RequestArgument( 'The widget to return.' )]\npublic int \$id;\n"
-				. "#[RequestArgument( 'How to sort.', schema: array( 'enum' => array( 'date', 'title', 'slug' ) ) )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'The widget to return.' )]\npublic int \$id;\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'How to sort.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rules\\OneOf( 'date', 'title', 'slug' )]\n"
 				. "public string \$order_by = 'date';\n"
 				. "public function args(): array {\n"
 				. "    return array(\n"
@@ -375,7 +375,7 @@ final class RestApiTest extends TestCase {
 			'widgets',
 			'v1',
 			'/widgets/{id}',
-			"#[RequestArgument( 'A widget id.', validate: 'is_numeric', sanitize: 'absint' )]\npublic int \$id;\n" . $this->open_get_returning_id()
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'A widget id.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rule( check: 'is_numeric' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rules\\Sanitize( 'absint' )]\npublic int \$id;\n" . $this->open_get_returning_id()
 		);
 		$this->boot_and_discover();
 
@@ -392,7 +392,7 @@ final class RestApiTest extends TestCase {
 			'uploads',
 			'v1',
 			'/uploads',
-			"#[RequestArgument( 'The image to attach.' )]\npublic \\Zestry\\WPToolkit\\Modules\\Request\\UploadedFile \$image;\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'The image to attach.' )]\npublic \\Zestry\\WPToolkit\\Modules\\Request\\UploadedFile \$image;\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { return new WP_REST_Response( [ 'name' => \$this->image->name, 'ok' => \$this->image->is_ok() ] ); }\n"
 				. 'public function schema(): ?array { return null; }'
@@ -428,7 +428,7 @@ final class RestApiTest extends TestCase {
 			'uploads',
 			'v1',
 			'/uploads',
-			"#[RequestArgument( 'The image to attach.' )]\npublic \\Zestry\\WPToolkit\\Modules\\Request\\UploadedFile \$image;\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'The image to attach.' )]\npublic \\Zestry\\WPToolkit\\Modules\\Request\\UploadedFile \$image;\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { \$GLOBALS['zestry_handle_ran'] = true; return new WP_REST_Response( [] ); }\n"
 				. 'public function schema(): ?array { return null; }'
@@ -454,7 +454,7 @@ final class RestApiTest extends TestCase {
 			'shipping',
 			'v1',
 			'/shipping',
-			"#[RequestArgument( 'Two-letter country code.', schema: array( 'pattern' => '^[A-Z]{2}\$' ) )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Two-letter country code.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rules\\Pattern( '^[A-Z]{2}\$' )]\n"
 				. "public string \$country = 'GB';\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { \$GLOBALS['zestry_handle_ran'] = true; return new WP_REST_Response( [ 'country' => \$this->country ] ); }\n"
@@ -496,7 +496,7 @@ final class RestApiTest extends TestCase {
 			'shipping',
 			'v1',
 			'/shipping',
-			"#[RequestArgument( 'Country code.', sanitize: 'strtoupper', schema: array( 'pattern' => '^[A-Za-z]{2}\$' ) )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Country code.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rules\\Sanitize( 'strtoupper' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rules\\Pattern( '^[A-Za-z]{2}\$' )]\n"
 				. "public string \$country = 'GB';\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { return new WP_REST_Response( [ 'country' => \$this->country ] ); }\n"
@@ -525,7 +525,7 @@ final class RestApiTest extends TestCase {
 			'settings',
 			'v1',
 			'/settings',
-			"#[RequestArgument( 'Whatever the caller keeps here.' )]\npublic \\stdClass \$params;\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Whatever the caller keeps here.' )]\npublic \\stdClass \$params;\n"
 				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
 				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { return new WP_REST_Response( [ 'colour' => \$this->params->colour, 'deep' => \$this->params->nested->level ] ); }\n"
 				. 'public function schema(): ?array { return null; }'
@@ -647,7 +647,7 @@ final class RestApiTest extends TestCase {
 	}
 
 	public function test_an_unbound_placeholder_throws(): void {
-		// {id} appears in the pattern, but no #[RequestArgument] property named
+		// {id} appears in the pattern, but no declared property named
 		// "id" binds to it -- the value would silently go nowhere.
 		$this->write_route( 'get', 'widgets', 'v1', '/widgets/{id}', $this->open_get() );
 		$this->plugin->get( RestApi::class );
@@ -655,6 +655,198 @@ final class RestApiTest extends TestCase {
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( 'no matching' );
 		do_action( 'rest_api_init', $GLOBALS['wp_rest_server'] );
+	}
+
+	/**
+	 * What a list, a map or a class holds is checked, not only that it is one.
+	 *
+	 * Each case once reached handle(): `["abc"]` for a list of ints was cast to
+	 * `[0]`, `"nope"` in a list of dates threw out of the build as a 500, and a
+	 * nested class came back missing a required property. The arg WordPress
+	 * hands a validate_callback carries `items` and `properties`, and the check
+	 * had been dropping them along with the callbacks.
+	 *
+	 * @dataProvider provide_contents_a_route_refuses
+	 *
+	 * @param string $declaration The property, with its attributes.
+	 * @param string $prelude     Anything it names, declared ahead of the route.
+	 * @param array  $body        The JSON body sent.
+	 * @param string $path        Where the problem is reported.
+	 */
+	public function test_a_route_checks_what_a_container_holds( string $declaration, string $prelude, array $body, string $path ): void {
+		unset( $GLOBALS['zestry_handle_ran'] );
+		$this->write_contents_route( $declaration, $prelude );
+		$this->boot_and_discover();
+
+		$request = new WP_REST_Request( 'POST', '/zestry-test/v1/contents' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body( (string) wp_json_encode( $body ) );
+
+		$response = $GLOBALS['wp_rest_server']->dispatch( $request );
+		$name     = (string) array_key_first( $body );
+
+		$this->assertSame( 400, $response->get_status(), 'Refused as a bad request, not run and not a 500.' );
+		$this->assertArrayNotHasKey( 'zestry_handle_ran', $GLOBALS );
+		$this->assertArrayHasKey( $path, $response->get_data()['data']['details'][ $name ]['data']['errors'] ?? array() );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string, 2: array<string, mixed>, 3: string}>
+	 */
+	public static function provide_contents_a_route_refuses(): array {
+		$v = '\\Zestry\\WPToolkit\\Modules\\Validation\\';
+
+		return array(
+			'an item of the wrong type'          => array( "#[{$v}ListOf( 'int' )]\npublic array \$ids;", '', array( 'ids' => array( 1, 'abc' ) ), 'ids[1]' ),
+			'an item breaking an Each rule'      => array( "#[{$v}ListOf( 'string' ), {$v}Each( new {$v}Rules\\Length( max: 3 ) )]\npublic array \$tags;", '', array( 'tags' => array( 'ok', 'too long' ) ), 'tags[1]' ),
+			'a map value of the wrong type'      => array( "#[{$v}MapOf( 'int' )]\npublic array \$counts;", '', array( 'counts' => array( 'a' => 'x' ) ), 'counts.a' ),
+			'an item that is no case'            => array(
+				"#[{$v}ListOf( \\ZestryRouteSize::class )]\npublic array \$sizes;",
+				"if ( ! enum_exists( 'ZestryRouteSize', false ) ) { enum ZestryRouteSize: string { case Small = 'small'; } }",
+				array( 'sizes' => array( 'huge' ) ),
+				'sizes[0]',
+			),
+			'an item that is no date'            => array( "#[{$v}ListOf( \\DateTimeImmutable::class )]\npublic array \$dates;", '', array( 'dates' => array( 'nope' ) ), 'dates[0]' ),
+			'a property missing two levels down' => array(
+				"#[{$v}Property]\npublic \\ZestryRouteOuter \$o;",
+				"if ( ! class_exists( 'ZestryRouteInner', false ) ) { final class ZestryRouteInner { #[{$v}Property] public string \$name; } final class ZestryRouteOuter { #[{$v}Property] public ZestryRouteInner \$inner; } }",
+				array( 'o' => array( 'inner' => array( 'x' => 1 ) ) ),
+				'o.inner.name',
+			),
+			'a nested class missing a property'  => array(
+				"#[{$v}Property]\npublic \\ZestryRouteAddress \$address;",
+				"if ( ! class_exists( 'ZestryRouteAddress', false ) ) { final class ZestryRouteAddress { #[{$v}Property] public string \$city; } }",
+				array( 'address' => array() ),
+				'address.city',
+			),
+		);
+	}
+
+	/**
+	 * Sent as null is a value: a nullable property told null holds null, rather
+	 * than keeping the default it would have had if nothing was sent.
+	 */
+	public function test_an_explicit_null_is_bound_rather_than_the_default(): void {
+		$this->write_contents_route( "#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property]\npublic ?string \$note = 'default';", '', "array( 'note' => \$this->note )" );
+		$this->boot_and_discover();
+
+		$request = new WP_REST_Request( 'POST', '/zestry-test/v1/contents' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body( '{"note":null}' );
+
+		$response = $GLOBALS['wp_rest_server']->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( array( 'note' => null ), $response->get_data() );
+	}
+
+	/**
+	 * WordPress reads a parameter with isset(), so for a sent null it checked
+	 * the default -- and the null itself, cast, used to be what was bound.
+	 */
+	public function test_a_null_sent_for_a_property_that_cannot_hold_one_keeps_the_default(): void {
+		$v = '\\Zestry\\WPToolkit\\Modules\\Validation\\';
+		$this->write_contents_route(
+			"#[{$v}Rules\\Range( min: 1 )]\npublic int \$page = 1;\n#[{$v}Property]\npublic \\ZestryRouteStatus \$status = \\ZestryRouteStatus::Open;",
+			"if ( ! enum_exists( 'ZestryRouteStatus', false ) ) { enum ZestryRouteStatus: string { case Open = 'open'; } }",
+			"array( 'page' => \$this->page, 'status' => \$this->status->value )"
+		);
+		$this->boot_and_discover();
+
+		$response = $this->post_contents( '{"page":null,"status":null}' );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( array( 'page' => 1, 'status' => 'open' ), $response->get_data() );
+	}
+
+	/**
+	 * Core's cast picks the first type a value fits, and every value fits an
+	 * array -- so each item came back wrapped in one.
+	 */
+	public function test_a_list_of_anything_is_bound_as_sent(): void {
+		$this->write_contents_route( "#[\\Zestry\\WPToolkit\\Modules\\Validation\\ListOf( 'mixed' )]\npublic array \$tags;", '', "array( 'tags' => \$this->tags )" );
+		$this->boot_and_discover();
+
+		$response = $this->post_contents( '{"tags":[1,"a",true]}' );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( array( 'tags' => array( 1, 'a', true ) ), $response->get_data() );
+	}
+
+	/**
+	 * A `required` list stated in args() describes the class's own properties;
+	 * it must not stand in for whether the parameter itself was sent.
+	 */
+	public function test_a_required_list_in_args_leaves_the_parameter_required(): void {
+		$this->write_contents_route(
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property]\npublic \\ZestryRouteStreet \$address;\n#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property]\npublic ?\\ZestryRouteStreet \$billing = null;\npublic function args(): array { return array( 'address' => array( 'required' => array( 'street' ) ), 'billing' => array( 'required' => array( 'street' ) ) ); }",
+			"if ( ! class_exists( 'ZestryRouteStreet', false ) ) { final class ZestryRouteStreet { #[\\Zestry\\WPToolkit\\Modules\\Validation\\Property] public string \$street = ''; } }"
+		);
+		$this->boot_and_discover();
+
+		$this->assertSame( 400, $this->post_contents( '{}' )->get_status(), 'The parameter is still required.' );
+		$this->assertSame( 400, $this->post_contents( '{"address":{}}' )->get_status(), 'And so is the property the list names.' );
+		$this->assertSame( 200, $this->post_contents( '{"address":{"street":"Main"}}' )->get_status(), 'A list does not make an optional parameter required.' );
+		$this->assertSame( 400, $this->post_contents( '{"address":{"street":"Main"},"billing":{}}' )->get_status(), 'It names what is required inside it.' );
+
+		$args = $GLOBALS['wp_rest_server']->get_routes()['/zestry-test/v1/contents'][0]['args'];
+
+		$this->assertTrue( $args['address']['required'] );
+		$this->assertFalse( $args['billing']['required'] ?? false );
+		$this->assertTrue( $args['billing']['properties']['street']['required'] );
+	}
+
+	/**
+	 * What is published is what is enforced: an optional class is not required,
+	 * and the properties inside it say for themselves which are.
+	 */
+	public function test_the_published_args_say_what_is_required_at_every_level(): void {
+		$v = '\\Zestry\\WPToolkit\\Modules\\Validation\\';
+		$this->write_contents_route(
+			"#[{$v}Property]\npublic ?\\ZestryRouteOuter \$optional = null;\n#[{$v}Property]\npublic \\ZestryRouteOuter \$needed;",
+			"if ( ! class_exists( 'ZestryRouteInner', false ) ) { final class ZestryRouteInner { #[{$v}Property] public string \$name; } final class ZestryRouteOuter { #[{$v}Property] public ZestryRouteInner \$inner; } }"
+		);
+		$this->boot_and_discover();
+
+		$args = $GLOBALS['wp_rest_server']->get_routes()['/zestry-test/v1/contents'][0]['args'];
+
+		$this->assertFalse( $args['optional']['required'] ?? false );
+		$this->assertTrue( $args['needed']['required'] );
+		$this->assertTrue( $args['needed']['properties']['inner']['required'] );
+		$this->assertTrue( $args['needed']['properties']['inner']['properties']['name']['required'] );
+		$this->assertTrue( $args['optional']['properties']['inner']['properties']['name']['required'] );
+	}
+
+	/**
+	 * POST a JSON body to /contents.
+	 *
+	 * @param string $body The body.
+	 * @return \WP_REST_Response
+	 */
+	private function post_contents( string $body ): \WP_REST_Response {
+		$request = new WP_REST_Request( 'POST', '/zestry-test/v1/contents' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body( $body );
+
+		return rest_ensure_response( $GLOBALS['wp_rest_server']->dispatch( $request ) );
+	}
+
+	/**
+	 * A POST route at /contents whose handle() returns its declared values.
+	 *
+	 * @param string $declaration The property, with its attributes.
+	 * @param string $prelude     Anything it names, declared ahead of the route.
+	 * @param string $returns     What handle() responds with, as PHP.
+	 */
+	private function write_contents_route( string $declaration, string $prelude = '', string $returns = "array( 'ok' => true )" ): void {
+		$this->write_plugin_file(
+			'resources/routes/contents.php',
+			"<?php\nuse Zestry\\WPToolkit\\Modules\\RestApi\\Route;\nuse Zestry\\WPToolkit\\Modules\\RestApi\\RestRoute;\n{$prelude}\n"
+				. "return Route::post( 'v1', '/contents', new class extends RestRoute {\n{$declaration}\n"
+				. "public function permission_check( WP_REST_Request \$request ): bool { return true; }\n"
+				. "public function handle( WP_REST_Request \$request ): WP_REST_Response { \$GLOBALS['zestry_handle_ran'] = true; return new WP_REST_Response( {$returns} ); }\n"
+				. "public function schema(): ?array { return null; }\n} );\n"
+		);
 	}
 
 	/**
@@ -688,7 +880,7 @@ final class RestApiTest extends TestCase {
 			// for them here would be a no-op PHP warns about; only the toolkit's
 			// own classes need one.
 			"<?php\nuse Zestry\\WPToolkit\\Modules\\RestApi\\Route;\nuse Zestry\\WPToolkit\\Modules\\RestApi\\RestRoute;\n"
-				. "use Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument;\n"
+				. "use Zestry\\WPToolkit\\Modules\\Validation\\Property;\n"
 				. "return Route::{$http_method}( '{$version}', '{$pattern}', new class extends RestRoute {\n{$class_body}\n} );\n"
 		);
 	}
@@ -712,7 +904,7 @@ final class RestApiTest extends TestCase {
 	 * @return string
 	 */
 	private function bound_id(): string {
-		return "#[RequestArgument( 'A widget id.' )]\npublic string \$id = '';\n";
+		return "#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'A widget id.' )]\npublic string \$id = '';\n";
 	}
 
 	/**

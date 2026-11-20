@@ -16,7 +16,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
 use Zestry\WPToolkit\Modules\Path;
-use Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument;
+use Zestry\WPToolkit\Modules\Validation\Validation;
 use Zestry\WPToolkit\Modules\Request\Request;
 
 /**
@@ -41,7 +41,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  *
  * Each `{name}` token in a pattern becomes a named regex capture group,
  * matching any run of non-slash characters. Declaring the matching property
- * with a [`#[RequestArgument]`](../request/request-argument.md) is what narrows
+ * with a [`#[Property]`](../validation/property.md) or a [rule](../validation/rule.md) is what narrows
  * that -- to an integer, say -- and the module throws at registration if a token
  * has no property to bind to.
  *
@@ -51,6 +51,13 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * > before routing even begins. Every other argument is required only when its
  * > property has no default.
  *
+ * **To accept `null`, give the property a default**: `?string $note = null`.
+ * WordPress counts a parameter sent as `null` as not sent, so `?string $note`
+ * with no default refuses `{"note": null}` as missing. A `null` sent for a
+ * property that can hold one is bound as `null`, even over a non-null default;
+ * for one that cannot, it is treated as not sent, and the property keeps its
+ * default.
+ *
  * A `{id}` token is a plain string in PHP, never a filename, so it escapes
  * WordPress.org's Plugin Check rules on special characters. Those reject any
  * file or folder name containing `[`, `]`, `(`, `)`, `{` or `}` as
@@ -59,12 +66,12 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * @example A minimal route file
  * ```
  * // resources/routes/widgets/get-one.php
- * use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
  * use Acme\Plugin\Core\Modules\RestApi\Route;
  * use Acme\Plugin\Core\Modules\RestApi\RestRoute;
+ * use Acme\Plugin\Core\Modules\Validation\Property;
  *
  * return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
- *     #[RequestArgument( 'The widget to return.' )]
+ *     #[Property( 'The widget to return.' )]
  *     public int $id;
  *
  *     public function permission_check( WP_REST_Request $request ): bool {
@@ -83,40 +90,47 @@ use Zestry\WPToolkit\Modules\Request\Request;
  *
  * @example Narrowing what a route accepts
  * The property's type is already a rule -- `int $id` rejects `abc` with a 400
- * before `handle()` runs -- and `schema:` states the rest. A client can read
- * every one of those before calling, which is why they are worth preferring to
- * a callback:
+ * before `handle()` runs -- and a rule states the rest. A client can read
+ * every limit a rule publishes before calling, which is why those are worth
+ * preferring to a check:
  *
  * ```
- * use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
  * use Acme\Plugin\Core\Modules\RestApi\Route;
  * use Acme\Plugin\Core\Modules\RestApi\RestRoute;
+ * use Acme\Plugin\Core\Modules\Validation\Property;
+ * use Acme\Plugin\Core\Modules\Validation\Rule;
+ * use Acme\Plugin\Core\Modules\Validation\Rules\OneOf;
+ * use Acme\Plugin\Core\Modules\Validation\Rules\Range;
  *
  * return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
- *     #[RequestArgument( 'The widget to return.', schema: array( 'minimum' => 1 ) )]
+ *     #[Property( 'The widget to return.' ), Range( min: 1 )]
  *     public int $id;
  *
- *     #[RequestArgument( 'How to render it.', schema: array( 'enum' => array( 'json', 'csv' ) ) )]
+ *     #[Property( 'How to render it.' ), OneOf( 'json', 'csv' )]
  *     public string $format = 'json';
  *
- *     #[RequestArgument( 'Only widgets this account owns.', validate: array( self::class, 'is_own_account' ) )]
+ *     #[Property( 'Only widgets this account owns.' )]
+ *     #[Rule( check: array( self::class, 'is_own_account' ) )]
  *     public int $account_id = 0;
  *
- *     public static function is_own_account( $value ): bool {
- *         return 0 === $value || acme_account_belongs_to_user( $value, get_current_user_id() );
+ *     public static function is_own_account( int $value ): ?string {
+ *         return 0 === $value || acme_account_belongs_to_user( $value, get_current_user_id() )
+ *             ? null
+ *             : __( 'That account is not yours.', 'acme' );
  *     }
  *
  *     // ... permission_check(), handle(), schema()
  * } );
  * ```
  *
- * `validate` is for what JSON Schema cannot say -- that a row exists, that a
- * slug is free. Returning false rejects the request with a 400 before
- * `handle()` runs.
+ * A `check` is for what JSON Schema cannot say -- that a row exists, that a
+ * slug is free. Returning a message rejects the request with a 400 before
+ * `handle()` runs, and the message is what the caller reads.
  *
- * A check spanning two fields belongs in `handle()` rather than here: a
- * callback sees one value in isolation, while by `handle()` every property is
- * bound and an error can name the combination that was wrong.
+ * A check spanning two fields cannot be a rule on the route itself: a route,
+ * an ability or an action carrying a class rule throws on its first call. Put
+ * those fields in a class with the rule on it and declare one property of that
+ * type, or compare them in `handle()`, where every property is bound.
  *
  * @example One route per HTTP method
  * A sibling file can declare that same `/widgets/{id}` pattern under a
@@ -127,7 +141,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * ```
  * // resources/routes/widgets/delete-one.php
  * return Route::delete( 'v1', '/widgets/{id}', new class extends RestRoute {
- *     #[RequestArgument( 'The widget to delete.' )]
+ *     #[Property( 'The widget to delete.' )]
  *     public int $id;
  *
  *     public function permission_check( WP_REST_Request $request ): bool {
@@ -300,7 +314,7 @@ class RestApi extends Module implements Bootable {
 	 *
 	 * Each token becomes a group matching any run of non-slash characters by
 	 * default (`(?P<name>[^/]+)`), covering both a numeric ID and a string
-	 * slug without requiring a {@see RequestArgument} override for the common
+	 * slug without requiring a pattern of its own for the common
 	 * case; a bound property narrows the match (for example to `\d+`) when a
 	 * route needs to.
 	 *
@@ -325,7 +339,7 @@ class RestApi extends Module implements Bootable {
 	 * @throws \InvalidArgumentException When a token has no property to bind to.
 	 */
 	private function assert_placeholders_are_bound( string $route_file, array $placeholders, RestRoute $route ): void {
-		$unbound = \array_diff( $placeholders, \array_keys( $this->with( Request::class )->get_arguments( $route ) ) );
+		$unbound = \array_diff( $placeholders, \array_keys( $this->with( Validation::class )->get_properties( $route ) ) );
 
 		if ( array() === $unbound ) {
 			return;
@@ -333,9 +347,8 @@ class RestApi extends Module implements Bootable {
 
 		throw new \InvalidArgumentException(
 			\sprintf(
-				'The file "%s" has a pattern placeholder with no matching #[%s] property: %s.',
+				'The file "%s" has a pattern placeholder with no matching declared property: %s. Give the route a property of that name with #[Property] or a rule.',
 				$route_file,
-				RequestArgument::class,
 				\implode( ', ', $unbound )
 			)
 		);
@@ -343,7 +356,7 @@ class RestApi extends Module implements Bootable {
 
 	/**
 	 * Build the callback WordPress invokes for this route: bind each declared
-	 * property from the (already validated and sanitized) request, then call the
+	 * property from the (already validated) request, then call the
 	 * route's own handle().
 	 *
 	 * Binding happens here, inside the per-request callback, rather than at
@@ -357,14 +370,27 @@ class RestApi extends Module implements Bootable {
 	 */
 	private function get_handle_callback( RestRoute $route ): callable {
 		return function ( \WP_REST_Request $request ) use ( $route ) {
-			$values = array();
+			$validation = $this->with( Validation::class );
+			$values     = array();
 
-			foreach ( \array_keys( $this->with( Request::class )->get_arguments( $route ) ) as $name ) {
-				$value = $request->get_param( $name );
+			$params = $request->get_params();
 
-				if ( null !== $value ) {
-					$values[ $name ] = $value;
+			foreach ( $validation->get_properties( $route ) as $name => $property ) {
+				if ( ! \array_key_exists( $name, $params ) ) {
+					continue;
 				}
+
+				/*
+				 * WordPress decides whether a parameter was sent with isset(), so
+				 * for a sent null it checked the default instead. Taken only
+				 * where null is a value the property holds; anywhere else it
+				 * counts as not sent, which is what was checked.
+				 */
+				if ( null === $params[ $name ] && ! ( $property->getType()?->allowsNull() ?? false ) ) {
+					continue;
+				}
+
+				$values[ $name ] = $params[ $name ];
 			}
 
 			/*
@@ -376,7 +402,7 @@ class RestApi extends Module implements Bootable {
 			 */
 			$files = $request->get_file_params();
 
-			foreach ( $this->with( Request::class )->get_file_arguments( $route ) as $name => $is_required ) {
+			foreach ( $validation->get_file_properties( $route ) as $name => $is_required ) {
 				if ( isset( $files[ $name ] ) ) {
 					$values[ $name ] = $files[ $name ];
 					continue;
@@ -398,7 +424,15 @@ class RestApi extends Module implements Bootable {
 				}
 			}
 
-			$this->with( Request::class )->bind( $route, $values );
+			// WordPress checked every parameter against the args above, so only
+			// casting, cleaning and building is left.
+			$built = $validation->resolve( $route, $values, 'rest_invalid_param', array( 'properties' => $route->args() ), false );
+
+			if ( \is_wp_error( $built ) ) {
+				return $built;
+			}
+
+			$validation->bind( $route, $built );
 
 			return $route->handle( $request );
 		};

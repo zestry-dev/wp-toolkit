@@ -5,13 +5,13 @@
 
 # Abilities
 
-Discovers `resources/abilities/` &nbsp;·&nbsp; Each file returns [`Ability`](ability.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`request`](../request/)
+Discovers `resources/abilities/` &nbsp;·&nbsp; Each file returns [`Ability`](ability.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`validation`](../validation/)
 
 Publishes what your plugin can do, for the REST API and for AI agents.
 
 A file in `resources/abilities/` returns an `Ability`, and its filename is the name it registers under: `create-order.php` becomes `{plugin-slug}/create-order`. Each one carries a description and JSON Schemas for its input and output — enough for something that has never seen your code to call it correctly.
 
-WordPress gives every public ability a REST endpoint at `wp-json/wp-abilities/v1/abilities/{ability}/run` for free. An MCP adapter installed on the site turns the same registration into a tool an AI agent can call, also for free: there is no protocol code to write on your side, which is the point of the API. Requires WordPress 6.9 or newer.
+WordPress gives every public ability a REST endpoint at `wp-json/wp-abilities/v1/abilities/{ability}/run` for free. An MCP adapter installed on the site turns the same registration into a tool an AI agent can call, also for free: there is no protocol code to write on your side, which is the point of the API. Requires WordPress 7.2 or newer.
 
 > [!IMPORTANT]
 > **No adapter ships with WordPress, and you do not need one to be finished.** An ability is a registry entry first. WordPress serves the REST half itself, so that half is testable today; the MCP half is a separate plugin somebody installs, and whether one is present is a property of the site rather than of your code. Write and verify against REST, and an adapter picks the same registration up when it arrives.
@@ -55,7 +55,7 @@ return array(
 
 ## An ability
 
-A typed property carrying a [`#[RequestArgument]`](../request/request-argument.md) is both the input schema and the value: it is described once, validated by WordPress, and bound before your code runs. The property says the type, and whether it is required — one with no default has to be supplied.
+A typed property carrying a [`#[Property]`](../validation/property.md) is both the input schema and the value: it is described once, validated by WordPress, and bound before your code runs. The property says the type, and whether it is required — one with no default has to be supplied.
 
 ```php
 // resources/abilities/publish-post.php
@@ -77,7 +77,7 @@ return new class extends Ability {
         return true;
     }
 
-    #[RequestArgument( 'The draft to publish.' )]
+    #[Property( 'The draft to publish.' )]
     public int $id;
 
     public function permission_check( mixed $input ): bool {
@@ -104,7 +104,7 @@ if ( is_wp_error( $result ) ) {
 
 ## Changing the defaults
 
-Group them
+Filing abilities under your own categories
 
 ```php
 // bootstrap.php
@@ -344,6 +344,6 @@ final public function with( string $name ): object
 
 - [`Ability`](ability.md) — what a file in `resources/abilities/` returns
 - [`path`](../path/) — copied in alongside this one
-- [`request`](../request/) — copied in alongside this one
+- [`validation`](../validation/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
 - [`wp zt add abilities`](../../commands/add.md) — the command that copies it

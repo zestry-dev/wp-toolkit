@@ -828,7 +828,7 @@ final class MakeCommandTest extends TestCase {
 		// A page is reached by two methods and declares no arguments, so the stub
 		// must not teach an attribute that binds nothing -- code teaches louder
 		// than the comment above it, and this is the shape a consumer copies.
-		$this->assertStringNotContainsString( 'RequestArgument', $page );
+		$this->assertStringNotContainsString( '#[Property', $page );
 		$this->assertStringContainsString(
 			'\sanitize_text_field( \wp_unslash( $_POST',
 			$page,
@@ -1440,6 +1440,24 @@ final class MakeCommandTest extends TestCase {
 	}
 
 	/**
+	 * A rule lands under the plugin's own Rules namespace, extends the copied
+	 * Rule, and is an attribute -- so it is usable as `#[Slug]` the moment it
+	 * exists, with nothing declared.
+	 *
+	 * @return void
+	 */
+	public function test_make_rule_writes_an_attribute_extending_the_copied_rule(): void {
+		$this->run_make( array( 'Posts/Slug' ), array(), 'rule' );
+
+		$written = (string) file_get_contents( $this->target_plugin_dir . '/lib/Rules/Posts/Slug.php' );
+
+		$this->assertStringContainsString( 'namespace Acme\\Plugin\\Rules\\Posts;', $written );
+		$this->assertStringContainsString( "use Acme\\Plugin\\Core\\Modules\\Validation\\Rule;", $written );
+		$this->assertStringContainsString( "#[\\Attribute( \\Attribute::TARGET_PROPERTY )]\nfinal class Slug extends Rule {", $written );
+		$this->assertFileDoesNotExist( $this->target_plugin_dir . '/bootstrap.php', 'A rule is reached by being used, not declared.' );
+	}
+
+	/**
 	 * Neither flag is a plain abstract class -- useful for something shared that
 	 * is not a discovered file at all.
 	 *
@@ -1789,6 +1807,7 @@ final class MakeCommandTest extends TestCase {
 			'field'              => 'field.php',
 			'ability'            => 'ability.php',
 			'abstract'           => 'abstract.php',
+			'rule'               => 'rule.php',
 			'test.php.stub'      => 'test.php',
 			'update.php.stub'    => 'update.php',
 		);

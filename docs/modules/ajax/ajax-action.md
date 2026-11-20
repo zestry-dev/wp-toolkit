@@ -17,14 +17,14 @@ A file at `resources/actions/save-profile.php` registers as `wp_ajax_{plugin}-sa
 
 ## What it takes
 
-Declare each input with `RequestArgument` on a typed property, the same way a route and an ability do, and read it as `$this->post_id`:
+Declare each input with `Property` on a typed property, the same way a route and an ability do, and read it as `$this->post_id`:
 
 ```php
-#[RequestArgument( 'Which post to act on.' )]
+#[Property( 'Which post to act on.' )]
 public int $post_id;
 ```
 
-The value is checked against the property's type and bound before `capability_check()` runs, so a capability decision can name what it is deciding about: `current_user_can( 'edit_post', $this->post_id )`. An argument that does not fit, or a required one left out, is answered with a 400 before any of your code runs.
+The value is checked against the property's type and rules and bound before `capability_check()` runs, so a capability decision can name what it is deciding about: `current_user_can( 'edit_post', $this->post_id )`. An argument that does not fit, or a required one left out, is answered before any of your code runs with a 400 and `{"success":false,"data":{"code":"rest_invalid_param","message":…,"params":[…],"errors":{"guests[1].email":…}}}`. Nothing publishes an action's schema, so its descriptions are never read and need no translating.
 
 It is also unslashed. WordPress hands an AJAX hook `$_REQUEST` exactly as it arrived, slashes and all, where it unslashes a REST route's parameters first — so an action reading the request itself has to remember `wp_unslash()`, and one that declares its arguments does not.
 
@@ -46,7 +46,7 @@ declare( strict_types=1 );
 \defined( 'ABSPATH' ) || exit;
 
 use Acme\Plugin\Core\Modules\Ajax\AjaxAction;
-// use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
+// use Acme\Plugin\Core\Modules\Validation\Property;
 
 return new class() extends AjaxAction {
 
@@ -58,7 +58,7 @@ return new class() extends AjaxAction {
 	// type, unslashed, and bound before the methods below run -- so read
 	// $this->post_id rather than $_POST['post_id']. Uncomment to use:
 	//
-	// #[RequestArgument( 'Which post to act on.' )]
+	// #[Property( 'Which post to act on.' )]
 	// public int $post_id;
 
 
@@ -176,7 +176,7 @@ public function get_nonce_context(): string|int|null
 | **Return** | Nonce context, or null for the default scope |
 | **Throws** | — |
 
-Returning a resource identifier, such as a post ID, creates a nonce that cannot be reused for a different resource. A raw int is accepted as-is — `return (int) $_REQUEST['post_id'];` needs no cast, since the whole `string|int|null` range survives dispatch into `Ajax::verify_action_nonce()`. Whatever you return has to match the value the nonce was minted with, either the third argument to `Ajax::create_action_nonce()` or the argument `Ajax::get_action_url()`'s `$context_key` names. Return null to scope the nonce to the action name alone.
+Returning a resource identifier, such as a post ID, creates a nonce that cannot be reused for a different resource. A raw int is accepted as-is — `return $this->post_id;` works, since declared properties are bound before this runs and the whole `string|int|null` range survives dispatch into `Ajax::verify_action_nonce()`. Whatever you return has to match the value the nonce was minted with, either the third argument to `Ajax::create_action_nonce()` or the argument `Ajax::get_action_url()`'s `$context_key` names. Return null to scope the nonce to the action name alone.
 
 <br>
 

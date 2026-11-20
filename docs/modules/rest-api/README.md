@@ -5,7 +5,7 @@
 
 # RestApi
 
-Discovers `resources/routes/` &nbsp;·&nbsp; Each file returns [`Route`](route.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`request`](../request/)
+Discovers `resources/routes/` &nbsp;·&nbsp; Each file returns [`Route`](route.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`request`](../request/), [`validation`](../validation/)
 
 Discovers plugin REST API routes and registers them with WordPress.
 
@@ -15,10 +15,12 @@ A route file returns a `Route` value, built with the static constructor matching
 
 Each file's RestRoute instance handles exactly one HTTP method. The module wires it, assigning the plugin so `with()` reaches every module, then hands it to `Request` to turn its declared properties into WordPress's args schema. `handle()` is wrapped, so each validated and sanitized request value is bound onto its property before the method runs. The route's response schema (see `RestRoute::schema()`) is published only when the route returns one.
 
-Each `{name}` token in a pattern becomes a named regex capture group, matching any run of non-slash characters. Declaring the matching property with a [`#[RequestArgument]`](../request/request-argument.md) is what narrows that — to an integer, say — and the module throws at registration if a token has no property to bind to.
+Each `{name}` token in a pattern becomes a named regex capture group, matching any run of non-slash characters. Declaring the matching property with a [`#[Property]`](../validation/property.md) or a [rule](../validation/rule.md) is what narrows that — to an integer, say — and the module throws at registration if a token has no property to bind to.
 
 > [!NOTE]
 > **A property bound to a pattern token is always required**, whatever its declaration says. WordPress rejects a request whose URL does not provide it before routing even begins. Every other argument is required only when its property has no default.
+
+**To accept `null`, give the property a default**: `?string $note = null`. WordPress counts a parameter sent as `null` as not sent, so `?string $note` with no default refuses `{"note": null}` as missing. A `null` sent for a property that can hold one is bound as `null`, even over a non-null default; for one that cannot, it is treated as not sent, and the property keeps its default.
 
 A `{id}` token is a plain string in PHP, never a filename, so it escapes WordPress.org's Plugin Check rules on special characters. Those reject any file or folder name containing `[`, `]`, `(`, `)`, `{` or `}` as `badly_named_files`.
 
@@ -48,12 +50,12 @@ return array(
 
 ```php
 // resources/routes/widgets/get-one.php
-use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 use Acme\Plugin\Core\Modules\RestApi\Route;
 use Acme\Plugin\Core\Modules\RestApi\RestRoute;
+use Acme\Plugin\Core\Modules\Validation\Property;
 
 return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
-    #[RequestArgument( 'The widget to return.' )]
+    #[Property( 'The widget to return.' )]
     public int $id;
 
     public function permission_check( WP_REST_Request $request ): bool {
@@ -72,34 +74,40 @@ return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
 
 ## Narrowing what a route accepts
 
-The property's type is already a rule — `int $id` rejects `abc` with a 400 before `handle()` runs — and `schema:` states the rest. A client can read every one of those before calling, which is why they are worth preferring to a callback:
+The property's type is already a rule — `int $id` rejects `abc` with a 400 before `handle()` runs — and a rule states the rest. A client can read every limit a rule publishes before calling, which is why those are worth preferring to a check:
 
 ```php
-use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 use Acme\Plugin\Core\Modules\RestApi\Route;
 use Acme\Plugin\Core\Modules\RestApi\RestRoute;
+use Acme\Plugin\Core\Modules\Validation\Property;
+use Acme\Plugin\Core\Modules\Validation\Rule;
+use Acme\Plugin\Core\Modules\Validation\Rules\OneOf;
+use Acme\Plugin\Core\Modules\Validation\Rules\Range;
 
 return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
-    #[RequestArgument( 'The widget to return.', schema: array( 'minimum' => 1 ) )]
+    #[Property( 'The widget to return.' ), Range( min: 1 )]
     public int $id;
 
-    #[RequestArgument( 'How to render it.', schema: array( 'enum' => array( 'json', 'csv' ) ) )]
+    #[Property( 'How to render it.' ), OneOf( 'json', 'csv' )]
     public string $format = 'json';
 
-    #[RequestArgument( 'Only widgets this account owns.', validate: array( self::class, 'is_own_account' ) )]
+    #[Property( 'Only widgets this account owns.' )]
+    #[Rule( check: array( self::class, 'is_own_account' ) )]
     public int $account_id = 0;
 
-    public static function is_own_account( $value ): bool {
-        return 0 === $value || acme_account_belongs_to_user( $value, get_current_user_id() );
+    public static function is_own_account( int $value ): ?string {
+        return 0 === $value || acme_account_belongs_to_user( $value, get_current_user_id() )
+            ? null
+            : __( 'That account is not yours.', 'acme' );
     }
 
     // ... permission_check(), handle(), schema()
 } );
 ```
 
-`validate` is for what JSON Schema cannot say — that a row exists, that a slug is free. Returning false rejects the request with a 400 before `handle()` runs.
+A `check` is for what JSON Schema cannot say — that a row exists, that a slug is free. Returning a message rejects the request with a 400 before `handle()` runs, and the message is what the caller reads.
 
-A check spanning two fields belongs in `handle()` rather than here: a callback sees one value in isolation, while by `handle()` every property is bound and an error can name the combination that was wrong.
+A check spanning two fields cannot be a rule on the route itself: a route, an ability or an action carrying a class rule throws on its first call. Put those fields in a class with the rule on it and declare one property of that type, or compare them in `handle()`, where every property is bound.
 
 ## One route per HTTP method
 
@@ -108,7 +116,7 @@ A sibling file can declare that same `/widgets/{id}` pattern under a different m
 ```php
 // resources/routes/widgets/delete-one.php
 return Route::delete( 'v1', '/widgets/{id}', new class extends RestRoute {
-    #[RequestArgument( 'The widget to delete.' )]
+    #[Property( 'The widget to delete.' )]
     public int $id;
 
     public function permission_check( WP_REST_Request $request ): bool {
@@ -242,5 +250,6 @@ final public function with( string $name ): object
 - [`Route`](route.md) — what a file in `resources/routes/` returns
 - [`path`](../path/) — copied in alongside this one
 - [`request`](../request/) — copied in alongside this one
+- [`validation`](../validation/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
 - [`wp zt add rest-api`](../../commands/add.md) — the command that copies it

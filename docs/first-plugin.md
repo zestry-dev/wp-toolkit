@@ -54,9 +54,10 @@ That copied the kernel to `lib/Core/Kernel/`, added `"Acme\\Books\\": "lib/"` to
 
 ```bash
 $ wp zt add post-types rest-api admin-pages options log
-Also adding required dependencies: path, request, transients, cookie, views
+Also adding required dependencies: path, validation, request, transients, cookie, views
 Added path
 Added post-types
+Added validation
 Added request
 Added rest-api
 Added transients
@@ -65,11 +66,11 @@ Added views
 Added admin-pages
 Added options
 Added log
-Declared in bootstrap.php: path, post-types, request, rest-api, transients, cookie, views, admin-pages, options, log
+Declared in bootstrap.php: path, post-types, validation, request, rest-api, transients, cookie, views, admin-pages, options, log
 Success: Done.
 ```
 
-Each module arrives after whatever it needs, which is why the list interleaves. `path` came along because three of those modules resolve plugin-relative directories with it, `request` because that is how a REST route declares what it accepts, and `views` because that is how an admin page renders its markup. `cookie` is how a page carries a notice across the redirect that follows a save, and it brings `transients` for a payload too big for a cookie. All five are modules like the rest, and `add` declared each one for you.
+Each module arrives after whatever it needs, which is why the list interleaves. `path` came along because three of those modules resolve plugin-relative directories with it, `validation` because that is how a REST route declares what it accepts, `request` because that is how it reads what was sent, and `views` because that is how an admin page renders its markup. `cookie` is how a page carries a notice across the redirect that follows a save, and it brings `transients` for a payload too big for a cookie. All six are modules like the rest, and `add` declared each one for you.
 
 ## 2. The entry file
 
@@ -137,6 +138,7 @@ use Acme\Books\Core\Modules\PostTypes\PostTypes;
 use Acme\Books\Core\Modules\Request\Request;
 use Acme\Books\Core\Modules\RestApi\RestApi;
 use Acme\Books\Core\Modules\Transients;
+use Acme\Books\Core\Modules\Validation\Validation;
 use Acme\Books\Core\Modules\Views;
 use Acme\Books\Modules\Activation;
 
@@ -144,6 +146,7 @@ return array(
     Path::class,
     Options::class,
     Views::class,
+    Validation::class,
     Request::class,
     Cookie::class,
     Transients::class,
@@ -164,7 +167,7 @@ return array(
 
 **Everything the plugin is made of is here, and the key says when each part starts.**
 
-- **The top level** is for modules that do nothing until something asks. `Options` is one: it reads its row when you call `get()`, and never before. So are `Path`, `Views`, `Request`, `Cookie` and `Transients` — the five `add` brought along in section 1, each reached by one of the modules below it.
+- **The top level** is for modules that do nothing until something asks. `Options` is one: it reads its row when you call `get()`, and never before. So are `Path`, `Views`, `Validation`, `Request`, `Cookie` and `Transients` — the six `add` brought along in section 1, each reached by one of the modules below it.
 - **`acme_books_loaded`** is this plugin's own action, fired at the end of `run()` once every module exists. `Log` goes here so its hook is bound before anything can log through it, and `Activation` because WordPress fires the activation hook right after the plugin file loads — this is the last moment that is still early enough.
 - **`init`** is WordPress's, and is where anything WordPress will not accept earlier belongs: the `book` post type, the REST routes, the script handles.
 
@@ -260,11 +263,13 @@ use Acme\Books\Core\Modules\Log;
 use Acme\Books\Core\Modules\Options;
 use Acme\Books\Core\Modules\RestApi\RestRoute;
 use Acme\Books\Core\Modules\RestApi\Route;
-use Acme\Books\Core\Modules\Request\Attributes\RequestArgument;
+use Acme\Books\Core\Modules\Validation\Property;
+use Acme\Books\Core\Modules\Validation\Rules\Length;
+use Acme\Books\Core\Modules\Validation\Rules\Sanitize;
 
 return Route::get( 'v1', '/books', new class extends RestRoute {
 
-    #[RequestArgument( 'Words to match in the title.', sanitize: 'sanitize_text_field' )]
+    #[Property( 'Words to match in the title.' ), Length( max: 100 ), Sanitize( 'sanitize_text_field' )]
     public string $search = '';
 
     public function permission_check( WP_REST_Request $request ): bool|WP_Error {
@@ -332,11 +337,11 @@ The namespace is `{plugin-slug}/{version}`, so the full path is `/wp-json/acme-b
 - **`handle()`** — runs only after the permission check passes and after every bound property is populated.
 - **`schema()`** — describes the *response*. Return `null` to publish none; return an array and WordPress exposes it through an `OPTIONS` request, the same way core's own routes do.
 
-`#[RequestArgument]` binds a request parameter — a `{token}` in the pattern, a query-string value, or a body field — onto a typed property, so `handle()` reads `$this->search` and never `$request->get_param( 'search' )`.
+`#[Property]` binds a request parameter — a `{token}` in the pattern, a query-string value, or a body field — onto a typed property, so `handle()` reads `$this->search` and never `$request->get_param( 'search' )`.
 
-The property is the declaration: `string` makes WordPress reject anything else with a 400 before `handle()` runs, and the description is published to whoever is calling. `sanitize:` cleans the value on the way in, `validate:` adds a rule JSON Schema cannot state, and `schema:` adds one it can — an `enum`, a `minimum` — which is the better place for it, since a caller can read a schema and satisfy it before calling.
+The property is the declaration: `string` makes WordPress reject anything else with a 400 before `handle()` runs, and the description is published to whoever is calling. A rule beside it narrows the value — `Length`, `Range`, `OneOf`, `Email` — and is published too, so a caller can read the limit and meet it before calling. For what a schema cannot say, such as a row existing, `#[Rule( check: ... )]` runs your own callback, and `#[Sanitize( ... )]` cleans the value on the way in.
 
-The same attribute declares an [ability](modules/abilities/)'s input, because a route and an ability ask the same question. Every type you can declare, and every one you cannot: **[`#[RequestArgument]`](modules/request/request-argument.md)**.
+The same attribute declares an [ability](modules/abilities/)'s input, because a route and an ability ask the same question. Every type you can declare, and every one you cannot: **[`validation`](modules/validation/)**.
 
 > [!NOTE]
 > **A default is what makes an argument optional**, as `public string $search = ''` does. A property with no default is required, and WordPress rejects a request that omits it — which is the right answer, since a typed property with no value throws on read. A `{token}` from the URL is required whatever its property says, because there is no optional path segment.
@@ -593,11 +598,11 @@ One class of mistake in this system produces no error: a module on disk that `bo
 ```bash
 $ wp zt doctor
 zestry.json    Acme\Books -> lib/
-bootstrap.php  12 classes declared
+bootstrap.php  13 classes declared
 Success: No problems found.
 ```
 
-Twelve: `Path`, `Options`, `Views`, `Request`, `Cookie` and `Transients` at the top level, `Log`, `AdminPages` and `Activation` under `acme_books_loaded`, and `PostTypes`, `RestApi` and `Assets` under `init` — every module `add` copied in, which is what "no problems" means. It exits non-zero when it finds something, so it gates a build on its own. See [`wp zt doctor`](commands/doctor.md) for everything it checks.
+Thirteen: `Path`, `Options`, `Views`, `Validation`, `Request`, `Cookie` and `Transients` at the top level, `Log`, `AdminPages` and `Activation` under `acme_books_loaded`, and `PostTypes`, `RestApi` and `Assets` under `init` — every module `add` copied in, which is what "no problems" means. It exits non-zero when it finds something, so it gates a build on its own. See [`wp zt doctor`](commands/doctor.md) for everything it checks.
 
 ## 10. What you have
 
@@ -630,6 +635,7 @@ acme-books/
 │   │       ├── RestApi/
 │   │       ├── Assets/
 │   │       ├── Request/
+│   │       ├── Validation/
 │   │       ├── Cookie.php
 │   │       ├── Log.php
 │   │       ├── Options.php

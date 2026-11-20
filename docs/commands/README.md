@@ -35,6 +35,7 @@ been initialized — see [Getting started](../getting-started.md).
 - [`wp zt make page`](make-page.md) — Generate a new admin page.
 - [`wp zt make post-type`](make-post-type.md) — Generate a new custom post type.
 - [`wp zt make route`](make-route.md) — Generate a new REST route.
+- [`wp zt make rule`](make-rule.md) — Generate a validation rule of your own.
 - [`wp zt make schedule`](make-schedule.md) — Generate a new cron schedule.
 - [`wp zt make shared`](make-shared.md) — Generate a shared JavaScript package.
 - [`wp zt make taxonomy`](make-taxonomy.md) — Generate a new custom taxonomy.

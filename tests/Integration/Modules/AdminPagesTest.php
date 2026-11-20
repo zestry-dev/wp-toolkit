@@ -496,7 +496,7 @@ final class AdminPagesTest extends TestCase {
 	}
 
 	/**
-	 * A page binds nothing, and `#[RequestArgument]` on one does nothing.
+	 * A page binds nothing, and `#[Property]` on one does nothing.
 	 *
 	 * A page is reached twice by two methods -- the GET that draws the form and
 	 * the POST that submits it -- so one declaration cannot describe both: an
@@ -509,7 +509,7 @@ final class AdminPagesTest extends TestCase {
 	public function test_a_page_binds_nothing_and_reads_the_post_itself(): void {
 		$this->write_page(
 			'declared',
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How many.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'How many.' )]\n"
 				. "public int \$quantity = 1;\n"
 				. "public function title(): string { return 'Declared'; }\n"
 				. "public function capability(): string { return 'manage_options'; }\n"

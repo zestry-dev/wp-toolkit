@@ -22,8 +22,8 @@ final class AbilitiesTest extends TestCase {
 	public function set_up(): void {
 		parent::set_up();
 
-		if ( ! function_exists( 'wp_register_ability' ) ) {
-			$this->markTestSkipped( 'Requires the Abilities API, added in WordPress 6.9.' );
+		if ( ! function_exists( 'wp_register_ability' ) || version_compare( $GLOBALS['wp_version'], '7.2-alpha', '<' ) ) {
+			$this->markTestSkipped( 'The Abilities module requires WordPress 7.2.' );
 		}
 
 		mkdir( $this->plugin_dir . '/resources/abilities', 0777, true );
@@ -202,10 +202,8 @@ final class AbilitiesTest extends TestCase {
 	}
 
 	/**
-	 * Written rather than left to WordPress to derive. WordPress 7.1 seeds
-	 * `show_in_rest` from `public`; 6.9 does not, and there a public ability
-	 * would be left off the REST API, answering with a 404 that reads as a
-	 * mistyped name.
+	 * Written rather than left to WordPress to derive from `public`, so
+	 * is_shown_in_rest() is the answer whatever WordPress's fallback becomes.
 	 */
 	public function test_show_in_rest_is_written_rather_than_inferred(): void {
 		$this->write_ability( 'shared', "return array( 'ok' => true );", 'public function is_public(): bool { return true; }' );
@@ -432,9 +430,9 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'bound',
 			'return array( \'ok\' => 42 === $this->id && \'live\' === $this->mode );',
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Which one.' )]\n"
 				. "public int \$id;\n"
-				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How to run.', schema: array( 'enum' => array( 'live', 'test' ) ) )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'How to run.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rules\\OneOf( 'live', 'test' )]\n"
 				. "public string \$mode = 'live';"
 
 		);
@@ -462,9 +460,9 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'described',
 			'return array( \'ok\' => 42 === $this->id );',
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Which one.' )]\n"
 				. "public int \$id;\n"
-				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How to run.' )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'How to run.' )]\n"
 				. "public string \$mode = 'live';\n"
 				. "public function input_schema(): array {\n"
 				. "    return array( 'properties' => array( 'id' => array( 'description' => 'Care dintre ele.' ) ) );\n"
@@ -492,7 +490,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'stated',
 			'return array( \'extra\' => $input[\'extra\'] ?? null );',
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How to run.', schema: array( 'enum' => array( 'live', 'test', 'stub' ) ) )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'How to run.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rules\\OneOf( 'live', 'test', 'stub' )]\n"
 				. "public string \$mode = 'live';\n"
 				. "public function input_schema(): array {\n"
 				. "    return array(\n"
@@ -529,7 +527,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'update-entity',
 			'return array( \'slug\' => $this->slug );',
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Which one.' )]\n"
 				. 'public ?string $slug = null;'
 		);
 
@@ -562,7 +560,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'read-entity',
 			'return array( \'slug\' => $this->slug );',
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Which one.' )]\n"
 				. 'public ?string $slug = null;'
 		);
 
@@ -585,7 +583,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'guarded-by-arg',
 			"return array( 'ok' => true );",
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Which one.' )]\n"
 				. "public int \$id;\n"
 				. 'public function permission_check( mixed $input ): bool { return 1 === $this->id; }'
 		);
@@ -605,7 +603,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'checked',
 			"return array( 'ok' => true );",
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.', validate: array( self::class, 'is_known' ) )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Which one.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rule( check: array( self::class, 'is_known' ) )]\n"
 				. "public int \$id;\n"
 				. 'public static function is_known( $value ): bool { return 1 === $value; }'
 		);
@@ -625,7 +623,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'trimmed',
 			"return array( 'ok' => 'acme' === \$this->name && 'acme' === \$input['name'] );",
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'A name.', sanitize: 'trim' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'A name.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rules\\Sanitize( 'trim' )]\n"
 				. 'public string $name;'
 		);
 
@@ -643,7 +641,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'untyped',
 			"return array( 'ok' => true );",
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Which one.' )]\n"
 				. 'public $anything;'
 		);
 
@@ -653,20 +651,19 @@ final class AbilitiesTest extends TestCase {
 	}
 
 	/**
-	 * WordPress's schema check passes a numeric string for an integer, and
-	 * before 7.2 nothing casts it -- so a caller sending
-	 * `"42"` for an `int` argument is making a valid call, and it has to arrive
-	 * as the type the property was declared as.
+	 * WordPress's schema check passes a numeric string for an integer, so a
+	 * caller sending `"42"` for an `int` argument is making a valid call, and it
+	 * has to arrive as the type the property was declared as.
 	 */
 	public function test_input_is_cast_to_the_type_each_argument_declares(): void {
 		$this->write_ability(
 			'typed',
 			"return array( 'ok' => 42 === \$this->id && true === \$this->flag && 1.5 === \$this->ratio );",
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Which one.' )]\n"
 				. "public int \$id;\n"
-				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Whether to.' )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Whether to.' )]\n"
 				. "public bool \$flag = false;\n"
-				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'How much.' )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'How much.' )]\n"
 				. 'public float $ratio = 0.0;'
 		);
 
@@ -684,7 +681,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'strict',
 			"return array( 'ok' => true );",
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Which one.', validate: 'is_int' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Which one.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rule( check: 'is_int' )]\n"
 				. 'public int $id;'
 		);
 
@@ -692,6 +689,24 @@ final class AbilitiesTest extends TestCase {
 
 		$this->assertSame( array( 'ok' => true ), $abilities->run( 'strict', array( 'id' => 42 ) ) );
 		$this->assertInstanceOf( \WP_Error::class, $abilities->run( 'strict', array( 'id' => '42' ) ) );
+	}
+
+	/**
+	 * Core accepts an object as readily as an array and turns it into one before
+	 * execute, so the rules must run on it too -- they used to be skipped.
+	 */
+	public function test_a_rule_checks_input_sent_as_an_object(): void {
+		$this->write_ability(
+			'strict-object',
+			"return array( 'ok' => true );",
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Which one.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rule( check: 'is_int' )]\n"
+				. 'public int $id;'
+		);
+
+		$abilities = $this->register();
+
+		$this->assertSame( array( 'ok' => true ), $abilities->run( 'strict-object', (object) array( 'id' => 42 ) ) );
+		$this->assertInstanceOf( \WP_Error::class, $abilities->run( 'strict-object', (object) array( 'id' => '42' ) ) );
 	}
 
 	/**
@@ -703,7 +718,7 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'passthrough',
 			"return array( 'ok' => 'blue' === \$this->params->colour && array( 1, 2 ) === \$this->params->sizes && 'deep' === \$this->params->nested->level );",
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Whatever the caller keeps here.' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Whatever the caller keeps here.' )]\n"
 				. 'public object $params;'
 		);
 
@@ -738,11 +753,11 @@ final class AbilitiesTest extends TestCase {
 		$this->write_ability(
 			'picky',
 			"return array( 'ok' => true );",
-			"#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'One.', validate: 'is_int' )]\n"
+			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'One.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rule( check: 'is_int' )]\n"
 				. "public int \$first;\n"
-				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Two.', validate: 'is_int' )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Two.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rule( check: 'is_int' )]\n"
 				. "public int \$second;\n"
-				. "#[\\Zestry\\WPToolkit\\Modules\\Request\\Attributes\\RequestArgument( 'Three.', validate: 'is_int' )]\n"
+				. "#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property( 'Three.' ), \\Zestry\\WPToolkit\\Modules\\Validation\\Rule( check: 'is_int' )]\n"
 				. 'public int $third;'
 		);
 
@@ -843,7 +858,7 @@ final class AbilitiesTest extends TestCase {
 		// An ability declaring arguments takes the schema derived from them, which
 		// is the whole point of the attribute. Left in, this default would be
 		// stated *over* that and add a property no test asked for.
-		if ( str_contains( $extra, 'RequestArgument' ) ) {
+		if ( str_contains( $extra, 'Validation\\\\Property' ) ) {
 			unset( $defaults['input_schema'] );
 		}
 

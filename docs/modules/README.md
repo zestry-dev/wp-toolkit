@@ -26,9 +26,9 @@ Add nothing up front. Reach for one when you hit what it solves:
 
 | Module | Reach for it to… | Discovers | A file returns | Also copies |
 |---|---|---|---|---|
-| [`abilities`](abilities/) | give an AI agent a tool it can call (WordPress 6.9+) | `resources/abilities/` | [`Ability`](abilities/ability.md) | `path`, `request` |
+| [`abilities`](abilities/) | give an AI agent a tool it can call (WordPress 7.2+) | `resources/abilities/` | [`Ability`](abilities/ability.md) | `path`, `validation` |
 | [`admin-pages`](admin-pages/) | add a screen to the admin menu | `resources/admin-pages/` | [`AdminPage`](admin-pages/admin-page.md), [`ModernAdminPage`](admin-pages/modern-admin-page.md) | `cookie`, `path`, `views` |
-| [`ajax`](ajax/) | answer `admin-ajax.php`, for callers that already speak it | `resources/actions/` | [`AjaxAction`](ajax/ajax-action.md) | `path`, `request` |
+| [`ajax`](ajax/) | answer `admin-ajax.php`, for callers that already speak it | `resources/actions/` | [`AjaxAction`](ajax/ajax-action.md) | `path`, `request`, `validation` |
 | [`assets`](assets/) | enqueue a script or stylesheet, and share code between them | `assets/`, `build/` (read, not walked) | — | `path` |
 | [`blocks`](blocks/) | build a block for the editor | `build/blocks/` | [`Block`](blocks/block.md) | `path` |
 | [`cli`](cli/) | add a `wp` command | `resources/commands/` | [`Command`](cli/command.md) | `path` |
@@ -46,10 +46,11 @@ Add nothing up front. Reach for one when you hit what it solves:
 | [`path`](path/) | resolve a path or URL inside the plugin | — | — | — |
 | [`post-types`](post-types/) | register a custom post type or taxonomy | `resources/post-types/`, `resources/taxonomies/` | [`PostType`](post-types/post-type.md), [`Taxonomy`](post-types/taxonomy.md) | `path` |
 | [`queue`](queue/) | run work in the background, out of the request that asked for it | `resources/jobs/` | [`Job`](queue/job.md) | `path`, `db`, `cli`, `migrations` |
-| [`request`](request/) | declare and validate what a route, ability or action accepts | — | — | — |
-| [`rest-api`](rest-api/) | expose an HTTP endpoint | `resources/routes/` | [`Route`](rest-api/route.md) | `path`, `request` |
+| [`request`](request/) | read what a route or action was sent, uploads included | — | — | `validation` |
+| [`rest-api`](rest-api/) | expose an HTTP endpoint | `resources/routes/` | [`Route`](rest-api/route.md) | `path`, `request`, `validation` |
 | [`site-health`](site-health/) | report a verdict on Site Health, or list values on Info | `resources/health-checks/`, `resources/debug-sections/` | [`HealthCheck`](site-health/health-check.md), [`DebugSection`](site-health/debug-section.md) | `path` |
 | [`transients`](transients/) | keep a value past the request, with an expiry | — | — | — |
+| [`validation`](validation/) | describe a value as a class, then check, clean and build it | — | — | — |
 | [`views`](views/) | render a PHP template | `resources/views/` (read, not walked) | — | `path` |
 
 **`blocks` and `assets` also write build tooling outside their own tree.** `blocks` writes npm scripts and devDependencies, a `tsconfig.json`, an `eslint.config.mjs` and `.gitignore` entries. `assets` writes the `webpack.config.js`, which is what lets one build produce blocks, entries and shared packages together — blocks alone need no config file. Everything either writes is additive, and [`wp zt add`](../commands/add.md) lists it.

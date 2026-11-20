@@ -40,20 +40,23 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * ## What it takes
  *
  * Declare each input with
- * {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument} on a typed
+ * {@see \Zestry\WPToolkit\Modules\Validation\Property} on a typed
  * property, the same way a route and an ability do, and read it as
  * `$this->post_id`:
  *
  * ```
- * #[RequestArgument( 'Which post to act on.' )]
+ * #[Property( 'Which post to act on.' )]
  * public int $post_id;
  * ```
  *
- * The value is checked against the property's type and bound before
+ * The value is checked against the property's type and rules and bound before
  * `capability_check()` runs, so a capability decision can name what it is
  * deciding about: `current_user_can( 'edit_post', $this->post_id )`. An argument
- * that does not fit, or a required one left out, is answered with a 400 before
- * any of your code runs.
+ * that does not fit, or a required one left out, is answered before any of your
+ * code runs with a 400 and
+ * `{"success":false,"data":{"code":"rest_invalid_param","message":…,"params":[…],"errors":{"guests[1].email":…}}}`.
+ * Nothing publishes an action's schema, so its descriptions are never read and
+ * need no translating.
  *
  * It is also unslashed. WordPress hands an AJAX hook `$_REQUEST` exactly as it
  * arrived, slashes and all, where it unslashes a REST route's parameters first —
@@ -115,7 +118,8 @@ abstract class AjaxAction implements PluginAware {
 	 *
 	 * Returning a resource identifier, such as a post ID, creates a nonce that
 	 * cannot be reused for a different resource. A raw int is accepted as-is --
-	 * `return (int) $_REQUEST['post_id'];` needs no cast, since the whole
+	 * `return $this->post_id;` works, since declared properties are bound before
+	 * this runs and the whole
 	 * `string|int|null` range survives dispatch into
 	 * {@see Ajax::verify_action_nonce()}. Whatever you return has to match the
 	 * value the nonce was minted with, either the third argument to

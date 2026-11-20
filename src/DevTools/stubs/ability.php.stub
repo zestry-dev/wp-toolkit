@@ -9,8 +9,9 @@ declare( strict_types=1 );
 \defined( 'ABSPATH' ) || exit;
 
 use {{copied_namespace}}\Modules\Abilities\Ability;
-use {{copied_namespace}}\Modules\Request\Attributes\RequestArgument;
 use {{copied_namespace}}\Modules\Abilities\Effect;
+use {{copied_namespace}}\Modules\Validation\Property;
+// use {{copied_namespace}}\Modules\Validation\Rules\OneOf;
 
 return new class() extends Ability {
 
@@ -22,19 +23,19 @@ return new class() extends Ability {
 	// required -- no default means required -- and the value is bound before
 	// the methods below run, so read $this->id, not $input['id'].
 	//
-	// Say as much as you can in `schema:` rather than in a validate callback:
-	// a rule in the schema is one the caller can satisfy before calling.
+	// A rule narrows it. Prefer one that says it in the schema, like OneOf:
+	// that is a limit the caller can read and meet before calling.
 	//
-	// #[RequestArgument( 'How to sort.', schema: array( 'enum' => array( 'date', 'title' ) ) )]
+	// #[OneOf( 'date', 'title' )]
 	// public string $order_by = 'date';
 	//
 	// `__()` cannot go inside an attribute -- PHP allows only constant
 	// expressions there. Say a translated description in input_schema()
 	// instead, which is stated over the schema these declarations already give,
-	// so the property keeps its type, its required-ness and its binding. Drop
+	// so the property keeps its type, its rules and its required-ness. Drop
 	// the description from the attribute when you do, so it stays in one place:
 	//
-	// #[RequestArgument]
+	// #[Property]
 	// public int $id;
 	//
 	// public function input_schema(): array {
@@ -44,7 +45,7 @@ return new class() extends Ability {
 	//         ),
 	//     );
 	// }
-	#[RequestArgument( 'Which one to act on.' )]
+	#[Property( 'Which one to act on.' )]
 	public int $id;
 
 	// A short name, shown wherever abilities are listed.

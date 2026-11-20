@@ -5,7 +5,7 @@
 
 # Ajax
 
-Discovers `resources/actions/` &nbsp;·&nbsp; Each file returns [`AjaxAction`](ajax-action.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`request`](../request/)
+Discovers `resources/actions/` &nbsp;·&nbsp; Each file returns [`AjaxAction`](ajax-action.md) &nbsp;·&nbsp; Dependencies [`path`](../path/), [`request`](../request/), [`validation`](../validation/)
 
 Discovers plugin AJAX actions and registers their WordPress hooks.
 
@@ -15,7 +15,7 @@ An action directory contains PHP files named after the action, such as `resource
 
 For something new, a `Route` is usually the better answer, and the difference is bigger than the transport:
 
-- **A route publishes what it accepts.** Both take `#[RequestArgument]` on a
+- **A route publishes what it accepts.** Both take `#[Property]` on a
 typed property, validated and bound before your code runs — but only a route turns that declaration into a schema a client can read before calling it. An action's contract is visible to whoever wrote both ends, and to nobody else.
 - **A route is callable by anything.** `admin-ajax.php` answers one URL with
 an `action` parameter and is a WordPress-shaped convention; a route is an ordinary HTTP endpoint with a versioned namespace.
@@ -253,5 +253,6 @@ final public function with( string $name ): object
 - [`AjaxAction`](ajax-action.md) — what a file in `resources/actions/` returns
 - [`path`](../path/) — copied in alongside this one
 - [`request`](../request/) — copied in alongside this one
+- [`validation`](../validation/) — copied in alongside this one
 - [`Module`](../module.md) — what every module inherits
 - [`wp zt add ajax`](../../commands/add.md) — the command that copies it

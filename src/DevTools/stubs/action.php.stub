@@ -9,7 +9,7 @@ declare( strict_types=1 );
 \defined( 'ABSPATH' ) || exit;
 
 use {{copied_namespace}}\Modules\Ajax\AjaxAction;
-// use {{copied_namespace}}\Modules\Request\Attributes\RequestArgument;
+// use {{copied_namespace}}\Modules\Validation\Property;
 
 return new class() extends AjaxAction {
 
@@ -21,7 +21,7 @@ return new class() extends AjaxAction {
 	// type, unslashed, and bound before the methods below run -- so read
 	// $this->post_id rather than $_POST['post_id']. Uncomment to use:
 	//
-	// #[RequestArgument( 'Which post to act on.' )]
+	// #[Property( 'Which post to act on.' )]
 	// public int $post_id;
 
 

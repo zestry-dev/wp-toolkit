@@ -11,7 +11,7 @@ Requires `wp zt init` to have already run in this plugin (it reads zestry.json f
 
 Each copied module is also declared in the plugin's `bootstrap.php`, which is what builds it — so a module works the moment it arrives. With no `bootstrap.php` to append to, the entry line is printed for you to paste wherever the plugin declares its modules instead.
 
-**Two modules need a newer WordPress than the rest**: `abilities` needs 6.9, `icons-library` needs 7.1. Both are measured against your entry file's own `Requires at least:` header — the version your users' sites are held to — rather than against the WordPress you are developing on, since a module that works here and not on the oldest site you support is a module you would ship broken. A header promising less, or missing entirely, refuses the whole batch and copies nothing, naming the version to set.
+**Two modules need a newer WordPress than the rest**: `abilities` needs 7.2, `icons-library` needs 7.1. Both are measured against your entry file's own `Requires at least:` header — the version your users' sites are held to — rather than against the WordPress you are developing on, since a module that works here and not on the oldest site you support is a module you would ship broken. A header promising less, or missing entirely, refuses the whole batch and copies nothing, naming the version to set.
 
 Two modules also write build tooling outside their own tree. Everything either writes is additive: anything already there is kept as it is and reported as such.
 
@@ -22,7 +22,7 @@ Two modules also write build tooling outside their own tree. Everything either w
 ## Options
 
 - **`<module>...`**  
-  One or more module names to copy in. Available modules: path, request, cookie, globals, transients, file-transients, db, views, assets, log, options, ajax, admin-pages, rest-api, cli, cron, fields, post-types, blocks, meta-boxes, site-health, abilities, icons-library, migrations, queue.
+  One or more module names to copy in. Available modules: path, validation, request, cookie, globals, transients, file-transients, db, views, assets, log, options, ajax, admin-pages, rest-api, cli, cron, fields, post-types, blocks, meta-boxes, site-health, abilities, icons-library, migrations, queue.
 
 ## Examples
 

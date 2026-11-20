@@ -17,6 +17,7 @@ use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
 use Zestry\WPToolkit\Modules\Path;
 use Zestry\WPToolkit\Modules\Request\Request;
+use Zestry\WPToolkit\Modules\Validation\Validation;
 
 /**
  * Discovers plugin AJAX actions and registers their WordPress hooks.
@@ -31,7 +32,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * For something new, a {@see \Zestry\WPToolkit\Modules\RestApi\Route} is usually the
  * better answer, and the difference is bigger than the transport:
  *
- * - **A route publishes what it accepts.** Both take `#[RequestArgument]` on a
+ * - **A route publishes what it accepts.** Both take `#[Property]` on a
  *   typed property, validated and bound before your code runs -- but only a
  *   route turns that declaration into a schema a client can read before calling
  *   it. An action's contract is visible to whoever wrote both ends, and to
@@ -124,10 +125,8 @@ class Ajax extends Module implements Bootable {
 	 * like any other value.
 	 *
 	 * @rationale
-	 * This guarded on `if ( $context )`, so a post ID of `0` was treated as no
-	 * context at all -- minting and verifying agreed, so nothing visibly broke,
-	 * and the action just got an unscoped nonce while believing it was scoped.
-	 * Both guards have to test the same way.
+	 * Both guards test `null` and `''` only, so a post ID of `0` scopes the
+	 * nonce. They have to test the same way, or minting and verifying disagree.
 	 *
 	 * @param string          $name The local action name.
 	 * @param string|int|null $context The optional nonce context.
@@ -327,8 +326,8 @@ class Ajax extends Module implements Bootable {
 	 * of when the plugin is run(). If `init` has already fired (for example when
 	 * the plugin is run late), registration happens immediately.
 	 *
-	 * The root is resolved inside register_actions() at hook time, not here,
-	 * matching Cron, PostTypes, AdminPages and RestApi. `$actions_root` stays
+	 * The root is resolved inside register_actions() at hook time, not here.
+	 * `$actions_root` stays
 	 * the single source of truth, and the hooked closure captures no state.
 	 *
 	 * @return void
@@ -360,19 +359,19 @@ class Ajax extends Module implements Bootable {
 	 * @return true|\WP_Error True once bound, or why the request was refused.
 	 */
 	private function bind_arguments( AjaxAction $instance ) {
-		if ( array() === $this->with( Request::class )->get_arguments( $instance ) ) {
+		$validation = $this->with( Validation::class );
+
+		if ( array() === $validation->get_properties( $instance ) ) {
 			return true;
 		}
 
-		$values = $this->with( Request::class )->get_submitted_values( $instance );
+		$values = $validation->resolve( $instance, $this->with( Request::class )->get_submitted_values( $instance ), 'rest_invalid_param' );
 
-		$checked = $this->with( Request::class )->get_validated_values( $instance, $values, 'rest_invalid_param' );
-
-		if ( \is_wp_error( $checked ) ) {
-			return $checked;
+		if ( \is_wp_error( $values ) ) {
+			return $values;
 		}
 
-		$this->with( Request::class )->bind( $instance, $checked );
+		$validation->bind( $instance, $values );
 
 		return true;
 	}
@@ -403,6 +402,7 @@ class Ajax extends Module implements Bootable {
 						'code'    => $bound->get_error_code(),
 						'message' => $bound->get_error_message(),
 						'params'  => $bound->get_error_data()['params'] ?? array(),
+						'errors'  => $bound->get_error_data()['errors'] ?? array(),
 					),
 					400
 				);

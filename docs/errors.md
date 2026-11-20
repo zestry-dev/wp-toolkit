@@ -281,16 +281,18 @@ Two families sit outside the hierarchy, so `catch ( ModuleException $e )` around
 | [`DB`](modules/db/) | `Table name "acme-reports" must contain only letters, digits and underscores.` |
 | [`CLI`](modules/cli/) | `Command name collision: "report" (report.php) is also used as a subdirectory by "report list" (report/list.php).` |
 | [`Cron`](modules/cron/) | `Schedule "digest" has an unregistered recurrence "fortnightly". Register it with Cron::add_custom_interval() first, or use a WordPress built-in (hourly, twicedaily, daily).` |
-| [`RestApi`](modules/rest-api/) | `The file "/…/routes/report.php" has a pattern placeholder with no matching #[…\Attributes\RequestArgument] property: id.` |
-| [`Request`](modules/request/) | `The argument Acme\Plugin\Routes\Report::$id needs a single declared type. A union or an untyped property cannot be described to a caller.` |
-| [`Request`](modules/request/) | `The argument …::$rows is an array that does not say what it holds. Name a class with of: Thing::class, or describe the items with schema: array( 'items' => ... ).` |
-| [`Request`](modules/request/) | `Acme\Plugin\Reports\Filter declares no arguments, so nothing describes it.` |
-| [`Request`](modules/request/) | `The argument …::$total is static. An argument belongs to one call, and a static property belongs to every call at once.` |
-| [`Request`](modules/request/) | `The argument "id" is readonly on an object that answers more than one call, so it can only ever be set once.` |
-| [`Request`](modules/request/) | `A file cannot be described in a schema, so only a REST route can take one.` |
+| [`RestApi`](modules/rest-api/) | `The file "/…/routes/report.php" has a pattern placeholder with no matching declared property: id. Give the route a property of that name with #[Property] or a rule.` |
+| [`Validation`](modules/validation/) | `Acme\Plugin\Routes\Report::$id needs a single declared type. A union, `mixed` or an untyped property cannot be described to a caller.` |
+| [`Validation`](modules/validation/) | `…::$rows is an array that does not say what it holds. Add #[ListOf( Thing::class )] for a list, or #[MapOf( Thing::class )] for keys of the caller's choosing. For fixed keys, write a class.` |
+| [`Validation`](modules/validation/) | `Acme\Plugin\Reports\Filter declares no properties, so nothing describes it. Give its properties #[Property] or a rule, or type the value as object.` |
+| [`Validation`](modules/validation/) | `…::$total is static. A declared property belongs to one value, and a static one belongs to every value at once.` |
+| [`Validation`](modules/validation/) | `"id" is readonly on an object that answers more than one call, so it can only ever be set once. Drop readonly, or move it into a class of its own.` |
+| [`Validation`](modules/validation/) | `class@anonymous carries a rule of its own, and it answers calls rather than being built from one. Move the properties into a class, and the rule onto that.` |
+| [`Validation`](modules/validation/) | `The rule Acme\Plugin\Rules\Slug on …::$slug states "type", which a rule cannot say. …` |
+| [`Abilities`](modules/abilities/) | `The ability acme-plugin/import declares an upload, file. An ability's input is JSON, so only a REST route can take a file.` |
 | [`Log`](modules/log/) | `Unknown log level "verbose". Expected one of: emergency, alert, critical, error, warning, notice, info, debug.` |
 
-A route or an ability raises these while it registers. An AJAX action has no registration pass that reads its declarations, so the same mistake surfaces on the first call that reaches it — the message is identical and still names the property. [`#[RequestArgument]`](modules/request/request-argument.md) lists what you can declare and what you cannot.
+A route or an ability raises these while it registers — except a rule on the route or ability itself, which surfaces on its first call. An AJAX action has no registration pass that reads its declarations, so the same mistake surfaces on the first call that reaches it — the message is identical and still names the property. [`validation`](modules/validation/) lists what you can declare and what you cannot.
 
 **`\RuntimeException` — the environment refused.** WordPress or MySQL would not do what was asked: `Could not create upload directory: …`, `Options::save() failed to persist option "acme-plugin__options_"`, `dbDelta() reported creating "wp_acme_reports", but the table does not exist.` These mean a filesystem permission, a full disk, or a database privilege — not a wiring mistake.
 

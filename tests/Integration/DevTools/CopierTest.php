@@ -281,6 +281,6 @@ final class CopierTest extends TestCase {
 
 		$this->assertContains( 'path', $normalized['migrations']['depends'] );
 		$this->assertContains( 'cli', $normalized['migrations']['depends'] );
-		$this->assertSame( '6.9', $normalized['abilities']['requires'] );
+		$this->assertSame( '7.2', $normalized['abilities']['requires'] );
 	}
 }

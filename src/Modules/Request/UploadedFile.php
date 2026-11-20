@@ -17,10 +17,10 @@ namespace Zestry\WPToolkit\Modules\Request;
  * Type an argument as one of these and the file arrives on the property:
  *
  * ```
- * #[RequestArgument( 'The image to attach.' )]
+ * #[Property( 'The image to attach.' )]
  * public UploadedFile $image;
  *
- * #[RequestArgument( 'Every page of the document.', of: UploadedFile::class )]
+ * #[Property( 'Every page of the document.' ), ListOf( UploadedFile::class )]
  * public array $pages;
  * ```
  *

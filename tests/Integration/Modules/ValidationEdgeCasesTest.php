@@ -2,20 +2,23 @@
 
 declare( strict_types=1 );
 
-namespace Zestry\WPToolkit\Tests\Integration\Services;
+namespace Zestry\WPToolkit\Tests\Integration\Modules;
 
-use Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument;
 use Zestry\WPToolkit\Modules\Request\Request;
+use Zestry\WPToolkit\Modules\Validation\ListOf;
+use Zestry\WPToolkit\Modules\Validation\Property;
+use Zestry\WPToolkit\Modules\Validation\Rules\Sanitize;
+use Zestry\WPToolkit\Modules\Validation\Validation;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
  * A structure whose default is another structure, built in a promoted parameter
  * — the one place PHP 8.1 allows `new` in an initializer.
  */
-final class EdgeBox {
+final class ValidationEdgeBox {
 
 	public function __construct(
-		#[RequestArgument( 'How heavy.' )]
+		#[Property( 'How heavy.' )]
 		public readonly int $weight = 0
 	) {}
 }
@@ -23,58 +26,87 @@ final class EdgeBox {
 /**
  * A structure holding a list of structures.
  */
-final class EdgeCrate {
+final class ValidationEdgeCrate {
 
-	#[RequestArgument( 'What is in it.', of: EdgeBox::class )]
+	#[Property( 'What is in it.' ), ListOf( ValidationEdgeBox::class )]
 	public array $boxes = array();
 }
 
 /**
  * A structure that contains a list of itself.
  */
-final class EdgeTree {
+final class ValidationEdgeTree {
 
-	#[RequestArgument( 'Its children.', of: EdgeTree::class )]
+	#[Property( 'Its children.' ), ListOf( ValidationEdgeTree::class )]
 	public array $children = array();
 }
 
 /**
  * One half of a pair that reference each other.
  */
-final class EdgePing {
+final class ValidationEdgePing {
 
-	#[RequestArgument( 'The other one.' )]
-	public EdgePong $pong;
+	#[Property( 'The other one.' )]
+	public ValidationEdgePong $pong;
 }
 
 /**
  * The other half.
  */
-final class EdgePong {
+final class ValidationEdgePong {
 
-	#[RequestArgument( 'The first one.' )]
-	public EdgePing $ping;
+	#[Property( 'The first one.' )]
+	public ValidationEdgePing $ping;
 }
 
 /**
  * A base class an argument can be inherited from.
  */
-abstract class EdgeBase {
+abstract class ValidationEdgeBase {
 
-	#[RequestArgument( 'Inherited.' )]
+	#[Property( 'Inherited.' )]
 	public int $inherited = 0;
+}
+
+enum ValidationEdgeStatus: string {
+	case Draft = 'draft';
+	case Live  = 'live';
+}
+
+enum ValidationEdgeOrder {
+	case Ascending;
+	case Descending;
 }
 
 /**
  * Everything a declaration can get wrong, and everything a caller can send that
  * a schema would have stopped.
  *
- * @covers \Zestry\WPToolkit\Modules\Request\Request
+ * @covers \Zestry\WPToolkit\Modules\Validation\Validation
  */
-final class RequestEdgeCasesTest extends TestCase {
+final class ValidationEdgeCasesTest extends TestCase {
 
 	private function request(): Request {
 		return $this->plugin->get( Request::class );
+	}
+
+	private function validation(): Validation {
+		return $this->plugin->get( Validation::class );
+	}
+
+	/**
+	 * What a route, an ability or an action does with a call: check and build
+	 * the values, then put them on the object.
+	 *
+	 * @param object               $target The object declaring the properties.
+	 * @param array<string, mixed> $values The values, as they arrived.
+	 */
+	private function fill( object $target, array $values ): void {
+		$built = $this->validation()->resolve( $target, $values );
+
+		$this->assertNotInstanceOf( \WP_Error::class, $built, $built instanceof \WP_Error ? $built->get_error_message() : '' );
+
+		$this->validation()->bind( $target, $built );
 	}
 
 	/**
@@ -82,10 +114,10 @@ final class RequestEdgeCasesTest extends TestCase {
 	 * no caller can be told about.
 	 */
 	public function test_an_object_default_is_published_as_data(): void {
-		$schema = $this->request()->get_schema(
+		$schema = $this->validation()->get_schema(
 			new class() {
-				#[RequestArgument( 'A box.' )]
-				public EdgeBox $box;
+				#[Property( 'A box.' )]
+				public ValidationEdgeBox $box;
 			}
 		);
 
@@ -97,13 +129,13 @@ final class RequestEdgeCasesTest extends TestCase {
 	 * value -- so that is what the default has to say.
 	 */
 	public function test_an_enum_default_is_published_as_its_value(): void {
-		$schema = $this->request()->get_schema(
+		$schema = $this->validation()->get_schema(
 			new class() {
-				#[RequestArgument( 'What state.' )]
-				public RequestTestStatus $status = RequestTestStatus::Draft;
+				#[Property( 'What state.' )]
+				public ValidationEdgeStatus $status = ValidationEdgeStatus::Draft;
 
-				#[RequestArgument( 'Which way.' )]
-				public RequestTestOrder $order = RequestTestOrder::Ascending;
+				#[Property( 'Which way.' )]
+				public ValidationEdgeOrder $order = ValidationEdgeOrder::Ascending;
 			}
 		);
 
@@ -113,11 +145,11 @@ final class RequestEdgeCasesTest extends TestCase {
 
 	public function test_a_structure_default_built_in_a_promoted_parameter_is_published_as_data(): void {
 		$target = new class() {
-			#[RequestArgument( 'A box.' )]
-			public EdgeBox $box;
+			#[Property( 'A box.' )]
+			public ValidationEdgeBox $box;
 		};
 
-		$schema = $this->request()->get_schema( $target );
+		$schema = $this->validation()->get_schema( $target );
 
 		$this->assertIsArray( $schema, 'The schema must contain nothing but data.' );
 		$this->assertSame( 'integer', $schema['properties']['box']['properties']['weight']['type'] );
@@ -125,28 +157,28 @@ final class RequestEdgeCasesTest extends TestCase {
 
 	/**
 	 * A list of itself is the recursion the depth guard exists for -- reached
-	 * through `of:` rather than through a property type.
+	 * through `ListOf` rather than through a property type.
 	 */
 	public function test_a_structure_holding_a_list_of_itself_throws(): void {
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'nest more than' );
+		$this->expectExceptionMessage( 'nests more than' );
 
-		$this->request()->get_schema(
+		$this->validation()->get_schema(
 			new class() {
-				#[RequestArgument( 'A tree.' )]
-				public EdgeTree $tree;
+				#[Property( 'A tree.' )]
+				public ValidationEdgeTree $tree;
 			}
 		);
 	}
 
 	public function test_two_structures_referencing_each_other_throw(): void {
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'nest more than' );
+		$this->expectExceptionMessage( 'nests more than' );
 
-		$this->request()->get_schema(
+		$this->validation()->get_schema(
 			new class() {
-				#[RequestArgument( 'A ping.' )]
-				public EdgePing $ping;
+				#[Property( 'A ping.' )]
+				public ValidationEdgePing $ping;
 			}
 		);
 	}
@@ -155,25 +187,25 @@ final class RequestEdgeCasesTest extends TestCase {
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( 'NoSuchStructure' );
 
-		$this->request()->get_schema(
+		$this->validation()->get_schema(
 			new class() {
-				#[RequestArgument( 'Nothing.', of: 'NoSuchStructure' )]
+				#[Property( 'Nothing.' ), ListOf( 'NoSuchStructure' )]
 				public array $things;
 			}
 		);
 	}
 
 	/**
-	 * `of:` says what a list holds. On anything but a list it describes nothing,
-	 * so it is a declaration that quietly does not apply.
+	 * `ListOf` says what a list holds. On anything but an array it describes
+	 * nothing, so it is a declaration that quietly does not apply.
 	 */
-	public function test_of_on_something_that_is_not_a_list_throws(): void {
+	public function test_list_of_on_something_that_is_not_an_array_throws(): void {
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'of:' );
+		$this->expectExceptionMessage( 'ListOf' );
 
-		$this->request()->get_schema(
+		$this->validation()->get_schema(
 			new class() {
-				#[RequestArgument( 'Which one.', of: EdgeBox::class )]
+				#[Property( 'Which one.' ), ListOf( ValidationEdgeBox::class )]
 				public int $id;
 			}
 		);
@@ -189,13 +221,13 @@ final class RequestEdgeCasesTest extends TestCase {
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( 'is static' );
 
-		$this->request()->get_schema( new EdgeStatic() );
+		$this->validation()->get_schema( new ValidationEdgeStatic() );
 	}
 
 	public function test_an_inherited_argument_is_declared_too(): void {
-		$schema = $this->request()->get_schema(
-			new class() extends EdgeBase {
-				#[RequestArgument( 'Its own.' )]
+		$schema = $this->validation()->get_schema(
+			new class() extends ValidationEdgeBase {
+				#[Property( 'Its own.' )]
 				public string $own = '';
 			}
 		);
@@ -205,32 +237,32 @@ final class RequestEdgeCasesTest extends TestCase {
 	}
 
 	/**
-	 * Reachable only when a hand-written schema no longer agrees with the
-	 * property it fills, but a TypeError from inside reflection says nothing
-	 * about which argument was wrong.
+	 * Refused where it was sent, naming the property -- rather than a TypeError
+	 * from inside reflection that says nothing about which one was wrong.
 	 */
-	public function test_a_scalar_sent_where_a_structure_belongs_throws_clearly(): void {
+	public function test_a_scalar_sent_where_a_structure_belongs_is_refused_by_name(): void {
 		$target = new class() {
-			#[RequestArgument( 'A box.' )]
-			public EdgeBox $box;
+			#[Property( 'A box.' )]
+			public ValidationEdgeBox $box;
 		};
 
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'built from an object' );
+		$refused = $this->validation()->resolve( $target, array( 'box' => 'not a box' ) );
 
-		$this->request()->bind( $target, array( 'box' => 'not a box' ) );
+		$this->assertInstanceOf( \WP_Error::class, $refused );
+		$this->assertSame( array( 'box' ), array_keys( $refused->get_error_data()['errors'] ) );
+		$this->assertSame( array( 'box' ), $refused->get_error_data()['params'] );
 	}
 
-	public function test_null_sent_for_an_argument_that_does_not_accept_it_throws_clearly(): void {
+	public function test_null_sent_for_an_argument_that_does_not_accept_it_is_refused_by_name(): void {
 		$target = new class() {
-			#[RequestArgument( 'Which one.' )]
+			#[Property( 'Which one.' )]
 			public int $id;
 		};
 
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'id' );
+		$refused = $this->validation()->resolve( $target, array( 'id' => null ) );
 
-		$this->request()->bind( $target, array( 'id' => null ) );
+		$this->assertInstanceOf( \WP_Error::class, $refused );
+		$this->assertArrayHasKey( 'id', $refused->get_error_data()['errors'] );
 	}
 
 	/**
@@ -240,16 +272,16 @@ final class RequestEdgeCasesTest extends TestCase {
 	 */
 	public function test_a_readonly_argument_on_a_reused_object_throws_clearly(): void {
 		$target = new class() {
-			#[RequestArgument( 'Which one.' )]
+			#[Property( 'Which one.' )]
 			public readonly int $id;
 		};
 
-		$this->request()->bind( $target, array( 'id' => 1 ) );
+		$this->fill( $target, array( 'id' => 1 ) );
 
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( 'id' );
 
-		$this->request()->bind( $target, array( 'id' => 2 ) );
+		$this->fill( $target, array( 'id' => 2 ) );
 	}
 
 	/**
@@ -258,32 +290,34 @@ final class RequestEdgeCasesTest extends TestCase {
 	 */
 	public function test_readonly_works_on_a_structure(): void {
 		$target = new class() {
-			#[RequestArgument( 'A box.' )]
-			public EdgeBox $box;
+			#[Property( 'A box.' )]
+			public ValidationEdgeBox $box;
 		};
 
-		$this->request()->bind( $target, array( 'box' => array( 'weight' => 1 ) ) );
+		$this->fill( $target, array( 'box' => array( 'weight' => 1 ) ) );
 		$first = $target->box;
 
-		$this->request()->bind( $target, array( 'box' => array( 'weight' => 2 ) ) );
+		$this->fill( $target, array( 'box' => array( 'weight' => 2 ) ) );
 
 		$this->assertSame( 1, $first->weight, 'The first call keeps the value it was built with.' );
 		$this->assertSame( 2, $target->box->weight, 'The second call gets a structure of its own.' );
 	}
 
 	/**
-	 * A list of structures given something that is not one per item.
+	 * A list of structures given something that is not one per item: the refusal
+	 * says which item.
 	 */
-	public function test_a_list_of_structures_given_scalars_throws_clearly(): void {
+	public function test_a_list_of_structures_given_scalars_is_refused_by_item(): void {
 		$target = new class() {
-			#[RequestArgument( 'Some boxes.', of: EdgeBox::class )]
+			#[Property( 'Some boxes.' ), ListOf( ValidationEdgeBox::class )]
 			public array $boxes;
 		};
 
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'built from an object' );
+		$refused = $this->validation()->resolve( $target, array( 'boxes' => array( 'nope' ) ) );
 
-		$this->request()->bind( $target, array( 'boxes' => array( 'nope' ) ) );
+		$this->assertInstanceOf( \WP_Error::class, $refused );
+		$this->assertSame( array( 'boxes[0]' ), array_keys( $refused->get_error_data()['errors'] ) );
+		$this->assertSame( array( 'boxes' ), $refused->get_error_data()['params'] );
 	}
 
 	/**
@@ -292,7 +326,7 @@ final class RequestEdgeCasesTest extends TestCase {
 	 */
 	public function test_a_protected_property_is_an_argument(): void {
 		$target = new class() {
-			#[RequestArgument( 'Which one.' )]
+			#[Property( 'Which one.' )]
 			protected int $id = 0;
 
 			public function id(): int {
@@ -300,9 +334,9 @@ final class RequestEdgeCasesTest extends TestCase {
 			}
 		};
 
-		$this->assertArrayHasKey( 'id', $this->request()->get_schema( $target )['properties'] );
+		$this->assertArrayHasKey( 'id', $this->validation()->get_schema( $target )['properties'] );
 
-		$this->request()->bind( $target, array( 'id' => 7 ) );
+		$this->fill( $target, array( 'id' => 7 ) );
 
 		$this->assertSame( 7, $target->id() );
 	}
@@ -314,7 +348,7 @@ final class RequestEdgeCasesTest extends TestCase {
 	 */
 	public function test_a_private_property_is_not_an_argument(): void {
 		$target = new class() {
-			#[RequestArgument( 'Which one.' )]
+			#[Property( 'Which one.' )]
 			private int $id = 0;
 
 			public function id(): int {
@@ -322,9 +356,9 @@ final class RequestEdgeCasesTest extends TestCase {
 			}
 		};
 
-		$this->assertSame( array(), $this->request()->get_schema( $target ) );
+		$this->assertSame( array(), $this->validation()->get_schema( $target ) );
 
-		$this->request()->bind( $target, array( 'id' => 7 ) );
+		$this->fill( $target, array( 'id' => 7 ) );
 
 		$this->assertSame( 0, $target->id(), 'Nothing was bound.' );
 	}
@@ -335,14 +369,14 @@ final class RequestEdgeCasesTest extends TestCase {
 	 */
 	public function test_null_binds_to_a_nullable_structure(): void {
 		$target = new class() {
-			#[RequestArgument( 'A box, or none.' )]
-			public ?EdgeBox $box = null;
+			#[Property( 'A box, or none.' )]
+			public ?ValidationEdgeBox $box = null;
 		};
 
-		$this->request()->bind( $target, array( 'box' => array( 'weight' => 3 ) ) );
+		$this->fill( $target, array( 'box' => array( 'weight' => 3 ) ) );
 		$this->assertSame( 3, $target->box->weight );
 
-		$this->request()->bind( $target, array( 'box' => null ) );
+		$this->fill( $target, array( 'box' => null ) );
 		$this->assertNull( $target->box );
 	}
 
@@ -351,9 +385,9 @@ final class RequestEdgeCasesTest extends TestCase {
 	 * full — a list inside a structure inside a list.
 	 */
 	public function test_a_structure_holding_a_list_of_structures_is_described_in_full(): void {
-		$schema = $this->request()->get_schema(
+		$schema = $this->validation()->get_schema(
 			new class() {
-				#[RequestArgument( 'Every crate.', of: EdgeCrate::class )]
+				#[Property( 'Every crate.' ), ListOf( ValidationEdgeCrate::class )]
 				public array $crates;
 			}
 		);
@@ -370,8 +404,8 @@ final class RequestEdgeCasesTest extends TestCase {
 		};
 
 		$this->assertSame( array(), $this->request()->get_rest_args( $target ) );
-		$this->assertSame( array(), $this->request()->get_file_arguments( $target ) );
-		$this->assertSame( array(), $this->request()->get_schema( $target ) );
+		$this->assertSame( array(), $this->validation()->get_file_properties( $target ) );
+		$this->assertSame( array(), $this->validation()->get_schema( $target ) );
 	}
 
 	/**
@@ -382,32 +416,31 @@ final class RequestEdgeCasesTest extends TestCase {
 	 */
 	public function test_a_callback_that_cannot_take_its_value_names_the_argument(): void {
 		$target = new class() {
-			#[RequestArgument( 'Which one.', sanitize: 'str_split' )]
+			#[Property( 'Which one.' ), Sanitize( 'str_split' )]
 			public int $id = 0;
 		};
 
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'The sanitize callback for "id"' );
+		$this->expectExceptionMessage( 'on "id" cannot clean the value' );
 
-		$this->request()->get_prepared_values( $target, array( 'id' => 7 ), 'invalid_input' );
+		$this->validation()->resolve( $target, array( 'id' => 7 ), 'invalid_input' );
 	}
 
 	/**
-	 * Assigning by reflection coerces where PHP would, so a sanitizer returning
-	 * a numeric string for an `int` argument is not an error.
+	 * A value is assigned strictly, so a sanitizer returning a numeric string
+	 * for an `int` property is a bug in the sanitizer, named with the property,
+	 * rather than coerced past.
 	 */
-	public function test_a_sanitizer_returning_a_coercible_value_is_fine(): void {
+	public function test_a_sanitizer_returning_the_wrong_type_is_refused_by_name(): void {
 		$target = new class() {
-			#[RequestArgument( 'Which one.', sanitize: 'strval' )]
+			#[Property( 'Which one.' ), Sanitize( 'strval' )]
 			public int $id = 0;
 		};
 
-		$this->request()->bind(
-			$target,
-			$this->request()->get_prepared_values( $target, array( 'id' => 7 ), 'invalid_input' )
-		);
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'The value given for "id" is not what it was declared as' );
 
-		$this->assertSame( 7, $target->id );
+		$this->fill( $target, array( 'id' => 7 ) );
 	}
 
 	/**
@@ -415,11 +448,11 @@ final class RequestEdgeCasesTest extends TestCase {
 	 */
 	public function test_an_empty_list_binds_as_an_empty_list(): void {
 		$target = new class() {
-			#[RequestArgument( 'Some boxes.', of: EdgeBox::class )]
+			#[Property( 'Some boxes.' ), ListOf( ValidationEdgeBox::class )]
 			public array $boxes = array( 'unset' );
 		};
 
-		$this->request()->bind( $target, array( 'boxes' => array() ) );
+		$this->fill( $target, array( 'boxes' => array() ) );
 
 		$this->assertSame( array(), $target->boxes );
 	}
@@ -430,34 +463,34 @@ final class RequestEdgeCasesTest extends TestCase {
 	 */
 	public function test_unknown_keys_in_a_structure_are_ignored(): void {
 		$target = new class() {
-			#[RequestArgument( 'A box.' )]
-			public EdgeBox $box;
+			#[Property( 'A box.' )]
+			public ValidationEdgeBox $box;
 		};
 
-		$this->request()->bind( $target, array( 'box' => array( 'weight' => 5, 'colour' => 'red' ) ) );
+		$this->fill( $target, array( 'box' => array( 'weight' => 5, 'colour' => 'red' ) ) );
 
 		$this->assertSame( 5, $target->box->weight );
 	}
 
 	public function test_prepare_leaves_an_absent_argument_alone(): void {
 		$target = new class() {
-			#[RequestArgument( 'A name.', validate: 'is_string', sanitize: 'trim' )]
+			#[Property( 'A name.' ), Sanitize( 'trim' )]
 			public string $name = 'unset';
 		};
 
-		$this->assertSame( array(), $this->request()->get_prepared_values( $target, array(), 'invalid_input' ) );
+		$this->assertSame( array(), $this->validation()->resolve( $target, array(), 'invalid_input' ) );
 	}
 
 	/**
 	 * A structure is filled from the request and nothing else. It is the one place
-	 * a public typed Service property is *not* injected -- `hydrate()` builds the
-	 * instance and binds values onto it, and never wires it -- so the docs say to
+	 * a public typed Service property is *not* injected -- `parse()` builds the
+	 * instance and fills it, and never wires it -- so the docs say to
 	 * reach for a service on the route or ability instead.
 	 *
 	 * @return void
 	 */
 	public function test_a_structure_is_filled_from_the_request_and_not_wired(): void {
-		$structure = $this->request()->hydrate( EdgeUnwired::class, array( 'label' => 'x' ) );
+		$structure = $this->validation()->parse( ValidationEdgeUnwired::class, array( 'label' => 'x' ) );
 
 		$this->assertSame( 'x', $structure->label );
 		$this->assertFalse(
@@ -471,12 +504,12 @@ final class RequestEdgeCasesTest extends TestCase {
  * A class carrying a static property marked as an argument.
  */
 // phpcs:ignore PSR1.Classes.ClassDeclaration.MultipleClasses
-final class EdgeStatic {
+final class ValidationEdgeStatic {
 
-	#[RequestArgument( 'Shared by everyone.' )]
+	#[Property( 'Shared by everyone.' )]
 	public static string $shared = '';
 
-	#[RequestArgument( 'Its own.' )]
+	#[Property( 'Its own.' )]
 	public string $own = '';
 }
 
@@ -484,13 +517,13 @@ final class EdgeStatic {
  * A structure declaring a service property, to prove it is left alone.
  */
 // phpcs:ignore PSR1.Classes.ClassDeclaration.MultipleClasses
-final class EdgeUnwired {
+final class ValidationEdgeUnwired {
 
 	/**
 	 * @var \Zestry\WPToolkit\Modules\Path
 	 */
 	public \Zestry\WPToolkit\Modules\Path $path;
 
-	#[RequestArgument( 'A label.' )]
+	#[Property( 'A label.' )]
 	public string $label = '';
 }

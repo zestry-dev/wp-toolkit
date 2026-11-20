@@ -38,8 +38,8 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * @example An ability
  * ```
  * use Acme\Plugin\Core\Modules\Abilities\Ability;
- * use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
  * use Acme\Plugin\Core\Modules\Abilities\Effect;
+ * use Acme\Plugin\Core\Modules\Validation\Property;
  *
  * return new class extends Ability {
  *
@@ -58,7 +58,7 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  *         return Effect::Delete;
  *     }
  *
- *     #[RequestArgument( 'The order to cancel.' )]
+ *     #[Property( 'The order to cancel.' )]
  *     public int $order_id;
  *
  *     public function permission_check( mixed $input ): bool {
@@ -124,7 +124,7 @@ abstract class Ability implements PluginAware {
 	 * and your own PHP alike. This is the gate, so a capability check belongs
 	 * here rather than in `handle()`.
 	 *
-	 * Any {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument} properties are already bound, so a
+	 * Any declared properties are already bound, so a
 	 * check can name the thing being acted on:
 	 * `current_user_can( 'edit_post', $this->id )`.
 	 *
@@ -151,7 +151,7 @@ abstract class Ability implements PluginAware {
 	 * Return a `WP_Error` for a failure the caller should see; its message is
 	 * read by whatever called you, so make it a sentence rather than a code.
 	 *
-	 * Any {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument} properties are bound by the time this
+	 * Any declared properties are bound by the time this
 	 * runs, so read `$this->order_id` rather than `$input['order_id']`.
 	 *
 	 * @param mixed $input The validated input.
@@ -185,12 +185,12 @@ abstract class Ability implements PluginAware {
 	 * WordPress validates against it before your code runs, so `handle()` never
 	 * sees input that does not fit.
 	 *
-	 * The schema is built for you from your
-	 * {@see \Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument} properties, which
+	 * The schema is built for you from your declared properties
+	 * (see {@see \Zestry\WPToolkit\Modules\Validation\Property}), which
 	 * is the shorter way to say the same thing and binds the values onto the
 	 * object as well. What you return here is stated *over* that rather than
 	 * instead of it, so a declaration you say nothing about keeps everything it
-	 * had — its type, its required-ness, its `validate:` rule, and its binding.
+	 * had — its type, its required-ness, its rules, and its binding.
 	 *
 	 * That is what makes an argument's description translatable. PHP allows only
 	 * constant expressions in an attribute argument, so `__()` cannot go inside
@@ -200,7 +200,7 @@ abstract class Ability implements PluginAware {
 	 * ```
 	 * // Still the declaration: the type, the required-ness and the binding are
 	 * // all still coming from here. Only the description moved.
-	 * #[RequestArgument]
+	 * #[Property]
 	 * public int $order_id;
 	 *
 	 * public function input_schema(): array {
@@ -240,14 +240,12 @@ abstract class Ability implements PluginAware {
 	 * two:
 	 *
 	 * ```
-	 * #[RequestArgument(
-	 *     'Which properties to return. All of them, if you leave it out.',
-	 *     schema: array( 'items' => array( 'type' => 'string', 'enum' => array( 'id', 'title', 'status' ) ) )
-	 * )]
+	 * #[Property( 'Which properties to return. All of them, if you leave it out.' )]
+	 * #[ListOf( 'string' ), Each( new OneOf( 'id', 'title', 'status' ) )]
 	 * public array $fields = array( 'id', 'title', 'status' );
 	 * ```
 	 *
-	 * The `enum` is what refuses a name you do not have, so `handle()` can
+	 * The `OneOf` is what refuses a name you do not have, so `handle()` can
 	 * filter on `$this->fields` without checking it first.
 	 *
 	 * @return array<string, mixed>
@@ -319,8 +317,8 @@ abstract class Ability implements PluginAware {
 	 * {@see effect()}, `public` from {@see is_public()} and `show_in_rest` from
 	 * {@see is_shown_in_rest()}.
 	 *
-	 * What you put here is queryable from WordPress 7.1 on, which filters on
-	 * meta: `wp_get_abilities( array( 'meta' => array( 'group' => 'billing' ) ) )`
+	 * What you put here is queryable, since WordPress filters on meta:
+	 * `wp_get_abilities( array( 'meta' => array( 'group' => 'billing' ) ) )`
 	 * returns the abilities that declared it.
 	 *
 	 * @return array<string, mixed>

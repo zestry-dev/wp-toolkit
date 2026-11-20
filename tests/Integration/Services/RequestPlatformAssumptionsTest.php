@@ -132,7 +132,7 @@ final class RequestPlatformAssumptionsTest extends TestCase {
 	/**
 	 * An ability's input is validated and never sanitised, and that validation
 	 * accepts a numeric string for an integer — so `"42"` is a valid thing to
-	 * send and would reach a typed property as a string. `Request::prepare()`
+	 * send and would reach a typed property as a string. `Validation::resolve()`
 	 * casts it for exactly this reason.
 	 */
 	public function test_schema_validation_accepts_a_numeric_string_for_an_integer(): void {

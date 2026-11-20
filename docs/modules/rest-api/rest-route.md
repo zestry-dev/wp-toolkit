@@ -9,15 +9,11 @@ Base class for a file-based WordPress REST API route handling one HTTP method.
 
 A route file returns a `Route` — built with the static constructor for its HTTP method, wrapping a RestRoute instance, and declaring the namespace version and URL pattern as plain strings (see `RestApi` for the full convention).
 
-The module wires the instance, binds its `#[RequestArgument]` properties (see `RequestArgument`) from the request, and registers it with `register_rest_route()`. A response `schema()` is published only if you override it.
+The module wires the instance, binds its declared properties (see `Property`) from the request, and registers it with `register_rest_route()`. A response `schema()` is published only if you override it.
 
 So a route file describes itself — permission, bound parameters — and implements one `handle()`, for the one method its `Route` declares.
 
-schema() is a method, not an attribute, unlike RequestArgument: PHP attributes cannot be attached to an anonymous class at all (only a named class declaration), and every route file returns an anonymous class to match AdminPage/AjaxAction/Command's own convention, so a class-level concern like the response schema has to stay a regular overridable method.
-
-One file handles exactly one HTTP method, mirroring AjaxAction and AdminPage: each of those is one file for one action or one page, not one file branching on multiple concerns. `get.php` and `post.php` for the same resource are two independent route files, so GET and POST can each declare their own permission_check() and RequestArgument-bound properties without one class accumulating a method per HTTP method per concern. Logic genuinely shared between them — loading the same resource, a repeated validation rule — belongs in a small collaborator of your own — a module, reached from both files with `with()` — the same way AdminPages and Ajax share Path rather than duplicating path resolution.
-
-Authorization is deliberately not optional: permission_check() is abstract, so every route makes an explicit allow/deny decision before handle() runs, the same rule AjaxAction enforces for AJAX actions and for the same reason — an endpoint with no author-visible authorization decision is a bug waiting to ship, not a convenience.
+One file handles one HTTP method: `get.php` and `post.php` for the same resource are two route files, each with its own `permission_check()` and properties. Logic both need — loading the same resource — goes in a module of your own, reached from each with `with()`; a limit both need goes in a rule class (`wp zt make rule`).
 
 ## You must implement
 
@@ -52,7 +48,7 @@ What remains is the question this method exists to answer: what is this user all
 
 ## Your arguments are not bound yet
 
-Every `#[RequestArgument]` property is still uninitialized here. WordPress runs this before it validates arguments, so binding first would hand a permission check values nothing had checked. Read what you need from `$request` in this method, and `$this->id` from `handle()` onwards:
+Every declared property is still uninitialized here. WordPress runs this before it validates arguments, so binding first would hand a permission check values nothing had checked. Read what you need from `$request` in this method, and `$this->id` from `handle()` onwards:
 
 ```php
 public function permission_check( WP_REST_Request $request ): bool|\WP_Error {
@@ -60,7 +56,7 @@ public function permission_check( WP_REST_Request $request ): bool|\WP_Error {
 }
 ```
 
-Touching `$this->id` here is a fatal, not a wrong answer. An ability is the other way round — there the input is bound first — and the table on the Arguments page compares the three surfaces.
+Touching `$this->id` here is a fatal, not a wrong answer. An ability and an AJAX action are the other way round: their input is bound before their permission check runs.
 
 ## A public route is public to the internet
 
@@ -84,7 +80,7 @@ abstract public function handle( WP_REST_Request $request ): WP_REST_Response|\W
 | **Return** | The response to send |
 | **Throws** | — |
 
-Runs only after permission_check() has allowed the request and, if this route has any `#[RequestArgument]`-attributed properties (see `RequestArgument`), after WordPress has validated and sanitized their values and RestApi has bound them onto those properties — so this method can read `$this->id` for a bound parameter instead of reaching into `$request` for it. Implementations return a WP_REST_Response (or a WP_Error, which WordPress converts to an error response using its `status` data).
+Runs only after permission_check() has allowed the request and, if this route declares any properties (see `Property`), after WordPress has validated and sanitized their values and RestApi has bound them onto those properties — so this method can read `$this->id` for a bound parameter instead of reaching into `$request` for it. Implementations return a WP_REST_Response (or a WP_Error, which WordPress converts to an error response using its `status` data).
 
 <br>
 
@@ -102,7 +98,7 @@ abstract public function schema(): ?array
 | **Return** | A JSON Schema description of the response, or null to publish none |
 | **Throws** | — |
 
-Abstract, like permission_check(), so a route makes a conscious decision rather than silently inheriting a default — return null explicitly to publish no schema. This documents the RESPONSE (what handle() returns), unrelated to a RequestArgument-bound property's own validation (what a REQUEST accepts). WordPress exposes a non-null return through REST discovery: a client can retrieve it with an OPTIONS request or `?context=help`, the same mechanism `WP_REST_Controller::get_item_schema()` provides for core routes.
+Abstract, like permission_check(), so a route makes a conscious decision rather than silently inheriting a default — return null explicitly to publish no schema. This documents the RESPONSE (what handle() returns), unrelated to a declared property's own validation (what a REQUEST accepts). WordPress exposes a non-null return through REST discovery: a client can retrieve it with an OPTIONS request or `?context=help`, the same mechanism `WP_REST_Controller::get_item_schema()` provides for core routes.
 
 ## Methods you can use
 
@@ -120,14 +116,14 @@ public function args(): array
 | **Return** | Partial schemas, keyed by argument name |
 | **Throws** | — |
 
-Your `RequestArgument` properties already become the `args` WordPress validates this route against, and their values are bound before `handle()` runs. What you return here is stated *over* that rather than instead of it, keyed by argument name — so an argument you say nothing about keeps everything it had: its type, its required-ness, its `validate:` rule, and its binding.
+Your declared properties (see `Property`) already become the `args` WordPress validates this route against, and their values are bound before `handle()` runs. What you return here is stated *over* that rather than instead of it, keyed by argument name — so an argument you say nothing about keeps everything it had: its type, its required-ness, its rules, and its binding.
 
 The case that needs this is translation. PHP allows only constant expressions in an attribute argument, so `__()` cannot go inside one — and a route's descriptions are published, where a client reads them back with an `OPTIONS` request. Leave the description off the attribute and name the argument here instead, so it is still written exactly once:
 
 ```php
 // Still the declaration: the type, the default and the binding are all
 // still coming from here. Only the description moved.
-#[RequestArgument]
+#[Property]
 public string $order_by = 'date';
 
 public function args(): array {
@@ -141,7 +137,7 @@ The other case is anything worked out while the request runs, which an attribute
 
 **This is `register_rest_route()`'s `args`, not an ability's `input_schema()`**, and the shapes differ where WordPress differs: entries are flat rather than under `properties`, `required` is a boolean on the entry rather than a list of names beside it, and an entry may carry `validate_callback` and `sanitize_callback`, which JSON Schema has no word for. A nested schema written here registers parameters called `type` and `properties`, and validates nothing.
 
-A keyed map is merged into and a list — an `enum`, a nullable `type` — is replaced whole. Everything you write wins, `validate_callback` and `sanitize_callback` included: naming one of those replaces what a declared `validate:` wired, which is worth doing on purpose rather than by accident. An argument with no declaration behind it is published and validated like any other, but nothing binds it — read that one off `$request`.
+A keyed map is merged into and a list — an `enum`, a nullable `type` — is replaced whole. Everything you write wins, `validate_callback` and `sanitize_callback` included: naming one of those replaces the check the property's type and rules wired, which is worth doing on purpose rather than by accident. An argument with no declaration behind it is published and validated like any other, but nothing binds it — read that one off `$request`.
 
 <br>
 

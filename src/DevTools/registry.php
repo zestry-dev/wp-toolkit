@@ -33,6 +33,7 @@ use Zestry\WPToolkit\Modules\DB;
 use Zestry\WPToolkit\Modules\Globals;
 use Zestry\WPToolkit\Modules\Path;
 use Zestry\WPToolkit\Modules\Request\Request;
+use Zestry\WPToolkit\Modules\Validation\Validation;
 use Zestry\WPToolkit\Modules\Views;
 
 /**
@@ -70,9 +71,13 @@ return array(
 		'source'  => Path::class,
 		'depends' => array(),
 	),
+	'validation'      => array(
+		'source'  => Validation::class,
+		'depends' => array(),
+	),
 	'request'         => array(
 		'source'  => Request::class,
-		'depends' => array(),
+		'depends' => array( 'validation' ),
 	),
 	'cookie'          => array(
 		'source'  => Cookie::class,
@@ -114,7 +119,7 @@ return array(
 	),
 	'ajax'            => array(
 		'source'  => Ajax::class,
-		'depends' => array( 'path', 'request' ),
+		'depends' => array( 'path', 'request', 'validation' ),
 	),
 	'admin-pages'     => array(
 		'source'  => AdminPages::class,
@@ -125,7 +130,7 @@ return array(
 	),
 	'rest-api'        => array(
 		'source'  => RestApi::class,
-		'depends' => array( 'path', 'request' ),
+		'depends' => array( 'path', 'request', 'validation' ),
 	),
 	'cli'             => array(
 		'source'  => CLI::class,
@@ -157,8 +162,8 @@ return array(
 	),
 	'abilities'       => array(
 		'source'   => Abilities::class,
-		'requires' => '6.9',
-		'depends'  => array( 'path', 'request' ),
+		'requires' => '7.2',
+		'depends'  => array( 'path', 'validation' ),
 	),
 	'icons-library'   => array(
 		'source'   => IconsLibrary::class,

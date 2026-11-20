@@ -61,7 +61,10 @@ final class AddCommandTest extends TestCase {
 		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/Path.php' );
 		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/RestApi/RestApi.php' );
 
-		$this->assertContains( 'Also adding required dependencies: path, request', $this->logged_messages() );
+		$this->assertFileExists( $this->target_plugin_dir . '/lib/Core/Modules/Validation/Validation.php' );
+
+		// Validation before Request, since Request depends on it.
+		$this->assertContains( 'Also adding required dependencies: path, validation, request', $this->logged_messages() );
 	}
 
 	public function test_skips_a_module_already_present_instead_of_overwriting_it(): void {

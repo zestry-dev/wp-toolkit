@@ -16,7 +16,7 @@ use Zestry\WPToolkit\Kernel\Abstracts\Module;
 use Zestry\WPToolkit\Kernel\Exceptions\DiscoveryException;
 use Zestry\WPToolkit\Kernel\Traits\WithFolderWalker;
 use Zestry\WPToolkit\Modules\Path;
-use Zestry\WPToolkit\Modules\Request\Request;
+use Zestry\WPToolkit\Modules\Validation\Validation;
 
 /**
  * Publishes what your plugin can do, for the REST API and for AI agents.
@@ -30,7 +30,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * `wp-json/wp-abilities/v1/abilities/{ability}/run` for free. An MCP adapter installed on
  * the site turns the same registration into a tool an AI agent can call, also
  * for free: there is no protocol code to write on your side, which is the point
- * of the API. Requires WordPress 6.9 or newer.
+ * of the API. Requires WordPress 7.2 or newer.
  *
  * > [!IMPORTANT]
  * > **No adapter ships with WordPress, and you do not need one to be finished.**
@@ -65,7 +65,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * {@see run()} — instead of the same operation written four times.
  *
  * @example An ability
- * A typed property carrying a [`#[RequestArgument]`](../request/request-argument.md) is both the
+ * A typed property carrying a [`#[Property]`](../validation/property.md) is both the
  * input schema and the value: it is described once, validated by WordPress, and
  * bound before your code runs. The property says the type, and whether it is
  * required — one with no default has to be supplied.
@@ -90,7 +90,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  *         return true;
  *     }
  *
- *     #[RequestArgument( 'The draft to publish.' )]
+ *     #[Property( 'The draft to publish.' )]
  *     public int $id;
  *
  *     public function permission_check( mixed $input ): bool {
@@ -115,7 +115,7 @@ use Zestry\WPToolkit\Modules\Request\Request;
  * ```
  *
  * @setup-hook init
- * @setup Group them
+ * @setup Filing abilities under your own categories
  * ```
  * // bootstrap.php
  * return array(
@@ -148,6 +148,11 @@ class Abilities extends Module implements Bootable {
 	const ABILITIES_ROOT = 'resources/abilities';
 
 	/**
+	 * The oldest WordPress this module registers anything on.
+	 */
+	private const REQUIRED_WP_VERSION = '7.2';
+
+	/**
 	 * Discovered abilities by local name, once the directory has been walked.
 	 *
 	 * Kept rather than rebuilt, so {@see get_name_of()} compares against the same
@@ -170,17 +175,6 @@ class Abilities extends Module implements Bootable {
 	 * @var array<string, Ability>
 	 */
 	private array $registered = array();
-
-	/**
-	 * Whether WordPress has run the argument rules this request.
-	 *
-	 * Set the first time {@see validate_input()} is called, which is on 7.1 and
-	 * later, before any ability's execute callback. Older versions have no
-	 * filter to run them from, so the execute callback runs them itself.
-	 *
-	 * @var bool
-	 */
-	private bool $rules_run_by_wordpress = false;
 
 	/**
 	 * Declare ability categories of your own.
@@ -456,29 +450,38 @@ class Abilities extends Module implements Bootable {
 				'description'         => $ability->description(),
 				'category'            => $ability->category(),
 				// Bound on the way into both, since WordPress checks permission
-				// first and a RequestArgument property is what a check like
+				// first and a declared property is what a check like
 				// current_user_can( 'edit_post', $this->id ) reads. Only the
-				// execute side runs the argument callbacks: a permission callback
-				// cannot carry their refusal, since WordPress replaces whatever it
-				// returns with a message about permissions.
+				// execute side refuses anything: a permission callback cannot
+				// carry a refusal, since WordPress replaces whatever it returns
+				// with a message about permissions.
 				/*
 				 * Both take null, because WordPress calls them with no arguments
 				 * at all when an ability declares no input schema -- which is the
 				 * shape of every "list everything" and "get status" there is.
 				 */
 				'execute_callback'    => function ( $input = null ) use ( $ability ) {
-					if ( \is_array( $input ) ) {
-						$request  = $this->with( Request::class );
-						$prepared = $this->rules_run_by_wordpress
-							? $request->get_sanitized_values( $ability, $input )
-							// The code WordPress itself uses when an ability's schema rejects input.
-							: $request->get_prepared_values( $ability, $input, 'ability_invalid_input' );
+					$built = array();
 
-						if ( \is_wp_error( $prepared ) ) {
-							return $prepared;
+					if ( \is_array( $input ) ) {
+						// validate_input() already checked it, so only casting,
+						// cleaning and building is left.
+						$built = $this->with( Validation::class )->resolve(
+							$ability,
+							$input,
+							'ability_invalid_input',
+							$ability->input_schema(),
+							false
+						);
+
+						if ( \is_wp_error( $built ) ) {
+							return $built;
 						}
 
-						$input = $prepared;
+						// handle() is given the input it was always given, with
+						// each declared value cast and cleaned in place -- as the
+						// caller would have sent it, not as the objects bound.
+						$input = \array_merge( $input, $this->with( Validation::class )->to_array( $built ) );
 					}
 
 					/*
@@ -488,12 +491,17 @@ class Abilities extends Module implements Bootable {
 					 * exactly the call that would otherwise still be holding
 					 * them.
 					 */
-					$this->with( Request::class )->bind( $ability, \is_array( $input ) ? $input : array() );
+					$this->with( Validation::class )->bind( $ability, $built );
 
 					return $ability->handle( $input );
 				},
 				'permission_callback' => function ( $input = null ) use ( $ability ) {
-					$this->with( Request::class )->bind( $ability, \is_array( $input ) ? $input : array() );
+					$validation = $this->with( Validation::class );
+					$built      = \is_array( $input ) ? $validation->resolve( $ability, $input, 'ability_invalid_input', $ability->input_schema(), false ) : array();
+
+					// Input that cannot even be cast binds nothing: execute is
+					// where the refusal is reported.
+					$validation->bind( $ability, \is_wp_error( $built ) ? array() : $built );
 
 					return $ability->permission_check( $input );
 				},
@@ -502,14 +510,8 @@ class Abilities extends Module implements Bootable {
 					array(
 						'annotations'  => $ability->effect()->get_annotations(),
 						'public'       => $ability->is_public(),
-						/*
-						 * Written rather than left to be derived. WordPress 7.1
-						 * resolves `$meta['show_in_rest'] ?? $meta['public'] ?? false`;
-						 * 6.9 seeds nothing, and there a public ability is left
-						 * off the REST API with nothing said -- a 404 reading as
-						 * a mistyped name. Writing it is what makes
-						 * is_shown_in_rest() the answer on either version.
-						 */
+						// Written rather than left to WordPress's own fallback
+						// to `public`, so is_shown_in_rest() is the answer.
 						'show_in_rest' => $ability->is_shown_in_rest(),
 					)
 				),
@@ -521,7 +523,7 @@ class Abilities extends Module implements Bootable {
 			// The declarations are the schema, and input_schema() is stated over
 			// them -- which is the only way to reach the parts an attribute cannot
 			// carry, a translated description first among them.
-			$input_schema = $this->with( Request::class )->get_schema( $ability, $ability->input_schema() );
+			$input_schema = $this->get_input_schema( $ability );
 			if ( array() !== $input_schema ) {
 				$args['input_schema'] = $input_schema;
 			}
@@ -544,7 +546,7 @@ class Abilities extends Module implements Bootable {
 	 * Run this plugin's argument rules where WordPress validates an ability.
 	 *
 	 * WordPress 7.2 casts an ability's input to its schema's types after
-	 * validating it, so a `validate:` rule run from the execute callback would
+	 * validating it, so a rule's `check()` run from the execute callback would
 	 * see `42` where `"42"` was sent. This filter runs between the two, which is
 	 * where a route runs the same rule.
 	 *
@@ -556,15 +558,17 @@ class Abilities extends Module implements Bootable {
 	 * @internal
 	 */
 	public function validate_input( $is_valid, mixed $input, string $ability_name ) {
-		$this->rules_run_by_wordpress = true;
-
 		$ability = $this->registered[ $ability_name ] ?? null;
 
-		if ( true !== $is_valid || null === $ability || ! \is_array( $input ) ) {
+		if ( true !== $is_valid || null === $ability || ! ( \is_array( $input ) || \is_object( $input ) ) ) {
 			return $is_valid;
 		}
 
-		return $this->with( Request::class )->get_rule_refusal( $ability, $input, 'ability_invalid_input' ) ?? true;
+		// An object passes core's check as readily as an array, and core turns
+		// it into one before execute -- so it is checked the same way here.
+		$built = $this->with( Validation::class )->resolve( $ability, \rest_sanitize_object( $input ), 'ability_invalid_input', $ability->input_schema() );
+
+		return \is_wp_error( $built ) ? $built : true;
 	}
 
 	/**
@@ -580,7 +584,8 @@ class Abilities extends Module implements Bootable {
 	 * @internal
 	 */
 	public function on_boot(): void {
-		if ( ! \function_exists( 'wp_register_ability' ) ) {
+		// The rules run from a filter older versions never call.
+		if ( ! \function_exists( 'wp_register_ability' ) || \version_compare( $GLOBALS['wp_version'], self::REQUIRED_WP_VERSION . '-alpha', '<' ) ) {
 			$this->report_missing_api();
 
 			return;
@@ -591,7 +596,6 @@ class Abilities extends Module implements Bootable {
 		\add_action( 'wp_abilities_api_categories_init', array( $this, 'register_categories' ) );
 		\add_action( 'wp_abilities_api_init', array( $this, 'register_abilities' ) );
 
-		// From 7.1. Earlier versions never call it, and run the rules on execute.
 		\add_filter( 'wp_ability_validate_input', array( $this, 'validate_input' ), 10, 3 );
 	}
 
@@ -643,6 +647,34 @@ class Abilities extends Module implements Bootable {
 	}
 
 	/**
+	 * The schema an ability publishes for its input.
+	 *
+	 * The declarations are the schema, and `input_schema()` is stated over them.
+	 *
+	 * @param Ability $ability The ability.
+	 * @return array<string, mixed> The schema, or an empty array when it declares nothing.
+	 * @throws \InvalidArgumentException When it declares an upload, or a declaration cannot be described.
+	 */
+	private function get_input_schema( Ability $ability ): array {
+		$validation = $this->with( Validation::class );
+		$files      = $validation->get_file_properties( $ability );
+
+		if ( array() !== $files ) {
+			// An ability's input is JSON, and no schema can describe a file --
+			// so the property would wait for a value that can never come.
+			throw new \InvalidArgumentException(
+				\sprintf(
+					'The ability %1$s declares an upload, %2$s. An ability\'s input is JSON, so only a REST route can take a file.',
+					$ability::class,
+					\implode( ', ', \array_keys( $files ) )
+				)
+			);
+		}
+
+		return $validation->get_schema( $ability, $ability->input_schema() );
+	}
+
+	/**
 	 * Whether WordPress would accept a value as one half of an ability name.
 	 *
 	 * The registry matches `^[a-z0-9-]+/[a-z0-9-]+$` (see
@@ -671,8 +703,8 @@ class Abilities extends Module implements Bootable {
 			__METHOD__,
 			// Deliberately not translated: this runs before `init`, where a
 			// __() call would itself trigger _load_textdomain_just_in_time.
-			'The Abilities module requires the Abilities API, added in WordPress 6.9. Nothing was registered.',
-			'6.9.0'
+			'The Abilities module requires WordPress ' . self::REQUIRED_WP_VERSION . ' or newer. Nothing was registered.',
+			self::REQUIRED_WP_VERSION . '.0'
 		);
 	}
 }

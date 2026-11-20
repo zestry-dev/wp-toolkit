@@ -19,8 +19,8 @@ Write for that reader. `description()` is the entire brief an agent gets for dec
 
 ```php
 use Acme\Plugin\Core\Modules\Abilities\Ability;
-use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 use Acme\Plugin\Core\Modules\Abilities\Effect;
+use Acme\Plugin\Core\Modules\Validation\Property;
 
 return new class extends Ability {
 
@@ -39,7 +39,7 @@ return new class extends Ability {
         return Effect::Delete;
     }
 
-    #[RequestArgument( 'The order to cancel.' )]
+    #[Property( 'The order to cancel.' )]
     public int $order_id;
 
     public function permission_check( mixed $input ): bool {
@@ -68,8 +68,9 @@ declare( strict_types=1 );
 \defined( 'ABSPATH' ) || exit;
 
 use Acme\Plugin\Core\Modules\Abilities\Ability;
-use Acme\Plugin\Core\Modules\Request\Attributes\RequestArgument;
 use Acme\Plugin\Core\Modules\Abilities\Effect;
+use Acme\Plugin\Core\Modules\Validation\Property;
+// use Acme\Plugin\Core\Modules\Validation\Rules\OneOf;
 
 return new class() extends Ability {
 
@@ -81,19 +82,19 @@ return new class() extends Ability {
 	// required -- no default means required -- and the value is bound before
 	// the methods below run, so read $this->id, not $input['id'].
 	//
-	// Say as much as you can in `schema:` rather than in a validate callback:
-	// a rule in the schema is one the caller can satisfy before calling.
+	// A rule narrows it. Prefer one that says it in the schema, like OneOf:
+	// that is a limit the caller can read and meet before calling.
 	//
-	// #[RequestArgument( 'How to sort.', schema: array( 'enum' => array( 'date', 'title' ) ) )]
+	// #[OneOf( 'date', 'title' )]
 	// public string $order_by = 'date';
 	//
 	// `__()` cannot go inside an attribute -- PHP allows only constant
 	// expressions there. Say a translated description in input_schema()
 	// instead, which is stated over the schema these declarations already give,
-	// so the property keeps its type, its required-ness and its binding. Drop
+	// so the property keeps its type, its rules and its required-ness. Drop
 	// the description from the attribute when you do, so it stays in one place:
 	//
-	// #[RequestArgument]
+	// #[Property]
 	// public int $id;
 	//
 	// public function input_schema(): array {
@@ -103,7 +104,7 @@ return new class() extends Ability {
 	//         ),
 	//     );
 	// }
-	#[RequestArgument( 'Which one to act on.' )]
+	#[Property( 'Which one to act on.' )]
 	public int $id;
 
 	// A short name, shown wherever abilities are listed.
@@ -251,7 +252,7 @@ abstract public function permission_check( mixed $input ): bool
 
 Checked before `handle()`, on every way into the ability — REST, MCP, and your own PHP alike. This is the gate, so a capability check belongs here rather than in `handle()`.
 
-Any `RequestArgument` properties are already bound, so a check can name the thing being acted on: `current_user_can( 'edit_post', $this->id )`.
+Any declared properties are already bound, so a check can name the thing being acted on: `current_user_can( 'edit_post', $this->id )`.
 
 Unlike `RestRoute::permission_check()` this returns a plain `bool`. WordPress replaces a refusal with a message of its own before the caller sees it — deliberately, so a check cannot leak why it said no to someone who is not allowed — and treats a returned `WP_Error` as a mistake worth reporting with `_doing_it_wrong()`.
 
@@ -275,7 +276,7 @@ Reached only once the input has been validated against `input_schema()` and `per
 
 Return a `WP_Error` for a failure the caller should see; its message is read by whatever called you, so make it a sentence rather than a code.
 
-Any `RequestArgument` properties are bound by the time this runs, so read `$this->order_id` rather than `$input['order_id']`.
+Any declared properties are bound by the time this runs, so read `$this->order_id` rather than `$input['order_id']`.
 
 ## Methods you can use
 
@@ -315,14 +316,14 @@ public function input_schema(): array
 
 WordPress validates against it before your code runs, so `handle()` never sees input that does not fit.
 
-The schema is built for you from your `RequestArgument` properties, which is the shorter way to say the same thing and binds the values onto the object as well. What you return here is stated *over* that rather than instead of it, so a declaration you say nothing about keeps everything it had — its type, its required-ness, its `validate:` rule, and its binding.
+The schema is built for you from your declared properties (see `Property`), which is the shorter way to say the same thing and binds the values onto the object as well. What you return here is stated *over* that rather than instead of it, so a declaration you say nothing about keeps everything it had — its type, its required-ness, its rules, and its binding.
 
 That is what makes an argument's description translatable. PHP allows only constant expressions in an attribute argument, so `__()` cannot go inside one — leave the description off the attribute and name the property here instead, so it is still written exactly once:
 
 ```php
 // Still the declaration: the type, the required-ness and the binding are
 // all still coming from here. Only the description moved.
-#[RequestArgument]
+#[Property]
 public int $order_id;
 
 public function input_schema(): array {
@@ -359,14 +360,12 @@ Validated after `handle()`, so a result that does not match is an error rather t
 A wide result is worth letting the caller narrow, which WordPress's own abilities do with an optional `fields`. Declare it like any other argument, and an agent that needs two of your twenty properties reads two:
 
 ```php
-#[RequestArgument(
-    'Which properties to return. All of them, if you leave it out.',
-    schema: array( 'items' => array( 'type' => 'string', 'enum' => array( 'id', 'title', 'status' ) ) )
-)]
+#[Property( 'Which properties to return. All of them, if you leave it out.' )]
+#[ListOf( 'string' ), Each( new OneOf( 'id', 'title', 'status' ) )]
 public array $fields = array( 'id', 'title', 'status' );
 ```
 
-The `enum` is what refuses a name you do not have, so `handle()` can filter on `$this->fields` without checking it first.
+The `OneOf` is what refuses a name you do not have, so `handle()` can filter on `$this->fields` without checking it first.
 
 <br>
 
@@ -446,7 +445,7 @@ public function meta(): array
 
 An escape hatch for the parts of `meta` that have no method of their own, merged underneath the ones that do — `annotations` comes from `effect()`, `public` from `is_public()` and `show_in_rest` from `is_shown_in_rest()`.
 
-What you put here is queryable from WordPress 7.1 on, which filters on meta: `wp_get_abilities( array( 'meta' => array( 'group' => 'billing' ) ) )` returns the abilities that declared it.
+What you put here is queryable, since WordPress filters on meta: `wp_get_abilities( array( 'meta' => array( 'group' => 'billing' ) ) )` returns the abilities that declared it.
 
 <br>
 

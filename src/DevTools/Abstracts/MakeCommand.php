@@ -603,7 +603,7 @@ abstract class MakeCommand extends Command {
 
 		if ( null === $module ) {
 			$this->warning(
-				\sprintf( 'This plugin has no %s, so nothing will discover the file about to be written.', $class )
+				\sprintf( 'This plugin has no %s, which the file about to be written extends.', $class )
 			);
 
 			return;
@@ -611,7 +611,7 @@ abstract class MakeCommand extends Command {
 
 		$confirmed = $this->confirm(
 			\sprintf(
-				'This plugin has no %s, so nothing would discover the file about to be written. Add the "%s" module first?',
+				'This plugin has no %s, which the file about to be written extends. Add the "%s" module first?',
 				$class,
 				$module
 			),

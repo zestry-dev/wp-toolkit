@@ -109,7 +109,7 @@ Almost everything is the same two steps: **add** the feature once, then **make**
 | Run work in the background | `wp zt add queue`<br>then `wp zt make job send-receipt` | [`queue`](modules/queue/) |
 | Create or change a table | `wp zt add migrations`<br>then `wp zt make migration create-books-table` | [`migrations`](modules/migrations/) |
 | Build a block | `wp zt add blocks`<br>then `wp zt make block card --dynamic --view=none`<br>then `npm run build` | [`blocks`](modules/blocks/) |
-| Give an AI agent a tool | `wp zt add abilities`<br>then `wp zt make ability publish-post` | [`abilities`](modules/abilities/) |
+| Give an AI agent a tool (WordPress 7.2+) | `wp zt add abilities`<br>then `wp zt make ability publish-post` | [`abilities`](modules/abilities/) |
 | Store settings | `wp zt add options` | [`options`](modules/options/) |
 | Render markup from a template | `wp zt add views`<br>then `wp zt make view emails/receipt` | [`views`](modules/views/) |
 | Share JavaScript between screens | `wp zt add assets`<br>then `wp zt make shared formatting` | [JavaScript](javascript.md) |
@@ -183,7 +183,7 @@ The same instance every time, so two callers asking for `Options` share its stat
 
 **Guides**
 
-- [`#[RequestArgument]`](modules/request/request-argument.md) — how a route or an ability declares what it accepts, and what a caller is told.
+- [`validation`](modules/validation/) — how a route, an ability or an action declares what it accepts with `#[Property]` and rules, and what a caller is told.
 - [JavaScript](javascript.md) — sharing code between screens without shipping it twice.
 - [Testing](testing.md) — how to test a plugin built this way.
 - [Troubleshooting](troubleshooting.md) — including [`wp zt doctor`](commands/doctor.md), which finds the wiring mistakes that fail silently.
@@ -195,7 +195,7 @@ Every name below is what you pass to `wp zt add` — `wp zt add meta-boxes`, `wp
 
 - [Modules](modules/) — everything a plugin can be made of:
   <!-- zestry:include generator="module-names" -->
-  `abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cookie`, `cron`, `db`, `fields`, `file-transients`, `globals`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `path`, `post-types`, `queue`, `request`, `rest-api`, `site-health`, `transients`, `views`
+  `abilities`, `admin-pages`, `ajax`, `assets`, `blocks`, `cli`, `cookie`, `cron`, `db`, `fields`, `file-transients`, `globals`, `icons-library`, `log`, `meta-boxes`, `migrations`, `options`, `path`, `post-types`, `queue`, `request`, `rest-api`, `site-health`, `transients`, `validation`, `views`
   <!-- /zestry:include -->
 - [`Plugin`](plugin.md) — the class your entry file builds, and everything it can be told to do.
 - [Command reference](commands/) — every `wp zt` command.

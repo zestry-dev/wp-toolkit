@@ -32,12 +32,14 @@ use Zestry\WPToolkit\Kernel\Traits\WithEnablement;
  * satisfy capability(), and a nonce is verified on POST. A page therefore only
  * has to describe itself (title, capability, placement) and render its markup.
  *
- * **A page reads `$_POST` and `$_FILES` itself**, unlike a route or an ability,
- * which declare what they accept with `#[RequestArgument]`. A page is reached
+ * **A page reads `$_POST` and `$_FILES` itself**, unlike a route, an ability
+ * or an AJAX action, which declare what they accept with `#[Property]`. A page is reached
  * twice by two methods -- the GET that draws the form and the POST that submits
  * it -- and one declaration cannot describe both: a field that is required on
  * the second is absent on the first. The nonce and the capability are still
  * checked for you, so what is left is reading the values and sanitising them.
+ * If you added `validation`, a submission can still be checked against a class:
+ * `$this->with( Validation::class )->parse( Form::class, wp_unslash( $_POST ) )`.
  *
  * A file at `resources/admin-pages/settings.php` registers as a top-level menu page with
  * the slug `{plugin}-settings` (see {@see get_page_slug()}). Return a ParentMenu

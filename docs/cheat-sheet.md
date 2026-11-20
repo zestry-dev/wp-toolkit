@@ -48,7 +48,7 @@ Leaving a module that acts on its own at the top level throws, naming the headin
 |---|---|---|
 | `wp zt init` | `lib/Core/Kernel/` | `Acme\Plugin\Core\Kernel\Plugin` |
 | `wp zt add ajax`, `wp zt add path` | `lib/Core/Modules/Ajax/`, `lib/Core/Modules/Path.php` | `Acme\Plugin\Core\Modules\Ajax\Ajax`, `Acme\Plugin\Core\Modules\Path` |
-| `wp zt make module`, `wp zt make abstract` | `lib/Modules/Shortcode.php`, `lib/Abstracts/EntityField.php` | `Acme\Plugin\Modules\Shortcode`, `Acme\Plugin\Abstracts\EntityField` |
+| `wp zt make module`, `wp zt make rule`, `wp zt make abstract` | `lib/Modules/Shortcode.php`, `lib/Rules/Slug.php`, `lib/Abstracts/EntityField.php` | `Acme\Plugin\Modules\Shortcode`, `Acme\Plugin\Rules\Slug`, `Acme\Plugin\Abstracts\EntityField` |
 | you, anywhere else under `lib/` | `lib/Data/LineItem.php` | `Acme\Plugin\Data\LineItem` |
 
 **A plain class needs no generator and no directory of ours.** The one PSR-4 entry `init` writes maps your whole source root, so any class under it autoloads from its namespace — a DTO, a value object, a helper. `Modules/` is where `make module` writes, not a rule about what may exist.
@@ -70,7 +70,7 @@ Add any of them with `wp zt add <name>`; dependencies come along.
 | [`post-types`](modules/post-types/) | `resources/taxonomies/` | [`Taxonomy`](modules/post-types/taxonomy.md) | [`make taxonomy`](commands/make-taxonomy.md) |
 | [`fields`](modules/fields/) | `resources/fields/` | [`Field`](modules/fields/field.md) | [`make field`](commands/make-field.md) |
 | [`meta-boxes`](modules/meta-boxes/) | `resources/meta-boxes/` | [`MetaBox`](modules/meta-boxes/meta-box.md) | [`make meta-box`](commands/make-meta-box.md) |
-| [`abilities`](modules/abilities/) | `resources/abilities/` | [`Ability`](modules/abilities/ability.md) | [`make ability`](commands/make-ability.md) |
+| [`abilities`](modules/abilities/) **(WP 7.2+)** | `resources/abilities/` | [`Ability`](modules/abilities/ability.md) | [`make ability`](commands/make-ability.md) |
 | [`icons-library`](modules/icons-library/) **(WP 7.1+)** | `resources/svg-icons/` | — (a `.php` echoing the SVG and returning `array( 'label' => … )`, or a plain `.svg`) | — |
 | [`site-health`](modules/site-health/) | `resources/health-checks/` | [`HealthCheck`](modules/site-health/health-check.md) | [`make health-check`](commands/make-health-check.md) |
 | [`site-health`](modules/site-health/) | `resources/debug-sections/` | [`DebugSection`](modules/site-health/debug-section.md) | [`make debug-section`](commands/make-debug-section.md) |
@@ -88,10 +88,11 @@ Add any of them with `wp zt add <name>`; dependencies come along.
 | [`file-transients`](modules/file-transients/) | `wp-content/cache/{slug}/` | — | — |
 | [`cookie`](modules/cookie/) | — | — | — |
 | [`request`](modules/request/) | — | — | — |
+| [`validation`](modules/validation/) | — | — | [`make rule`](commands/make-rule.md) |
 
-- **A route, an ability and an AJAX action declare their inputs the same way**, with [`#[RequestArgument]`](modules/request/request-argument.md) on a typed property — the type and the presence of a default state what the schema says, and the value is bound before your handler runs. That page is the full guide: every type you can declare, and every one you cannot.
+- **A route, an ability and an AJAX action declare their inputs the same way**, with [`#[Property]`](modules/validation/property.md) on a typed property — the type and the presence of a default state what the schema says, a [rule](modules/validation/rule.md) such as `#[Email]` or `#[Range( min: 1 )]` narrows it, and the value is bound before your handler runs. A class with declared properties nests, so one input can be a whole structure. The [`validation`](modules/validation/) page is the full guide; the same classes check any array you parse yourself, with `$validation->parse( Booking::class, $data )`.
 - **Prefer [`rest-api`](modules/rest-api/) to [`ajax`](modules/ajax/) for anything new.** Both declare their input the same way, but a route also publishes a schema and is callable by anything, where an action answers only WordPress-shaped callers. Reach for `ajax` when something already speaks it — an admin screen's existing JavaScript, another plugin's action, the heartbeat.
-- **`abilities` is the AI-agent surface.** WordPress 6.9+ gives each one a REST endpoint, and an MCP adapter on the site turns it into a tool an agent can call — with no protocol code from you. Call your own with `$abilities->run( 'name', $input )`.
+- **`abilities` is the AI-agent surface.** WordPress 7.2+ gives each one a REST endpoint, and an MCP adapter on the site turns it into a tool an agent can call — with no protocol code from you. Call your own with `$abilities->run( 'name', $input )`.
 - **`site-health` has two directories, one per tab.** A `resources/health-checks/` file reports a verdict on **Status**; a `resources/debug-sections/` file lists values on **Info**, which is what the "Copy site info" button copies.
 - **`resources/taxonomies/` is its own directory.** One module, two roots — a `Taxonomy` file under `resources/post-types/` is discovered as a `PostType` and throws.
 - **`blocks` reads the built directory.** `wp zt make block` writes source into `src/blocks/`; `npm run build` compiles it to `build/blocks/`, which is what the module walks. A block that has never been built registers nothing.
@@ -151,13 +152,14 @@ The filename is what a file registers as. Whether your slug is prefixed onto it 
 >
 > Those four are not prefixed for a reason — WordPress caps post type names at 20 characters and taxonomies at 32, a meta key is part of your own REST responses, and a block's namespace already lives in its `block.json`. So put your prefix in the filename: `resources/post-types/acme-book.php`, `resources/fields/acme_rating.php`.
 
-Eight modules do nothing on their own — no `Bootable`, no `on_boot()`. They are listed in `bootstrap.php` like the rest, and reached the same way:
+Nine modules do nothing on their own — no `Bootable`, no `on_boot()`. They are listed in `bootstrap.php` like the rest, and reached the same way:
 
 | Module | What it does | A first call |
 |---|---|---|
 | [`options`](modules/options/) | Settings, one array per plugin or group | `$this->with( Options::class )->get( 'per_page', 10 )` |
 | [`path`](modules/path/) | Plugin-relative paths and URLs | `$this->with( Path::class )->get_plugin_url( 'logo.png' )` |
-| [`request`](modules/request/) | Declared arguments become schemas and bound properties | `#[RequestArgument( 'Which one.' )] public int $id;` |
+| [`validation`](modules/validation/) | Declared properties become a schema, a check and a built object | `#[Property( 'Which one.' ), Range( min: 1 )] public int $id;` |
+| [`request`](modules/request/) | What a route or action was sent, uploads included | `$this->with( Request::class )->get_submitted_values( $action )` |
 | [`views`](modules/views/) | Renders `resources/views/*.php` templates | `$this->with( Views::class )->render( 'emails/receipt', $data )` |
 | [`db`](modules/db/) | Names your tables and WordPress's | `$this->with( DB::class )->get_table( 'events' )` |
 | [`globals`](modules/globals/) | Request-scoped key/value store | `$this->with( Globals::class )->set( 'run_id', $id )` |
@@ -209,7 +211,7 @@ Run from inside your plugin's directory, with the plugin active.
 | [`wp zt init`](commands/init.md) | Copies the kernel; writes `zestry.json`, `zestry.lock.json`, `bootstrap.php`, the PSR-4 entry, `.gitignore`, the linter configs and `AGENTS.md`. `--no-phpcs`, `--no-eslint`, `--no-prettier`, `--no-agents`, `--yes` |
 | [`wp zt add <name>...`](commands/add.md) | Copies modules and their dependencies; declares each in `bootstrap.php`. Skips what is already there. Never asks. |
 | [`wp zt tests`](commands/tests.md) | Writes the test suites, one directory per runner: PHPUnit in `tests/php/`, Jest in `tests/js/`, Playwright in `tests/e2e/`, plus `.wp-env.test.json` and the composer/npm entries that run them. `--no-php`, `--no-unit`, `--no-e2e`, `--no-wp-env`, `--yes` |
-| [`wp zt make <type> <name>`](commands/) | Generates one file from a stub — see the 21 types below. `--yes` on every type; `--extends=` on every type whose file returns a base-class instance, except `route` and `block`, plus `abstract`, which also takes `--for=<type>` |
+| [`wp zt make <type> <name>`](commands/) | Generates one file from a stub — see the 24 types below. `--yes` on every type; `--extends=` on every type whose file returns a base-class instance, except `route` and `block`, plus `abstract`, which also takes `--for=<type>` |
 | [`wp zt describe`](commands/describe.md) | Reports what this plugin has: each module installed, declared, the directory it reads and the base class a file there returns. `--format`, `--installed` |
 | [`wp zt doctor`](commands/doctor.md) | Reports the wiring mistakes that raise no error — chiefly a module on disk that nothing declares. `--format=report\|csv\|json\|yaml` |
 | [`wp zt debug`](commands/debug.md) | Reports this plugin's own `{SLUG}_DEBUG` constant, or writes it to `wp-config.php`. Takes `on` or `off`; omit both to report. |
@@ -228,7 +230,7 @@ Each type writes one file into the directory its module discovers, so the genera
 | [`command`](commands/make-command.md) | `resources/commands/` | a `wp` subcommand |
 | [`schedule`](commands/make-schedule.md) | `resources/schedules/` | a cron event. `--recurrence=` |
 | [`route`](commands/make-route.md) | `resources/routes/` | a REST endpoint. `--method=`, `--pattern=`, `--version=` |
-| [`ability`](commands/make-ability.md) | `resources/abilities/` | an ability (WP 6.9+) |
+| [`ability`](commands/make-ability.md) | `resources/abilities/` | an ability (WP 7.2+) |
 | [`post-type`](commands/make-post-type.md) | `resources/post-types/` | a custom post type. `--singular=`, `--plural=` |
 | [`taxonomy`](commands/make-taxonomy.md) | `resources/taxonomies/` | a taxonomy. `--singular=`, `--plural=`, `--object-type=` |
 | [`field`](commands/make-field.md) | `resources/fields/{type}/{subtype}/` | a meta field. `--object-type=`, `--subtypes=` |
@@ -243,13 +245,14 @@ Each type writes one file into the directory its module discovers, so the genera
 | [`module`](commands/make-module.md) | `lib/Modules/` | your own module, **declared in `bootstrap.php`**. `--bootable` |
 | [`activation`](commands/make-activation.md) | `lib/Modules/` | an activation handler, **declared** too |
 | [`update`](commands/make-update.md) | `lib/Modules/` | an update handler, **declared** too |
+| [`rule`](commands/make-rule.md) | `lib/Rules/` | a validation rule, used as `#[Name]` on a property |
 | [`abstract`](commands/make-abstract.md) | `lib/Abstracts/` | a base your own files share. `--for=<type>`, `--extends=` |
 | [`test`](commands/make-test.md) | `tests/php/`, `tests/js/` | a test mirroring the file you name: PHPUnit for PHP, Jest for a script. A class name gives a PHPUnit test. PHP needs [`wp zt tests`](commands/tests.md) first |
 
-`module`, `activation` and `abstract` land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. Every type writes to one directory, fixed by the module that reads it; a name with a slash nests inside it, so `make command reports/daily` writes `resources/commands/reports/daily.php`.
+`module`, `activation`, `rule` and `abstract` land beside the copied `lib/Core/` tree, never inside it — that tree is what [`wp zt update`](commands/update.md) may replace. Every type writes to one directory, fixed by the module that reads it; a name with a slash nests inside it, so `make command reports/daily` writes `resources/commands/reports/daily.php`.
 
 <!-- zestry:include generator="prompting-generators" -->
-**6 of the 23 generators ask for what you leave out** — [`block`](commands/make-block.md), [`field`](commands/make-field.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 17 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.
+**6 of the 24 generators ask for what you leave out** — [`block`](commands/make-block.md), [`field`](commands/make-field.md), [`post-type`](commands/make-post-type.md), [`route`](commands/make-route.md), [`shared`](commands/make-shared.md), [`taxonomy`](commands/make-taxonomy.md). Give every option and none of them stops. The other 18 take no options they could ask about — but *any* generator stops to ask before overwriting a file, or to offer the module the generated file needs. `--yes` answers all of it without reading input, which is what an unattended run wants.
 <!-- /zestry:include -->
 
 `make module` and `make activation` are the only generators that also write to `bootstrap.php`, since being listed is the only thing that makes a module exist.

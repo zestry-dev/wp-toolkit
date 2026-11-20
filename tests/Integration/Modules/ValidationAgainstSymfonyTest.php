@@ -2,10 +2,11 @@
 
 declare( strict_types=1 );
 
-namespace Zestry\WPToolkit\Tests\Integration\Services;
+namespace Zestry\WPToolkit\Tests\Integration\Modules;
 
-use Zestry\WPToolkit\Modules\Request\Attributes\RequestArgument;
-use Zestry\WPToolkit\Modules\Request\Request;
+use Zestry\WPToolkit\Modules\Validation\ListOf;
+use Zestry\WPToolkit\Modules\Validation\Property;
+use Zestry\WPToolkit\Modules\Validation\Validation;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
@@ -15,17 +16,17 @@ use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 
 /**
- * A structure Symfony and this service each build from the same array.
+ * A structure Symfony and this module each build from the same array.
  */
-final class SymfonyParcel {
+final class ValidationSymfonyParcel {
 
-	#[RequestArgument( 'Street and number.' )]
+	#[Property( 'Street and number.' )]
 	public string $line1;
 
-	#[RequestArgument( 'How heavy, in grams.' )]
+	#[Property( 'How heavy, in grams.' )]
 	public int $weight = 0;
 
-	#[RequestArgument( 'Whether it is fragile.' )]
+	#[Property( 'Whether it is fragile.' )]
 	public bool $fragile = false;
 }
 
@@ -40,12 +41,26 @@ final class SymfonyParcel {
  * Where they disagree, they disagree on purpose, and those are noted below
  * rather than papered over.
  *
- * @covers \Zestry\WPToolkit\Modules\Request\Request
+ * @covers \Zestry\WPToolkit\Modules\Validation\Validation
  */
-final class RequestAgainstSymfonyTest extends TestCase {
+final class ValidationAgainstSymfonyTest extends TestCase {
 
-	private function request(): Request {
-		return $this->plugin->get( Request::class );
+	private function validation(): Validation {
+		return $this->plugin->get( Validation::class );
+	}
+
+	/**
+	 * Check and build values for an object, then put them on it.
+	 *
+	 * @param object               $target The object declaring the properties.
+	 * @param array<string, mixed> $values The values, as they arrived.
+	 */
+	private function fill( object $target, array $values ): void {
+		$built = $this->validation()->resolve( $target, $values );
+
+		$this->assertNotInstanceOf( \WP_Error::class, $built, $built instanceof \WP_Error ? $built->get_error_message() : '' );
+
+		$this->validation()->bind( $target, $built );
 	}
 
 	private function serializer(): Serializer {
@@ -72,13 +87,13 @@ final class RequestAgainstSymfonyTest extends TestCase {
 	 * @dataProvider properties_to_compare
 	 */
 	public function test_the_derived_type_agrees_with_symfonys_extractor( string $property, string $php_type, string $wire_type, bool $nullable ): void {
-		$extracted = ( new ReflectionExtractor() )->getTypes( SymfonyTypes::class, $property );
+		$extracted = ( new ReflectionExtractor() )->getTypes( ValidationSymfonyTypes::class, $property );
 
 		$this->assertNotNull( $extracted, sprintf( 'Symfony reads a type for $%s.', $property ) );
 		$this->assertSame( $php_type, $extracted[0]->getBuiltinType(), sprintf( 'Symfony reads $%s as declared.', $property ) );
 		$this->assertSame( $nullable, $extracted[0]->isNullable() );
 
-		$schema = $this->request()->get_schema( SymfonyTypes::class )['properties'][ $property ];
+		$schema = $this->validation()->get_schema( ValidationSymfonyTypes::class )['properties'][ $property ];
 		$type   = (array) $schema['type'];
 
 		$this->assertSame(
@@ -112,7 +127,7 @@ final class RequestAgainstSymfonyTest extends TestCase {
 
 	/**
 	 * Both turn the same array into the same object, which is the part of this
-	 * service that could quietly hydrate something plausible but wrong.
+	 * module that could quietly build something plausible but wrong.
 	 */
 	public function test_a_structure_is_built_the_same_way_symfony_builds_it(): void {
 		$values = array(
@@ -121,8 +136,8 @@ final class RequestAgainstSymfonyTest extends TestCase {
 			'fragile' => true,
 		);
 
-		$theirs = $this->serializer()->denormalize( $values, SymfonyParcel::class );
-		$ours   = $this->request()->hydrate( SymfonyParcel::class, $values );
+		$theirs = $this->serializer()->denormalize( $values, ValidationSymfonyParcel::class );
+		$ours   = $this->validation()->parse( ValidationSymfonyParcel::class, $values );
 
 		$this->assertEquals( $theirs, $ours );
 	}
@@ -134,8 +149,8 @@ final class RequestAgainstSymfonyTest extends TestCase {
 	public function test_an_unknown_key_is_ignored_by_both(): void {
 		$values = array( 'line1' => '1 Example Street', 'colour' => 'red' );
 
-		$theirs = $this->serializer()->denormalize( $values, SymfonyParcel::class );
-		$ours   = $this->request()->hydrate( SymfonyParcel::class, $values );
+		$theirs = $this->serializer()->denormalize( $values, ValidationSymfonyParcel::class );
+		$ours   = $this->validation()->parse( ValidationSymfonyParcel::class, $values );
 
 		$this->assertEquals( $theirs, $ours );
 		$this->assertSame( 0, $ours->weight, 'The declared default stands.' );
@@ -147,27 +162,27 @@ final class RequestAgainstSymfonyTest extends TestCase {
 			array( 'line1' => 'Two', 'weight' => 2 ),
 		);
 
-		$theirs = $this->serializer()->denormalize( $values, SymfonyParcel::class . '[]' );
+		$theirs = $this->serializer()->denormalize( $values, ValidationSymfonyParcel::class . '[]' );
 
 		$target = new class() {
-			#[RequestArgument( 'Some parcels.', of: SymfonyParcel::class )]
+			#[Property( 'Some parcels.' ), ListOf( ValidationSymfonyParcel::class )]
 			public array $parcels;
 		};
 
-		$this->request()->bind( $target, array( 'parcels' => $values ) );
+		$this->fill( $target, array( 'parcels' => $values ) );
 
 		$this->assertEquals( $theirs, $target->parcels );
 	}
 
 	public function test_a_backed_enum_resolves_to_the_same_case(): void {
-		$theirs = $this->serializer()->denormalize( 'draft', RequestTestStatus::class );
+		$theirs = $this->serializer()->denormalize( 'draft', ValidationSymfonyStatus::class );
 
 		$target = new class() {
-			#[RequestArgument( 'What state.' )]
-			public RequestTestStatus $status;
+			#[Property( 'What state.' )]
+			public ValidationSymfonyStatus $status;
 		};
 
-		$this->request()->bind( $target, array( 'status' => 'draft' ) );
+		$this->fill( $target, array( 'status' => 'draft' ) );
 
 		$this->assertSame( $theirs, $target->status );
 	}
@@ -176,11 +191,11 @@ final class RequestAgainstSymfonyTest extends TestCase {
 		$theirs = $this->serializer()->denormalize( '2026-08-04T12:00:00+00:00', \DateTimeImmutable::class );
 
 		$target = new class() {
-			#[RequestArgument( 'When.' )]
+			#[Property( 'When.' )]
 			public \DateTimeImmutable $when;
 		};
 
-		$this->request()->bind( $target, array( 'when' => '2026-08-04T12:00:00+00:00' ) );
+		$this->fill( $target, array( 'when' => '2026-08-04T12:00:00+00:00' ) );
 
 		$this->assertEquals( $theirs, $target->when );
 	}
@@ -194,23 +209,23 @@ final class RequestAgainstSymfonyTest extends TestCase {
 	 * that the value published in the schema is the value that binds.
 	 */
 	public function test_a_pure_enum_binds_by_the_name_the_schema_publishes(): void {
-		$schema = $this->request()->get_schema(
+		$schema = $this->validation()->get_schema(
 			new class() {
-				#[RequestArgument( 'Which way.' )]
-				public RequestTestOrder $order;
+				#[Property( 'Which way.' )]
+				public ValidationSymfonyOrder $order;
 			}
 		);
 
 		$published = $schema['properties']['order']['enum'][1];
 
 		$target = new class() {
-			#[RequestArgument( 'Which way.' )]
-			public RequestTestOrder $order;
+			#[Property( 'Which way.' )]
+			public ValidationSymfonyOrder $order;
 		};
 
-		$this->request()->bind( $target, array( 'order' => $published ) );
+		$this->fill( $target, array( 'order' => $published ) );
 
-		$this->assertSame( RequestTestOrder::Descending, $target->order );
+		$this->assertSame( ValidationSymfonyOrder::Descending, $target->order );
 	}
 }
 
@@ -218,35 +233,45 @@ final class RequestAgainstSymfonyTest extends TestCase {
  * Every type the comparison covers, on one class.
  */
 // phpcs:ignore PSR1.Classes.ClassDeclaration.MultipleClasses
-final class SymfonyTypes {
+final class ValidationSymfonyTypes {
 
-	#[RequestArgument( 'A count.' )]
+	#[Property( 'A count.' )]
 	public int $count;
 
-	#[RequestArgument( 'A ratio.' )]
+	#[Property( 'A ratio.' )]
 	public float $ratio;
 
-	#[RequestArgument( 'A label.' )]
+	#[Property( 'A label.' )]
 	public string $label;
 
-	#[RequestArgument( 'Whether enabled.' )]
+	#[Property( 'Whether enabled.' )]
 	public bool $enabled;
 
-	#[RequestArgument( 'A count, maybe.' )]
+	#[Property( 'A count, maybe.' )]
 	public ?int $maybe_count = null;
 
-	#[RequestArgument( 'A label, maybe.' )]
+	#[Property( 'A label, maybe.' )]
 	public ?string $maybe_label = null;
 
-	#[RequestArgument( 'A parcel.' )]
-	public SymfonyParcel $parcel;
+	#[Property( 'A parcel.' )]
+	public ValidationSymfonyParcel $parcel;
 
-	#[RequestArgument( 'A parcel, maybe.' )]
-	public ?SymfonyParcel $maybe_parcel = null;
+	#[Property( 'A parcel, maybe.' )]
+	public ?ValidationSymfonyParcel $maybe_parcel = null;
 
-	#[RequestArgument( 'When.' )]
+	#[Property( 'When.' )]
 	public \DateTimeImmutable $when;
 
-	#[RequestArgument( 'What state.' )]
-	public RequestTestStatus $status;
+	#[Property( 'What state.' )]
+	public ValidationSymfonyStatus $status;
+}
+
+enum ValidationSymfonyStatus: string {
+	case Draft = 'draft';
+	case Live  = 'live';
+}
+
+enum ValidationSymfonyOrder {
+	case Ascending;
+	case Descending;
 }
