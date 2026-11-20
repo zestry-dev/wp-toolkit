@@ -23,7 +23,7 @@ use Zestry\WPToolkit\Modules\Request\UploadedFile;
  * get back. Nothing to extend and nothing to register:
  *
  * ```
- * final class Booking {
+ * final class Booking extends Structure {
  *
  *     #[Property( 'The workshop to book.' )]
  *     public int $workshop_id;
@@ -61,7 +61,7 @@ use Zestry\WPToolkit\Modules\Request\UploadedFile;
  * | `string`, `int`, `float`, `bool` | that type, or a string that reads as it | the type |
  * | an enum | a case's backing value, or a pure enum's case name | the case |
  * | `\DateTimeImmutable`, `\DateTimeInterface` | a date-time string | the date |
- * | a class | an object matching its declarations | an instance, built without its constructor |
+ * | a {@see Structure} | an object matching its declarations | an instance |
  * | `array` with {@see ListOf} | a list, or a comma-separated string | a list |
  * | `array` with {@see MapOf} | an object with keys of the caller's choosing | an array keyed by them |
  * | `object`, `\stdClass` | any object | a `\stdClass` |
@@ -73,7 +73,11 @@ use Zestry\WPToolkit\Modules\Request\UploadedFile;
  *
  * **Types shape, rules narrow.** A rule never changes what kind of value a
  * property holds; it only limits which values of that kind pass. Something
- * with properties of its own -- an address, a guest -- is a class, not a rule.
+ * with properties of its own -- an address, a guest -- is a {@see Structure}, not a rule.
+ *
+ * **Something with properties of its own extends {@see Structure}.** Its
+ * constructor is private, so the only way to get one is to have it built and
+ * checked: by a request, or by {@see parse()}.
  *
  * ## In what order
  *
@@ -344,7 +348,7 @@ class Validation extends Module {
 			// never built here -- it is the handler, filled in by bind().
 			throw new \InvalidArgumentException(
 				\sprintf(
-					'%s carries a rule of its own, and it answers calls rather than being built from one. Move the properties into a class, and the rule onto that.',
+					'%s carries a rule of its own, and it answers calls rather than being built from one. Move the properties into a Structure, and the rule onto that.',
 					$class_name
 				)
 			);
@@ -610,7 +614,7 @@ class Validation extends Module {
 
 		$this->assert_one_rule_per_keyword( $rules, $label );
 
-		if ( null === $declared && null === $list && null === $map && null === $each && null === $keys && array() === $rules ) {
+		if ( ! self::is_declared( $property ) ) {
 			return null;
 		}
 
@@ -630,7 +634,12 @@ class Validation extends Module {
 			);
 		}
 
-		$name = $type->getName();
+		$name = match ( $type->getName() ) {
+			// Reflection names these as written, not as the class they mean.
+			'self'   => $property->getDeclaringClass()->getName(),
+			'parent' => (string) $property->getDeclaringClass()->getParentClass()?->getName(),
+			default  => $type->getName(),
+		};
 
 		if ( null !== $list && null !== $map ) {
 			throw new \InvalidArgumentException( \sprintf( '%s says it is both a list and a map. Keep one of ListOf and MapOf.', $label ) );
@@ -652,7 +661,7 @@ class Validation extends Module {
 			if ( null === $list && null === $map ) {
 				throw new \InvalidArgumentException(
 					\sprintf(
-						'%s is an array that does not say what it holds. Add #[ListOf( Thing::class )] for a list, or #[MapOf( Thing::class )] for keys of the caller\'s choosing. For fixed keys, write a class.',
+						'%s is an array that does not say what it holds. Add #[ListOf( Thing::class )] for a list, or #[MapOf( Thing::class )] for keys of the caller\'s choosing. For fixed keys, write a Structure.',
 						$label
 					)
 				);
@@ -748,14 +757,14 @@ class Validation extends Module {
 			\enum_exists( $type )                                        => 'enum',
 			\is_a( $type, \DateTimeInterface::class, true )              => 'date',
 			\is_a( $type, UploadedFile::class, true )                    => 'file',
-			\class_exists( $type ) && ! ( new \ReflectionClass( $type ) )->isAbstract() => 'class',
+			\is_a( $type, Structure::class, true ) && ! ( new \ReflectionClass( $type ) )->isAbstract() => 'class',
 			default                                                      => null,
 		};
 
 		if ( null === $kind ) {
 			throw new \InvalidArgumentException(
 				\sprintf(
-					'%s is typed %s, which is neither string, int, float, bool, an enum, a date, nor a class that can be built.',
+					'%s is typed %s, which is neither string, int, float, bool, an enum, a date, nor a Structure.',
 					$label,
 					$type
 				)
@@ -775,9 +784,15 @@ class Validation extends Module {
 	 *
 	 * @param string $class_name The class name.
 	 * @return array<string, mixed>
-	 * @throws \InvalidArgumentException When the class declares no properties.
+	 * @throws \InvalidArgumentException When the class is not a Structure, or declares no properties.
 	 */
 	private function get_root_node( string $class_name ): array {
+		if ( ! \is_a( $class_name, Structure::class, true ) ) {
+			throw new \InvalidArgumentException(
+				\sprintf( '%1$s is not a Structure. Extend %2$s to build one from an array.', $class_name, Structure::class )
+			);
+		}
+
 		if ( array() === $this->get_slots( $class_name ) ) {
 			// Nothing to check against, so every value would pass.
 			throw new \InvalidArgumentException(
@@ -1418,15 +1433,12 @@ class Validation extends Module {
 			return array( false, null );
 		}
 
+		// Structure's constructor is private and empty, so nothing is skipped.
 		$instance = ( new \ReflectionClass( $class_name ) )->newInstanceWithoutConstructor();
 
 		foreach ( $this->get_slots( $class_name ) as $name => $slot ) {
 			if ( \array_key_exists( $name, $values ) ) {
 				$this->assign( $instance, $slot['property'], $name, $values[ $name ] );
-			} elseif ( $slot['has_default'] ) {
-				// Built without its constructor, so a promoted parameter's
-				// default was never applied.
-				$this->assign( $instance, $slot['property'], $name, $slot['default'] );
 			}
 		}
 
@@ -1742,7 +1754,7 @@ class Validation extends Module {
 			// every one after.
 			throw new \InvalidArgumentException(
 				\sprintf(
-					'"%s" is readonly on an object that answers more than one call, so it can only ever be set once. Drop readonly, or move it into a class of its own.',
+					'"%s" is readonly on an object that answers more than one call, so it can only ever be set once. Drop readonly, or move it into a Structure of its own.',
 					$name
 				)
 			);
@@ -1782,23 +1794,12 @@ class Validation extends Module {
 	/**
 	 * The default a property declares, if it declares one.
 	 *
-	 * A promoted constructor parameter's default belongs to the parameter, so
-	 * `ReflectionProperty::hasDefaultValue()` answers false for it.
-	 *
 	 * @param \ReflectionProperty $property The property.
 	 * @return array{0: bool, 1: mixed} Whether there is one, and what it is.
 	 */
 	private function get_declared_default( \ReflectionProperty $property ): array {
 		if ( $property->hasDefaultValue() ) {
 			return array( true, $property->getDefaultValue() );
-		}
-
-		$constructor = $property->isPromoted() ? $property->getDeclaringClass()->getConstructor() : null;
-
-		foreach ( null !== $constructor ? $constructor->getParameters() : array() as $parameter ) {
-			if ( $parameter->getName() === $property->getName() && $parameter->isDefaultValueAvailable() ) {
-				return array( true, $parameter->getDefaultValue() );
-			}
 		}
 
 		return array( false, null );
@@ -1849,5 +1850,21 @@ class Validation extends Module {
 		}
 
 		return $overrides;
+	}
+
+	/**
+	 * Whether a property is part of the shape.
+	 *
+	 * @param \ReflectionProperty $property The property.
+	 * @return bool
+	 */
+	private static function is_declared( \ReflectionProperty $property ): bool {
+		foreach ( array( Property::class, ListOf::class, MapOf::class, Each::class, Keys::class ) as $attribute ) {
+			if ( array() !== $property->getAttributes( $attribute ) ) {
+				return true;
+			}
+		}
+
+		return array() !== $property->getAttributes( Rule::class, \ReflectionAttribute::IS_INSTANCEOF );
 	}
 }

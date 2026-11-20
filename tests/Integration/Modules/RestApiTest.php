@@ -709,13 +709,13 @@ final class RestApiTest extends TestCase {
 			'an item that is no date'            => array( "#[{$v}ListOf( \\DateTimeImmutable::class )]\npublic array \$dates;", '', array( 'dates' => array( 'nope' ) ), 'dates[0]' ),
 			'a property missing two levels down' => array(
 				"#[{$v}Property]\npublic \\ZestryRouteOuter \$o;",
-				"if ( ! class_exists( 'ZestryRouteInner', false ) ) { final class ZestryRouteInner { #[{$v}Property] public string \$name; } final class ZestryRouteOuter { #[{$v}Property] public ZestryRouteInner \$inner; } }",
+				"if ( ! class_exists( 'ZestryRouteInner', false ) ) { final class ZestryRouteInner extends \\Zestry\\WPToolkit\\Modules\\Validation\\Structure { #[{$v}Property] public string \$name; } final class ZestryRouteOuter extends \\Zestry\\WPToolkit\\Modules\\Validation\\Structure { #[{$v}Property] public ZestryRouteInner \$inner; } }",
 				array( 'o' => array( 'inner' => array( 'x' => 1 ) ) ),
 				'o.inner.name',
 			),
 			'a nested class missing a property'  => array(
 				"#[{$v}Property]\npublic \\ZestryRouteAddress \$address;",
-				"if ( ! class_exists( 'ZestryRouteAddress', false ) ) { final class ZestryRouteAddress { #[{$v}Property] public string \$city; } }",
+				"if ( ! class_exists( 'ZestryRouteAddress', false ) ) { final class ZestryRouteAddress extends \\Zestry\\WPToolkit\\Modules\\Validation\\Structure { #[{$v}Property] public string \$city; } }",
 				array( 'address' => array() ),
 				'address.city',
 			),
@@ -780,7 +780,7 @@ final class RestApiTest extends TestCase {
 	public function test_a_required_list_in_args_leaves_the_parameter_required(): void {
 		$this->write_contents_route(
 			"#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property]\npublic \\ZestryRouteStreet \$address;\n#[\\Zestry\\WPToolkit\\Modules\\Validation\\Property]\npublic ?\\ZestryRouteStreet \$billing = null;\npublic function args(): array { return array( 'address' => array( 'required' => array( 'street' ) ), 'billing' => array( 'required' => array( 'street' ) ) ); }",
-			"if ( ! class_exists( 'ZestryRouteStreet', false ) ) { final class ZestryRouteStreet { #[\\Zestry\\WPToolkit\\Modules\\Validation\\Property] public string \$street = ''; } }"
+			"if ( ! class_exists( 'ZestryRouteStreet', false ) ) { final class ZestryRouteStreet extends \\Zestry\\WPToolkit\\Modules\\Validation\\Structure { #[\\Zestry\\WPToolkit\\Modules\\Validation\\Property] public string \$street = ''; } }"
 		);
 		$this->boot_and_discover();
 
@@ -804,7 +804,7 @@ final class RestApiTest extends TestCase {
 		$v = '\\Zestry\\WPToolkit\\Modules\\Validation\\';
 		$this->write_contents_route(
 			"#[{$v}Property]\npublic ?\\ZestryRouteOuter \$optional = null;\n#[{$v}Property]\npublic \\ZestryRouteOuter \$needed;",
-			"if ( ! class_exists( 'ZestryRouteInner', false ) ) { final class ZestryRouteInner { #[{$v}Property] public string \$name; } final class ZestryRouteOuter { #[{$v}Property] public ZestryRouteInner \$inner; } }"
+			"if ( ! class_exists( 'ZestryRouteInner', false ) ) { final class ZestryRouteInner extends \\Zestry\\WPToolkit\\Modules\\Validation\\Structure { #[{$v}Property] public string \$name; } final class ZestryRouteOuter extends \\Zestry\\WPToolkit\\Modules\\Validation\\Structure { #[{$v}Property] public ZestryRouteInner \$inner; } }"
 		);
 		$this->boot_and_discover();
 

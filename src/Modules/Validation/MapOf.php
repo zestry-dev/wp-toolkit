@@ -20,7 +20,7 @@ namespace Zestry\WPToolkit\Modules\Validation;
  * public array $styles = array();
  * ```
  *
- * For keys you know in advance, write a class instead: its properties can
+ * For keys you know in advance, write a {@see Structure} instead: its properties can
  * carry rules, and you get a typed object back. A map is for keys you do not.
  *
  * A value takes the same types as a {@see ListOf} item. Rules for each value go

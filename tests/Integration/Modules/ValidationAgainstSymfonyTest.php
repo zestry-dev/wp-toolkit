@@ -6,6 +6,7 @@ namespace Zestry\WPToolkit\Tests\Integration\Modules;
 
 use Zestry\WPToolkit\Modules\Validation\ListOf;
 use Zestry\WPToolkit\Modules\Validation\Property;
+use Zestry\WPToolkit\Modules\Validation\Structure;
 use Zestry\WPToolkit\Modules\Validation\Validation;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
@@ -18,7 +19,7 @@ use Symfony\Component\Serializer\Serializer;
 /**
  * A structure Symfony and this module each build from the same array.
  */
-final class ValidationSymfonyParcel {
+final class ValidationSymfonyParcel extends Structure {
 
 	#[Property( 'Street and number.' )]
 	public string $line1;
@@ -233,7 +234,7 @@ final class ValidationAgainstSymfonyTest extends TestCase {
  * Every type the comparison covers, on one class.
  */
 // phpcs:ignore PSR1.Classes.ClassDeclaration.MultipleClasses
-final class ValidationSymfonyTypes {
+final class ValidationSymfonyTypes extends Structure {
 
 	#[Property( 'A count.' )]
 	public int $count;

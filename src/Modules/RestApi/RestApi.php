@@ -129,8 +129,8 @@ use Zestry\WPToolkit\Modules\Request\Request;
  *
  * A check spanning two fields cannot be a rule on the route itself: a route,
  * an ability or an action carrying a class rule throws on its first call. Put
- * those fields in a class with the rule on it and declare one property of that
- * type, or compare them in `handle()`, where every property is bound.
+ * those fields in a {@see \Zestry\WPToolkit\Modules\Validation\Structure} with the
+ * rule on it and declare one property of that type, or compare them in `handle()`, where every property is bound.
  *
  * @example One route per HTTP method
  * A sibling file can declare that same `/widgets/{id}` pattern under a

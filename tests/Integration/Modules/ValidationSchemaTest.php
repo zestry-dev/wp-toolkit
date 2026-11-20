@@ -9,6 +9,7 @@ use Zestry\WPToolkit\Modules\Request\UploadedFile;
 use Zestry\WPToolkit\Modules\Validation\ListOf;
 use Zestry\WPToolkit\Modules\Validation\MapOf;
 use Zestry\WPToolkit\Modules\Validation\Property;
+use Zestry\WPToolkit\Modules\Validation\Structure;
 use Zestry\WPToolkit\Modules\Validation\Rule;
 use Zestry\WPToolkit\Modules\Validation\Rules\OneOf;
 use Zestry\WPToolkit\Modules\Validation\Rules\Pattern;
@@ -50,38 +51,27 @@ enum ValidationSchemaOrder {
 }
 
 /**
- * A structure declared the modern way: promoted, readonly, with a default that
- * lives on the constructor parameter rather than the property.
+ * A structure with a readonly property, which can have no default.
  */
-final class ValidationSchemaParcel {
+final class ValidationSchemaParcel extends Structure {
 
-	public function __construct(
-		#[Property( 'How heavy, in grams.' )]
-		public readonly int $weight,
-		#[Property( 'Where it is going.' )]
-		public readonly string $destination = 'GB'
-	) {}
+	#[Property( 'How heavy, in grams.' )]
+	public readonly int $weight;
+
+	#[Property( 'Where it is going.' )]
+	public string $destination = 'GB';
 }
 
 /**
  * A structure an argument can be declared as.
  */
-final class ValidationSchemaAddress {
+final class ValidationSchemaAddress extends Structure {
 
 	#[Property( 'Street and number.' )]
 	public string $line1;
 
 	#[Property( 'Two-letter country code.' ), Pattern( '^[A-Z]{2}$' )]
 	public string $country = 'US';
-
-	/**
-	 * A constructor the service must not need, since it cannot know what to pass.
-	 *
-	 * @param string $line1 Street and number.
-	 */
-	public function __construct( string $line1 ) {
-		$this->line1 = $line1;
-	}
 }
 
 /**
@@ -494,10 +484,9 @@ final class ValidationSchemaTest extends TestCase {
 	}
 
 	/**
-	 * The idiomatic modern structure: promoted, readonly, and defaulted on the
-	 * constructor parameter -- which is where `hasDefaultValue()` cannot see it.
+	 * A readonly property is filled once, as it is built.
 	 */
-	public function test_a_promoted_readonly_structure_is_described_and_built(): void {
+	public function test_a_readonly_structure_is_described_and_built(): void {
 		$schema = $this->validation()->get_schema(
 			new class() {
 				#[Property( 'What is being shipped.' )]
@@ -507,17 +496,16 @@ final class ValidationSchemaTest extends TestCase {
 
 		$parcel = $schema['properties']['parcel'];
 
-		$this->assertSame( array( 'weight' ), $parcel['required'], 'A promoted default makes its argument optional.' );
+		$this->assertSame( array( 'weight' ), $parcel['required'], 'A default makes its argument optional.' );
 		$this->assertSame( 'GB', $parcel['properties']['destination']['default'] );
 	}
 
-	public function test_a_promoted_default_is_applied_when_the_caller_omits_it(): void {
+	public function test_a_default_is_applied_when_the_caller_omits_it(): void {
 		$target = new class() {
 			#[Property( 'What is being shipped.' )]
 			public ValidationSchemaParcel $parcel;
 		};
 
-		// The constructor never runs, so nothing else would have set it.
 		$this->fill( $target, array( 'parcel' => array( 'weight' => 500 ) ) );
 
 		$this->assertSame( 500, $target->parcel->weight );
@@ -530,7 +518,7 @@ final class ValidationSchemaTest extends TestCase {
 	 */
 	public function test_a_class_that_describes_nothing_throws(): void {
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'declares no properties' );
+		$this->expectExceptionMessage( 'typed ArrayObject, which is neither string, int, float, bool, an enum, a date, nor a Structure' );
 
 		$this->validation()->get_schema(
 			new class() {
@@ -1046,7 +1034,7 @@ final class ValidationSchemaTest extends TestCase {
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( 'nests more than' );
 
-		$this->validation()->get_schema( new ValidationSchemaCycle() );
+		$this->validation()->get_schema( ValidationSchemaCycle::class );
 	}
 
 	/**
@@ -1162,7 +1150,7 @@ final class ValidationSchemaTest extends TestCase {
  * A structure that contains itself.
  */
 // phpcs:ignore Squiz.Classes.ClassFileName.NoMatch, PSR1.Classes.ClassDeclaration.MultipleClasses
-final class ValidationSchemaCycle {
+final class ValidationSchemaCycle extends Structure {
 
 	#[Property( 'Itself, forever.' )]
 	public ValidationSchemaCycle $inner;

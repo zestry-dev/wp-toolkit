@@ -9,6 +9,7 @@ use Zestry\WPToolkit\Modules\Validation\Keys;
 use Zestry\WPToolkit\Modules\Validation\ListOf;
 use Zestry\WPToolkit\Modules\Validation\MapOf;
 use Zestry\WPToolkit\Modules\Validation\Property;
+use Zestry\WPToolkit\Modules\Validation\Structure;
 use Zestry\WPToolkit\Modules\Validation\Rule;
 use Zestry\WPToolkit\Modules\Validation\Rules\Count;
 use Zestry\WPToolkit\Modules\Validation\Rules\Distinct;
@@ -87,7 +88,7 @@ final class ValidationTestUncheckedUri extends Rule {
 	}
 }
 
-final class ValidationTestGuest {
+final class ValidationTestGuest extends Structure {
 
 	#[Length( min: 1 )]
 	public string $name;
@@ -96,7 +97,7 @@ final class ValidationTestGuest {
 	public ?string $email = null;
 }
 
-final class ValidationTestBooking {
+final class ValidationTestBooking extends Structure {
 
 	#[Property( 'The workshop.' )]
 	public int $workshop_id;
@@ -122,18 +123,43 @@ final class ValidationTestBooking {
 	public string $undeclared = 'left alone';
 }
 
-final class ValidationTestPromoted {
+final class ValidationTestReadonly extends Structure {
 
-	public function __construct(
-		#[Property]
-		public readonly int $weight,
-		#[Property]
-		public readonly string $country = 'GB'
-	) {}
+	#[Property]
+	public readonly int $weight;
+
+	#[Property]
+	public string $country = 'GB';
+}
+
+final class ValidationTestUrlAndPick extends Structure {
+
+	#[Url]
+	public string $site = '';
+
+	#[OneOf( 'a', 'b' )]
+	public string $pick = 'a';
+}
+
+final class ValidationTestEmpty extends Structure {
+
+	public string $name = '';
+}
+
+final class ValidationTestPlain {
+
+	#[Property]
+	public string $name = '';
+}
+
+final class ValidationTestHoldsPlain extends Structure {
+
+	#[Property]
+	public ValidationTestPlain $plain;
 }
 
 #[ValidationTestEndsAfterStart]
-final class ValidationTestSpan {
+final class ValidationTestSpan extends Structure {
 
 	#[Property]
 	public int $starts;
@@ -142,7 +168,7 @@ final class ValidationTestSpan {
 	public int $ends;
 }
 
-final class ValidationTestOwnRule {
+final class ValidationTestOwnRule extends Structure {
 
 	#[ValidationTestSlug]
 	public string $slug;
@@ -158,7 +184,7 @@ final class ValidationTestOwnRule {
 	}
 }
 
-final class ValidationTestNested {
+final class ValidationTestNested extends Structure {
 
 	#[Property]
 	public ValidationTestSpan $span;
@@ -433,14 +459,10 @@ final class ValidationTest extends TestCase {
 	 * `#[Property]`, not a class that accepts anything.
 	 */
 	public function test_parsing_against_a_class_that_declares_nothing_throws(): void {
-		$target = new class() {
-			public string $name = '';
-		};
-
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( 'declares no properties' );
 
-		$this->validation()->parse( $target::class, array( 'name' => 'x' ) );
+		$this->validation()->parse( ValidationTestEmpty::class, array( 'name' => 'x' ) );
 	}
 
 	public function test_a_rule_of_your_own_checks_the_raw_value_and_sanitizes_in_order(): void {
@@ -501,12 +523,44 @@ final class ValidationTest extends TestCase {
 		$this->assertSame( array( 'span' => 'The end must come after the start.' ), $errors );
 	}
 
-	public function test_promoted_readonly_properties_are_built_with_their_defaults(): void {
-		$parcel = $this->validation()->parse( ValidationTestPromoted::class, array( 'weight' => 3 ) );
+	public function test_a_structure_is_built_by_validation_only(): void {
+		$class_name = ValidationTestBooking::class;
+
+		$this->expectException( \Error::class );
+		$this->expectExceptionMessage( 'private' );
+
+		new $class_name();
+	}
+
+	/**
+	 * @dataProvider provide_classes_that_are_not_structures
+	 *
+	 * @param string $class_name The class.
+	 * @param string $message    What the refusal says.
+	 */
+	public function test_building_a_class_that_is_not_a_structure_throws( string $class_name, string $message ): void {
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( $message );
+
+		$this->validation()->parse( $class_name, array() );
+	}
+
+	/**
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function provide_classes_that_are_not_structures(): array {
+		return array(
+			'parsed'             => array( ValidationTestPlain::class, 'ValidationTestPlain is not a Structure' ),
+			'a property\'s type' => array( ValidationTestHoldsPlain::class, 'typed Zestry\WPToolkit\Tests\Integration\Modules\ValidationTestPlain, which is neither' ),
+		);
+	}
+
+	public function test_readonly_properties_are_built_with_their_defaults(): void {
+		$parcel = $this->validation()->parse( ValidationTestReadonly::class, array( 'weight' => 3 ) );
 
 		$this->assertSame( 3, $parcel->weight );
 		$this->assertSame( 'GB', $parcel->country );
-		$this->assertSame( array( 'weight' ), $this->validation()->get_schema( ValidationTestPromoted::class )['required'] );
+		$this->assertSame( array( 'weight' ), $this->validation()->get_schema( ValidationTestReadonly::class )['required'] );
 	}
 
 	public function test_enums_mixed_and_open_objects(): void {
@@ -600,7 +654,16 @@ final class ValidationTest extends TestCase {
 	public function test_resolve_refuses_a_target_carrying_a_class_rule(): void {
 		$this->expectException( \InvalidArgumentException::class );
 
-		$this->validation()->resolve( new ValidationTestSpan(), array() );
+		$this->validation()->resolve(
+			new #[ValidationTestEndsAfterStart] class() {
+				#[Property]
+				public int $starts;
+
+				#[Property]
+				public int $ends;
+			},
+			array()
+		);
 	}
 
 	/**
@@ -845,16 +908,8 @@ final class ValidationTest extends TestCase {
 	}
 
 	public function test_the_url_rule_checks_what_wordpress_only_cleans(): void {
-		$target = new class() {
-			#[Url]
-			public string $site = '';
-
-			#[OneOf( 'a', 'b' )]
-			public string $pick = 'a';
-		};
-
 		$errors = $this->validation()->validate(
-			$target::class,
+			ValidationTestUrlAndPick::class,
 			array(
 				'site' => 'javascript:alert(1)',
 				'pick' => 'c',
@@ -862,6 +917,6 @@ final class ValidationTest extends TestCase {
 		);
 
 		$this->assertSame( array( 'site', 'pick' ), array_keys( $errors ) );
-		$this->assertSame( array(), $this->validation()->validate( $target::class, array( 'site' => 'https://example.com/x' ) ) );
+		$this->assertSame( array(), $this->validation()->validate( ValidationTestUrlAndPick::class, array( 'site' => 'https://example.com/x' ) ) );
 	}
 }

@@ -12,7 +12,7 @@ Says an `array` property is a map with keys of the caller's choosing, and what e
 public array $styles = array();
 ```
 
-For keys you know in advance, write a class instead: its properties can carry rules, and you get a typed object back. A map is for keys you do not.
+For keys you know in advance, write a `Structure` instead: its properties can carry rules, and you get a typed object back. A map is for keys you do not.
 
 A value takes the same types as a `ListOf` item. Rules for each value go in `Each`, rules for each key in `Keys`.
 

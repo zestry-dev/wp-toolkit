@@ -7,26 +7,24 @@ namespace Zestry\WPToolkit\Tests\Integration\Modules;
 use Zestry\WPToolkit\Modules\Request\Request;
 use Zestry\WPToolkit\Modules\Validation\ListOf;
 use Zestry\WPToolkit\Modules\Validation\Property;
+use Zestry\WPToolkit\Modules\Validation\Structure;
 use Zestry\WPToolkit\Modules\Validation\Rules\Sanitize;
 use Zestry\WPToolkit\Modules\Validation\Validation;
 use Zestry\WPToolkit\Tests\Support\TestCase;
 
 /**
- * A structure whose default is another structure, built in a promoted parameter
- * — the one place PHP 8.1 allows `new` in an initializer.
+ * A structure with one property.
  */
-final class ValidationEdgeBox {
+final class ValidationEdgeBox extends Structure {
 
-	public function __construct(
-		#[Property( 'How heavy.' )]
-		public readonly int $weight = 0
-	) {}
+	#[Property( 'How heavy.' )]
+	public int $weight = 0;
 }
 
 /**
  * A structure holding a list of structures.
  */
-final class ValidationEdgeCrate {
+final class ValidationEdgeCrate extends Structure {
 
 	#[Property( 'What is in it.' ), ListOf( ValidationEdgeBox::class )]
 	public array $boxes = array();
@@ -35,16 +33,28 @@ final class ValidationEdgeCrate {
 /**
  * A structure that contains a list of itself.
  */
-final class ValidationEdgeTree {
+final class ValidationEdgeTree extends Structure {
 
 	#[Property( 'Its children.' ), ListOf( ValidationEdgeTree::class )]
 	public array $children = array();
 }
 
 /**
+ * A structure typed by `self`, as a tree's parent link would be.
+ */
+final class ValidationEdgeNode extends Structure {
+
+	#[Property( 'Its name.' )]
+	public string $name;
+
+	#[Property( 'The node above it.' )]
+	public ?self $parent = null;
+}
+
+/**
  * One half of a pair that reference each other.
  */
-final class ValidationEdgePing {
+final class ValidationEdgePing extends Structure {
 
 	#[Property( 'The other one.' )]
 	public ValidationEdgePong $pong;
@@ -53,7 +63,7 @@ final class ValidationEdgePing {
 /**
  * The other half.
  */
-final class ValidationEdgePong {
+final class ValidationEdgePong extends Structure {
 
 	#[Property( 'The first one.' )]
 	public ValidationEdgePing $ping;
@@ -143,18 +153,6 @@ final class ValidationEdgeCasesTest extends TestCase {
 		$this->assertSame( 'Ascending', $schema['properties']['order']['default'] );
 	}
 
-	public function test_a_structure_default_built_in_a_promoted_parameter_is_published_as_data(): void {
-		$target = new class() {
-			#[Property( 'A box.' )]
-			public ValidationEdgeBox $box;
-		};
-
-		$schema = $this->validation()->get_schema( $target );
-
-		$this->assertIsArray( $schema, 'The schema must contain nothing but data.' );
-		$this->assertSame( 'integer', $schema['properties']['box']['properties']['weight']['type'] );
-	}
-
 	/**
 	 * A list of itself is the recursion the depth guard exists for -- reached
 	 * through `ListOf` rather than through a property type.
@@ -221,7 +219,18 @@ final class ValidationEdgeCasesTest extends TestCase {
 		$this->expectException( \InvalidArgumentException::class );
 		$this->expectExceptionMessage( 'is static' );
 
-		$this->validation()->get_schema( new ValidationEdgeStatic() );
+		$this->validation()->get_schema( ValidationEdgeStatic::class );
+	}
+
+	/**
+	 * `self` means the class itself, so it is refused as the recursion it is
+	 * rather than as an unknown type named "self".
+	 */
+	public function test_a_property_typed_self_is_refused_as_recursion(): void {
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'ValidationEdgeNode nests more than' );
+
+		$this->validation()->get_schema( ValidationEdgeNode::class );
 	}
 
 	public function test_an_inherited_argument_is_declared_too(): void {
@@ -504,7 +513,7 @@ final class ValidationEdgeCasesTest extends TestCase {
  * A class carrying a static property marked as an argument.
  */
 // phpcs:ignore PSR1.Classes.ClassDeclaration.MultipleClasses
-final class ValidationEdgeStatic {
+final class ValidationEdgeStatic extends Structure {
 
 	#[Property( 'Shared by everyone.' )]
 	public static string $shared = '';
@@ -517,7 +526,7 @@ final class ValidationEdgeStatic {
  * A structure declaring a service property, to prove it is left alone.
  */
 // phpcs:ignore PSR1.Classes.ClassDeclaration.MultipleClasses
-final class ValidationEdgeUnwired {
+final class ValidationEdgeUnwired extends Structure {
 
 	/**
 	 * @var \Zestry\WPToolkit\Modules\Path

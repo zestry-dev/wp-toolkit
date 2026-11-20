@@ -10,7 +10,7 @@ Describe data with a class, then check it, clean it and build it.
 A class whose properties are typed and declared is the whole description: the schema a caller reads, the checks a value must pass, and the object you get back. Nothing to extend and nothing to register:
 
 ```php
-final class Booking {
+final class Booking extends Structure {
 
     #[Property( 'The workshop to book.' )]
     public int $workshop_id;
@@ -45,7 +45,7 @@ A property is part of the shape when it carries `Property`, any `Rule`, `ListOf`
 | `string`, `int`, `float`, `bool` | that type, or a string that reads as it | the type |
 | an enum | a case's backing value, or a pure enum's case name | the case |
 | `\DateTimeImmutable`, `\DateTimeInterface` | a date-time string | the date |
-| a class | an object matching its declarations | an instance, built without its constructor |
+| a `Structure` | an object matching its declarations | an instance |
 | `array` with `ListOf` | a list, or a comma-separated string | a list |
 | `array` with `MapOf` | an object with keys of the caller's choosing | an array keyed by them |
 | `object`, `\stdClass` | any object | a `\stdClass` |
@@ -53,7 +53,9 @@ A property is part of the shape when it carries `Property`, any `Rule`, `ListOf`
 
 **No default makes it required.** A default makes it optional, and is what a caller is told leaving it out gets them; `?Type $x = null` is the way to say "optional, with no value".
 
-**Types shape, rules narrow.** A rule never changes what kind of value a property holds; it only limits which values of that kind pass. Something with properties of its own — an address, a guest — is a class, not a rule.
+**Types shape, rules narrow.** A rule never changes what kind of value a property holds; it only limits which values of that kind pass. Something with properties of its own — an address, a guest — is a `Structure`, not a rule.
+
+**Something with properties of its own extends `Structure`.** Its constructor is private, so the only way to get one is to have it built and checked: by a request, or by `parse()`.
 
 ## In what order
 
@@ -118,6 +120,7 @@ Shipped with this module, and written against directly:
 - [`Range`](range.md) — attribute, the values a number may take
 - [`Rule`](rule.md) — attribute, a limit on a value, written once and used on any property
 - [`Sanitize`](sanitize.md) — attribute, clean a value with a function, once it has passed every check
+- [`Structure`](structure.md) — abstract class, a value with properties of its own — a booking, an address, a guest — built from an array by `Validation`
 - [`Url`](url.md) — attribute, an absolute `http` or `https` address
 - [`Uuid`](uuid.md) — attribute, a UUID, in its usual hyphenated form
 

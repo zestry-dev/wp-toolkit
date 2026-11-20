@@ -107,7 +107,7 @@ return Route::get( 'v1', '/widgets/{id}', new class extends RestRoute {
 
 A `check` is for what JSON Schema cannot say — that a row exists, that a slug is free. Returning a message rejects the request with a 400 before `handle()` runs, and the message is what the caller reads.
 
-A check spanning two fields cannot be a rule on the route itself: a route, an ability or an action carrying a class rule throws on its first call. Put those fields in a class with the rule on it and declare one property of that type, or compare them in `handle()`, where every property is bound.
+A check spanning two fields cannot be a rule on the route itself: a route, an ability or an action carrying a class rule throws on its first call. Put those fields in a `Structure` with the rule on it and declare one property of that type, or compare them in `handle()`, where every property is bound.
 
 ## One route per HTTP method
 

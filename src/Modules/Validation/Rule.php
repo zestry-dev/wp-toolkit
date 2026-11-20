@@ -60,13 +60,13 @@ namespace Zestry\WPToolkit\Modules\Validation;
  *
  * Once an inline rule appears on a second property, move it into a class.
  *
- * **On a class, a rule checks the finished object.** Declare it with
+ * **On a {@see Structure}, a rule checks the finished object.** Declare it with
  * `\Attribute::TARGET_CLASS` and `check()` receives the object, built and with
  * every property already passed -- the place for a limit that spans several
  * properties, such as an end date after a start date. A route, an ability
  * or an AJAX action cannot carry one -- it answers calls rather than being
  * built from one, and throws on its first call. Give it a property of the
- * class instead.
+ * Structure instead.
  *
  * ## What `get_schema()` may say
  *
